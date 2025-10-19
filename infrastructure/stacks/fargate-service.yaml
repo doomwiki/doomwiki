@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Deploy a service on AWS Fargate, hosted in a private subnet, accessible only via a Internal load balancer.
+Description: Deploy a service on AWS Fargate
 Parameters:
   EnvironmentName:
     Type: String
@@ -61,13 +61,9 @@ Parameters:
   EFSFileSystem:
     Type: String
     Default: ""
-  PrivateEFSFileSystem:
-    Type: String
-    Default: ""
 
 Conditions:
   IncludeEFS: !Not [!Equals [!Ref EFSFileSystem, ""]]
-  IncludePrivateEFS: !Not [!Equals [!Ref PrivateEFSFileSystem, ""]]
 
 Resources:
   # A log group for storing the stdout logs from this service's containers
@@ -185,23 +181,12 @@ Resources:
               - SourceVolume: "files"
                 ContainerPath: /var/www/files
               - !Ref AWS::NoValue
-            - !If
-              - IncludePrivateEFS
-              - SourceVolume: "private_files"
-                ContainerPath: /var/www/private
-              - !Ref AWS::NoValue
       Volumes: #TODO: Implement DoEFSVolumeCheck
         - !If
           - IncludeEFS
           - Name: "files"
             EFSVolumeConfiguration:
               FilesystemId: !Ref EFSFileSystem
-          - !Ref AWS::NoValue
-        - !If
-          - IncludePrivateEFS
-          - Name: "private_files"
-            EFSVolumeConfiguration:
-              FilesystemId: !Ref PrivateEFSFileSystem
           - !Ref AWS::NoValue
 
   # A target group. This is used for keeping track of all the tasks, and
@@ -264,7 +249,7 @@ Resources:
           AssignPublicIp: DISABLED
           SecurityGroups:
             - !Sub ${ContainerSecurityGroup}
-          Subnets: !Split [",", !Join [",", !Ref VPCSubnets]]
+          #Subnets: !Split [",", !Join [",", !Ref VPCSubnets]]
       TaskDefinition: !Ref TaskDefinition
       LoadBalancers:
         - ContainerName: !Ref ProjectName

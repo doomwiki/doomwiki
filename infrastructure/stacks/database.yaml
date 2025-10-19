@@ -62,11 +62,11 @@ Resources:
   #      AutomaticallyAfterDays: 90
   #      Duration: 2h
 
-  DatabaseSubnetGroup:
-    Type: AWS::RDS::DBSubnetGroup
-    Properties:
-      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
-      SubnetIds: !Ref DatabaseSubnetList
+  #DatabaseSubnetGroup:
+  #  Type: AWS::RDS::DBSubnetGroup
+  #  Properties:
+  #    DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+  #    SubnetIds: !Ref DatabaseSubnetList
 
   PostgreSQLClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -170,7 +170,7 @@ Resources:
           !Ref MySQLClusterParameterGroup,
           !Ref PostgreSQLClusterParameterGroup,
         ]
-      DBSubnetGroupName: !Ref "DatabaseSubnetGroup"
+      #DBSubnetGroupName: !Ref "DatabaseSubnetGroup"
       DeletionProtection: true
       EnableIAMDatabaseAuthentication: true
       Engine: !Ref DatabaseEngine

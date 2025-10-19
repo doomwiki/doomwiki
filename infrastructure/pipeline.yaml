@@ -427,31 +427,6 @@ Resources:
                   - Name: SourceArtifact
                 RunOrder: 1
               - !Ref AWS::NoValue
-            - !If
-              - SetupVeracode
-              - Name: SASTScanWeeklyBuild
-                ActionTypeId:
-                  Category: Deploy
-                  Owner: AWS
-                  Version: "1"
-                  Provider: CloudFormation
-                Configuration:
-                  ActionMode: CREATE_UPDATE
-                  RoleArn: !GetAtt CloudFormationDeployRole.Arn
-                  StackName: !Sub "${ProjectName}-${EnvironmentName}-sast-scan-weekly"
-                  TemplatePath: SourceArtifact::infrastructure/stacks/sast-scan-weekly.yaml
-                  Capabilities: CAPABILITY_NAMED_IAM
-                  ParameterOverrides: !Sub |
-                    { 
-                      "EnvironmentName": "${EnvironmentName}",
-                      "ProjectName": "${ProjectName}",
-                      "VeracodeSandboxName": "aws-codebuild-${EnvironmentName}",
-                      "GitHubOrg": "${GitHubOrg}",
-                      "AppRepo": "${AppRepo}"
-                    }
-                InputArtifacts:
-                  - Name: SourceArtifact
-              - !Ref AWS::NoValue
             # app unit test
             - Name: WebAppUnitTests
               ActionTypeId:
@@ -505,7 +480,7 @@ Resources:
                       "DomainName": "${DomainName}",
                       "DatabaseName": "${DatabaseName}"
                     }
-                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                  # - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 5
@@ -620,12 +595,12 @@ Resources:
                       "LoadBalancerAccessType": "${LoadBalancerAccessType}",
                       "WAFArn": "${WAFArn}"
                     }
-                  - VPCSubnets:
-                      !If [
-                        IsPrivateALB,
-                        !Join [",", !Ref VPCPrivateSubnets],
-                        !Join [",", !Ref VPCPublicSubnets],
-                      ]
+                  #- VPCSubnets:
+                  #    !If [
+                  #      IsPrivateALB,
+                  #      !Join [",", !Ref VPCPrivateSubnets],
+                  #      !Join [",", !Ref VPCPublicSubnets],
+                  #    ]
               InputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 1
@@ -677,10 +652,9 @@ Resources:
                         "EnvironmentName": "${EnvironmentName}",
                         "DatabaseName":"${DatabaseName}",
                         "DatabaseEngine": "${DatabaseEngine}",
-                        "DatabaseSubnetList": "${VPCSubnets}",
                         "ProjectName": "${ProjectName}"
                       }
-                    - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                    #- VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
                   - Name: InfrastructureArtifact
                 RunOrder: 2
@@ -709,7 +683,7 @@ Resources:
                         "ProjectName": "${ProjectName}",
                         "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}"
                       }
-                    - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                    #- VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
                   - Name: InfrastructureArtifact
                 RunOrder: 2
@@ -766,40 +740,12 @@ Resources:
                       "ProjectName": "${ProjectName}",
                       "ImageUrl": "#{ContainerVars.ImageURI}",
                       "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
-                      "EFSFileSystem": "#{EFSVars.FileSystemResource}",
-                      "PrivateEFSFileSystem": "#{EFSVars.PrivateFileSystemResource}"
+                      "EFSFileSystem": "#{EFSVars.FileSystemResource}"
                     }
-                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                  #- VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 1
 
         # - Name: Testing (Burpsuite)
 
-  ImageSourceWebHook:
-    Type: AWS::CodePipeline::Webhook
-    Properties:
-      Authentication: GITHUB_HMAC
-      AuthenticationConfiguration:
-        SecretToken: "{{resolve:ssm:GitHubToken}}"
-      Filters:
-        - JsonPath: "$.ref"
-          MatchEquals: refs/heads/{Branch}
-      RegisterWithThirdParty: true
-      TargetAction: Application
-      TargetPipeline: !Ref ImagePipeline
-      TargetPipelineVersion: !GetAtt ImagePipeline.Version
-
-  InfrastructureSourceWebHook:
-    Type: AWS::CodePipeline::Webhook
-    Properties:
-      Authentication: GITHUB_HMAC
-      AuthenticationConfiguration:
-        SecretToken: "{{resolve:ssm:GitHubToken}}"
-      Filters:
-        - JsonPath: "$.ref"
-          MatchEquals: refs/heads/{Branch}
-      RegisterWithThirdParty: true
-      TargetAction: Infrastructure
-      TargetPipeline: !Ref InfrastructurePipeline
-      TargetPipelineVersion: !GetAtt InfrastructurePipeline.Version

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Deploy a service on AWS Fargate, hosted in a private subnet, accessible only via a Internal load balancer.
+Description: Deploy a an EFS file system for use with Fargate services
 Parameters:
   EnvironmentName:
     Type: String
@@ -38,36 +38,11 @@ Resources:
         - Key: Name
           Value: Public File Storage
 
-  PrivateFileSystemResource:
-    Type: AWS::EFS::FileSystem
-    Properties:
-      BackupPolicy:
-        Status: ENABLED
-      Encrypted: true
-      FileSystemPolicy:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: "Allow"
-            Action:
-              - "elasticfilesystem:ClientRootAccess"
-              - "elasticfilesystem:ClientWrite"
-              - "elasticfilesystem:ClientMount"
-            Principal:
-              AWS: "*"
-            Condition:
-              Bool:
-                "elasticfilesystem:AccessedViaMountTarget": true
-      LifecyclePolicies:
-        - TransitionToPrimaryStorageClass: AFTER_1_ACCESS
-      FileSystemTags:
-        - Key: Name
-          Value: Private File Storage
-
   EFSTargetMount1:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
-      SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      # SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
 
@@ -75,23 +50,7 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
-      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
-      SecurityGroups:
-        - !Sub ${ContainerSecurityGroup}
-
-  PrivateEFSTargetMount1:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref PrivateFileSystemResource
-      SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
-      SecurityGroups:
-        - !Sub ${ContainerSecurityGroup}
-
-  PrivateEFSTargetMount2:
-    Type: AWS::EFS::MountTarget
-    Properties:
-      FileSystemId: !Ref PrivateFileSystemResource
-      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      # SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
 
@@ -99,6 +58,3 @@ Outputs:
   FileSystemResource:
     Description: General EFS file system resource
     Value: !Ref FileSystemResource
-  PrivateFileSystemResource:
-    Description: Private EFS file system resource
-    Value: !Ref PrivateFileSystemResource
