@@ -1,0 +1,15 @@
+# This is the configuration file for Iac Scan APIv2.
+
+# Specify the template types.The valid values are TF, CFT, K8S
+template_type: CFT
+# If template_type value is CFT, set cft_parameters (optional)
+# variable_values is an array of name/value pairs, which identifies the
+# template variables
+#cft_parameters:
+#  variable_values:
+#    -
+#      name: KEYNAME1
+#      value: VALUE1
+#    -
+#      name: KEYNAME2
+#      value: VALUE2

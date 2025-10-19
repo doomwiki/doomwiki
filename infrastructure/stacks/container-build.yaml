@@ -1,0 +1,128 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: The resources used to create the WebApp environment.
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: The name for the environment that this cloudformation will be part of.
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  DomainName:
+    Type: String
+  DatabaseName:
+    Type: String
+    Default: ""
+  # VPC info
+  VPCID:
+    Description: Existing VPC ID
+    Type: AWS::EC2::VPC::Id
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
+  VPCDefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+  CodeBuildServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub CodeBuildServiceRole-${ProjectName}-${EnvironmentName}
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub CodeBuildServiceRole-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - "ec2:*"
+                  - "ecr:*"
+                  - "cognito-idp:*"
+                  - "s3:*"
+                  - "lambda:*"
+                  - "rds:*"
+                  - "rds-data:*"
+                  - "secretsmanager:*"
+                  - "kms:Encrypt"
+                  - "kms:Decrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:GenerateDataKey*"
+                  - "kms:DescribeKey"
+                  - "cloudtrail:CreateTrail"
+                  - "cloudtrail:DeleteTrail"
+  CodeBuildProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                nodejs: latest
+            build:
+              commands:
+                # API
+                - pwd
+                - cd $CODEBUILD_SRC_DIR
+                # DATABASE
+                - chmod +x ./scripts/*.sh
+                - ./scripts/config-generator.sh $ENV ${AWS::Region} $DB_SECRET {{resolve:ssm:DrupalHashSalt}} $DrupalConfOverrides ${DomainName} > .env
+                # DEPLOY CONTAINER IMAGE
+                - aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin $ECR_URL
+                - aws ecr put-image-tag-mutability --repository-name ${ProjectName}-${EnvironmentName} --image-tag-mutability MUTABLE --region ${AWS::Region}
+                - docker build -t ${ProjectName} --target deploy . --progress=plain
+                - docker images
+                - docker images -q ${ProjectName}
+                - docker tag  $(docker images -q ${ProjectName}) $ECR_URL/${ProjectName}-${EnvironmentName}:latest
+                - docker images
+                - docker push $ECR_URL/${ProjectName}-${EnvironmentName}:latest
+                - aws ecr put-image-tag-mutability --repository-name ${ProjectName}-${EnvironmentName} --image-tag-mutability IMMUTABLE --region ${AWS::Region}
+          artifacts:
+            base-directory: $CODEBUILD_SRC_DIR
+            files:
+              - '**/*'
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: ENV
+            Value: !Ref EnvironmentName
+          - Name: DB_SECRET
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabasePassword
+          - Name: ECR_URL
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com
+          - Name: DrupalConfOverrides
+            Value: !Sub "{{resolve:ssm:DrupalConfOverrides}}"
+
+      Name: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildProject
+      ServiceRole: !Ref CodeBuildServiceRole
+      VpcConfig:
+        VpcId: !Ref VPCID
+        Subnets: !Ref VPCSubnets
+        SecurityGroupIds:
+          - !Ref VPCDefaultSecurityGroup
+
+Outputs:
+  CodeBuildProject:
+    Value: !Ref CodeBuildProject

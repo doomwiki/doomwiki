@@ -1,0 +1,282 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Internal private facing load balancer, for forwarding private traffic to containers
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    Description: Environment name
+  ProjectName:
+    Description: Primary project short name, environments will be added as subdomains e.g. fpar2.mathematica-dev.org
+    Type: String
+  DomainName:
+    Description: Optional custom domain name attached to the load balancer
+    Type: String
+  HostedZoneId:
+    Description: Custom hosted zone
+    Type: String
+  VPCID:
+    Description: Existing VPC ID
+    Type: String
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
+  LoadBalancerAccessType:
+    Description: Access type for load balancer - public or private
+    Type: String
+    Default: Private
+  WAFArn:
+    Description: WAF V2 Web ACL Arn for Load Balancer
+    Type: String
+    Default: ""
+Conditions:
+  IsPrivate: !Equals
+    - !Ref LoadBalancerAccessType
+    - Private
+  HasWAF: !Not
+    - !Equals
+      - !Ref WAFArn
+      - ""
+Resources:
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-${EnvironmentName}-containers
+      GroupDescription: Access to the Fargate containers
+      VpcId: !Ref VPCID
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to the private facing load balancer
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIpv6: ::/0
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+        - CidrIpv6: ::/0
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+  EcsSecurityGroupIngressFromPrivateALB:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress from the private ALB
+      GroupId: !Ref ContainerSecurityGroup
+      IpProtocol: -1
+      SourceSecurityGroupId: !Ref "LoadBalancerSecurityGroup"
+
+  # Allow access to NFS Share
+  ContainerSecurityGroupNFSIngress:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      GroupId: !Ref ContainerSecurityGroup
+      SourceSecurityGroupId: !Ref ContainerSecurityGroup
+      IpProtocol: tcp
+      FromPort: 2049
+      ToPort: 2049
+
+  # Access log storage for load balancer
+  AccessLogBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierRule
+            Prefix: glacier
+            Status: Enabled
+            ExpirationInDays: 365
+            Transitions:
+              - TransitionInDays: 1
+                StorageClass: GLACIER
+      BucketName: !Sub ${ProjectName}-${EnvironmentName}-access-logs
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  AccessLogBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref AccessLogBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource: !Join
+              - ""
+              - - !GetAtt AccessLogBucket.Arn
+                - /access-log/AWSLogs/
+                - !Ref AWS::AccountId
+                - /*
+            Principal:
+              AWS: arn:aws:iam::127311923021:root
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt AccessLogBucket.Arn
+              - !Join
+                - ""
+                - - !GetAtt AccessLogBucket.Arn
+                  - /*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    DependsOn: AccessLogBucketPolicy
+    Properties:
+      IpAddressType: dualstack
+      Scheme: !If
+        - IsPrivate
+        - internal
+        - internet-facing
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: "3600"
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: "true"
+        - Key: access_logs.s3.enabled
+          Value: "true"
+        - Key: access_logs.s3.bucket
+          Value: !Ref AccessLogBucket
+        - Key: access_logs.s3.prefix
+          Value: access-log
+        - Key: deletion_protection.enabled
+          Value: "true"
+      Subnets: !Split
+        - ","
+        - !Join
+          - ","
+          - !Ref VPCSubnets
+      SecurityGroups:
+        - !Ref LoadBalancerSecurityGroup
+  LoadBalancerWAFAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: HasWAF
+    Properties:
+      ResourceArn: !Ref LoadBalancer
+      WebACLArn: !Ref WAFArn
+  LoadBalancerDNS:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub ${DomainName}
+      Type: A
+  LoadBalancerDNSWWW:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub www.${DomainName}
+      Type: A
+  LoadBalancerDNSIPv6:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub ${DomainName}
+      Type: AAAA
+  LoadBalancerDNSIPv6WWW:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Sub www.${DomainName}
+      Type: AAAA
+  LoadBalancerCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      DomainValidationOptions:
+        - DomainName: !Ref DomainName
+          HostedZoneId: !Ref HostedZoneId
+      SubjectAlternativeNames:
+        - !Sub www.${DomainName}
+      ValidationMethod: DNS
+
+  # A dummy target group is used to setup the ALB to just drop traffic
+  # initially, before any real service target groups have been added.
+  DummyTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 6
+      HealthCheckPath: /
+      HealthCheckProtocol: HTTPS
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      Port: 443
+      Protocol: HTTPS
+      UnhealthyThresholdCount: 2
+      VpcId: !Ref VPCID
+  #HTTPListener:
+  #  Type: AWS::ElasticLoadBalancingV2::Listener
+  #  Properties:
+  #    LoadBalancerArn: !Ref LoadBalancer
+  #    Port: 80
+  #    Protocol: HTTP
+  #    DefaultActions:
+  #      - Order: 1
+  #        RedirectConfig:
+  #          Protocol: HTTPS
+  #          Port: "443"
+  #          Host: "#{host}"
+  #          Path: /#{path}
+  #          Query: "#{query}"
+  #          StatusCode: HTTP_301
+  #        Type: redirect
+  LoadBalancerListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - TargetGroupArn: !Ref DummyTargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      SslPolicy: "ELBSecurityPolicy-TLS13-1-2-Res-2021-06"
+      Certificates:
+        - CertificateArn: !Ref LoadBalancerCertificate
+Outputs:
+  ContainerSecurityGroup:
+    Description: A security group used to allow Fargate containers to receive traffic
+    Value: !Ref ContainerSecurityGroup
+    Export:
+      Name: !Sub ${ProjectName}-${EnvironmentName}:FargateContainerSecurityGroup
+  ContainerGroup:
+    Description: A security group used to allow Fargate containers to receive traffic
+    Value: !Ref ContainerSecurityGroup
+    Export:
+      Name: !Sub ${EnvironmentName}:FargateContainerSecurityGroup
+  LoadBalancerListener:
+    Description: The ARN of the private load balancer's Listener
+    Value: !Ref LoadBalancerListener
+    Export:
+      Name: !Sub ${EnvironmentName}:LoadBalancerListener
+  LoadBalancerUrl:
+    Description: The url of the internal load balancer
+    Value: !GetAtt LoadBalancer.DNSName

@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+
+  # Main Drupal dev service using bind mounts for custom code.
+  doomwiki_dev:
+    image: ${COMPOSE_PROJECT_NAME}:dev
+    container_name: ${COMPOSE_PROJECT_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      target: dev
+      args:
+        # Wheather or not to use a custom root cert needed for local
+        # environments under the Cisco umbrella. Does not apply to AWS.
+        USE_MATH_CERT: true
+    ports:
+      - ${COMPOSE_WEB_PORT:-8080}:8080
+    volumes:
+      # For development we map any files/folders that can be customizable and
+      # tracked in git. These can be edited in/out of container (e.g. in IDE),
+      # immediatly tested inside container, and then committed. If using a linux
+      # filesystem on the host (e.g. WSL) this could be simplfied as a single
+      # mapping of the entire /app directory, but that will be too slow at
+      # runtime if mapping from NTFS volumes on the host.
+      - ./app/composer.json:/home/doomwiki/app/composer.json
+      - ./app/composer.lock:/home/doomwiki/app/composer.lock
+    env_file: .env
+
+  # Drupal service to simulate a deploy.
+  doomwiki_deploy:
+    profiles:
+      - deploy
+    image: ${COMPOSE_PROJECT_NAME}:deploy
+    container_name: ${COMPOSE_PROJECT_NAME}_deploy
+    depends_on:
+      db:
+        condition: service_healthy
+    build:
+      target: deploy
+      args:
+        # Wheather or not to use a custom root cert needed for local
+        # environments under the Cisco umbrella. Does not apply to AWS.
+        USE_MATH_CERT: true
+    ports:
+      - ${COMPOSE_WEB_PORT_DEPLOY:-8081}:8080
+    volumes:
+      - ./app/web/sites/default/files:/var/www/files
+      - ./app/private:/var/www/private
+    env_file: .env
+
+  # DB service, with persistent named volume storage, that's a local stand-in
+  # for RDS.
+  db:
+    image: mariadb
+    container_name: ${COMPOSE_PROJECT_NAME}_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: $MYSQL_DATABASE
+      MYSQL_USER: $MYSQL_USERNAME
+      MYSQL_PASSWORD: $MYSQL_PASSWORD
+    volumes:
+      - db:/var/lib/mysql
+    ports:
+      - ${COMPOSE_MYSQL_PORT:-33060}:3306
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 10s
+
+volumes:
+  db:

@@ -1,0 +1,272 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deploy a service on AWS Fargate, hosted in a private subnet, accessible only via a Internal load balancer.
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: DEV
+    Description: The name of the environment to add this service to
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  ImageUrl:
+    Type: String
+    Description:
+      The url of a docker image that contains the application process that
+      will handle the traffic for this service
+  ContainerPort:
+    Type: Number
+    Default: "8080"
+    Description: What port number the application inside the docker container is binding to
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing VPC ID
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
+  ContainerCpu:
+    Type: Number
+    Default: "512"
+    Description: How much CPU to give the container. 1024 is 1 CPU
+  ContainerMemory:
+    Type: Number
+    Default: "1024"
+    Description: How much memory in megabytes to give the container
+  ContainerSecurityGroup:
+    Type: String
+    Description: Security group for Fargate containers
+  TargetHealthSuccessCodes:
+    Type: String
+    Description: Comma-separated list of successful status codes for the load balancer target group
+    Default: "200,301,302"
+  TargetHealthCheckPath:
+    Type: String
+    Description: Relative path for health check
+    Default: "/"
+  Path:
+    Type: String
+    Default: "*"
+    Description: A path on the load balancer that this service
+      should be connected to. Use * to send all load balancer
+      traffic to this service.
+  Priority:
+    Type: Number
+    Default: "1"
+    Description: The priority for the routing rule added to the load balancer.
+      This only applies if your have multiple services which have been
+      assigned to different paths on the load balancer.
+  DesiredCount:
+    Type: Number
+    Default: "2"
+    Description: How many copies of the service task to run
+  EFSFileSystem:
+    Type: String
+    Default: ""
+  PrivateEFSFileSystem:
+    Type: String
+    Default: ""
+
+Conditions:
+  IncludeEFS: !Not [!Equals [!Ref EFSFileSystem, ""]]
+  IncludePrivateEFS: !Not [!Equals [!Ref PrivateEFSFileSystem, ""]]
+
+Resources:
+  # A log group for storing the stdout logs from this service's containers
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub ${ProjectName}-${EnvironmentName}-service
+
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ECSTaskRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: !Sub ECSTaskPolicy-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Allow the ECS tasks to upload logs to CloudWatch
+                  - "logs:*"
+                  - "s3:*"
+                  - "ssmmessages:CreateControlChannel"
+                  - "ssmmessages:CreateDataChannel"
+                  - "ssmmessages:OpenControlChannel"
+                  - "ssmmessages:OpenDataChannel"
+                  - "cognito-idp:*"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "ses:*"
+                Resource: "*"
+
+  # This is a role which is used by the ECS tasks themselves.
+  ECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ECSTaskExecutionRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ecs-tasks.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: !Sub ECSTaskExecutionPolicy-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  # Allow the ECS Tasks to download images from ECR
+                  - "ecr:GetAuthorizationToken"
+                  - "ecr:BatchCheckLayerAvailability"
+                  - "ecr:GetDownloadUrlForLayer"
+                  - "ecr:BatchGetImage"
+                  - "ecr:*"
+
+                  # Allow the ECS tasks to upload logs to CloudWatch
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:DeleteLogGroup"
+                  - "secretsmanager:*"
+                  - "ssm:*"
+                  - "s3:*"
+                  - "ecr:*"
+                  - "ecs:*"
+                  - "ec2:*"
+                  - "elasticfilesystem:*"
+                  - "ssmmessages:*"
+                  - "cognito-idp:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "kms:*"
+                Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+
+  # The task definition. This is a simple metadata description of what
+  # container to run, and what resource requirements it has.
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: !Ref ProjectName
+      Cpu: !Ref ContainerCpu
+      Memory: !Ref ContainerMemory
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn: !GetAtt ECSTaskExecutionRole.Arn
+      TaskRoleArn: !GetAtt ECSTaskRole.Arn
+      ContainerDefinitions:
+        - Name: !Ref ProjectName
+          Cpu: !Ref ContainerCpu
+          Memory: !Ref ContainerMemory
+          Image: !Ref ImageUrl
+          # ReadonlyRootFilesystem: true
+          PortMappings:
+            - ContainerPort: !Ref ContainerPort
+          LinuxParameters:
+            InitProcessEnabled: true
+          LogConfiguration:
+            LogDriver: "awslogs"
+            Options:
+              awslogs-group: !Sub ${ProjectName}-${EnvironmentName}-service
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: !Ref ProjectName
+          MountPoints: #TODO: Implement DoEFSVolumeCheck
+            - !If
+              - IncludeEFS
+              - SourceVolume: "files"
+                ContainerPath: /var/www/files
+              - !Ref AWS::NoValue
+            - !If
+              - IncludePrivateEFS
+              - SourceVolume: "private_files"
+                ContainerPath: /var/www/private
+              - !Ref AWS::NoValue
+      Volumes: #TODO: Implement DoEFSVolumeCheck
+        - !If
+          - IncludeEFS
+          - Name: "files"
+            EFSVolumeConfiguration:
+              FilesystemId: !Ref EFSFileSystem
+          - !Ref AWS::NoValue
+        - !If
+          - IncludePrivateEFS
+          - Name: "private_files"
+            EFSVolumeConfiguration:
+              FilesystemId: !Ref PrivateEFSFileSystem
+          - !Ref AWS::NoValue
+
+  # A target group. This is used for keeping track of all the tasks, and
+  # what IP addresses / port numbers they have. You can query it yourself,
+  # to use the addresses yourself, but most often this target group is just
+  # connected to an application load balancer, or network load balancer, so
+  # it can automatically distribute traffic across all the targets.
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 120
+      HealthCheckPath: !Ref TargetHealthCheckPath
+      HealthCheckProtocol: HTTP
+      HealthCheckPort: !Ref ContainerPort
+      HealthCheckTimeoutSeconds: 60
+      HealthyThresholdCount: 2
+      Matcher:
+        HttpCode: !Ref TargetHealthSuccessCodes
+      TargetType: ip
+      Name: !Sub ${ProjectName}-${EnvironmentName}
+      Port: !Ref ContainerPort
+      Protocol: HTTP
+      ProtocolVersion: HTTP1
+      UnhealthyThresholdCount: 4
+      VpcId: !Ref VPCID
+
+  # Create a rule on the load balancer for routing traffic to the target group
+  LoadBalancerRule:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties:
+      Actions:
+        - TargetGroupArn: !Ref TargetGroup
+          Type: "forward"
+      Conditions:
+        - Field: path-pattern
+          Values: [!Ref Path]
+      ListenerArn:
+        Fn::ImportValue: !Sub ${EnvironmentName}:LoadBalancerListener
+      Priority: !Ref Priority
+
+  # The service. The service is a resource which allows you to run multiple
+  # copies of a type of task, and gather up their logs and metrics, as well
+  # as monitor the number of running tasks and replace any that have crashed
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: LoadBalancerRule
+    Properties:
+      ServiceName: !Ref ProjectName
+      Cluster:
+        Fn::ImportValue: !Sub ${EnvironmentName}:ClusterName
+
+      LaunchType: FARGATE
+      DeploymentConfiguration:
+        MaximumPercent: 200
+        MinimumHealthyPercent: 75
+      DesiredCount: !Ref DesiredCount
+      EnableExecuteCommand: true
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: DISABLED
+          SecurityGroups:
+            - !Sub ${ContainerSecurityGroup}
+          Subnets: !Split [",", !Join [",", !Ref VPCSubnets]]
+      TaskDefinition: !Ref TaskDefinition
+      LoadBalancers:
+        - ContainerName: !Ref ProjectName
+          ContainerPort: !Ref ContainerPort
+          TargetGroupArn: !Ref TargetGroup

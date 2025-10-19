@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Deploy a service on AWS Fargate, hosted in a private subnet, accessible only via a Internal load balancer.
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: DEV
+    Description: The name of the environment to add this service to
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing VPC ID
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
+  VPCDefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+  ContainerSecurityGroup:
+    Type: String
+    Description: Security group for Fargate containers
+
+Resources:
+  FileSystemResource:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      BackupPolicy:
+        Status: ENABLED
+      Encrypted: true
+      FileSystemPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "elasticfilesystem:ClientRootAccess"
+              - "elasticfilesystem:ClientWrite"
+              - "elasticfilesystem:ClientMount"
+            Principal:
+              AWS: "*"
+            Condition:
+              Bool:
+                "elasticfilesystem:AccessedViaMountTarget": true
+      LifecyclePolicies:
+        - TransitionToPrimaryStorageClass: AFTER_1_ACCESS
+      FileSystemTags:
+        - Key: Name
+          Value: Public File Storage
+
+  PrivateFileSystemResource:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      BackupPolicy:
+        Status: ENABLED
+      Encrypted: true
+      FileSystemPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "elasticfilesystem:ClientRootAccess"
+              - "elasticfilesystem:ClientWrite"
+              - "elasticfilesystem:ClientMount"
+            Principal:
+              AWS: "*"
+            Condition:
+              Bool:
+                "elasticfilesystem:AccessedViaMountTarget": true
+      LifecyclePolicies:
+        - TransitionToPrimaryStorageClass: AFTER_1_ACCESS
+      FileSystemTags:
+        - Key: Name
+          Value: Private File Storage
+
+  EFSTargetMount1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
+
+  EFSTargetMount2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
+
+  PrivateEFSTargetMount1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref PrivateFileSystemResource
+      SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
+
+  PrivateEFSTargetMount2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref PrivateFileSystemResource
+      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
+
+Outputs:
+  FileSystemResource:
+    Description: General EFS file system resource
+    Value: !Ref FileSystemResource
+  PrivateFileSystemResource:
+    Description: Private EFS file system resource
+    Value: !Ref PrivateFileSystemResource

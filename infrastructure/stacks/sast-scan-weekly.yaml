@@ -1,0 +1,113 @@
+Parameters:
+  EnvironmentName:
+    Description: Environment name
+    Type: String
+    Default: "dev"
+    AllowedValues:
+      - "dev"
+      - "qa"
+      - "stg"
+      - "prod"
+  ProjectName:
+    Type: String
+    Description: Project short name
+  VeracodeSandboxName:
+    Description: Sandbox name for Veracode dev scanning
+    Type: String
+    Default: "aws-codebuild"
+  GitHubOrg:
+    Description: Organizational owner of the GitHub repository
+    Type: String
+    Default: mathematica-org
+  AppRepo:
+    Description: GitHub repository containing main application code
+    Type: String
+Resources:
+  CodeScanServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub SASTScanWeeklyServiceRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - codebuild.amazonaws.com
+          - Effect: Allow
+            Action: sts:AssumeRole
+            Principal:
+              Service:
+                - events.amazonaws.com
+      Policies:
+        - PolicyName: !Sub SASTScanServiceRole-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "arn:aws:logs:*:*:*"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                  - codebuild:StopBuild
+                  - codebuild:StartBuildBatch
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                Resource: "*"
+
+  CodeScanProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-CodeScanProject-Weekly
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Source:
+        Type: GITHUB
+        Location: !Sub https://github.com/${GitHubOrg}/${AppRepo}
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            build:
+              commands:
+                - echo "***********************SCAN STAGE**********************"
+                - TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+                - pwd
+                - cd $CODEBUILD_SRC_DIR
+                - chmod +x ./scripts/sast-scan.sh
+                - ls -l
+                - zip -r ${ProjectName}.zip app scripts -x "* /.*"
+                - ./scripts/sast-scan.sh {{resolve:ssm:VeracodeId}} {{resolve:ssm:VeracodeKey}} "Weekly Scan for Distribution - ${ProjectName} at $TIMESTAMP" ${ProjectName}
+                - cat /etc/os-release
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        # Follow https://docs.veracode.com/r/t_aws_config_codepipeline_static docs
+        Image: 922539530544.dkr.ecr.us-east-1.amazonaws.com/veracode/java-api-wrapper:latest
+        ImagePullCredentialsType: SERVICE_ROLE
+        Type: LINUX_CONTAINER
+        PrivilegedMode: false
+      ServiceRole: !Ref CodeScanServiceRole
+  CodeScanRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "Weekly SAST scan for ${ProjectName}"
+      ScheduleExpression: "cron(0 10 ? * FRI *)"
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CodeScanProject.Arn
+          Id: "CodeScanProject"
+          RoleArn: !GetAtt CodeScanServiceRole.Arn

@@ -1,0 +1,818 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Produces containerized hosting infrastructure
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Information
+        Parameters:
+          - EnvironmentName
+          - ProjectName
+          - DomainName
+          - HostedZoneId
+          - LoadBalancerAccessType
+          - AlertsEmailAddress
+      - Label:
+          default: Database
+        Parameters:
+          - IncludeDatabase
+          - DatabaseEngine
+          - DatabaseName
+      - Label:
+          default: Source Repository Information
+        Parameters:
+          - GitHubOrg
+          - GitHubToken
+          - AppRepo
+          - AppRepoBranch
+          - InfrastructureRepo
+          - InfrastructureRepoBranch
+      - Label:
+          default: Network Information
+        Parameters:
+          - VPCID
+          - VPCPrivateSubnets
+          - VPCPublicSubnets
+          - VPCDefaultSecurityGroup
+          - WAFArn
+      - Label:
+          default: Additional Features
+        Parameters:
+          - UseCognito
+          - UseVeracode
+
+Parameters:
+  # Project info
+  EnvironmentName:
+    Description: Environment name
+    Type: String
+    Default: "dev"
+    AllowedValues:
+      - "dev"
+      - "qa"
+      - "stg"
+      - "prod"
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  DomainName:
+    Description: Custom domain name attached to the load balancer (required for HTTPS)
+    Type: String
+  HostedZoneId:
+    Description: Route 53 Hosted zone ID
+    Type: String
+  LoadBalancerAccessType:
+    Description: Access type for load balancer - public or private
+    Type: String
+    Default: "Public"
+    AllowedValues:
+      - "Public"
+      - "Private"
+  AlertsEmailAddress:
+    Description: Email address for receiving pipeline failures
+    Type: String
+    Default: ""
+  IncludeDatabase:
+    Description: Include a database?
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  DatabaseEngine:
+    Default: aurora-postgresql
+    Description: Engine for database (default PostgreSQL)
+    Type: String
+    AllowedValues:
+      - aurora-postgresql
+      - aurora-mysql
+  DatabaseName:
+    Description: name of primary database (required for database usage)
+    Type: String
+    Default: "project"
+  # VPC info
+  VPCID:
+    Description: Existing VPC ID
+    Type: AWS::EC2::VPC::Id
+  VPCPrivateSubnets:
+    Description: Comma-separated list of subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
+  VPCPublicSubnets:
+    Description: Comma-separated list of subnets associated with the existing VPC (only required for public load balancer access)
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: ""
+  VPCDefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+  WAFArn:
+    Description: WAF V2 Web ACL Arn for Load Balancer
+    Type: String
+  # Source info
+  GitHubOrg:
+    Description: Organizational owner of the GitHub repository
+    Type: String
+    Default: mathematica-org
+  AppRepo:
+    Description: GitHub repository containing main application code
+    Type: String
+  AppRepoBranch:
+    Description: Git branch for main application code.
+    Type: String
+    Default: "dev"
+  InfrastructureRepo:
+    Description: GitHub repository containing infrastructure templates
+    Type: String
+  InfrastructureRepoBranch:
+    Description: Git branch for infrastructure templates. It defaults to dev if not specified.
+    Type: String
+    Default: "dev"
+  UseEFS:
+    Description: Include Elastic File Storage
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  UseCognito:
+    Description: Include Cognito Authentication
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "Yes"
+  UseVeracode:
+    Description: Include Veracode scanning in the application pipeline
+    Type: String
+    AllowedValues:
+      - "Yes"
+      - "No"
+    Default: "No"
+
+Conditions:
+  DoEmailAlerts: !Not [!Equals [AlertsEmailAddress, ""]]
+  IsProduction: !Equals [!Ref EnvironmentName, prod]
+  IsNotProduction: !Not [Condition: IsProduction]
+  SetupDB: !Equals [!Ref IncludeDatabase, "Yes"]
+  SetupVeracode: !Equals [!Ref UseVeracode, "Yes"]
+  SetupAuth: !Equals [!Ref UseCognito, "Yes"]
+  SetupEFS: !Equals [!Ref UseEFS, "Yes"]
+  IsPrivateALB: !Equals [!Ref LoadBalancerAccessType, "Private"]
+  IsPublicALB: !Equals [!Ref LoadBalancerAccessType, "Public"]
+
+Resources:
+  CodePipelineServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CodePipelineServiceRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub CodePipelineServiceRole-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              # Allow codepipeline to put artifacts in the S3 bucket
+              # as well as get artifacts back out of it.
+              - Resource: "*" #  - !Sub arn:aws:s3:::${ArtifactBucket}/*
+                Effect: Allow
+                Action:
+                  - s3:*
+                  - ecr:*
+                  - codebuild:StartBuild
+                  - codebuild:BatchGetBuilds
+                  - codestar-connections:*
+                  - iam:*
+                  - cloudformation:CreateChangeSet
+                  - cloudformation:CreateStack
+                  - cloudformation:CreateUploadBucket
+                  - cloudformation:DeleteStack
+                  - cloudformation:Describe*
+                  - cloudformation:List*
+                  - cloudformation:UpdateStack
+                  - cloudformation:ValidateTemplate
+                  - cloudformation:ExecuteChangeSet
+                  - ssm:GetParameter
+                  - ssm:DescribeParameters
+                  - ssm:GetParameters
+  CloudFormationDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub CloudFormationDeployRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+          - Effect: Allow
+            Principal:
+              Service: cloudformation.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: !Sub CloudFormationDeployRole-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "iam:*"
+                  - "ec2:*"
+                  - "ecs:*"
+                  - "ecr:*"
+                  - "rds:*"
+                  - "dynamodb:*"
+                  - "lambda:*"
+                  - "logs:*"
+                  - "sns:*"
+                  - "cloudwatch:*"
+                  - "route53:*"
+                  - "s3:*"
+                  - "cloudfront:*"
+                  - "cloudtrail:*"
+                  - "codebuild:*"
+                  - "codepipeline:*"
+                  - "apigateway:*"
+                  - "elasticloadbalancing:*"
+                  - "cognito-idp:*"
+                  - "acm:*"
+                  - "secretsmanager:*"
+                  - "states:*"
+                  - "events:*"
+                  - "cognito-identity:*"
+                  - "wafv2:*"
+                  - "ssm:*"
+                  - "ses:*"
+                  - "elasticfilesystem:*"
+                  - "cloudformation:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "kms:*"
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - "route53:ChangeResourceRecordSets"
+                Resource: !Sub "arn:aws:route53:::hostedzone/${HostedZoneId}"
+
+  Repository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub "${ProjectName}-${EnvironmentName}"
+      RepositoryPolicyText:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowPushPull
+            Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action:
+              - "ecr:*"
+      ImageScanningConfiguration:
+        ScanOnPush: True
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Expire untagged images older than 7 days",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 7
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+        RegistryId: !Ref "AWS::AccountId"
+      ImageTagMutability: IMMUTABLE
+
+  # While the build is in progress we need a place to store artifacts
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    Properties:
+      LifecycleConfiguration:
+        Rules:
+          - Id: GlacierRule
+            Prefix: glacier
+            Status: Enabled
+            ExpirationInDays: 365
+            Transitions:
+              - TransitionInDays: 1
+                StorageClass: GLACIER
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+  ArtifactBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref ArtifactBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowSSLRequestsOnly"
+            Effect: "Deny"
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt ArtifactBucket.Arn
+              - !Join ["", [!GetAtt ArtifactBucket.Arn, "/*"]]
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  # Notification topic
+  MySNSTopic:
+    Type: AWS::SNS::Topic
+    Condition: DoEmailAlerts
+    Properties:
+      Subscription:
+        - Endpoint: !Ref AlertsEmailAddress
+          Protocol: "email"
+      TopicName: !Sub "${ProjectName}-${EnvironmentName}-email-alerts"
+
+  # Container image pipeline
+  ImagePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-image-pipeline
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        # First we have to pull the source code from the Github repository.
+        - Name: Source
+          Actions:
+            - Name: Application
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: !Ref GitHubOrg
+                OAuthToken: !Sub "{{resolve:ssm:GitHubToken}}"
+                Repo: !Ref AppRepo
+                Branch: !Ref AppRepoBranch
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: SourceArtifact
+        - Name: Testing
+          Actions:
+            - Name: WebAppUnitTestsBuild
+              Namespace: AppUnitTestingVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub "${ProjectName}-${EnvironmentName}-app-build-tests"
+                TemplatePath: SourceArtifact::infrastructure/stacks/app-tests-build.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub |
+                  { 
+                  	"EnvironmentName": "${EnvironmentName}",
+                    "ProjectName": "${ProjectName}",
+                  	"DomainName": "${DomainName}",
+                    "DatabaseName": "${DatabaseName}"
+                  }
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - !If
+              - SetupVeracode
+              - Name: SASTScanBuild
+                Namespace: SASTScanVars
+                ActionTypeId:
+                  Category: Deploy
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CloudFormation
+                Configuration:
+                  ActionMode: CREATE_UPDATE
+                  RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                  StackName: !Sub "${ProjectName}-${EnvironmentName}-sast-scan"
+                  TemplatePath: SourceArtifact::infrastructure/stacks/sast-scan.yaml
+                  Capabilities: CAPABILITY_NAMED_IAM
+                  ParameterOverrides: !Sub |
+                    { 
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectName": "${ProjectName}",
+                      "VeracodeSandboxName": "aws-codebuild-${EnvironmentName}"
+                    }
+                InputArtifacts:
+                  - Name: SourceArtifact
+                RunOrder: 1
+              - !Ref AWS::NoValue
+            - !If
+              - SetupVeracode
+              - Name: SASTScanWeeklyBuild
+                ActionTypeId:
+                  Category: Deploy
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CloudFormation
+                Configuration:
+                  ActionMode: CREATE_UPDATE
+                  RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                  StackName: !Sub "${ProjectName}-${EnvironmentName}-sast-scan-weekly"
+                  TemplatePath: SourceArtifact::infrastructure/stacks/sast-scan-weekly.yaml
+                  Capabilities: CAPABILITY_NAMED_IAM
+                  ParameterOverrides: !Sub |
+                    { 
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectName": "${ProjectName}",
+                      "VeracodeSandboxName": "aws-codebuild-${EnvironmentName}",
+                      "GitHubOrg": "${GitHubOrg}",
+                      "AppRepo": "${AppRepo}"
+                    }
+                InputArtifacts:
+                  - Name: SourceArtifact
+              - !Ref AWS::NoValue
+            # app unit test
+            - Name: WebAppUnitTests
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: "#{AppUnitTestingVars.CodeBuildProject}"
+                PrimarySource: SourceArtifact
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 2
+            # SAST scan
+            - !If
+              - SetupVeracode
+              - Name: SASTScan
+                ActionTypeId:
+                  Category: Build
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CodeBuild
+                Configuration:
+                  ProjectName: "#{SASTScanVars.CodeScanProject}"
+                  PrimarySource: SourceArtifact
+                InputArtifacts:
+                  - Name: SourceArtifact
+                RunOrder: 3
+              - !Ref AWS::NoValue
+        - Name: Resources
+          Actions:
+            #ContainerBuild - container image CodeBuild project
+            - Name: ContainerBuildProject
+              Namespace: ContainerBuildVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub "${ProjectName}-${EnvironmentName}-container-build"
+                TemplatePath: SourceArtifact::infrastructure/stacks/container-build.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub
+                  - |
+                    { 
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectName": "${ProjectName}",
+                      "DomainName": "${DomainName}",
+                      "DatabaseName": "${DatabaseName}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}",
+                      "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
+                    }
+                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+              InputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 5
+
+            # Deploy updated container image to repository
+            - Name: Deploy
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: "1"
+                Provider: CodeBuild
+              Configuration:
+                ProjectName: "#{ContainerBuildVars.CodeBuildProject}"
+                PrimarySource: SourceArtifact
+              InputArtifacts:
+                - Name: SourceArtifact
+              OutputArtifacts:
+                - Name: BuildOutput
+              RunOrder: 6
+
+  # Infrastructure pipeline
+  InfrastructurePipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-infrastructure-pipeline
+      Tags:
+        - Key: EnvironmentName
+          Value: !Ref EnvironmentName
+      RoleArn: !GetAtt CodePipelineServiceRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Containers
+          Actions:
+            - Name: Primary
+              Namespace: ContainerVars
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: ECR
+                Version: "1"
+              Configuration:
+                RepositoryName: !Sub ${ProjectName}-${EnvironmentName}
+                ImageTag: latest
+              InputArtifacts: []
+              OutputArtifacts:
+                - Name: SourceArtifact
+              RunOrder: 1
+            - Name: Infrastructure
+              ActionTypeId:
+                Category: Source
+                Owner: ThirdParty
+                Provider: GitHub
+                Version: "1"
+              Configuration:
+                Owner: !Ref GitHubOrg
+                OAuthToken: !Sub "{{resolve:ssm:GitHubToken}}"
+                Repo: !Ref InfrastructureRepo
+                Branch: !Ref InfrastructureRepoBranch
+                PollForSourceChanges: false
+              OutputArtifacts:
+                - Name: InfrastructureArtifact
+              RunOrder: 1
+
+        - Name: Resources
+          Actions:
+            # Fargate Cluster
+            - Name: FargateCluster
+              Namespace: ClusterVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub "${ProjectName}-${EnvironmentName}-fargate-cluster"
+                TemplatePath: InfrastructureArtifact::stacks/fargate-cluster.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub |
+                  {
+                    "EnvironmentName": "${EnvironmentName}",
+                    "ProjectName": "${ProjectName}",
+                    "VPCID": "${VPCID}"
+                  }
+              InputArtifacts:
+                - Name: InfrastructureArtifact
+              RunOrder: 1
+
+            # Load Balancer
+            - Name: LoadBalancer
+              Namespace: LoadBalancerVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub "${ProjectName}-${EnvironmentName}-load-balancer"
+                TemplatePath: InfrastructureArtifact::stacks/load-balancer.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub
+                  - |
+                    {
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectName": "${ProjectName}",
+                      "DomainName": "${DomainName}",
+                      "HostedZoneId": "${HostedZoneId}",
+                      "LoadBalancerAccessType": "${LoadBalancerAccessType}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}",
+                      "WAFArn": "${WAFArn}"
+                    }
+                  - VPCSubnets:
+                      !If [
+                        IsPrivateALB,
+                        !Join [",", !Ref VPCPrivateSubnets],
+                        !Join [",", !Ref VPCPublicSubnets],
+                      ]
+              InputArtifacts:
+                - Name: InfrastructureArtifact
+              RunOrder: 1
+
+            # SES Configuration
+            - Name: Email
+              Namespace: EmailVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub "${ProjectName}-${EnvironmentName}-email"
+                TemplatePath: InfrastructureArtifact::stacks/email.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub |
+                  {
+                    "EnvironmentName": "${EnvironmentName}",
+                    "ProjectName": "${ProjectName}",
+                    "DomainName": "${DomainName}",
+                    "HostedZoneId": "${HostedZoneId}"
+                  }
+              InputArtifacts:
+                - Name: InfrastructureArtifact
+              RunOrder: 1
+
+            # Database
+            - !If
+              - SetupDB
+              - Name: Database
+                Namespace: DBVars
+                ActionTypeId:
+                  Category: Deploy
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CloudFormation
+                Configuration:
+                  ActionMode: CREATE_UPDATE
+                  RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                  StackName: !Sub "${ProjectName}-${EnvironmentName}-database"
+                  TemplatePath: InfrastructureArtifact::stacks/database.yaml
+                  Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
+                  ParameterOverrides: !Sub
+                    - |
+                      {
+                        "EnvironmentName": "${EnvironmentName}",
+                        "VPCID": "${VPCID}",
+                        "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
+                        "DatabaseName":"${DatabaseName}",
+                        "DatabaseEngine": "${DatabaseEngine}",
+                        "DatabaseSubnetList": "${VPCSubnets}",
+                        "ProjectName": "${ProjectName}"
+                      }
+                    - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                InputArtifacts:
+                  - Name: InfrastructureArtifact
+                RunOrder: 2
+              - !Ref AWS::NoValue
+
+            # Database
+            - !If
+              - SetupEFS
+              - Name: EFS
+                Namespace: EFSVars
+                ActionTypeId:
+                  Category: Deploy
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CloudFormation
+                Configuration:
+                  ActionMode: CREATE_UPDATE
+                  RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                  StackName: !Sub "${ProjectName}-${EnvironmentName}-efs"
+                  TemplatePath: InfrastructureArtifact::stacks/efs.yaml
+                  Capabilities: CAPABILITY_NAMED_IAM
+                  ParameterOverrides: !Sub
+                    - |
+                      {
+                        "EnvironmentName": "${EnvironmentName}",
+                        "ProjectName": "${ProjectName}",
+                        "VPCID": "${VPCID}",
+                        "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
+                        "VPCSubnets": "${VPCSubnets}",
+                        "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}"
+                      }
+                    - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                InputArtifacts:
+                  - Name: InfrastructureArtifact
+                RunOrder: 2
+              - !Ref AWS::NoValue
+
+            # authentication
+            - !If
+              - SetupAuth
+              - Name: AuthProvider
+                Namespace: AuthVars
+                ActionTypeId:
+                  Category: Deploy
+                  Owner: AWS
+                  Version: "1"
+                  Provider: CloudFormation
+                Configuration:
+                  ActionMode: CREATE_UPDATE
+                  RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                  StackName: !Sub "${ProjectName}-${EnvironmentName}-auth"
+                  TemplatePath: InfrastructureArtifact::stacks/auth.yaml
+                  Capabilities: CAPABILITY_NAMED_IAM
+                  ParameterOverrides: !Sub |
+                    {
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectURL": "${DomainName}",
+                      "DBAdminSecret": "#{DBVars.DBAdminPassword}",
+                      "DBCluster": "#{DBVars.DatabaseCluster}"
+                    }
+                InputArtifacts:
+                  - Name: InfrastructureArtifact
+                RunOrder: 3
+              - !Ref AWS::NoValue
+
+        - Name: Deploy
+          Actions:
+            # Fargate Service
+            - Name: FargateService
+              Namespace: FargateServiceVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub "${ProjectName}-${EnvironmentName}-fargate-service"
+                TemplatePath: InfrastructureArtifact::stacks/fargate-service.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub
+                  - |
+                    {
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectName": "${ProjectName}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}",
+                      "ImageUrl": "#{ContainerVars.ImageURI}",
+                      "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
+                      "EFSFileSystem": "#{EFSVars.FileSystemResource}",
+                      "PrivateEFSFileSystem": "#{EFSVars.PrivateFileSystemResource}"
+                    }
+                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+              InputArtifacts:
+                - Name: InfrastructureArtifact
+              RunOrder: 1
+
+        # - Name: Testing (Burpsuite)
+
+  ImageSourceWebHook:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: "{{resolve:ssm:GitHubToken}}"
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      RegisterWithThirdParty: true
+      TargetAction: Application
+      TargetPipeline: !Ref ImagePipeline
+      TargetPipelineVersion: !GetAtt ImagePipeline.Version
+
+  InfrastructureSourceWebHook:
+    Type: AWS::CodePipeline::Webhook
+    Properties:
+      Authentication: GITHUB_HMAC
+      AuthenticationConfiguration:
+        SecretToken: "{{resolve:ssm:GitHubToken}}"
+      Filters:
+        - JsonPath: "$.ref"
+          MatchEquals: refs/heads/{Branch}
+      RegisterWithThirdParty: true
+      TargetAction: Infrastructure
+      TargetPipeline: !Ref InfrastructurePipeline
+      TargetPipelineVersion: !GetAtt InfrastructurePipeline.Version

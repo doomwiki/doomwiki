@@ -1,0 +1,234 @@
+Transform: AWS::SecretsManager-2020-07-23
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    Description: Enter stage (dev, staging, prod)
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+  VPCDefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+  DatabaseSubnetList:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Enter at least two subnet IDs for the database cluster
+  DatabaseName:
+    Type: String
+    Description: Name of primary database
+  DatabaseEngine:
+    Default: aurora-postgresql
+    Description: Engine for database (default PostgreSQL)
+    Type: String
+    AllowedValues:
+      - aurora-postgresql
+      - aurora-mysql
+  DatabasePort:
+    Type: Number
+    Default: "5000"
+
+Conditions:
+  Production: !Equals [!Ref EnvironmentName, prod]
+  IsPostgreSQLDB: !Equals [!Ref DatabaseEngine, aurora-postgresql]
+  IsMySQLDB: !Equals [!Ref DatabaseEngine, aurora-mysql]
+
+Resources:
+  DatabasePassword:
+    Type: "AWS::SecretsManager::Secret"
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}DatabasePassword
+      Description: !Sub "Dynamically generated secret password for ${ProjectName} ${EnvironmentName} database"
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "db_admin"}'
+        GenerateStringKey: "password"
+        PasswordLength: 41
+        ExcludeCharacters: '"@/\.:%?`'
+
+  DatabasePasswordRotationSchedule:
+    Type: "AWS::SecretsManager::RotationSchedule"
+    DependsOn: SecretRDSInstanceAttachment
+    Properties:
+      RotateImmediatelyOnUpdate: true
+      SecretId: !Ref DatabasePassword
+      HostedRotationLambda:
+        RotationType: MySQLSingleUser
+        RotationLambdaName: !Sub ${ProjectName}-${EnvironmentName}-DatabasePasswordRotation
+        VpcSecurityGroupIds: !Ref VPCDefaultSecurityGroup
+        VpcSubnetIds: !Join [",", !Ref DatabaseSubnetList]
+        ExcludeCharacters: '"@/\.:%?`'
+      RotationRules:
+        AutomaticallyAfterDays: 90
+        Duration: 2h
+
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds: !Ref DatabaseSubnetList
+
+  PostgreSQLClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Condition: IsPostgreSQLDB
+    Properties:
+      Description: "DB cluster parameter group"
+      Family: aurora-postgresql14
+      Parameters:
+        log_connections: yes
+        timezone: US/Eastern
+
+  MySQLClusterParameterGroup:
+    Type: AWS::RDS::DBClusterParameterGroup
+    Condition: IsMySQLDB
+    Properties:
+      Description: "DB cluster parameter group"
+      Family: aurora-mysql8.0
+      Parameters:
+        time_zone: US/Eastern
+        tls_version: TLSv1.2
+        server_audit_logging: 1
+        server_audit_events: CONNECT,QUERY,TABLE
+
+  MySQLInstanceParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Condition: IsMySQLDB
+    Properties:
+      Description: "DB instance parameter group"
+      Family: aurora-mysql8.0
+      Parameters:
+        aurora_parallel_query: yes
+
+  SGCidrPrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: "Mathematica Network"
+      AddressFamily: "IPv4"
+      MaxEntries: 3
+      Entries:
+        - Cidr: "10.0.0.0/13"
+          Description: "CIDR Block #1"
+        - Cidr: "10.8.0.0/15"
+          Description: "CIDR Block #2"
+        - Cidr: "10.10.0.0/16"
+          Description: "CIDR Block #3"
+      Tags:
+        - Key: "Name"
+          Value: "Mathematica Network"
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-${EnvironmentName}-database-cluster
+      GroupDescription: !Sub Access ${ProjectName} database cluster
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - SourcePrefixListId: !Ref SGCidrPrefixList
+          IpProtocol: tcp
+          FromPort: !Ref DatabasePort
+          ToPort: !Ref DatabasePort
+        - SourceSecurityGroupId:
+            Fn::ImportValue: !Sub "${ProjectName}-${EnvironmentName}:FargateContainerSecurityGroup"
+          IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref VPCDefaultSecurityGroup
+          IpProtocol: "-1"
+
+  EnhancedMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub DatabaseEnhancedMonitoringRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [monitoring.rds.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: !Sub DatabaseEnhancedMonitoringPolicy-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:PutRetentionPolicy"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:DescribeLogStreams"
+                  - "logs:GetLogEvents"
+                Resource: "*"
+
+  DatabaseCluster:
+    Type: AWS::RDS::DBCluster
+    Properties:
+      CopyTagsToSnapshot: true
+      DatabaseName: !Ref DatabaseName
+      BackupRetentionPeriod: !If [Production, 30, 7]
+      DBClusterParameterGroupName:
+        !If [
+          IsMySQLDB,
+          !Ref MySQLClusterParameterGroup,
+          !Ref PostgreSQLClusterParameterGroup,
+        ]
+      DBSubnetGroupName: !Ref "DatabaseSubnetGroup"
+      DeletionProtection: true
+      EnableIAMDatabaseAuthentication: true
+      Engine: !Ref DatabaseEngine
+      MasterUsername: !Sub "{{resolve:secretsmanager:${DatabasePassword}::username}}"
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DatabasePassword}::password}}"
+      # ManageMasterUserPassword: true
+      MasterUserSecret:
+        SecretArn: !Ref DatabasePassword
+      NetworkType: DUAL
+      Port: !Ref DatabasePort
+      PreferredBackupWindow: 01:00-02:00
+      PreferredMaintenanceWindow: mon:03:00-mon:04:00
+      ServerlessV2ScalingConfiguration:
+        MaxCapacity: 8
+        MinCapacity: 0.5
+      StorageEncrypted: true
+      VpcSecurityGroupIds:
+        - !Ref DatabaseSecurityGroup
+
+  DatabaseInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      CACertificateIdentifier: rds-ca-rsa2048-g1
+      CopyTagsToSnapshot: true
+      DBClusterIdentifier: !Ref DatabaseCluster
+      DBInstanceClass: db.serverless
+      Engine: !Ref DatabaseEngine
+      MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt EnhancedMonitoringRole.Arn
+      EnablePerformanceInsights: true
+      DBParameterGroupName:
+        !If [IsMySQLDB, !Ref MySQLInstanceParameterGroup, !Ref AWS::NoValue]
+
+  DatabaseInstance2:
+    Condition: Production
+    Type: AWS::RDS::DBInstance
+    Properties:
+      CACertificateIdentifier: rds-ca-rsa2048-g1
+      DBClusterIdentifier: !Ref DatabaseCluster
+      DBInstanceClass: db.serverless
+      CopyTagsToSnapshot: true
+      Engine: !Ref DatabaseEngine
+      MonitoringInterval: 60
+      MonitoringRoleArn: !GetAtt EnhancedMonitoringRole.Arn
+      EnablePerformanceInsights: true
+      DBParameterGroupName:
+        !If [IsMySQLDB, !Ref MySQLInstanceParameterGroup, !Ref AWS::NoValue]
+
+  #This is a SecretTargetAttachment resource which updates the referenced Secret resource with properties about
+  #the referenced RDS instance
+  SecretRDSInstanceAttachment:
+    Type: "AWS::SecretsManager::SecretTargetAttachment"
+    Properties:
+      SecretId: !Ref DatabasePassword
+      TargetId: !Ref DatabaseCluster
+      TargetType: AWS::RDS::DBCluster
+
+Outputs:
+  DatabaseCluster:
+    Description: Database cluster information
+    Value: !Ref DatabaseCluster

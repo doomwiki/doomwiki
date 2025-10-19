@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Internal private facing load balancer, for forwarding private traffic to containers
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    Description: Environment name
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  DomainName:
+    Description: Optional custom domain name attached to the load balancer
+    Type: String
+  HostedZoneId:
+    Description: Custom hosted zone
+    Type: String
+
+Resources:
+  EmailConfigurationSet:
+    Type: AWS::SES::ConfigurationSet
+    Properties:
+      DeliveryOptions:
+        TlsPolicy: REQUIRE
+      Name: !Sub "${ProjectName}-${EnvironmentName}"
+      ReputationOptions:
+        ReputationMetricsEnabled: true
+      SendingOptions:
+        SendingEnabled: True
+      SuppressionOptions:
+        SuppressedReasons:
+          - COMPLAINT
+          - BOUNCE
+
+  EmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      ConfigurationSetAttributes:
+        ConfigurationSetName: !Ref EmailConfigurationSet
+      DkimAttributes:
+        SigningEnabled: true
+      DkimSigningAttributes:
+        NextSigningKeyLength: RSA_2048_BIT
+      EmailIdentity: !Ref DomainName
+      FeedbackAttributes:
+        EmailForwardingEnabled: true
+      MailFromAttributes:
+        BehaviorOnMxFailure: USE_DEFAULT_VALUE
+        MailFromDomain: !Sub "mail.${DomainName}"
