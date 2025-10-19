@@ -159,11 +159,11 @@ Resources:
           Value: access-log
         - Key: deletion_protection.enabled
           Value: "true"
-      #Subnets: !Split
-      #  - ","
-      #  - !Join
-      #    - ","
-      #    - !Ref VPCSubnets
+      Subnets: !Split
+        - ","
+        - !Join
+          - ","
+          - !Ref VPCSubnets
       SecurityGroups:
         - !Ref LoadBalancerSecurityGroup
   LoadBalancerWAFAssociation:

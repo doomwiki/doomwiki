@@ -35,10 +35,10 @@ Conditions:
   IsMySQLDB: !Equals [!Ref DatabaseEngine, aurora-mysql]
 
 Resources:
-  DatabasePassword:
+  DatabaseSecret:
     Type: "AWS::SecretsManager::Secret"
     Properties:
-      Name: !Sub ${ProjectName}-${EnvironmentName}DatabasePassword
+      Name: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret
       Description: !Sub "Dynamically generated secret password for ${ProjectName} ${EnvironmentName} database"
       GenerateSecretString:
         SecretStringTemplate: '{"username": "db_admin"}'
@@ -46,15 +46,15 @@ Resources:
         PasswordLength: 41
         ExcludeCharacters: '"@/\.:%?`'
 
-  #DatabasePasswordRotationSchedule:
+  #DatabaseSecretRotationSchedule:
   #  Type: "AWS::SecretsManager::RotationSchedule"
   #  DependsOn: SecretRDSInstanceAttachment
   #  Properties:
   #    RotateImmediatelyOnUpdate: true
-  #    SecretId: !Ref DatabasePassword
+  #    SecretId: !Ref DatabaseSecret
   #    HostedRotationLambda:
   #      RotationType: MySQLSingleUser
-  #      RotationLambdaName: !Sub ${ProjectName}-${EnvironmentName}-DatabasePasswordRotation
+  #      RotationLambdaName: !Sub ${ProjectName}-${EnvironmentName}-DatabaseSecretRotation
   #      #VpcSecurityGroupIds: !Ref DefaultSecurityGroup
   #      #VpcSubnetIds: !Join [",", !Ref DatabaseSubnetList]
   #      ExcludeCharacters: '"@/\.:%?`'
@@ -174,11 +174,11 @@ Resources:
       DeletionProtection: true
       EnableIAMDatabaseAuthentication: true
       Engine: !Ref DatabaseEngine
-      MasterUsername: !Sub "{{resolve:secretsmanager:${DatabasePassword}::username}}"
-      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DatabasePassword}::password}}"
+      MasterUsername: !Sub "{{resolve:secretsmanager:${DatabaseSecret}::username}}"
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DatabaseSecret}::password}}"
       # ManageMasterUserPassword: true
       MasterUserSecret:
-        SecretArn: !Ref DatabasePassword
+        SecretArn: !Ref DatabaseSecret
       NetworkType: DUAL
       Port: !Ref DatabasePort
       PreferredBackupWindow: 01:00-02:00
@@ -224,7 +224,7 @@ Resources:
   SecretRDSInstanceAttachment:
     Type: "AWS::SecretsManager::SecretTargetAttachment"
     Properties:
-      SecretId: !Ref DatabasePassword
+      SecretId: !Ref DatabaseSecret
       TargetId: !Ref DatabaseCluster
       TargetType: AWS::RDS::DBCluster
 
