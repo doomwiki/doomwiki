@@ -1,0 +1,18 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby",
+			"Purodha",
+			"SPQRobin",
+			"Shirayuki",
+			"The Evil IP address",
+			"Umherirrender"
+		]
+	},
+	"randomincategory": "{{doc-special|RandomInCategory}}\n{{Identical|Random page in category}}",
+	"randomincategory-desc": "{{desc|name=Random In Category|url=https://www.mediawiki.org/wiki/Extension:Random_In_Category}}",
+	"randomincategory-toolbox": "Part of the \"RandomInCategory\" extension. This message is shown in the toolbox, but only on category pages. It goes directly to a random page in the category you are viewing. You can also go the the special page {{msg-mw|Randomincategory}} (Special:Randomincategory) to enter a category name manually.\n{{Identical|Random page}}",
+	"randomincategory-nocategory": "Part of the \"RandomInCategory\" extension. This message is an error if you requested a random page in a category which does not exist.\n\nParameters:\n* $1 - category name",
+	"randomincategory-label": "Part of the \"RandomInCategory\" extension. This message is next to the inputbox to type the name of a category.\n\n{{Identical|Category}}",
+	"randomincategory-submit": "Used as label for the Submit button on [[Special:RandomInCategory]].\n{{Identical|Go}}"
+}

@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fryed-peach",
+			"Hosiryuhosi",
+			"Shirayuki",
+			"青子守歌",
+			"Rxy"
+		]
+	},
+	"randomincategory": "カテゴリ内でおまかせ表示",
+	"randomincategory-desc": "カテゴリ内からページを無作為抽出する[[Special:Randompageincategory|特別ページ]]",
+	"randomincategory-toolbox": "おまかせ表示",
+	"randomincategory-nocategory": "カテゴリ $1 は存在しない、または空です",
+	"randomincategory-label": "カテゴリ:",
+	"randomincategory-submit": "表示"
+}

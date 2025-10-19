@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Mormegil"
+		]
+	},
+	"uploadblacklist-desc": "Přidává funkcionalitu černé listiny pro načítání souborů"
+}

@@ -1,0 +1,26 @@
+!! test
+Basic #replaceset usage
+!! input
+{{#replaceset:Text to replace|/(\w+)/i="\1"|to=2}}
+!! result
+<p>"Text" "2" "replace"
+</p>
+!! end
+
+!! test
+Simple text replacement of equals in nowiki
+!! input
+{{#replaceset:Foo=bar=baz|<nowiki>=</nowiki>=!}}
+!! result
+<p>Foo!bar!baz
+</p>
+!! end
+
+!! test
+Regexp text replacement of equals in nowiki
+!! input
+{{#replaceset:Foo=bar=baz|<nowiki>/=/</nowiki>=!}}
+!! result
+<p>Foo!bar!baz
+</p>
+!! end

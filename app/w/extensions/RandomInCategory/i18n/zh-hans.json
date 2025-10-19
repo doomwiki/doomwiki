@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gzdavidwong",
+			"Xiaomingyan",
+			"Yfdyh000"
+		]
+	},
+	"randomincategory": "分类中随机页面",
+	"randomincategory-desc": "获取分类中随机页面的[[Special:Randompageincategory|特殊页面]]",
+	"randomincategory-toolbox": "随机页面",
+	"randomincategory-nocategory": "分类 $1 不存在或是空的",
+	"randomincategory-label": "分类：",
+	"randomincategory-submit": "提交"
+}

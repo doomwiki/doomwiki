@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Passawuth"
+		]
+	},
+	"editcount": "จำนวนการแก้ไข",
+	"editcount-desc": "แสดง [[Special:Editcount|จำนวนการแก้ไข]] ของผู้ใช้",
+	"editcount_username": "ผู้ใช้:",
+	"editcount_submit": "ตกลง",
+	"editcount_total": "รวม"
+}

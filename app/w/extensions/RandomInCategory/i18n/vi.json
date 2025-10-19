@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Minh Nguyen",
+			"Vinhtantran"
+		]
+	},
+	"randomincategory": "Trang ngẫu nhiên trong thể loại",
+	"randomincategory-desc": "[[Special:Randompageincategory|Trang đặc biệt]] để xem một trang ngẫu nhiên trong thể loại",
+	"randomincategory-toolbox": "Trang ngẫu nhiên",
+	"randomincategory-nocategory": "Thể loại $1 không tồn tại hoặc đang trống",
+	"randomincategory-label": "Thể loại:",
+	"randomincategory-submit": "Xem"
+}

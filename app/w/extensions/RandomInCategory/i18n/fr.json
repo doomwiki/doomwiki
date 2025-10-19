@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cedric31",
+			"Grondin",
+			"Louperivois"
+		]
+	},
+	"randomincategory": "Page au hasard dans la catégorie",
+	"randomincategory-desc": "[[Special:Randompageincategory|Page spéciale]] pour obtenir une page au hasard dans une catégorie",
+	"randomincategory-toolbox": "Page au hasard",
+	"randomincategory-nocategory": "La catégorie « $1 » n’existe pas ou est vide",
+	"randomincategory-label": "Catégorie :",
+	"randomincategory-submit": "Lancer"
+}

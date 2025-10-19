@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Yekrats"
+		]
+	},
+	"randomincategory": "Hazarda paĝo en kategorio",
+	"randomincategory-desc": "[[Special:Randompageincategory|Speciala paĝo]] por iri al hazarda paĝo en kategorio",
+	"randomincategory-toolbox": "Hazarda paĝo",
+	"randomincategory-nocategory": "Kategorio $1 ne ekzistas aŭ estas malplena",
+	"randomincategory-label": "Kategorio:",
+	"randomincategory-submit": "Ek!"
+}

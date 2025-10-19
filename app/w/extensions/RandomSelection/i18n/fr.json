@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gomoko",
+			"Wladek92"
+		]
+	},
+	"randomselection-desc": "Affiche une option aléatoire issue de l’ensemble fourni"
+}

@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ajdar",
+			"Zahidulla",
+			"Ильнар"
+		]
+	},
+	"abusefilter-desc": "Үзгәртүләргә эвристик ысуллар кулланырга мөмкинлек бирә.",
+	"abuselog": "Яман эшләр көндәлеге",
+	"abusefilter-log": "Яман эшләр көндәлеге",
+	"abusefilter-log-linkoncontribs": "яман эшләр көндәлеге",
+	"abusefilter-status-global": "Глобаль",
+	"abusefilter-topnav-log": "Яман эшләр көндәлеге",
+	"abusefilter-log-name": "Яман эшләр көндәлеге"
+}

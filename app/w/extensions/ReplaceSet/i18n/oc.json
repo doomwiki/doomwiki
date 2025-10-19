@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cedric31"
+		]
+	},
+	"replaceset-desc": "Apond una foncion parser <nowiki>{{#replaceset}}</nowiki> utilizada per remplaçar de seccions de tèxte amb de donadas formatadas",
+	"replaceset-error-calllimit": "Lo limit dels apèls a la foncion ReplaceSet ($1) es estat atench.",
+	"replaceset-error-regexnoend": "Lo delimitador de fin « $2 » es mancant dins lo motiu de l’expression regulara « $1 »",
+	"replaceset-error-regexbadmodifier": "Lo modificador d’expression regulara  « $1 » es invalid."
+}

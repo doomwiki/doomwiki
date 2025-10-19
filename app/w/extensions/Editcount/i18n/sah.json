@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"HalanTul"
+		]
+	},
+	"editcount": "Көннөрүүлэр ахсааннара",
+	"editcount-desc": "Кыттааччы [[Special:Editcount|көннөрүүтүн ахсаанын]] көрдөрөр",
+	"editcount_username": "Кыттааччы:",
+	"editcount_submit": "Ааҕарга",
+	"editcount_total": "Барыта"
+}

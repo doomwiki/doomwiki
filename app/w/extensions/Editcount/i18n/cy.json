@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Lloffiwr"
+		]
+	},
+	"editcount": "Nifer y golygiadau",
+	"editcount-desc": "Yn dangos [[Special:Editcount|nifer golygiadau]] rhyw ddefnyddiwr",
+	"editcount_username": "Defnyddiwr:",
+	"editcount_submit": "Holi",
+	"editcount_total": "Cyfanswm"
+}

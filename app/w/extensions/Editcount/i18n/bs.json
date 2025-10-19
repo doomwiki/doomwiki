@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"CERminator"
+		]
+	},
+	"editcount": "Brojač izmjena",
+	"editcount-desc": "Prikazuje [[Special:Editcount|brojač izmjena]] korisnika",
+	"editcount_username": "Korisnik:",
+	"editcount_submit": "Pošalji",
+	"editcount_total": "Ukupno"
+}

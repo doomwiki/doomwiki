@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Michawiki"
+		]
+	},
+	"randomincategory": "Připadna strona w kategoriji",
+	"randomincategory-desc": "[[Special:Randompageincategory|Specialna strona]], zo by připadnu stronu do kategorije přewzała",
+	"randomincategory-toolbox": "Připadna strona",
+	"randomincategory-nocategory": "Kategorija $1 njeeksistuje abo je prózdna",
+	"randomincategory-label": "Kategorija:",
+	"randomincategory-submit": "W porjadku"
+}

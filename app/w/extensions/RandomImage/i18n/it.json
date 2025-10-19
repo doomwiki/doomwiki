@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Darth Kule"
+		]
+	},
+	"randomimage-desc": "Fornisce un raccoglitore di file casuali utilizzando il tag <code>&lt;randomimage /&gt;</code>"
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Pandukht"
+		]
+	},
+	"randomincategory": "Կատեգորիայի պատահական էջ",
+	"randomincategory-desc": "[[Special:Randompageincategory|Սպասարկող էջ]] կատեգորիայի պատահական էջի ստացման համար",
+	"randomincategory-toolbox": "Պատահական էջ",
+	"randomincategory-nocategory": "$1 կատեգորիան գոյություն չունի կամ դատարկ է",
+	"randomincategory-label": "Կատեգորիա:",
+	"randomincategory-submit": "Անցնել"
+}

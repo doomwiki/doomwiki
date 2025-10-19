@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Siebrand"
+		]
+	},
+	"opengraphmeta-desc": "Voegt metalabels voor OpenGraph toe die door Facebookknop \"Vind ik leuk\" worden gebruikt"
+}

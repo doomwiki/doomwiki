@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Helix84",
+			"Michawiki"
+		]
+	},
+	"randomincategory": "Náhodná stránka v kategórii",
+	"randomincategory-desc": "[[Special:Randompageincategory|Špeciálna stránka]] na výber náhodnej stránky z kategórie",
+	"randomincategory-toolbox": "Náhodná stránka",
+	"randomincategory-nocategory": "Kategória $1 neexistuje alebo je prázdna",
+	"randomincategory-label": "Kategória:",
+	"randomincategory-submit": "Vykonať"
+}

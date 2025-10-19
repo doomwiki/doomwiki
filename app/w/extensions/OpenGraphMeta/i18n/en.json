@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Daniel Friesen"
+		]
+	},
+	"opengraphmeta-desc": "Adds OpenGraph meta tags used by Facebook's Like button",
+	"seo-keywords-missing": "Content is missing inside the metakeys tag.",
+	"seo-default-keywords": ""
+}

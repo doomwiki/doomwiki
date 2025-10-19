@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Xuacu"
+		]
+	},
+	"editcount": "Contador d'ediciones",
+	"editcount-desc": "Amuesa [[Special:Editcount|la cuenta d'ediciones]] d'un usuariu",
+	"editcount_username": "Usuariu:",
+	"editcount_submit": "Unviar",
+	"editcount_total": "Total"
+}

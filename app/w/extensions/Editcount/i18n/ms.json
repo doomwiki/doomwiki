@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Anakmalaysia",
+			"Aurora",
+			"Aviator"
+		]
+	},
+	"editcount": "Jumlah suntingan",
+	"editcount-desc": "Memaparkan [[Special:Editcount|jumlah suntingan]] bagi pengguna",
+	"editcount_username": "Pengguna:",
+	"editcount_submit": "Hantar",
+	"editcount_total": "Jumlah"
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"David1010",
+			"Malafaya"
+		]
+	},
+	"editcount": "რედაქტირებათა მთვლელი",
+	"editcount-desc": "აჩვენებს მომხმარებლის [[Special:Editcount|რედაქტირებების რაოდენობას]]",
+	"editcount_username": "მომხმარებელი:",
+	"editcount_submit": "მიღება",
+	"editcount_total": "სულ"
+}

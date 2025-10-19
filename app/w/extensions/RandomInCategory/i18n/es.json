@@ -1,0 +1,17 @@
+{
+	"@metadata": {
+		"authors": [
+			"Crazymadlover",
+			"Fitoschido",
+			"Imre",
+			"Jatrobat",
+			"Sanbec"
+		]
+	},
+	"randomincategory": "Página aleatoria en categoría",
+	"randomincategory-desc": "[[Special:Randompageincategory|página especial]] para obtener una página al azar en una categoría",
+	"randomincategory-toolbox": "Página aleatoria",
+	"randomincategory-nocategory": "La categoría $1 no existe o está vacía",
+	"randomincategory-label": "Categoría:",
+	"randomincategory-submit": "Ir"
+}

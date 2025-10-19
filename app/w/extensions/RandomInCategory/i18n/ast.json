@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Xuacu"
+		]
+	},
+	"randomincategory": "Páxina de la categoría al debalu",
+	"randomincategory-desc": "[[Special:Randompageincategory|Páxina especial]] p'abrir una páxina de la categoría al debalu",
+	"randomincategory-toolbox": "Páxina al debalu",
+	"randomincategory-nocategory": "La categoría $1 nun esiste o ta balera",
+	"randomincategory-label": "Categoría:",
+	"randomincategory-submit": "Dir"
+}

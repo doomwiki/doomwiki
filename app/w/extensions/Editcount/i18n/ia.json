@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"editcount": "Contator de modificationes",
+	"editcount-desc": "Monstra le [[Special:Editcount|contator de modificationes]] de un usator",
+	"editcount_username": "Usator:",
+	"editcount_submit": "Submitter",
+	"editcount_total": "Total"
+}

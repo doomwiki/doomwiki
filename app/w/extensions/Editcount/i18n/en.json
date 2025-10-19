@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Rob Church"
+		]
+	},
+	"editcount": "Edit count",
+	"editcount-desc": "Displays [[Special:Editcount|edit count]] of a user",
+	"editcount_username": "User:",
+	"editcount_submit": "Submit",
+	"editcount_total": "Total"
+}

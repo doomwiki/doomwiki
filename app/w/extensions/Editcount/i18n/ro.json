@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Firilacroco",
+			"KlaudiuMihaila",
+			"Minisarm"
+		]
+	},
+	"editcount": "Contribuții",
+	"editcount-desc": "Afișează [[Special:Editcount|contribuțiile]] unui utilizator",
+	"editcount_username": "Utilizator:",
+	"editcount_submit": "Trimite",
+	"editcount_total": "Total"
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Veeven"
+		]
+	},
+	"randomincategory": "వర్గంలోని యాదృచ్చిక పేజీ",
+	"randomincategory-desc": "ఓ వర్గంలోని యాదృచ్ఛిక పేజీని పొందడానికై [[Special:Randompageincategory|ప్రత్యేక పేజీ]]",
+	"randomincategory-toolbox": "యాదృచ్ఛిక పేజీ",
+	"randomincategory-nocategory": "$1 అనే వర్గం లేదు లేదా ఖాళీగా ఉంది",
+	"randomincategory-label": "వర్గం:",
+	"randomincategory-submit": "వెళ్ళు"
+}

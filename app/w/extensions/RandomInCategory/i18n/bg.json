@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"DCLXVI"
+		]
+	},
+	"randomincategory": "Случайна страница в категорията",
+	"randomincategory-desc": "[[Special:Randompageincategory|Специална страница]] за извличане на случайна страница от категория",
+	"randomincategory-toolbox": "Случайна страница",
+	"randomincategory-nocategory": "Категорията $1 не съществува или е празна",
+	"randomincategory-label": "Категория:",
+	"randomincategory-submit": "Отваряне"
+}

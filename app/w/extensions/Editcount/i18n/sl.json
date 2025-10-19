@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334"
+		]
+	},
+	"editcount": "Število prispevkov",
+	"editcount-desc": "Prikaže [[Special:Editcount|števec urejanj]] uporabnika",
+	"editcount_username": "Uporabnik:",
+	"editcount_submit": "Pošlji",
+	"editcount_total": "Skupaj"
+}

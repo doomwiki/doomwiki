@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kaustubh"
+		]
+	},
+	"randomincategory": "वर्गातील अविशिष्ट पान",
+	"randomincategory-desc": "वर्गातील अविशिष्ट पान मिळविण्यासाठीचे [[Special:Randompageincategory|विशेष पान]]",
+	"randomincategory-toolbox": "अविशिष्ट पान",
+	"randomincategory-nocategory": "$1 वर्ग अस्तित्वात नाही किंवा रिकामा आहे",
+	"randomincategory-label": "वर्ग:",
+	"randomincategory-submit": "चला"
+}

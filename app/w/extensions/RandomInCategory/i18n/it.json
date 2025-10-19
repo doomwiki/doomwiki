@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Darth Kule"
+		]
+	},
+	"randomincategory": "Pagina casuale in una categoria",
+	"randomincategory-desc": "[[Special:Randompageincategory|Pagina speciale]] che dà una pagina casuale all'interno di una categoria",
+	"randomincategory-toolbox": "Una pagina a caso",
+	"randomincategory-nocategory": "La categoria $1 non esiste o è vuota",
+	"randomincategory-label": "Categoria:",
+	"randomincategory-submit": "Vai"
+}

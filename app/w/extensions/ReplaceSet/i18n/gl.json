@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Toliño"
+		]
+	},
+	"replaceset-desc": "Engade unha función analítica <nowiki>{{#replaceset}}</nowiki> utilizada para a substitución de fragmentos de texto por datos con formato",
+	"replaceset-error-calllimit": "Atinxiuse o límite de chamadas da función ReplaceSet ($1).",
+	"replaceset-error-regexnoend": "Fáltalle o delimitador de peche \"$2\" ao patrón de expresións regulares \"$1\"",
+	"replaceset-error-regexbadmodifier": "O modificador de expresións regulares \"$1\" non é válido."
+}

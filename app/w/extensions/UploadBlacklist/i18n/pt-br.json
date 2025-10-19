@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo.mps"
+		]
+	},
+	"uploadblacklist-desc": "Adiciona uma funcionalidade de lista negra para carregamento de arquivos"
+}

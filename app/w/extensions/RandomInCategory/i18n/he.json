@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Agbad",
+			"Rotemliss"
+		]
+	},
+	"randomincategory": "דף אקראי בקטגוריה",
+	"randomincategory-desc": "[[Special:Randompageincategory|דף מיוחד]] לקבלת דף אקראי בקטגוריה",
+	"randomincategory-toolbox": "דף אקראי",
+	"randomincategory-nocategory": "הקטגוריה $1 אינה קיימת או שהיא ריקה",
+	"randomincategory-label": "קטגוריה:",
+	"randomincategory-submit": "הצגה"
+}

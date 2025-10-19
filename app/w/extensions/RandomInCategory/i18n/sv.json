@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby",
+			"M.M.S.",
+			"WikiPhoenix"
+		]
+	},
+	"randomincategory": "Slumpsida i kategori",
+	"randomincategory-desc": "[[Special:Randompageincategory|Specialsida]] för att få en slumpsida från en kategori",
+	"randomincategory-toolbox": "Slumpsida",
+	"randomincategory-nocategory": "Kategorin $1 hittades inte, eller är tom",
+	"randomincategory-label": "Kategori:",
+	"randomincategory-submit": "Gå"
+}

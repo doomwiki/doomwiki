@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cekli829",
+			"Khan27",
+			"Wertuose"
+		]
+	},
+	"editcount": "Redaktə sayı",
+	"editcount-desc": "İstifadəçinin [[Special:Editcount|redaktə sayını]] göstərir",
+	"editcount_username": "İstifadəçi:",
+	"editcount_submit": "Hesabla",
+	"editcount_total": "Ümumi"
+}

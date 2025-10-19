@@ -1,0 +1,132 @@
+# Bots and download agents
+User-agent: Mediapartners-Google*
+Disallow: /
+
+User-agent: UbiCrawler
+Disallow: /
+
+User-agent: DOC
+Disallow: /
+
+User-agent: Zao
+Disallow: /
+
+User-agent: sitecheck.internetseer.com
+Disallow: /
+
+User-agent: Zealbot
+Disallow: /
+
+User-agent: MSIECrawler
+Disallow: /
+
+User-agent: SiteSnagger
+Disallow: /
+
+User-agent: WebStripper
+Disallow: /
+
+User-agent: WebCopier
+Disallow: /
+
+User-agent: Fetch
+Disallow: /
+
+User-agent: Offline Explorer
+Disallow: /
+
+User-agent: Teleport
+Disallow: /
+
+User-agent: TeleportPro
+Disallow: /
+
+User-agent: WebZIP
+Disallow: /
+
+User-agent: linko
+Disallow: /
+
+User-agent: HTTrack
+Disallow: /
+
+User-agent: Microsoft.URL.Control
+Disallow: /
+
+User-agent: Xenu
+Disallow: /
+
+User-agent: larbin
+Disallow: /
+
+User-agent: libwww
+Disallow: /
+
+User-agent: ZyBORG
+Disallow: /
+
+User-agent: Download Ninja
+Disallow: /
+
+User-agent: fast
+Disallow: /
+
+User-agent: MPBot
+Disallow: /
+
+User-agent: WebReaper
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: AhrefsBot
+Disallow: /
+
+# Command line tools that should be manually configured and not run in their default modes
+User-agent: wget
+Disallow: /
+
+User-agent: grub-client
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: TerraCotta
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: bingbot
+Crawl-delay: 3
+
+User-agent: Googlebot
+Crawl-delay: 2
+
+User-agent: GoogleOther
+Crawl-delay: 5
+
+User-agent: ImagesiftBot
+Crawl-delay: 5
+
+# Main rule; allow all except /w/images/cache; specify sitemap
+User-agent: *
+Disallow: /w/images/cache/
+Sitemap: https://doomwiki.org/w/sitemap.xml

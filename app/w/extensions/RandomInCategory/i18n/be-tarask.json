@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"EugeneZelenko",
+			"Jim-by"
+		]
+	},
+	"randomincategory": "Выпадковая старонка ў катэгорыі",
+	"randomincategory-desc": "[[Special:Randompageincategory|Спэцыяльная старонка]] для атрыманьня выпадковай старонкі ў катэгорыі",
+	"randomincategory-toolbox": "Выпадковая старонка",
+	"randomincategory-nocategory": "Катэгорыя $1 не існуе альбо пустая",
+	"randomincategory-label": "Катэгорыя:",
+	"randomincategory-submit": "Перайсьці"
+}

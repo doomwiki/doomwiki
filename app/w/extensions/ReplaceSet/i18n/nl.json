@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie",
+			"Siebrand"
+		]
+	},
+	"replaceset-desc": "Voegt de parserfunctie <nowiki>{{#replaceset}}</nowiki> toe voor het vervangen van tekstdelen met opgemaakte gegevens",
+	"replaceset-error-calllimit": "De limiet van het aantal aanroepen van ReplaceSet ($1) is bereikt.",
+	"replaceset-error-regexnoend": "In het patroon \"$1\" voor de reguliere expressie ontbreekt het sluitteken \"$2\"",
+	"replaceset-error-regexbadmodifier": "De modifier \"$1\" van de reguliere expressie is niet geldig."
+}

@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu",
+			"Malafaya"
+		]
+	},
+	"sitenotice_close": "ignorar",
+	"sitenotice-desc": "Permite aos utilizadores fecharem a notificação do site"
+}

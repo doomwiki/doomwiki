@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Grondin"
+		]
+	},
+	"randomimage-desc": "Fournit un média au hasard en utilisant <code>&lt;randomimage /&gt;</code>"
+}

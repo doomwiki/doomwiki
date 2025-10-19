@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ahonc"
+		]
+	},
+	"randomimage-desc": "Дозволяє випадково вибирати медіа за допомогою <code>&lt;randomimage /&gt;</code>"
+}

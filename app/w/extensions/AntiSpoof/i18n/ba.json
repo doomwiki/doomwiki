@@ -1,0 +1,30 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alfiya55",
+			"Assele",
+			"Haqmar",
+			"Вильданова Гюзель",
+			"Янмурза Баки"
+		]
+	},
+	"antispoof-desc": "Төрлө яҙма системаларының хәрефтәренән торған, яңылыштырырлыҡ һәм башҡа ҡатнашыусы исемдәренән оҡшаш исемле иҫәп яҙмаларҙы булдырыуҙы тыя.",
+	"antispoof-conflict-top": "\"$1\" исеме {{PLURAL:$2|ҡулланыусы исеменә|ҡулланыусылар исеменә}} бигерәк оҡшаш:",
+	"antispoof-conflict-bottom": "Зинһар, башҡа исем һайлағыҙ.",
+	"antispoof-name-illegal": "\"$1\" исемен ҡүлланыу түбәндәге оҡшаш исемдәр менән бутамау өсөн тыйылған: $2.\nЗинһар, башҡа исем һайлағыҙ.",
+	"antispoof-badtype": "Мәғлүмәт төрө дөрөҫ түгел",
+	"antispoof-empty": "Буш юл",
+	"antispoof-blacklisted": "Ҡара исемлектәге символ бар: $1",
+	"antispoof-combining": "Берләштереү билдәһе менән башлана: $1",
+	"antispoof-unassigned": "Рөхсәт ителмәгән символ бар: $1",
+	"antispoof-deprecated": "Ҡулланыуҙан сығарылған символ бар: $1",
+	"antispoof-noletters": "Бер хәреф тә юҡ",
+	"antispoof-mixedscripts": "Берләштереү мөмкин булмаған яҙма системаларының хәрефтәре бар",
+	"antispoof-tooshort": "Ҡанунлаштырылған исем бигерәк ҡыҫҡа",
+	"antispoof-ignore": "Оҡшаш исемдәргә тикшереүҙе иғтибарға алмаҫҡа",
+	"right-override-antispoof": "Оҡшаш исемдәргә тикшереүҙе иғтибарһыҙ ҡалдырыу",
+	"apihelp-antispoof-description": "Чек-бокс AntiSpoof's normalisation ҡаршыһында ҡулланыусы исемен тикшерегеҙ.",
+	"apihelp-antispoof-param-username": "AntiSpoof ярҙамында тикшерә торған ҡатнашыусының исеме.",
+	"apihelp-antispoof-example-1": "AntiSpoof ярҙамында «Foo» ҡатнашыусы исемен тикшерергә",
+	"apihelp-createaccount-param-ignoreantispoof": "(Хоҡуҡ һораған <code>override-antispoof</code>) оҡшаш исемдәрҙе иҫәпкә алмаҫҡа."
+}

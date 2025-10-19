@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"GreenZeb"
+		]
+	},
+	"editcount": "Labojumu skaits",
+	"editcount-desc": "Parāda lietotāja [[Special:Editcount|labojumu skaitu]]",
+	"editcount_username": "Lietotājs:",
+	"editcount_submit": "Iesniegt",
+	"editcount_total": "Kopā"
+}

@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Matěj Grabovský"
+		]
+	},
+	"randomimage-desc": "Poskytuje náhodný výběr multimediálních souborů pomocí značky <code>&lt;randomimage /&gt;</code>"
+}

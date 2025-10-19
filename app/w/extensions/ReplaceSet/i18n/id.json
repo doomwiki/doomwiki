@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Irwangatot"
+		]
+	},
+	"replaceset-desc": "Masukan  <nowiki>{{#replaceset}}</nowiki> fungsi parser untuk menggantikan teks yang dipilih dengan data berformat.",
+	"replaceset-error-calllimit": "Pemanggilan ReplaceSet sudah mencapai limit.",
+	"replaceset-error-regexnoend": "Pola regex \"$1\" hilang pada akhir pemisah '$2'",
+	"replaceset-error-regexbadmodifier": "Pengubah regex '$1' tidak sah."
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo.mps"
+		]
+	},
+	"randomincategory": "Página aleatória na categoria",
+	"randomincategory-desc": "[[Special:Randompageincategory|Página especial]] para obter uma página aleatória na categoria",
+	"randomincategory-toolbox": "Página aleatória",
+	"randomincategory-nocategory": "A categoria $1 não existe ou está vazia",
+	"randomincategory-label": "Categoria:",
+	"randomincategory-submit": "Ir"
+}

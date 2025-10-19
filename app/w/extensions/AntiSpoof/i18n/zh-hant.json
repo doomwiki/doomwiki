@@ -1,0 +1,34 @@
+{
+	"@metadata": {
+		"authors": [
+			"Gzdavidwong",
+			"Justincheng12345",
+			"Liangent",
+			"Mark85296341",
+			"Simon Shek",
+			"Waihorace",
+			"Wrightbus",
+			"LNDDYL",
+			"Cwlin0416"
+		]
+	},
+	"antispoof-desc": "禁止使用混合 Script、容易混淆或與既有使用者名稱過於相似的使用者名稱建立帳號",
+	"antispoof-conflict-top": "名稱 \"$1\" 與以下{{PLURAL:$2|使用者|$2 個使用者}}過於相似：",
+	"antispoof-conflict-bottom": "請選擇其他名稱。",
+	"antispoof-name-illegal": "已禁止使用名稱 \"$1\" 以避免混淆或欺騙使用者名稱：$2。\n請使用其他名稱。",
+	"antispoof-badtype": "錯誤的資料類型",
+	"antispoof-empty": "空字串",
+	"antispoof-blacklisted": "含有已列入黑名單的字元 $1",
+	"antispoof-combining": "以組合符號開頭 $1",
+	"antispoof-unassigned": "含有未分配的字元 $1",
+	"antispoof-deprecated": "含有已停用的字元 $1",
+	"antispoof-noletters": "未含有任何字母",
+	"antispoof-mixedscripts": "含有混合不相容的 Script",
+	"antispoof-tooshort": "標準化後的使用者名稱過短",
+	"antispoof-ignore": "忽略欺騙檢查",
+	"right-override-antispoof": "覆蓋欺騙檢查",
+	"apihelp-antispoof-description": "檢查使用者名稱是否違反 AntiSpoof 的常態檢查。",
+	"apihelp-antispoof-param-username": "檢查使用者名稱是否違反 AntiSpoof。",
+	"apihelp-antispoof-example-1": "檢查使用者名稱 \"Foo\" 是否違反 AntiSpoof。",
+	"apihelp-createaccount-param-ignoreantispoof": "忽略詐欺攻擊檢查 (需要 <code>override-antispoof</code> 權限)。"
+}

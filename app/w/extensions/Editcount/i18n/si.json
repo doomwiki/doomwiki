@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"චතුනි අලහප්පෙරුම",
+			"පසිඳු කාවින්ද",
+			"බිඟුවා"
+		]
+	},
+	"editcount": "සංස්කරණ ගණනය",
+	"editcount-desc": "පරිශීලකයෙකුගේ [[Special:Editcount|සංස්කරණ ගණන]] පෙන්වයි",
+	"editcount_username": "පරිශීලකයා:",
+	"editcount_submit": "යොමුකරන්න",
+	"editcount_total": "සියල්ල"
+}

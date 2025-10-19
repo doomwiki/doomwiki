@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eirik",
+			"Frokor"
+		]
+	},
+	"editcount": "Endringsteljar",
+	"editcount-desc": "Viser [[Special:Editcount|redigeringsteljar]] for ein brukar",
+	"editcount_username": "Brukar:",
+	"editcount_submit": "OK",
+	"editcount_total": "Totalt"
+}

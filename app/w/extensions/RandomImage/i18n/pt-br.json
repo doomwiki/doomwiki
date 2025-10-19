@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Eduardo.mps"
+		]
+	},
+	"randomimage-desc": "Provê um seletor de media aleatória usando <code>&lt;randomimage /&gt;</code>"
+}

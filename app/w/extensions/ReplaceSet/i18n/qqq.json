@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Fryed-peach",
+			"Purodha",
+			"Shirayuki",
+			"Umherirrender"
+		]
+	},
+	"replaceset-desc": "{{desc|name=Replace Set|url=https://www.mediawiki.org/wiki/Extension:ReplaceSet}}",
+	"replaceset-error-calllimit": "Used as error message. Parameters:\n* $1 - max number of <code><nowiki>{{#replaceset:}}</nowiki></code> calls in a page (default: 25)",
+	"replaceset-error-regexnoend": "Used as error message.\n\n\"regex\" stands for \"regular expression\".\n\nParameters:\n* $1 - the regular expression pattern\n* $2 - the ending delimiter",
+	"replaceset-error-regexbadmodifier": "Used as error message.\n\n\"regex\" stands for \"[[FAQ#regular expression|regular expression]]\".\n\nParameters:\n* $1 - invalid regular expression modifier. Valid modifiers are i, m, s, x, A, D and U."
+}

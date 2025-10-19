@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bellayet",
+			"Aftabuzzaman"
+		]
+	},
+	"randomincategory": "বিষয়শ্রেণীর অজানা যেকোনো পাতা",
+	"randomincategory-toolbox": "অজানা পাতা",
+	"randomincategory-nocategory": "বিষয়শ্রেণী $1 বিদ্যমান নেই বা খালি",
+	"randomincategory-label": "বিষয়শ্রেণী:",
+	"randomincategory-submit": "যাও"
+}

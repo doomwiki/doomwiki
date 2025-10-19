@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Okras",
+			"Александр Сигачёв"
+		]
+	},
+	"replaceset-desc": "Добавляет функцию парсера <nowiki>{{#replaceset}}</nowiki>, для замены участков текста с форматированными данными",
+	"replaceset-error-calllimit": "Достигнут предел вызовов ReplaceSet ($1).",
+	"replaceset-error-regexnoend": "В шаблоне регулярного выражения «$1» отсутствует завершающий разделитель «$2»",
+	"replaceset-error-regexbadmodifier": "Модификатор регулярного выражения «$1» недействителен."
+}

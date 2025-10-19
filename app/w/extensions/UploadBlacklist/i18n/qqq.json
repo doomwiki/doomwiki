@@ -1,0 +1,10 @@
+{
+	"@metadata": {
+		"authors": [
+			"Raymond",
+			"Shirayuki",
+			"Umherirrender"
+		]
+	},
+	"uploadblacklist-desc": "{{desc|name=Upload Blacklist|url=https://www.mediawiki.org/wiki/Extension:UploadBlacklist}}"
+}

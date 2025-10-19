@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"TRYPPN",
+			"செல்வா"
+		]
+	},
+	"editcount": "தொகுப்புக்களின் எண்ணிக்கை",
+	"editcount-desc": "ஒரு பயனரின் [[Special:Editcount|தொகுப்புக்களின் எண்ணிக்கையைக்]] காட்டுகின்றது",
+	"editcount_username": "பயனர்:",
+	"editcount_submit": "சமர்ப்பி",
+	"editcount_total": "மொத்தம்"
+}

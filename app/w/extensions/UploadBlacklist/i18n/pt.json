@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Waldir"
+		]
+	},
+	"uploadblacklist-desc": "Acrescenta uma funcionalidade de lista negra para carregamento de ficheiros"
+}

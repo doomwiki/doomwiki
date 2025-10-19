@@ -1,0 +1,16 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cimon Avaro",
+			"Crt",
+			"Mobe",
+			"Str4nd"
+		]
+	},
+	"randomincategory": "Satunnainen sivu luokassa",
+	"randomincategory-desc": "[[Special:Randompageincategory|Toimintosivu]], josta saa luokkakohtaisen satunnaisen sivun.",
+	"randomincategory-toolbox": "Satunnainen sivu",
+	"randomincategory-nocategory": "Luokkaa $1 ei ole tai se on tyhjä.",
+	"randomincategory-label": "Luokka",
+	"randomincategory-submit": "Siirry"
+}

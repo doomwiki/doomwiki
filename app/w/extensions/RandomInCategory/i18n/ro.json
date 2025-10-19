@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"KlaudiuMihaila",
+			"Minisarm",
+			"Stelistcristi"
+		]
+	},
+	"randomincategory": "Pagină aleatorie din categorie",
+	"randomincategory-toolbox": "Pagină aleatorie",
+	"randomincategory-nocategory": "Categoria $1 nu există sau este goală",
+	"randomincategory-label": "Categorie:",
+	"randomincategory-submit": "Du-te"
+}

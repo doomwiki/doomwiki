@@ -1,0 +1,24 @@
+{
+	"@metadata": {
+		"authors": [
+			"Man77",
+			"Mucalexx",
+			"Matthias Klostermayr"
+		]
+	},
+	"pendingchanges": "Seitn mid ned markiadn Endarunga",
+	"pendingchanges-legend": "Listn vo ibapriaftn Seitn mid offanan Endarunga",
+	"pendingchanges-list": "De Spezialseitn zoagt {{PLURAL:$1|a gsichtete|gsichtete}} Seitn, vu {{PLURAL:$1|dea's|de's}} nu ned gsichtete Veasionen gibt.",
+	"pendingchanges-none": "Momentan gibts koane Seitn, wo af de Kriterien zuatreffa.",
+	"pendingchanges-hours": "($1 {{PLURAL:$1|Stund}})",
+	"pendingchanges-days": "($1 {{PLURAL:$1|Dog}})",
+	"pendingchanges-recent": "(weniga wia oa Stund)",
+	"pendingchanges-category": "Kategorie:",
+	"pendingchanges-onwatchlist": "Seitn af \"Mei Beobochta\"",
+	"pendingchanges-stable": "De stabile Version is da Standard",
+	"pendingchanges-diff": "ibapriafn",
+	"pendingchanges-size": "Maximale Endarung (Bytes):",
+	"pendingchanges-unwatched": "(unbeobochdt)",
+	"pendingchanges-watched": "(vo $1 {{PLURAL:$1|aktivm Nutza|aktivn Nutzan}} beobochdt)",
+	"pendingchanges-viewing": "(wead priaft)"
+}

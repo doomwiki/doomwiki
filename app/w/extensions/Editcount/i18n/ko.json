@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kwj2772",
+			"아라"
+		]
+	},
+	"editcount": "편집 수",
+	"editcount-desc": "사용자의 [[Special:Editcount|편집 수]]를 보여줍니다",
+	"editcount_username": "사용자:",
+	"editcount_submit": "제출",
+	"editcount_total": "합계"
+}

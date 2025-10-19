@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kghbln",
+			"Leon Weber",
+			"Raimond Spekking"
+		]
+	},
+	"editcount": "Bearbeitungszähler",
+	"editcount-desc": "Ergänzt eine [[Special:Editcount|Spezialseite]] zur Anzeige der Anzahl an Bearbeitungen eines Benutzers",
+	"editcount_username": "Benutzer:",
+	"editcount_submit": "Absenden",
+	"editcount_total": "Insgesamt"
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Александр Сигачёв"
+		]
+	},
+	"randomincategory": "Случайная страница категории",
+	"randomincategory-desc": "[[Special:Randompageincategory|Служебная страница]] для получения случайной страницы категории",
+	"randomincategory-toolbox": "Случайная страница",
+	"randomincategory-nocategory": "Категория $1 не существует или пуста",
+	"randomincategory-label": "Категория:",
+	"randomincategory-submit": "Перейти"
+}

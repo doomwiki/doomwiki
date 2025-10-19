@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Cainamarques",
+			"Eduardo.mps"
+		]
+	},
+	"replaceset-desc": "Adiciona a função de análise <nowiki>{{#replaceset}}</nowiki> utilizada para substituir seções de texto com dados formatados",
+	"replaceset-error-calllimit": "O limite de chamadas da ReplaceSet ($1) foi atingido.",
+	"replaceset-error-regexnoend": "A expressão regular \"$1\" está sem um delimitador final '$2'",
+	"replaceset-error-regexbadmodifier": "O modificador de expressão regular '$1' não é válido"
+}

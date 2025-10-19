@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"StefanusRA"
+		]
+	},
+	"editcount": "Jumlah suntingan",
+	"editcount-desc": "Tidokna [[Special:Editcount|jumlah suntingan]]e panganggo",
+	"editcount_username": "Panganggo:",
+	"editcount_submit": "Kirim",
+	"editcount_total": "Total"
+}

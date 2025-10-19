@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hugo.arg",
+			"Matasg"
+		]
+	},
+	"editcount": "Naudotojo indėlis",
+	"editcount-desc": "Rodo naudotojo [[Special:Editcount|keitimų skaičių]]",
+	"editcount_username": "Naudotojas:",
+	"editcount_submit": "Patvirtinti",
+	"editcount_total": "Viso"
+}

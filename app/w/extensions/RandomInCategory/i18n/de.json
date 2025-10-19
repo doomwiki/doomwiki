@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kghbln",
+			"Raimond Spekking"
+		]
+	},
+	"randomincategory": "Zufällige Seite in einer Kategorie",
+	"randomincategory-desc": "Ergänzt eine [[Special:Randompageincategory|Spezialseite]], mit der man eine zufällige, in einer bestimmten Kategorie vorhandene, Seite anzeigen kann",
+	"randomincategory-toolbox": "Zufällige Seite",
+	"randomincategory-nocategory": "Kategorie $1 ist nicht vorhanden oder enthält keine Seiten",
+	"randomincategory-label": "Kategorie:",
+	"randomincategory-submit": "Los"
+}

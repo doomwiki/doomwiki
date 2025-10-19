@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"CERminator"
+		]
+	},
+	"randomimage-desc": "Omogućuje odabir slučajnih multimedijalnih datoteka koristeći <code>&lt;randomimage /&gt;</code>"
+}

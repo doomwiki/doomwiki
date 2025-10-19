@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dani"
+		]
+	},
+	"randomimage-desc": "Lehetővé teszi véletlenszerű médiafájl elhelyezését a <code>&lt;randomimage /&gt;</code> tag segítségével"
+}

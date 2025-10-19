@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Als-Holder"
+		]
+	},
+	"editcount": "Aazahl vu Sytebearbeitige",
+	"editcount-desc": "Zeigt d [[Special:Editcount|Aazahl vu Bearbeitige]] vun eme Benutzer",
+	"editcount_username": "Benutzer:",
+	"editcount_submit": "Abschicke",
+	"editcount_total": "Gsamt"
+}

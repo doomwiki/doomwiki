@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sp5uhe"
+		]
+	},
+	"randomimage-desc": "Zwraca losowy plik z użyciem znacznika <code>&lt;randomimage /&gt;</code>"
+}

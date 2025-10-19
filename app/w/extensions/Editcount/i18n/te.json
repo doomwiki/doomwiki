@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Veeven"
+		]
+	},
+	"editcount": "మార్పుల సంఖ్య",
+	"editcount-desc": "వాడుకరి యొక్క [[Special:Editcount|మార్పుల సంఖ్య]]ని చూపిస్తుంది",
+	"editcount_username": "వాడుకరి:",
+	"editcount_submit": "దాఖలుచెయ్యి",
+	"editcount_total": "మొత్తం"
+}

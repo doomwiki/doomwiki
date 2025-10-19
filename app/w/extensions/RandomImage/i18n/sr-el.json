@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Michaello",
+			"Rancher"
+		]
+	},
+	"randomimage-desc": "Prikazuje slučajnog birača datoteka koristeći <code>&lt;randomimage /&gt;</code>"
+}

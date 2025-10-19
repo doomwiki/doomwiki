@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Danny B."
+		]
+	},
+	"randomincategory": "Náhodná stránka v kategorii",
+	"randomincategory-desc": "[[Special:Randompageincategory|Speciální stránka]] na výběr náhodné stránky z kategorie",
+	"randomincategory-toolbox": "Náhodná stránka",
+	"randomincategory-nocategory": "Kategorie „$1“ neexistuje nebo je prázdná",
+	"randomincategory-label": "Kategorie:",
+	"randomincategory-submit": "Jít na"
+}

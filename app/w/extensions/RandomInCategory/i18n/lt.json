@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Homo"
+		]
+	},
+	"randomincategory": "Atsitiktinis kategorijos puslapis",
+	"randomincategory-desc": "[[Special:Randompageincategory|Specialusis puslapis]], skirtas gauti atsitiktinį kategorijos puslapį",
+	"randomincategory-toolbox": "Atsitiktinis puslapis",
+	"randomincategory-nocategory": "Kategorija $1 neegzistuoja ar yra tuščia",
+	"randomincategory-label": "Kategorija:",
+	"randomincategory-submit": "Eiti"
+}

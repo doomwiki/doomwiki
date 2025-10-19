@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"David1010"
+		]
+	},
+	"randomincategory": "კატეგორიის შემთხვევითი გვერდი",
+	"randomincategory-desc": "[[Special:Randompageincategory|სპეციალური გვერდი]] კატეგორიის შემთხვევითი გვერდის მისაღებად",
+	"randomincategory-toolbox": "შემთხვევითი გვერდი",
+	"randomincategory-nocategory": "კატეგორია $1 არ არსებობს ან ცარიელია",
+	"randomincategory-label": "კატეგორია:",
+	"randomincategory-submit": "მიდი"
+}

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"UV"
+		]
+	},
+	"randomincategory": "Pagina fortuita in categoria",
+	"randomincategory-toolbox": "Pagina fortuita",
+	"randomincategory-nocategory": "Categoria $1 aut non est aut est vacua",
+	"randomincategory-label": "Categoria:",
+	"randomincategory-submit": "Ire"
+}

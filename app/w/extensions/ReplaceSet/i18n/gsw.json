@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Als-Holder"
+		]
+	},
+	"replaceset-desc": "Fiegt e <nowiki>{{#replaceset}}</nowiki> Parserfunktion yy, wu mer Abschnitt vu Text cha ersetze dur formatierti Date",
+	"replaceset-error-calllimit": "D Gränz vu dr Aaruef vu ReplaceSet isch erreicht wore.",
+	"replaceset-error-regexnoend": "Bim Regexbitmuschter „$1“ fählt s Änd-Begränzigszeiche '$2'",
+	"replaceset-error-regexbadmodifier": "Dr Regex-Modifier '$1' isch nit giltig."
+}

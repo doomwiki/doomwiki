@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sanbec"
+		]
+	},
+	"randomimage-desc": "Proporciona un archivo multimedia al azar usando <code>&lt;randomimage /&gt;</code>"
+}

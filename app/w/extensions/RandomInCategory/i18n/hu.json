@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dani",
+			"Glanthor Reviol"
+		]
+	},
+	"randomincategory": "Véletlen lap egy kategóriából",
+	"randomincategory-desc": "[[Special:Randompageincategory|Speciális lap]] véletlen lap eléréséhez adott kategóriában",
+	"randomincategory-toolbox": "Véletlen lap",
+	"randomincategory-nocategory": "$1 névvel nem létezik kategória vagy üres.",
+	"randomincategory-label": "Kategória:",
+	"randomincategory-submit": "Menj"
+}

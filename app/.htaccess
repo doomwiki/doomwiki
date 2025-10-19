@@ -1,0 +1,70 @@
+Options +FollowSymLinks
+
+Redirect 301 /index.php /w/index.php
+
+# first, enable the processing - Unless your ISP has it enabled
+# already.  That might cause weird errors.
+RewriteEngine on
+
+# Hotlinking blacklist - haleyjd 20170827
+RewriteCond %{HTTP_REFERER} ^https?://(m\.)?joemonster\.org/.*$ [NC]
+RewriteRule \.(gif|jpe?g|png)$ - [F]
+
+# Commercial scraping blacklist - haleyjd 20171007
+#RewriteCond %{HTTP_USER_AGENT} Amazonbot [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} atraxbot [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} Azureus [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} Bytespider [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} bytedance [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} geohasher [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} HTTrack [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} PycURL [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} Python-urllib [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} research-scan-bot [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} Sosospider [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} xenu [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} ^.*casper [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} ^.*goblox [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} ^.*sun4u [NC,OR]
+RewriteCond %{HTTP_USER_AGENT} GPTBot [NC,OR]
+RewriteCond %{HTTP_REFERER} ^https?://(([^.]+\.)+)?amazonaws\.com [NC,OR]
+RewriteCond %{REMOTE_HOST} ^.*\.amazonaws\.com$ [NC]
+RewriteRule ^(.*)$ - [F]
+
+RewriteCond %{HTTP_HOST} ^.*\.doomwiki.org$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^doomwiki\.co$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^doomwiki\.net$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^doomwiki\.info$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^.*\.doomwiki\.co$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^.*\.doomwiki\.net$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTP_HOST} ^.*\.doomwiki\.info$ [NC]
+RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
+
+RewriteCond %{HTTPS} off
+RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+
+# Do the rewrite
+RewriteRule ^wiki/(.*)$ /w/index.php?title=$1 [PT,L,QSA]
+RewriteRule ^wiki/*$ /w/index.php [L,QSA]
+RewriteRule ^/*$ /w/index.php [L,QSA]
+
+AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
+
+Header always set Strict-Transport-Security "max-age=31536000; includeSubdomains;"
+
+#AuthType Basic
+#AuthName "Tower of Babel"
+#AuthUserFile /home/doomwiki/passwd
+

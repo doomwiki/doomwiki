@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Derbeth",
+			"McMonster"
+		]
+	},
+	"editcount": "Licznik edycji",
+	"editcount-desc": "Wyświetla [[Special:Editcount|liczbę edycji]] użytkownika",
+	"editcount_username": "Użytkownik",
+	"editcount_submit": "Wyślij",
+	"editcount_total": "Razem"
+}

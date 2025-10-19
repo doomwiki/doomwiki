@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Meno25",
+			"Mimouni",
+			"OsamaK"
+		]
+	},
+	"editcount": "عداد المساهمات",
+	"editcount-desc": "يعرض [[Special:Editcount|عداد المساهمات]] لمستخدم",
+	"editcount_username": "مستخدم:",
+	"editcount_submit": "إرسال",
+	"editcount_total": "الإجمالي"
+}

@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"बिप्लब आनन्द"
+		]
+	},
+	"editcount": "सम्पादन सङ्ख्या",
+	"editcount-desc": "प्रयोक्ताक [[Special:Editcount|सम्पादन सङ्ख्या]] देखाबैत अछि",
+	"editcount_username": "प्रयोक्ता:",
+	"editcount_submit": "सौंपी",
+	"editcount_total": "कुल"
+}

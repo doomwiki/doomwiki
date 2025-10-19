@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Base",
+			"Prima klasy4na",
+			"Тест"
+		]
+	},
+	"randomincategory": "Випадкова сторінка у категорії",
+	"randomincategory-desc": "[[Special:Randompageincategory|Спеціальна сторінка]] для отримання випадкової сторінки у категорії",
+	"randomincategory-toolbox": "Випадкова сторінка",
+	"randomincategory-nocategory": "Категорія «$1» не існує, або порожня",
+	"randomincategory-label": "Категорія:",
+	"randomincategory-submit": "Перейти"
+}

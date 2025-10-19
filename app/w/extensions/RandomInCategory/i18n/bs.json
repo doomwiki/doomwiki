@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"CERminator"
+		]
+	},
+	"randomincategory": "Slučajna stranica u kategoriji",
+	"randomincategory-desc": "[[Special:Randompageincategory|Posebna stranica]] za prikaz slučajne stranice u kategoriji",
+	"randomincategory-toolbox": "Slučajna stranica",
+	"randomincategory-nocategory": "Kategorija $1 ne postoji ili je prazna",
+	"randomincategory-label": "Kategorija:",
+	"randomincategory-submit": "Idi"
+}

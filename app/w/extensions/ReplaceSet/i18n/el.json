@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Omnipaedista"
+		]
+	},
+	"replaceset-error-regexnoend": "Το πρότυπο τακτικής έκφρασης \"$1\" υπολείπεται του ληκτικού χαρακτήρα '$2'",
+	"replaceset-error-regexbadmodifier": "Ο τροποποιητής τακτικής έκφρασης '$1' δεν είναι έγκυρος."
+}

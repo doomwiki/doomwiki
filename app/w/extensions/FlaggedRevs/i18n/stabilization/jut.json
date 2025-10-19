@@ -1,0 +1,25 @@
+{
+	"@metadata": {
+		"authors": [
+			"Huslåke",
+			"Ælsån",
+			"Jyllanj"
+		]
+	},
+	"stabilization-tab": "tjekk",
+	"stabilization-page": "Sidenaun:",
+	"stabilization-def": "Versjon wisen på standardsidewisneng",
+	"stabilization-def1": "Æ ståbiil reviisje;\nals ekke er, dan æ nuværende",
+	"stabilization-def2": "Æ nuværende reviisje",
+	"stabilization-submit": "Bekräft",
+	"stabilization-notexists": "Där finjs ien siid kalltj \"[[:$1|$1]]\".\nIen konfiguriireng ä muli.",
+	"stabilization-notcontent": "Siden \"[[:$1|$1]]\" kan ett korrekturläses.\nIen konfiguriireng ä muli.",
+	"stabilization-comment": "Begrunjels:",
+	"stabilization-expiry": "Utløb:",
+	"stabilization-def-short": "Standard",
+	"stabilization-def-short-0": "Nuwærenje",
+	"stabilization-def-short-1": "Stabiil",
+	"stabilize_expiry_invalid": "Udjylji utløbstiid.",
+	"stabilize_expiry_old": "Utløbstidspuntje ä ållried passiirtj.",
+	"stabilize-expiring": "te $1 (UTC)"
+}

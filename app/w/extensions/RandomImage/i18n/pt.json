@@ -1,0 +1,9 @@
+{
+	"@metadata": {
+		"authors": [
+			"Hamilton Abreu",
+			"Malafaya"
+		]
+	},
+	"randomimage-desc": "Fornece um selector aleatório de ficheiros multimédia usando <code>&lt;randomimage /&gt;</code>"
+}

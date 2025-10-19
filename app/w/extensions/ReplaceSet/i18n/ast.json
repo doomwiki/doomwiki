@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Xuacu"
+		]
+	},
+	"replaceset-desc": "Amiesta una función d'analís <nowiki>{{#replaceset}}</nowiki> utilizada pa trocar fragmentos de testu por datos con formatu",
+	"replaceset-error-calllimit": "Llegóse a la llende de llamaes ($1) de ReplaceSet.",
+	"replaceset-error-regexnoend": "Falta'l delimitador final '$2' nel patrón d'espresiones regulares \"$1\"",
+	"replaceset-error-regexbadmodifier": "El cambiador d'espresión regular \"$1\" nun ye válidu."
+}

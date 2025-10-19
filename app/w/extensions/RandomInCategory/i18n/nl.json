@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"SPQRobin",
+			"Siebrand"
+		]
+	},
+	"randomincategory": "Willekeurige pagina in een categorie",
+	"randomincategory-desc": "[[Special:Randompageincategory|Speciale pagina]] om een willekeurige pagina in een categorie weer te geven",
+	"randomincategory-toolbox": "Willekeurige pagina",
+	"randomincategory-nocategory": "Categorie $1 bestaat niet of is leeg",
+	"randomincategory-label": "Categorie:",
+	"randomincategory-submit": "OK"
+}

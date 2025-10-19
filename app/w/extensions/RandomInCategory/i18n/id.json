@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Bennylin",
+			"Rex"
+		]
+	},
+	"randomincategory": "Halaman sembarang di kategori",
+	"randomincategory-desc": "[[Special:Randompageincategory|Halaman istimewa]] untuk melihat halaman sembarang di kategori",
+	"randomincategory-toolbox": "Halaman sembarang",
+	"randomincategory-nocategory": "Kategori $1 tidak ada atau kosong",
+	"randomincategory-label": "Kategori:",
+	"randomincategory-submit": "Tuju ke"
+}

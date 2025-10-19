@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Huji"
+		]
+	},
+	"editcount": "شمارش ویرایش‌ها",
+	"editcount-desc": "[[Special:Editcount|تعداد ویرایش‌های]] یک کاربر را نشان می‌دهد",
+	"editcount_username": "کاربر:",
+	"editcount_submit": "ارسال",
+	"editcount_total": "کل"
+}

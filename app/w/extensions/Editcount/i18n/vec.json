@@ -1,0 +1,12 @@
+{
+	"@metadata": {
+		"authors": [
+			"Candalua"
+		]
+	},
+	"editcount": "Contegio dei contributi",
+	"editcount-desc": "Mostra [[Special:Editcount|el contegio dei contributi]] de un utente",
+	"editcount_username": "Utente:",
+	"editcount_submit": "Invia",
+	"editcount_total": "Totale"
+}

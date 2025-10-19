@@ -1,0 +1,28 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alma",
+			"Toliño",
+			"Banjo"
+		]
+	},
+	"antispoof-desc": "Bloquea a creación de contas con escrituras mesturadas, confusas ou con nomes de usuario similares",
+	"antispoof-conflict-top": "O nome \"$1\" é moi similar {{PLURAL:$2|ao seguinte nome|aos seguintes nomes}} de usuario:",
+	"antispoof-conflict-bottom": "Por favor, escolla outro nome.",
+	"antispoof-name-illegal": "O nome \"$1\" non está permitido para evitar confusións ou enganos cos seguintes nomes de usuario: $2. Por favor, escolla outro nome.",
+	"antispoof-badtype": "Tipo de datos incorrecto",
+	"antispoof-empty": "Cadea baleira",
+	"antispoof-blacklisted": "Contén o carácter $1, presente na lista negra",
+	"antispoof-combining": "Comeza coa marca combinatoria $1",
+	"antispoof-unassigned": "Contén o carácter sen asignar $1",
+	"antispoof-deprecated": "Contén o carácter rexeitado $1",
+	"antispoof-noletters": "Non contén ningunha letra",
+	"antispoof-mixedscripts": "Contén guións incompatibles mesturados",
+	"antispoof-tooshort": "Nome curto de máis",
+	"antispoof-ignore": "Ignorar as comprobacións de engaños (spoofing)",
+	"right-override-antispoof": "Ignorar as comprobacións de engaños (spoofing)",
+	"apihelp-antispoof-description": "Comprobar un nome de usuario coas comprobacións de normalización de AntiSpoof",
+	"apihelp-antispoof-param-username": "Nome de usuario a comprobar có AntiSpoof",
+	"apihelp-antispoof-example-1": "Comprobar nome de usuario \"Foo\" có AntiSpoof",
+	"apihelp-createaccount-param-ignoreantispoof": "Ignorar comprobación de enganos (spoofing) (require o permiso <code>override-antispoof</code>)"
+}

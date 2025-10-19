@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Jon Harald Søby"
+		]
+	},
+	"randomselection-desc": "Viser et tilfeldig valg fra det gitte settet"
+}

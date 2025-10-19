@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Ross McClure"
+		]
+	},
+	"randomselection-desc": "Displays a random option from the given set"
+}

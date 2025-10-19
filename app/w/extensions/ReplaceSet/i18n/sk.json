@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Helix84"
+		]
+	},
+	"replaceset-desc": "Pridáva funkciu syntaktického analyzátora <nowiki>{{#replaceset}}</nowiki> na náhradu sekcií textu formátovanými údajmi",
+	"replaceset-error-calllimit": "Bol dosiahnutý limit volaní ReplaceSet.",
+	"replaceset-error-regexnoend": "Regulárnemu výrazu „$1“ chýba ukončovací oddeľovač „$2“",
+	"replaceset-error-regexbadmodifier": "Modifikátor regulárneho výrazu „$1“ nie je platný."
+}

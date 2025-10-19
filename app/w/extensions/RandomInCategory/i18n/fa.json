@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dalba",
+			"Mjbmr"
+		]
+	},
+	"randomincategory": "صفحهٔ تصادفی در رده",
+	"randomincategory-desc": "[[Special:Randompageincategory|صفحهٔ ویژه]] برای دستیابی به یک صفحهٔ تصادفی در یک رده",
+	"randomincategory-toolbox": "صفحهٔ تصادفی",
+	"randomincategory-nocategory": "ردهٔ $1 وجود ندارد یا خالی است",
+	"randomincategory-label": "رده:",
+	"randomincategory-submit": "برو"
+}

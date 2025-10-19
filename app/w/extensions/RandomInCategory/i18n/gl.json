@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Alma",
+			"Toliño"
+		]
+	},
+	"randomincategory": "Páxina aleatoria na categoría",
+	"randomincategory-desc": "[[Special:Randompageincategory|Páxina especial]] para obter unha páxina aleatoria dentro dunha categoría",
+	"randomincategory-toolbox": "Páxina aleatoria",
+	"randomincategory-nocategory": "A categoría $1 non existe ou está baleira",
+	"randomincategory-label": "Categoría:",
+	"randomincategory-submit": "Continuar"
+}

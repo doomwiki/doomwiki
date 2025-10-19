@@ -1,0 +1,40 @@
+{
+	"@metadata": {
+		"authors": [
+			"Armando-Martin",
+			"Cvmontuy",
+			"Fitoschido",
+			"Icvav",
+			"Locos epraix",
+			"Platonides",
+			"Remember the dot",
+			"Sanbec",
+			"Titoxd",
+			"VegaDark",
+			"Themasterriot",
+			"Ryo567",
+			"Macofe",
+			"MarcoAurelio"
+		]
+	},
+	"antispoof-desc": "Previene la creación de cuentas de usuario nuevas que tengan nombres confusos, similares a nombres existentes, o con alfabetos mixtos.",
+	"antispoof-conflict-top": "El nombre «$1» es muy similar al de {{PLURAL:$2|la siguiente cuenta|las siguientes cuentas}}:",
+	"antispoof-conflict-bottom": "Elige otro nombre.",
+	"antispoof-name-illegal": "El nombre «$1» no está permitido para evitar nombres de usuario confusos o suplantaciones: $2. Por favor, elige otro nombre.",
+	"antispoof-bad-char": "\"$1\" ($2)",
+	"antispoof-badtype": "Tipo de dato erróneo",
+	"antispoof-empty": "Texto vacío",
+	"antispoof-blacklisted": "Contiene el carácter no permitido $1",
+	"antispoof-combining": "Comienza por la marca de combinación $1",
+	"antispoof-unassigned": "Contiene el carácter sin asignar $1",
+	"antispoof-deprecated": "Contiene el carácter desaconsejado $1",
+	"antispoof-noletters": "No contiene letras",
+	"antispoof-mixedscripts": "Contiene una mezcla incompatible de alfabetos",
+	"antispoof-tooshort": "Nombre en forma canónica demasiado corto",
+	"antispoof-ignore": "Ignorar comprobaciones contra suplantaciones",
+	"right-override-antispoof": "Anula las comprobaciones de suplantación",
+	"apihelp-antispoof-description": "Comprobar un nombre de usuario contra las comprobación de normalización del sistema AntiSpoof",
+	"apihelp-antispoof-param-username": "El nombre de usuario a comprobar contra el sistema AntiSpoof.",
+	"apihelp-antispoof-example-1": "Comprobar nombre de usuario \"Foo\" contra el sistema AntiSpoof",
+	"apihelp-createaccount-param-ignoreantispoof": "Ignorar verificación contra la suplantación de identidad (antispoof) (necesita el permiso <code>override-antispoof</code>)."
+}

@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"McDutchie"
+		]
+	},
+	"randomincategory": "Pagina aleatori in categoria",
+	"randomincategory-desc": "[[Special:Randompageincategory|Pagina special]] pro obtener un pagina aleatori in un categoria",
+	"randomincategory-toolbox": "Pagina aleatori",
+	"randomincategory-nocategory": "Le categoria $1 non existe o es vacue",
+	"randomincategory-label": "Categoria:",
+	"randomincategory-submit": "Va"
+}

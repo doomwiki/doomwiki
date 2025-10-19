@@ -1,0 +1,13 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dbc334"
+		]
+	},
+	"randomincategory": "Naključna stran v kategoriji",
+	"randomincategory-desc": "[[Special:Randompageincategory|Posebna stran]] za naključno stran v kategoriji",
+	"randomincategory-toolbox": "Naključna stran",
+	"randomincategory-nocategory": "Kategorija $1 ne obstaja ali pa je prazna",
+	"randomincategory-label": "Kategorija:",
+	"randomincategory-submit": "Pojdi"
+}

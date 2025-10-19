@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"BroOk",
+			"SMP"
+		]
+	},
+	"randomincategory": "Pàgina aleatòria en categoria",
+	"randomincategory-desc": "[[Special:Randompageincategory|Pàgina especial]] per obtenir una pàgina aleatòria en una categoria",
+	"randomincategory-toolbox": "Pàgina aleatòria",
+	"randomincategory-nocategory": "La categoria $1 no existeix o està buida",
+	"randomincategory-label": "Categoria:",
+	"randomincategory-submit": "Vés-hi"
+}

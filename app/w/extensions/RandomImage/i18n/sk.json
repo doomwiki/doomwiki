@@ -1,0 +1,8 @@
+{
+	"@metadata": {
+		"authors": [
+			"Helix84"
+		]
+	},
+	"randomimage-desc": "Poskytuje náhodný výber multimediálnych súborov pomocou značky <code>&lt;randomimage /&gt;</code>"
+}

@@ -1,0 +1,27 @@
+{
+	"@metadata": {
+		"authors": [
+			"Dittaeva",
+			"Event",
+			"Chameleon222"
+		]
+	},
+	"antispoof-desc": "Hindrer oppretting av kontoer med lignende eller forvirrende brukernavn, eller brukernavn som inneholder to forskjellige alfabettyper",
+	"antispoof-conflict-top": "Navnet «$1» er for likt følgende {{PLURAL:$2|konto|kontoer}}:",
+	"antispoof-conflict-bottom": "Velg et annet navn.",
+	"antispoof-name-illegal": "Navnet «$1» er ikke tillatt for å forhindre sammenblanding: $2. Vennligst velg et annet navn.",
+	"antispoof-badtype": "Ugyldig datatype",
+	"antispoof-empty": "Tom streng",
+	"antispoof-blacklisted": "Inneholder det svartelistede tegnet $1",
+	"antispoof-combining": "Begynner med kombinasjonstegnet $1",
+	"antispoof-unassigned": "Inneholder ugyldig eller foreldet tegn.",
+	"antispoof-deprecated": "Inneholder det ulovlige tegnet «$1»",
+	"antispoof-noletters": "Inneholder ingen bokstaver",
+	"antispoof-mixedscripts": "Inneholder blanding av skriftsystemer",
+	"antispoof-tooshort": "Navnet er for kort",
+	"antispoof-ignore": "Ignorer misbrukssjekk",
+	"right-override-antispoof": "Overkjøre sjekk av brukernavn",
+	"apihelp-antispoof-description": "Sjekker et brukernavn mot AntiSpoofs normaliseringskontroller.",
+	"apihelp-antispoof-param-username": "Brukernavnet som skal sjekkes mot AntiSpoof.",
+	"apihelp-antispoof-example-1": "Sjekk brukernavn «Foo» mot AntiSpoof"
+}

@@ -1,0 +1,15 @@
+{
+	"@metadata": {
+		"authors": [
+			"Harald Khan",
+			"Jon Harald Søby",
+			"Njardarlogar"
+		]
+	},
+	"randomincategory": "Tilfeldig side frå kategori",
+	"randomincategory-desc": "Ei [[Special:Randompageincategory|spesialside]] for å få ei tilfeldig side frå ein kategori",
+	"randomincategory-toolbox": "Tilfeldig side",
+	"randomincategory-nocategory": "Kategorien $1 finst ikkje, eller er tom",
+	"randomincategory-label": "Kategori:",
+	"randomincategory-submit": "Gå"
+}

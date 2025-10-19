@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"아라"
+		]
+	},
+	"replaceset-desc": "형식이 지정된 데이터로 된 텍스트의 부분을 찾아 바꾸는 데 사용하는 <nowiki>{{#replaceset}}</nowiki> 파서 함수를 추가합니다",
+	"replaceset-error-calllimit": "집합바꾸기 호출 횟수 제한($1)에 도달했습니다.",
+	"replaceset-error-regexnoend": "\"$1\" 정규식 패턴에 '$2' 끝 구분 기호가 없습니다.",
+	"replaceset-error-regexbadmodifier": "'$1' 정규식 한정자가 올바르지 않습니다."
+}

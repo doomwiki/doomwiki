@@ -1,0 +1,14 @@
+{
+	"@metadata": {
+		"authors": [
+			"Christian List",
+			"Jon Harald Søby"
+		]
+	},
+	"randomincategory": "Tilfældig side i kategori",
+	"randomincategory-desc": "[[Special:Randompageincategory|Speciel side]] til at få en tilfældig side i kategori",
+	"randomincategory-toolbox": "Tilfældig side",
+	"randomincategory-nocategory": "Kategorien $1 findes ikke eller er tom",
+	"randomincategory-label": "Kategori:",
+	"randomincategory-submit": "Udfør"
+}
