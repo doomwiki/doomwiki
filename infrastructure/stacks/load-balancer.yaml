@@ -14,12 +14,12 @@ Parameters:
   HostedZoneId:
     Description: Custom hosted zone
     Type: String
-  #VPCID:
-  #  Description: Existing VPC ID
-  #  Type: String
-  #VPCSubnets:
-  #  Description: Comma-separated list of private subnets associated with the existing VPC
-  #  Type: List<AWS::EC2::Subnet::Id>
+  VPCID:
+    Description: Existing VPC ID
+    Type: String
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
   LoadBalancerAccessType:
     Description: Access type for load balancer - public or private
     Type: String
@@ -42,12 +42,12 @@ Resources:
     Properties:
       GroupName: !Sub ${ProjectName}-${EnvironmentName}-containers
       GroupDescription: Access to the Fargate containers
-      #VpcId: !Ref VPCID
+      VpcId: !Ref VPCID
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Access to the private facing load balancer
-      #VpcId: !Ref VPCID
+      VpcId: !Ref VPCID
       SecurityGroupIngress:
         - CidrIp: 0.0.0.0/0
           IpProtocol: tcp
@@ -232,7 +232,7 @@ Resources:
       Port: 443
       Protocol: HTTPS
       UnhealthyThresholdCount: 2
-      #VpcId: !Ref VPCID
+      VpcId: !Ref VPCID
   HTTPListener:
     Type: AWS::ElasticLoadBalancingV2::Listener
     Properties:

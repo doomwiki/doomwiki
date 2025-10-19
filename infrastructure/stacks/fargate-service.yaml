@@ -17,12 +17,12 @@ Parameters:
     Type: Number
     Default: "8080"
     Description: What port number the application inside the docker container is binding to
-  #VPCID:
-  #  Type: AWS::EC2::VPC::Id
-  #  Description: Existing VPC ID
-  #VPCSubnets:
-  #  Description: Comma-separated list of private subnets associated with the existing VPC
-  #  Type: List<AWS::EC2::Subnet::Id>
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+    Description: Existing VPC ID
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
   ContainerCpu:
     Type: Number
     Default: "512"
@@ -179,7 +179,7 @@ Resources:
             - !If
               - IncludeEFS
               - SourceVolume: "files"
-                ContainerPath: /var/www/files
+                ContainerPath: /var/www/images
               - !Ref AWS::NoValue
       Volumes: #TODO: Implement DoEFSVolumeCheck
         - !If
@@ -211,7 +211,7 @@ Resources:
       Protocol: HTTP
       ProtocolVersion: HTTP1
       UnhealthyThresholdCount: 4
-      #VpcId: !Ref VPCID
+      VpcId: !Ref VPCID
 
   # Create a rule on the load balancer for routing traffic to the target group
   LoadBalancerRule:
@@ -249,7 +249,7 @@ Resources:
           AssignPublicIp: DISABLED
           SecurityGroups:
             - !Sub ${ContainerSecurityGroup}
-          #Subnets: !Split [",", !Join [",", !Ref VPCSubnets]]
+          Subnets: !Split [",", !Join [",", !Ref VPCSubnets]]
       TaskDefinition: !Ref TaskDefinition
       LoadBalancers:
         - ContainerName: !Ref ProjectName

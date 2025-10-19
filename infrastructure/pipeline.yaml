@@ -91,19 +91,19 @@ Parameters:
     Type: String
     Default: "project"
   # VPC info
-  #VPCID:
-  #  Description: Existing VPC ID
-  #  Type: AWS::EC2::VPC::Id
-  #VPCPrivateSubnets:
-  #  Description: Comma-separated list of subnets associated with the existing VPC
-  #  Type: List<AWS::EC2::Subnet::Id>
-  #VPCPublicSubnets:
-  #  Description: Comma-separated list of subnets associated with the existing VPC (only required for public load balancer access)
-  #  Type: List<AWS::EC2::Subnet::Id>
-  #  Default: ""
-  #DefaultSecurityGroup:
-  #  Description: Default security group associated with the existing VPC
-  #  Type: AWS::EC2::SecurityGroup::Id
+  VPCID:
+    Description: Existing VPC ID
+    Type: AWS::EC2::VPC::Id
+  VPCPrivateSubnets:
+    Description: Comma-separated list of subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
+  VPCPublicSubnets:
+    Description: Comma-separated list of subnets associated with the existing VPC (only required for public load balancer access)
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: ""
+  DefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
   WAFArn:
     Description: WAF V2 Web ACL Arn for Load Balancer
     Type: String
@@ -480,7 +480,7 @@ Resources:
                       "DomainName": "${DomainName}",
                       "DatabaseName": "${DatabaseName}"
                     }
-                  # - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:
                 - Name: SourceArtifact
               RunOrder: 5
@@ -565,7 +565,8 @@ Resources:
                 ParameterOverrides: !Sub |
                   {
                     "EnvironmentName": "${EnvironmentName}",
-                    "ProjectName": "${ProjectName}"
+                    "ProjectName": "${ProjectName}",
+                    "VPCID": "${VPCID}"
                   }
               InputArtifacts:
                 - Name: InfrastructureArtifact
@@ -593,14 +594,11 @@ Resources:
                       "DomainName": "${DomainName}",
                       "HostedZoneId": "${HostedZoneId}",
                       "LoadBalancerAccessType": "${LoadBalancerAccessType}",
-                      "WAFArn": "${WAFArn}"
+                      "WAFArn": "${WAFArn}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}"
                     }
-                  #- VPCSubnets:
-                  #    !If [
-                  #      IsPrivateALB,
-                  #      !Join [",", !Ref VPCPrivateSubnets],
-                  #      !Join [",", !Ref VPCPublicSubnets],
-                  #    ]
+                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 1
@@ -652,9 +650,11 @@ Resources:
                         "EnvironmentName": "${EnvironmentName}",
                         "DatabaseName":"${DatabaseName}",
                         "DatabaseEngine": "${DatabaseEngine}",
-                        "ProjectName": "${ProjectName}"
+                        "ProjectName": "${ProjectName}",
+                        "VPCID": "${VPCID}",
+                        "DatabaseSubnetList": "${VPCSubnets}"
                       }
-                    #- VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                    - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
                   - Name: InfrastructureArtifact
                 RunOrder: 2
@@ -681,9 +681,10 @@ Resources:
                       {
                         "EnvironmentName": "${EnvironmentName}",
                         "ProjectName": "${ProjectName}",
+                        "VPCSubnets": "${VPCSubnets}",
                         "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}"
                       }
-                    #- VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                    - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
                   - Name: InfrastructureArtifact
                 RunOrder: 2
@@ -740,9 +741,11 @@ Resources:
                       "ProjectName": "${ProjectName}",
                       "ImageUrl": "#{ContainerVars.ImageURI}",
                       "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}",
                       "EFSFileSystem": "#{EFSVars.FileSystemResource}"
                     }
-                  #- VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+                  - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 1

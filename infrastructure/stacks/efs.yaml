@@ -11,6 +11,9 @@ Parameters:
   ContainerSecurityGroup:
     Type: String
     Description: Security group for Fargate containers
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id>
 
 Resources:
   FileSystemResource:
@@ -42,7 +45,7 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
-      # SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
 
@@ -50,7 +53,7 @@ Resources:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
-      # SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
 

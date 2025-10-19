@@ -7,14 +7,14 @@ Parameters:
   ProjectName:
     Description: Primary project short name
     Type: String
-  #VPCID:
-  #  Type: AWS::EC2::VPC::Id
-  #DefaultSecurityGroup:
-  #  Description: Default security group associated with the existing VPC
-  #  Type: AWS::EC2::SecurityGroup::Id
-  #DatabaseSubnetList:
-  #  Type: List<AWS::EC2::Subnet::Id>
-  #  Description: Enter at least two subnet IDs for the database cluster
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+  DefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+  DatabaseSubnetList:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Enter at least two subnet IDs for the database cluster
   DatabaseName:
     Type: String
     Description: Name of primary database
@@ -62,11 +62,11 @@ Resources:
   #      AutomaticallyAfterDays: 90
   #      Duration: 2h
 
-  #DatabaseSubnetGroup:
-  #  Type: AWS::RDS::DBSubnetGroup
-  #  Properties:
-  #    DBSubnetGroupDescription: CloudFormation managed DB subnet group.
-  #    SubnetIds: !Ref DatabaseSubnetList
+  DatabaseSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: CloudFormation managed DB subnet group.
+      SubnetIds: !Ref DatabaseSubnetList
 
   PostgreSQLClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -121,7 +121,7 @@ Resources:
     Properties:
       GroupName: !Sub ${ProjectName}-${EnvironmentName}-database-cluster
       GroupDescription: !Sub Access ${ProjectName} database cluster
-      #VpcId: !Ref VPCID
+      VpcId: !Ref VPCID
       SecurityGroupIngress:
         - SourcePrefixListId: !Ref SGCidrPrefixList
           IpProtocol: tcp
@@ -130,8 +130,8 @@ Resources:
         - SourceSecurityGroupId:
             Fn::ImportValue: !Sub "${ProjectName}-${EnvironmentName}:FargateContainerSecurityGroup"
           IpProtocol: "-1"
-        #- SourceSecurityGroupId: !Ref DefaultSecurityGroup
-        #  IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref DefaultSecurityGroup
+          IpProtocol: "-1"
 
   EnhancedMonitoringRole:
     Type: AWS::IAM::Role
@@ -170,7 +170,7 @@ Resources:
           !Ref MySQLClusterParameterGroup,
           !Ref PostgreSQLClusterParameterGroup,
         ]
-      #DBSubnetGroupName: !Ref "DatabaseSubnetGroup"
+      DBSubnetGroupName: !Ref "DatabaseSubnetGroup"
       DeletionProtection: true
       EnableIAMDatabaseAuthentication: true
       Engine: !Ref DatabaseEngine

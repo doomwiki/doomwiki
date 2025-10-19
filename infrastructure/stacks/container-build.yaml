@@ -13,15 +13,15 @@ Parameters:
     Type: String
     Default: ""
   # VPC info
-  #VPCID:
-  #  Description: Existing VPC ID
-  #  Type: AWS::EC2::VPC::Id
-  #VPCSubnets:
-  #  Description: Comma-separated list of private subnets associated with the existing VPC
-  #  Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
-  #DefaultSecurityGroup:
-  #  Description: Default security group associated with the existing VPC
-  #  Type: AWS::EC2::SecurityGroup::Id
+  VPCID:
+    Description: Existing VPC ID
+    Type: AWS::EC2::VPC::Id
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
+  DefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
 
 Resources:
   CodeBuildServiceRole:
@@ -85,7 +85,7 @@ Resources:
                 - cd $CODEBUILD_SRC_DIR
                 # DATABASE
                 - chmod +x ./scripts/*.sh
-                - ./scripts/config-generator.sh $ENV ${AWS::Region} $DB_SECRET ${DomainName} > .env
+                - ./scripts/config-generator.sh $ENV ${AWS::Region} $DB_SECRET {{resolve:ssm:WikiConfOverrides}} ${DomainName} > .env
                 # DEPLOY CONTAINER IMAGE
                 - aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin $ECR_URL
                 - aws ecr put-image-tag-mutability --repository-name ${ProjectName}-${EnvironmentName} --image-tag-mutability MUTABLE --region ${AWS::Region}
@@ -115,11 +115,11 @@ Resources:
 
       Name: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildProject
       ServiceRole: !Ref CodeBuildServiceRole
-      #VpcConfig:
-      #  VpcId: !Ref VPCID
-      #  Subnets: !Ref VPCSubnets
-      #  SecurityGroupIds:
-      #    - !Ref DefaultSecurityGroup
+      VpcConfig:
+        VpcId: !Ref VPCID
+        Subnets: !Ref VPCSubnets
+        SecurityGroupIds:
+          - !Ref DefaultSecurityGroup
 
 Outputs:
   CodeBuildProject:
