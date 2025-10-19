@@ -1,4 +1,4 @@
-# Git normilzation. This is taken from the Drupal scaffolding files that are
+# Git normilzation. This is taken from the Doomwiki scaffolding files that are
 # pulled-in by composer inside /app. While this is redundant to the .gitignore
 # inside /app, but we need these rules in place for All project files,
 # independent of composer, so that appropriate line endings and other editor

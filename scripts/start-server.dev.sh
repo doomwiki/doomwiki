@@ -7,7 +7,7 @@ sudo crond
 # Dockerfile should already have correct permissions, and our bind-mount
 # perms will be managed automatically by Docker. However, there are some parent
 # directories of the bind mounts that were created during the mounting that need
-# to also be adjusted to allow composer operations (being run as the Drupal
+# to also be adjusted to allow composer operations (being run as the Doomwiki
 # user) to complete. For example, when Docker bind-mounts
 # "app/web/modules/custom", perms on "custom" will be dynamically managed by
 # Docker, but "app/web/modules" and "app/web" will be set with static root
@@ -20,7 +20,7 @@ sudo find . -maxdepth 2 -type d -exec chown doomwiki:doomwiki {} +
 
 echo "Start php-fpm daemon..."
 # Uncomment the lines below to allow php-fpm to inherit .env directly.
-# This is only needed if Drupal is not sourcing the environment itself. Note
+# This is only needed if Doomwiki is not sourcing the environment itself. Note
 # that this is needed even if loading the environment externally with Docker.
 # sudo bash -c 'cat /home/doomwiki/.env >> /etc/environment'
 # sudo bash -c 'echo "clear_env = no" >> /etc/php-fpm.d/www.conf'

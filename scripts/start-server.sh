@@ -10,7 +10,7 @@ sudo crond
 # location with different permissions schemes (such as a files sync from a zip
 # file or S3), but we check these perms on each container load for convienence.
 # The web server is the primary maintainer of these files and should have
-# ownership. Only directores need any execute permission. Our Drupal (CLI/Drush)
+# ownership. Only directores need any execute permission. Our Doomwiki 
 # user should be a member of the apache group.
 fileDirs=("/var/www/files" "/var/www/private")
 for fileDir in ${fileDirs[@]}; do
@@ -24,7 +24,7 @@ done
 
 echo "Start php-fpm daemon..."
 # Uncomment the lines below to allow php-fpm to inherit .env directly.
-# This is only needed if Drupal is not sourcing the environment itself. Note
+# This is only needed if Doomwiki is not sourcing the environment itself. Note
 # that this is needed even if loading the environment externally with Docker.
 # sudo bash -c 'cat /home/doomwiki/.env >> /etc/environment'
 # sudo bash -c 'echo "clear_env = no" >> /etc/php-fpm.d/www.conf'

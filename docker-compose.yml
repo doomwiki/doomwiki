@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
 
-  # Main Drupal dev service using bind mounts for custom code.
+  # Main Doomwiki dev service using bind mounts for custom code.
   doomwiki_dev:
     image: ${COMPOSE_PROJECT_NAME}:dev
     container_name: ${COMPOSE_PROJECT_NAME}
@@ -11,10 +11,7 @@ services:
         condition: service_healthy
     build:
       target: dev
-      args:
-        # Wheather or not to use a custom root cert needed for local
-        # environments under the Cisco umbrella. Does not apply to AWS.
-        USE_MATH_CERT: true
+
     ports:
       - ${COMPOSE_WEB_PORT:-8080}:8080
     volumes:
@@ -28,7 +25,7 @@ services:
       - ./app/composer.lock:/home/doomwiki/app/composer.lock
     env_file: .env
 
-  # Drupal service to simulate a deploy.
+  # Doomwiki service to simulate a deploy.
   doomwiki_deploy:
     profiles:
       - deploy

@@ -1,2 +1,2 @@
-# Run Drupal cron after sourcing environment using Drush
+# Run Doomwiki cron after sourcing environment using Drush
 # @see https://www.drush.org/12.x/cron/
