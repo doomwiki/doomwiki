@@ -30,10 +30,10 @@ Metadata:
       - Label:
           default: Network Information
         Parameters:
-          - VPCID
-          - VPCPrivateSubnets
-          - VPCPublicSubnets
-          - VPCDefaultSecurityGroup
+          # - VPCID
+          # - VPCPrivateSubnets
+          # - VPCPublicSubnets
+          # - DefaultSecurityGroup
           - WAFArn
       - Label:
           default: Additional Features
@@ -91,19 +91,19 @@ Parameters:
     Type: String
     Default: "project"
   # VPC info
-  VPCID:
-    Description: Existing VPC ID
-    Type: AWS::EC2::VPC::Id
-  VPCPrivateSubnets:
-    Description: Comma-separated list of subnets associated with the existing VPC
-    Type: List<AWS::EC2::Subnet::Id>
-  VPCPublicSubnets:
-    Description: Comma-separated list of subnets associated with the existing VPC (only required for public load balancer access)
-    Type: List<AWS::EC2::Subnet::Id>
-    Default: ""
-  VPCDefaultSecurityGroup:
-    Description: Default security group associated with the existing VPC
-    Type: AWS::EC2::SecurityGroup::Id
+  #VPCID:
+  #  Description: Existing VPC ID
+  #  Type: AWS::EC2::VPC::Id
+  #VPCPrivateSubnets:
+  #  Description: Comma-separated list of subnets associated with the existing VPC
+  #  Type: List<AWS::EC2::Subnet::Id>
+  #VPCPublicSubnets:
+  #  Description: Comma-separated list of subnets associated with the existing VPC (only required for public load balancer access)
+  #  Type: List<AWS::EC2::Subnet::Id>
+  #  Default: ""
+  #DefaultSecurityGroup:
+  #  Description: Default security group associated with the existing VPC
+  #  Type: AWS::EC2::SecurityGroup::Id
   WAFArn:
     Description: WAF V2 Web ACL Arn for Load Balancer
     Type: String
@@ -503,10 +503,7 @@ Resources:
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectName": "${ProjectName}",
                       "DomainName": "${DomainName}",
-                      "DatabaseName": "${DatabaseName}",
-                      "VPCID": "${VPCID}",
-                      "VPCSubnets": "${VPCSubnets}",
-                      "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
+                      "DatabaseName": "${DatabaseName}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:
@@ -593,8 +590,7 @@ Resources:
                 ParameterOverrides: !Sub |
                   {
                     "EnvironmentName": "${EnvironmentName}",
-                    "ProjectName": "${ProjectName}",
-                    "VPCID": "${VPCID}"
+                    "ProjectName": "${ProjectName}"
                   }
               InputArtifacts:
                 - Name: InfrastructureArtifact
@@ -622,8 +618,6 @@ Resources:
                       "DomainName": "${DomainName}",
                       "HostedZoneId": "${HostedZoneId}",
                       "LoadBalancerAccessType": "${LoadBalancerAccessType}",
-                      "VPCID": "${VPCID}",
-                      "VPCSubnets": "${VPCSubnets}",
                       "WAFArn": "${WAFArn}"
                     }
                   - VPCSubnets:
@@ -681,8 +675,6 @@ Resources:
                     - |
                       {
                         "EnvironmentName": "${EnvironmentName}",
-                        "VPCID": "${VPCID}",
-                        "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
                         "DatabaseName":"${DatabaseName}",
                         "DatabaseEngine": "${DatabaseEngine}",
                         "DatabaseSubnetList": "${VPCSubnets}",
@@ -715,9 +707,6 @@ Resources:
                       {
                         "EnvironmentName": "${EnvironmentName}",
                         "ProjectName": "${ProjectName}",
-                        "VPCID": "${VPCID}",
-                        "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
-                        "VPCSubnets": "${VPCSubnets}",
                         "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}"
                       }
                     - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
@@ -775,8 +764,6 @@ Resources:
                     {
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectName": "${ProjectName}",
-                      "VPCID": "${VPCID}",
-                      "VPCSubnets": "${VPCSubnets}",
                       "ImageUrl": "#{ContainerVars.ImageURI}",
                       "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
                       "EFSFileSystem": "#{EFSVars.FileSystemResource}",

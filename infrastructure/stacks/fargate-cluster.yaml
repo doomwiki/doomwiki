@@ -8,9 +8,7 @@ Parameters:
   ProjectName:
     Description: Primary project short name, environments will be added as subdomains e.g. fpar2.mathematica-dev.org
     Type: String
-  VPCID:
-    Type: AWS::EC2::VPC::Id
-    Description: Existing VPC ID
+
 Resources:
   LogGroup:
     Type: AWS::Logs::LogGroup

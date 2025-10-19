@@ -13,15 +13,15 @@ Parameters:
     Type: String
     Default: ""
   # VPC info
-  VPCID:
-    Description: Existing VPC ID
-    Type: AWS::EC2::VPC::Id
-  VPCSubnets:
-    Description: Comma-separated list of private subnets associated with the existing VPC
-    Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
-  VPCDefaultSecurityGroup:
-    Description: Default security group associated with the existing VPC
-    Type: AWS::EC2::SecurityGroup::Id
+  #VPCID:
+  #  Description: Existing VPC ID
+  #  Type: AWS::EC2::VPC::Id
+  #VPCSubnets:
+  #  Description: Comma-separated list of private subnets associated with the existing VPC
+  #  Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
+  #DefaultSecurityGroup:
+  #  Description: Default security group associated with the existing VPC
+  #  Type: AWS::EC2::SecurityGroup::Id
 
 Resources:
   CodeBuildServiceRole:
@@ -117,11 +117,11 @@ Resources:
 
       Name: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildProject
       ServiceRole: !Ref CodeBuildServiceRole
-      VpcConfig:
-        VpcId: !Ref VPCID
-        Subnets: !Ref VPCSubnets
-        SecurityGroupIds:
-          - !Ref VPCDefaultSecurityGroup
+      #VpcConfig:
+      #  VpcId: !Ref VPCID
+      #  Subnets: !Ref VPCSubnets
+      #  SecurityGroupIds:
+      #    - !Ref DefaultSecurityGroup
 
 Outputs:
   CodeBuildProject:

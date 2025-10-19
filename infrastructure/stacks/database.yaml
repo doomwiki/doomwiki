@@ -7,14 +7,14 @@ Parameters:
   ProjectName:
     Description: Primary project short name
     Type: String
-  VPCID:
-    Type: AWS::EC2::VPC::Id
-  VPCDefaultSecurityGroup:
-    Description: Default security group associated with the existing VPC
-    Type: AWS::EC2::SecurityGroup::Id
-  DatabaseSubnetList:
-    Type: List<AWS::EC2::Subnet::Id>
-    Description: Enter at least two subnet IDs for the database cluster
+  #VPCID:
+  #  Type: AWS::EC2::VPC::Id
+  #DefaultSecurityGroup:
+  #  Description: Default security group associated with the existing VPC
+  #  Type: AWS::EC2::SecurityGroup::Id
+  #DatabaseSubnetList:
+  #  Type: List<AWS::EC2::Subnet::Id>
+  #  Description: Enter at least two subnet IDs for the database cluster
   DatabaseName:
     Type: String
     Description: Name of primary database
@@ -46,21 +46,21 @@ Resources:
         PasswordLength: 41
         ExcludeCharacters: '"@/\.:%?`'
 
-  DatabasePasswordRotationSchedule:
-    Type: "AWS::SecretsManager::RotationSchedule"
-    DependsOn: SecretRDSInstanceAttachment
-    Properties:
-      RotateImmediatelyOnUpdate: true
-      SecretId: !Ref DatabasePassword
-      HostedRotationLambda:
-        RotationType: MySQLSingleUser
-        RotationLambdaName: !Sub ${ProjectName}-${EnvironmentName}-DatabasePasswordRotation
-        VpcSecurityGroupIds: !Ref VPCDefaultSecurityGroup
-        VpcSubnetIds: !Join [",", !Ref DatabaseSubnetList]
-        ExcludeCharacters: '"@/\.:%?`'
-      RotationRules:
-        AutomaticallyAfterDays: 90
-        Duration: 2h
+  #DatabasePasswordRotationSchedule:
+  #  Type: "AWS::SecretsManager::RotationSchedule"
+  #  DependsOn: SecretRDSInstanceAttachment
+  #  Properties:
+  #    RotateImmediatelyOnUpdate: true
+  #    SecretId: !Ref DatabasePassword
+  #    HostedRotationLambda:
+  #      RotationType: MySQLSingleUser
+  #      RotationLambdaName: !Sub ${ProjectName}-${EnvironmentName}-DatabasePasswordRotation
+  #      #VpcSecurityGroupIds: !Ref DefaultSecurityGroup
+  #      #VpcSubnetIds: !Join [",", !Ref DatabaseSubnetList]
+  #      ExcludeCharacters: '"@/\.:%?`'
+  #    RotationRules:
+  #      AutomaticallyAfterDays: 90
+  #      Duration: 2h
 
   DatabaseSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
@@ -121,7 +121,7 @@ Resources:
     Properties:
       GroupName: !Sub ${ProjectName}-${EnvironmentName}-database-cluster
       GroupDescription: !Sub Access ${ProjectName} database cluster
-      VpcId: !Ref VPCID
+      #VpcId: !Ref VPCID
       SecurityGroupIngress:
         - SourcePrefixListId: !Ref SGCidrPrefixList
           IpProtocol: tcp
@@ -130,8 +130,8 @@ Resources:
         - SourceSecurityGroupId:
             Fn::ImportValue: !Sub "${ProjectName}-${EnvironmentName}:FargateContainerSecurityGroup"
           IpProtocol: "-1"
-        - SourceSecurityGroupId: !Ref VPCDefaultSecurityGroup
-          IpProtocol: "-1"
+        #- SourceSecurityGroupId: !Ref DefaultSecurityGroup
+        #  IpProtocol: "-1"
 
   EnhancedMonitoringRole:
     Type: AWS::IAM::Role

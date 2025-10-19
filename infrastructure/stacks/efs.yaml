@@ -8,15 +8,6 @@ Parameters:
   ProjectName:
     Description: Primary project short name
     Type: String
-  VPCID:
-    Type: AWS::EC2::VPC::Id
-    Description: Existing VPC ID
-  VPCSubnets:
-    Description: Comma-separated list of private subnets associated with the existing VPC
-    Type: List<AWS::EC2::Subnet::Id>
-  VPCDefaultSecurityGroup:
-    Description: Default security group associated with the existing VPC
-    Type: AWS::EC2::SecurityGroup::Id
   ContainerSecurityGroup:
     Type: String
     Description: Security group for Fargate containers
