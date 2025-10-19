@@ -19,13 +19,15 @@ RUN yum -y update && yum -y install \
 # Install apache httpd and php (currently via php-fpm)
 RUN yum -y install httpd \
     && yum clean metadata \
-    && yum -y install php-{cli,fpm,mysqlnd,devel,gd,mbstring,curl,xml,pear,bcmath,json,opcache,ldap,sodium}
+        && yum -y install php-{apcu,bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xcache,xml} \
+    && yum clean all
 
-# We need node and npm for both local dev needs and for building the dist theme
-RUN yum -y install nodejs npm
+# We need python for reasons
+RUN yum -y install python3 && yum clean all
 
 # Add customizations and required elements for apache httpd and php
 COPY --chown=root:root infrastructure/doomwiki.vhost.conf /etc/httpd/conf.d
+COPY --chown=root:root infrastructure/access.conf /etc/httpd/access.conf
 COPY --chown=root:root infrastructure/php.custom.ini /etc/php.d/40-doomwiki-custom.ini
 RUN echo Listen 8080 > /etc/httpd/conf.d/ports.conf
 RUN mkdir /run/php-fpm
@@ -74,6 +76,9 @@ WORKDIR /home/doomwiki
 COPY --chown=doomwiki:doomwiki ./scripts/start-server.sh ./start
 COPY --chown=doomwiki:doomwiki ./.env .
 
+# Copy application source code (until we get dynamic installation working)
+COPY --chown=doomwiki:doomwiki /app/* .
+
 # Set permissions
 RUN chmod 755 -R .
 
@@ -89,24 +94,22 @@ CMD [ "/home/doomwiki/start" ]
 FROM base AS deploy
 
 # Install doomwiki (and associated packages)
-WORKDIR /home/doomwiki/app
+WORKDIR /home/doomwiki
 
+USER root
 #COPY --chown=doomwiki:doomwiki ./app/composer.* .
 #RUN composer install --no-dev
 #ENV PATH /home/doomwiki/app/vendor/bin:$PATH
 
 # Copy specific doomwiki customizations
-#COPY --chown=doomwiki:doomwiki ./app/config/default ./config/default
-#COPY --chown=doomwiki:doomwiki ./app/web/modules/custom ./web/modules/custom
-#COPY --chown=doomwiki:doomwiki ./app/web/themes/custom ./web/themes/custom
-#COPY --chown=doomwiki:doomwiki ./app/web/sites/default/settings.php ./web/sites/default/settings.php
 
 # Copy google search console verification file
 COPY --chown=doomwiki:doomwiki ./google*.html ./web/
 
 # Symlink to EFS Volume
-RUN sudo ln -s /var/www/files web/sites/default/files
+RUN ln -s /var/www/files web/sites/default/files
 
+USER doomwiki
 WORKDIR /home/doomwiki/app
 
 VOLUME /home/doomwiki/ /tmp/ /var/run/ /etc/ /var/lib/amazon/ /var/log/amazon/
@@ -121,13 +124,15 @@ VOLUME /home/doomwiki/ /tmp/ /var/run/ /etc/ /var/lib/amazon/ /var/log/amazon/
 # into the container while still making it editable outside the container.
 FROM base AS dev
 
+USER root
 # While most development will happen on mapped volumes via an IDE, it can be
 # useful to have some additional dev tools available inside the container.
 # Note that a local MySQL client is also required for some Drush operations.
-RUN sudo yum -y install \
+RUN yum -y install \
     vim \
     mariadb105 && \
-    sudo ln -s /usr/bin/vim /usr/bin/vi
+    yum clean all && \
+    ln -s /usr/bin/vim /usr/bin/vi
 
 # The dev container should support xdebug, but it does not necessarially need
 # to be installed by default as that adds some extra complexity and overhead
