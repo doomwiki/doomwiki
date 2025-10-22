@@ -1,0 +1,305 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Defines content import and export build projects.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: BuildProject Information
+        Parameters:
+          - ProjectName
+          - EnvironmentName
+      - Label:
+          default: EFS FileSystem Information
+        Parameters:
+          - ContentFilesSystemId
+          - ContentPrivateFilesSystemId
+      - Label:
+          default: Network Information
+        Parameters:
+          - VPCID
+          - VPCSubnets
+          - VPCDefaultSecurityGroup
+      - Label:
+          default: Secrets Information
+        Parameters:
+          - DBAccessSecret
+
+Parameters:
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  EnvironmentName:
+    Type: String
+    Description: The name for the environment that this cloudformation will be part of.
+  # VPC info
+  VPCID:
+    Description: Existing VPC ID (provisioned by ITS)
+    Type: AWS::EC2::VPC::Id
+  VPCSubnets:
+    Description: Comma-separated list of private subnets associated with the existing VPC
+    Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
+  VPCDefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+  # EFS FileSystem IDs
+  ContentFilesSystemId:
+    Description: The FileSystemId of the EFS to mount for the files content directory
+    Type: String
+  # DB Access Secret
+  DBAccessSecret:
+    Description: The name of the secret that contains the database access credentials. It must contain keys for username, host, dbname, port and password.
+    Type: String
+
+Resources:
+  CodeBuildContentServiceRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub ${ProjectName}-${EnvironmentName}-MathRole-CodeBuildContentServiceRole
+      Path: /
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildContentServiceRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+              - Resource: "*"
+                Effect: Allow
+                Action:
+                  - "ec2:*"
+                  - "ecr:*"
+                  - "cognito-idp:*"
+                  - "s3:*"
+                  - "lambda:*"
+                  - "rds:*"
+                  - "rds-data:*"
+                  - "secretsmanager:*"
+                  - "kms:Encrypt"
+                  - "kms:Decrypt"
+                  - "kms:ReEncrypt*"
+                  - "kms:GenerateDataKey*"
+                  - "kms:DescribeKey"
+                  - "cloudtrail:CreateTrail"
+                  - "cloudtrail:DeleteTrail"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
+  # Add an s3 bucket resource to store the build artifacts
+  MaintenanceArtifactBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub ${ProjectName}-${EnvironmentName}-maint-artifacts
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+  MaintenanceArtifactBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref MaintenanceArtifactBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowSSLRequestsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt MaintenanceArtifactBucket.Arn
+              - !Join
+                - ""
+                - - !GetAtt MaintenanceArtifactBucket.Arn
+                  - /*
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  CodeBuildExportProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-export-content
+      VpcConfig:
+        VpcId: !Ref VPCID
+        Subnets: !Ref VPCSubnets
+        SecurityGroupIds:
+          - !Ref VPCDefaultSecurityGroup
+      ServiceRole: !Ref CodeBuildContentServiceRole
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: MAINTENANCE_ARTIFACT_BUCKET
+            Value: !Ref MaintenanceArtifactBucket
+          - Name: PROJECT_NAME
+            Value: !Ref ProjectName
+          - Name: ENVIRONMENT_NAME
+            Value: !Ref EnvironmentName
+          - Name: DB_USER
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:username
+          - Name: DB_HOST
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:host
+          - Name: DB_PASSWORD
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:password
+          - Name: DB_NAME
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:dbname
+          - Name: DB_PORT
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:port
+      FileSystemLocations:
+        - Identifier: "ContentFiles"
+          Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
+          MountPoint: "/mnt/files"
+          Type: EFS
+        - Identifier: "ContentPrivateFiles"
+          Location: !Sub "${ContentPrivateFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
+          MountPoint: "/mnt/private"
+          Type: EFS
+      Artifacts:
+        Type: S3
+        Location: !Ref MaintenanceArtifactBucket
+        OverrideArtifactName: true
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+      Source:
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - yum install -y epel-release
+                - wget https://dev.mysql.com/get/mysql80-community-release-el7-5.noarch.rpm
+                - yum install -y mysql80-community-release-el7-5.noarch.rpm
+                - rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
+                - yum install -y mysql-community-client
+            pre_build:
+              commands:
+                - ls -al
+                - ls -al /mnt/files
+                - ls -al /mnt/private
+                - mkdir artifacts
+                - cd artifacts
+            build:
+              commands:
+                - mysqldump --lock-tables --set-gtid-purged=OFF -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME > db.sql
+                - if [ -d "/mnt/files/" ]; then tar cpf files.tar -C /mnt/files/ .; fi
+                - if [ -d "/mnt/private/" ]; then tar cpf private.tar -C /mnt/private/ .; fi
+                # The only way to dynamically add date information in the zipped file name is to do the zip and s3 copy ourselves (instad of in native Buildproject artifact controls)
+                - export ZIPNAME="${PROJECT_NAME}-${ENVIRONMENT_NAME}-export-$(date +%Y%m%d-%H%M).zip"
+                - zip -r "../$ZIPNAME" .
+                - cd ..
+                - aws s3 cp "$ZIPNAME" "s3://$MAINTENANCE_ARTIFACT_BUCKET/$ZIPNAME"
+  CodeBuildImportProject:
+    Type: "AWS::CodeBuild::Project"
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}-import-content-CAUTION
+      VpcConfig:
+        VpcId: !Ref VPCID
+        Subnets: !Ref VPCSubnets
+        SecurityGroupIds:
+          - !Ref VPCDefaultSecurityGroup
+      ServiceRole: !Ref CodeBuildContentServiceRole
+      Environment:
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+        Type: LINUX_CONTAINER
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: MAINTENANCE_ARTIFACT_BUCKET
+            Value: !Ref MaintenanceArtifactBucket
+          - Name: PROJECT_NAME
+            Value: !Ref ProjectName
+          - Name: ENVIRONMENT_NAME
+            Value: !Ref EnvironmentName
+          - Name: DB_USER
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:username
+          - Name: DB_HOST
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:host
+          - Name: DB_PASSWORD
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:password
+          - Name: DB_NAME
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:dbname
+          - Name: DB_PORT
+            Type: SECRETS_MANAGER
+            Value: !Sub ${DBAccessSecret}:port
+      FileSystemLocations:
+        - Identifier: "ContentFiles"
+          Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
+          MountPoint: "/mnt/files"
+          Type: EFS
+        - Identifier: "ContentPrivateFiles"
+          Location: !Sub "${ContentPrivateFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
+          MountPoint: "/mnt/private"
+          Type: EFS
+      Artifacts:
+        Type: S3
+        Location: !Ref MaintenanceArtifactBucket
+        OverrideArtifactName: true
+      Source:
+        Type: S3
+        Location: !Sub "${MaintenanceArtifactBucket}/import.zip"
+        BuildSpec: |
+          version: 0.2
+          phases:
+            install:
+              commands:
+                - yum install -y epel-release
+                - wget https://dev.mysql.com/get/mysql80-community-release-el7-5.noarch.rpm
+                - yum install -y mysql80-community-release-el7-5.noarch.rpm
+                - rpm --import https://repo.mysql.com/RPM-GPG-KEY-mysql-2023
+                - yum install -y mysql-community-client
+                - yum install -y rsync
+            pre_build:
+              commands:
+                - cd $CODEBUILD_SRC_DIR
+                - ls -al
+                - ls -al /mnt/files
+                - ls -al /mnt/private
+            build:
+              commands:
+                # Before importing DB drop all tables as having orphaned tables can create future issues
+                # in Drupal. We do this by using mysqldump to make a list of needed DROP statements
+                # and them piping that into a mysql import.
+                - if [ -f "db.sql" ]; then mysqldump --lock-tables --set-gtid-purged=OFF --add-drop-table --no-data -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME | grep -e '^DROP \| FOREIGN_KEY_CHECKS' | mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME; fi
+                # Import new DB content.
+                - if [ -f "db.sql" ]; then mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME < db.sql; fi
+                # Import files. Note that we use a tarball to preserve linux permissions and ownership
+                # that may get lost in the zip. Rsync then ensures clean duplication to mounts.
+                # TODO: Is rsync really needed here or should we just purge /mnt/files and extract the tar
+                # directly into it?
+                - if [ -f "files.tar" ]; then mkdir files; tar xpf files.tar -C files; rsync -a --delete --force files/ /mnt/files/; fi
+                - if [ -f "private.tar" ]; then mkdir private; tar xpf private.tar -C private; rsync -a --delete --force private/ /mnt/private/; fi
+                - ls -al /mnt/files
+                - ls -al /mnt/private

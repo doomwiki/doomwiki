@@ -71,6 +71,9 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub ${ProjectName}-${EnvironmentName}-service
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   ECSTaskRole:
     Type: AWS::IAM::Role
@@ -101,6 +104,9 @@ Resources:
                   - "ssm:*"
                   - "ses:*"
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   # This is a role which is used by the ECS tasks themselves.
   ECSTaskExecutionRole:
@@ -145,6 +151,9 @@ Resources:
                 Action:
                   - "kms:*"
                 Resource: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   # The task definition. This is a simple metadata description of what
   # container to run, and what resource requirements it has.

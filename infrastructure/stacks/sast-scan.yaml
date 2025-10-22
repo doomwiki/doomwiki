@@ -1,3 +1,5 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Stage for SAST scanning via Veracode
 Parameters:
   EnvironmentName:
     Description: Environment name
@@ -56,6 +58,9 @@ Resources:
                 Action:
                   - ecr:*
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   CodeScanProject:
     Type: AWS::CodeBuild::Project
@@ -81,12 +86,14 @@ Resources:
                 - cat /etc/os-release
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        # Follow https://docs.veracode.com/r/t_aws_config_codepipeline_static docs
-        Image: 922539530544.dkr.ecr.us-east-1.amazonaws.com/veracode/java-api-wrapper:latest
+        Image: !Ref AWS::NoValue
         ImagePullCredentialsType: SERVICE_ROLE
         Type: LINUX_CONTAINER
         PrivilegedMode: false
       ServiceRole: !Ref CodeScanServiceRole
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
 Outputs:
   CodeScanProject:

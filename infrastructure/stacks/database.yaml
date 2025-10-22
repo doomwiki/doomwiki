@@ -1,3 +1,5 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an RDS database cluster with Secrets Manager integration (PostgreSQL or MySQL)
 Transform: AWS::SecretsManager-2020-07-23
 Parameters:
   EnvironmentName:
@@ -44,7 +46,10 @@ Resources:
         SecretStringTemplate: '{"username": "db_admin"}'
         GenerateStringKey: "password"
         PasswordLength: 41
-        ExcludeCharacters: '"@/\.:%?`'
+        ExcludeCharacters: '"@/\\.:%?`'
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   #DatabaseSecretRotationSchedule:
   #  Type: "AWS::SecretsManager::RotationSchedule"
@@ -67,6 +72,9 @@ Resources:
     Properties:
       DBSubnetGroupDescription: CloudFormation managed DB subnet group.
       SubnetIds: !Ref DatabaseSubnetList
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   PostgreSQLClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -77,6 +85,9 @@ Resources:
       Parameters:
         log_connections: yes
         timezone: US/Eastern
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   MySQLClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -89,6 +100,9 @@ Resources:
         tls_version: TLSv1.2
         server_audit_logging: 1
         server_audit_events: CONNECT,QUERY,TABLE
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   MySQLInstanceParameterGroup:
     Type: AWS::RDS::DBParameterGroup
@@ -98,23 +112,24 @@ Resources:
       Family: aurora-mysql8.0
       Parameters:
         aurora_parallel_query: yes
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   SGCidrPrefixList:
     Type: AWS::EC2::PrefixList
     Properties:
-      PrefixListName: "Mathematica Network"
+      PrefixListName: "Doomwiki Privileged Users"
       AddressFamily: "IPv4"
       MaxEntries: 3
       Entries:
-        - Cidr: "10.0.0.0/13"
-          Description: "CIDR Block #1"
-        - Cidr: "10.8.0.0/15"
-          Description: "CIDR Block #2"
-        - Cidr: "10.10.0.0/16"
-          Description: "CIDR Block #3"
+        - Cidr: "24.13.235.119/32"
+          Description: "Mike L."
       Tags:
         - Key: "Name"
-          Value: "Mathematica Network"
+          Value: "Doomwiki Privileged Users"
+        - Key: platform
+          Value: !Ref ProjectName
 
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -132,6 +147,9 @@ Resources:
           IpProtocol: "-1"
         - SourceSecurityGroupId: !Ref DefaultSecurityGroup
           IpProtocol: "-1"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   EnhancedMonitoringRole:
     Type: AWS::IAM::Role
@@ -157,13 +175,16 @@ Resources:
                   - "logs:DescribeLogStreams"
                   - "logs:GetLogEvents"
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   DatabaseCluster:
     Type: AWS::RDS::DBCluster
     Properties:
       CopyTagsToSnapshot: true
       DatabaseName: !Ref DatabaseName
-      BackupRetentionPeriod: !If [Production, 30, 7]
+      BackupRetentionPeriod: 7
       DBClusterParameterGroupName:
         !If [
           IsMySQLDB,
@@ -189,6 +210,9 @@ Resources:
       StorageEncrypted: true
       VpcSecurityGroupIds:
         - !Ref DatabaseSecurityGroup
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   DatabaseInstance:
     Type: AWS::RDS::DBInstance
@@ -203,6 +227,9 @@ Resources:
       EnablePerformanceInsights: true
       DBParameterGroupName:
         !If [IsMySQLDB, !Ref MySQLInstanceParameterGroup, !Ref AWS::NoValue]
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   DatabaseInstance2:
     Condition: Production
@@ -218,6 +245,9 @@ Resources:
       EnablePerformanceInsights: true
       DBParameterGroupName:
         !If [IsMySQLDB, !Ref MySQLInstanceParameterGroup, !Ref AWS::NoValue]
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   #This is a SecretTargetAttachment resource which updates the referenced Secret resource with properties about
   #the referenced RDS instance
@@ -227,6 +257,9 @@ Resources:
       SecretId: !Ref DatabaseSecret
       TargetId: !Ref DatabaseCluster
       TargetType: AWS::RDS::DBCluster
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
 Outputs:
   DatabaseCluster:

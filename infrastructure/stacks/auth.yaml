@@ -17,7 +17,7 @@ Parameters:
     Type: String
   ReplyToEmailAddress:
     Type: String
-    Default: "PREPEvalSupport@mathematica-mpr.com"
+    Default: "doomwiki@mancubus.net"
   EmailDomainSourceArn:
     Type: String
     Default: ""
@@ -72,6 +72,9 @@ Resources:
               - Effect: Allow
                 Action: "sns:publish"
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   # This section defines an execution role and Lambda functions called by Cognito to manage
   # actions and additional custom logic during the authentication process. This was originally
@@ -147,6 +150,9 @@ Resources:
                 # Same issue described above, we can't get the cluster ARN directly from the stack,
                 # so granting access to describe attributes of all clusters.
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   CognitoUnAuthorizedRole:
     Type: "AWS::IAM::Role"
@@ -175,6 +181,9 @@ Resources:
                   - "mobileanalytics:PutEvents"
                   - "cognito-sync:*"
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   CognitoAuthorizedRole:
     Type: "AWS::IAM::Role"
@@ -204,6 +213,9 @@ Resources:
                   - "cognito-sync:*"
                   - "cognito-identity:*"
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   LambdaCreateAuthChallenge:
     Type: "AWS::Lambda::Function"

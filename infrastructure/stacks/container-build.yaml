@@ -18,7 +18,7 @@ Parameters:
     Type: AWS::EC2::VPC::Id
   VPCSubnets:
     Description: Comma-separated list of private subnets associated with the existing VPC
-    Type: List<AWS::EC2::Subnet::Id> #TODO: Set to list type and join to another variable where used
+    Type: List<AWS::EC2::Subnet::Id>
   DefaultSecurityGroup:
     Description: Default security group associated with the existing VPC
     Type: AWS::EC2::SecurityGroup::Id
@@ -65,6 +65,10 @@ Resources:
                   - "kms:DescribeKey"
                   - "cloudtrail:CreateTrail"
                   - "cloudtrail:DeleteTrail"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   CodeBuildProject:
     Type: "AWS::CodeBuild::Project"
     Properties:
@@ -112,7 +116,6 @@ Resources:
             Value: !Sub ${ProjectName}-${EnvironmentName}DatabasePassword
           - Name: ECR_URL
             Value: !Sub ${AWS::AccountId}.dkr.ecr.us-east-1.amazonaws.com
-
       Name: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildProject
       ServiceRole: !Ref CodeBuildServiceRole
       VpcConfig:
@@ -120,6 +123,9 @@ Resources:
         Subnets: !Ref VPCSubnets
         SecurityGroupIds:
           - !Ref DefaultSecurityGroup
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
 Outputs:
   CodeBuildProject:

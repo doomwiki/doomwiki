@@ -40,6 +40,8 @@ Resources:
       FileSystemTags:
         - Key: Name
           Value: Public File Storage
+        - Key: platform
+          Value: !Ref ProjectName
 
   EFSTargetMount1:
     Type: AWS::EFS::MountTarget
@@ -48,6 +50,9 @@ Resources:
       SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   EFSTargetMount2:
     Type: AWS::EFS::MountTarget
@@ -56,6 +61,9 @@ Resources:
       SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
 Outputs:
   FileSystemResource:

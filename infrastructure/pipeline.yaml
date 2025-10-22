@@ -107,7 +107,6 @@ Parameters:
   GitHubOrg:
     Description: Organizational owner of the GitHub repository
     Type: String
-    Default: mathematica-org
   AppRepo:
     Description: GitHub repository containing main application code
     Type: String
@@ -195,6 +194,10 @@ Resources:
                   - ssm:GetParameter
                   - ssm:DescribeParameters
                   - ssm:GetParameters
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   CloudFormationDeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -255,6 +258,10 @@ Resources:
                   - "route53:ChangeResourceRecordSets"
                 Resource: !Sub "arn:aws:route53:::hostedzone/${HostedZoneId}"
 
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   Repository:
     Type: AWS::ECR::Repository
     Properties:
@@ -291,6 +298,9 @@ Resources:
           }
         RegistryId: !Ref "AWS::AccountId"
       ImageTagMutability: IMMUTABLE
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   # While the build is in progress we need a place to store artifacts
   ArtifactBucket:
@@ -713,6 +723,36 @@ Resources:
                   - Name: InfrastructureArtifact
                 RunOrder: 3
               - !Ref AWS::NoValue
+
+            # ImportExport - Content import/export CodeBuild project
+            - Name: ImportExportBuildProject
+              Namespace: ImportExportBuildVars
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: "1"
+                Provider: CloudFormation
+              Configuration:
+                ActionMode: CREATE_UPDATE
+                RoleArn: !GetAtt CloudFormationDeployRole.Arn
+                StackName: !Sub ${ProjectName}-${EnvironmentName}-import-export-build
+                TemplatePath: InfrastructureArtifact::infrastructure/stacks/import-export-build.yaml
+                Capabilities: CAPABILITY_NAMED_IAM
+                ParameterOverrides: !Sub
+                  - |
+                    {
+                      "EnvironmentName": "${EnvironmentName}",
+                      "ProjectName": "${ProjectName}",
+                      "ContentFilesSystemId": "#{EFSVars.FileSystemResource}",
+                      "DBAccessSecret": "#{DBVars.DatabasePassword}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}",
+                      "VPCDefaultSecurityGroup": "#{ClusterVars.ContainerHostSecurityGroup}"
+                    }
+                  - VPCSubnets: !Join [",", !Ref VPCPublicSubnets]
+              InputArtifacts:
+                - Name: InfrastructureArtifact
+              RunOrder: 4
 
         - Name: Deploy
           Actions:

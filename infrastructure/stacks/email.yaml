@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Internal private facing load balancer, for forwarding private traffic to containers
+Description: SES Configurations
 Parameters:
   EnvironmentName:
     Type: String
@@ -30,6 +30,9 @@ Resources:
         SuppressedReasons:
           - COMPLAINT
           - BOUNCE
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
   EmailIdentity:
     Type: AWS::SES::EmailIdentity
@@ -46,3 +49,6 @@ Resources:
       MailFromAttributes:
         BehaviorOnMxFailure: USE_DEFAULT_VALUE
         MailFromDomain: !Sub "mail.${DomainName}"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName

@@ -43,6 +43,10 @@ Resources:
       GroupName: !Sub ${ProjectName}-${EnvironmentName}-containers
       GroupDescription: Access to the Fargate containers
       VpcId: !Ref VPCID
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -65,6 +69,10 @@ Resources:
           IpProtocol: tcp
           FromPort: 80
           ToPort: 80
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   EcsSecurityGroupIngressFromPrivateALB:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
@@ -106,37 +114,10 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
-  AccessLogBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref AccessLogBucket
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Action:
-              - s3:PutObject
-            Effect: Allow
-            Resource: !Join
-              - ""
-              - - !GetAtt AccessLogBucket.Arn
-                - /access-log/AWSLogs/
-                - !Ref AWS::AccountId
-                - /*
-            Principal:
-              AWS: arn:aws:iam::127311923021:root
-          - Sid: AllowSSLRequestsOnly
-            Effect: Deny
-            Principal: "*"
-            Action: s3:*
-            Resource:
-              - !GetAtt AccessLogBucket.Arn
-              - !Join
-                - ""
-                - - !GetAtt AccessLogBucket.Arn
-                  - /*
-            Condition:
-              Bool:
-                aws:SecureTransport: "false"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     DependsOn: AccessLogBucketPolicy
@@ -166,6 +147,10 @@ Resources:
           - !Ref VPCSubnets
       SecurityGroups:
         - !Ref LoadBalancerSecurityGroup
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+
   LoadBalancerWAFAssociation:
     Type: AWS::WAFv2::WebACLAssociation
     Condition: HasWAF

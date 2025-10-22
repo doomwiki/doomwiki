@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: AWS Fargate cluster that can span public and private subnets. Supports public facing load balancers, private internal load balancers, and both internal and external service discovery namespaces.
+Description: AWS Fargate cluster
 Parameters:
   EnvironmentName:
     Type: String
@@ -14,6 +14,9 @@ Resources:
     Type: AWS::Logs::LogGroup
     Properties:
       LogGroupName: !Sub ${ProjectName}-${EnvironmentName}-cluster
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
   AutoscalingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -39,6 +42,9 @@ Resources:
                   - ecs:DescribeServices
                   - ecs:UpdateService
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
   ECSRole:
     Type: AWS::IAM::Role
     Properties:
@@ -72,6 +78,9 @@ Resources:
                   - elasticloadbalancing:RegisterTargets
                   - elasticloadbalancing:DescribeTargetGroups
                 Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
