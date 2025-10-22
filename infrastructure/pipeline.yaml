@@ -24,12 +24,14 @@ Metadata:
           - GitOrg
           - GitRepo
           - GitRepoBranch
+          - CodeConnectionArn
       - Label:
           default: Network Information
         Parameters:
           - VPCID
           #- VPCPrivateSubnets
           - VPCPublicSubnets
+          - VPCDefaultSecurityGroup
           - WAFArn
       - Label:
           default: Additional Features
@@ -96,6 +98,9 @@ Parameters:
     Description: Comma-separated list of subnets associated with the existing VPC (only required for public load balancer access)
     Type: List<AWS::EC2::Subnet::Id>
     Default: ""
+  VPCDefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
   WAFArn:
     Description: WAF V2 Web ACL Arn for Load Balancer
     Type: String
@@ -476,7 +481,10 @@ Resources:
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectName": "${ProjectName}",
                       "DomainName": "${DomainName}",
-                      "DatabaseName": "${DatabaseName}"
+                      "DatabaseName": "${DatabaseName}",
+                      "VPCID": "${VPCID}",
+                      "VPCSubnets": "${VPCSubnets}",
+                      "DefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPublicSubnets]
               InputArtifacts:
