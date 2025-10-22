@@ -21,12 +21,9 @@ Metadata:
       - Label:
           default: Source Repository Information
         Parameters:
-          - GitHubOrg
-          - GitHubToken
-          - AppRepo
-          - AppRepoBranch
-          - InfrastructureRepo
-          - InfrastructureRepoBranch
+          - GitOrg
+          - GitRepo
+          - GitRepoBranch
       - Label:
           default: Network Information
         Parameters:
@@ -48,7 +45,6 @@ Parameters:
     Default: "dev"
     AllowedValues:
       - "dev"
-      - "qa"
       - "stg"
       - "prod"
   ProjectName:
@@ -104,23 +100,19 @@ Parameters:
     Description: WAF V2 Web ACL Arn for Load Balancer
     Type: String
   # Source info
-  GitHubOrg:
-    Description: Organizational owner of the GitHub repository
+  GitOrg:
+    Description: Organizational owner of the GitRepo repository
     Type: String
-  AppRepo:
-    Description: GitHub repository containing main application code
+  GitRepo:
+    Description: Git repository containing application and infrastructure code
     Type: String
-  AppRepoBranch:
-    Description: Git branch for main application code.
+  GitRepoBranch:
+    Description: Git branch containing application and infrastructure code
     Type: String
-    Default: "dev"
-  InfrastructureRepo:
-    Description: GitHub repository containing infrastructure templates
-    Type: String
-  InfrastructureRepoBranch:
-    Description: Git branch for infrastructure templates. It defaults to dev if not specified.
-    Type: String
-    Default: "dev"
+    Default: dev
+  CodeConnectionArn:
+    Description: CodeConnection ARN used to access the GitRepo repository
+    Type: String    
   UseEFS:
     Description: Include Elastic File Storage
     Type: String
@@ -365,6 +357,7 @@ Resources:
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
+      PipelineType: V2
       Stages:
         # First we have to pull the source code from the Github repository.
         - Name: Source
@@ -372,15 +365,14 @@ Resources:
             - Name: Application
               ActionTypeId:
                 Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
+                Owner: AWS
+                Provider: CodeStarSourceConnection
                 Version: "1"
               Configuration:
-                Owner: !Ref GitHubOrg
-                OAuthToken: !Sub "{{resolve:ssm:GitHubToken}}"
-                Repo: !Ref AppRepo
-                Branch: !Ref AppRepoBranch
-                PollForSourceChanges: false
+                ConnectionArn: !Ref CodeConnectionArn
+                FullRepositoryId: !Sub ${GitOrg}/${GitRepo}
+                BranchName: !Ref GitRepoBranch
+                DetectChanges: false
               OutputArtifacts:
                 - Name: SourceArtifact
         - Name: Testing
@@ -396,7 +388,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub "${ProjectName}-${EnvironmentName}-app-build-tests"
-                TemplatePath: SourceArtifact::infrastructure/stacks/app-tests-build.yaml
+                TemplatePath: SourceArtifact::infrastructure/stacks/app-pipeline/app-tests-build.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub |
                   { 
@@ -421,7 +413,7 @@ Resources:
                   ActionMode: CREATE_UPDATE
                   RoleArn: !GetAtt CloudFormationDeployRole.Arn
                   StackName: !Sub "${ProjectName}-${EnvironmentName}-sast-scan"
-                  TemplatePath: SourceArtifact::infrastructure/stacks/sast-scan.yaml
+                  TemplatePath: SourceArtifact::infrastructure/stacks/app-pipeline/sast-scan.yaml
                   Capabilities: CAPABILITY_NAMED_IAM
                   ParameterOverrides: !Sub |
                     { 
@@ -476,7 +468,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub "${ProjectName}-${EnvironmentName}-container-build"
-                TemplatePath: SourceArtifact::infrastructure/stacks/container-build.yaml
+                TemplatePath: SourceArtifact::infrastructure/stacks/app-pipeline/container-build.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub
                   - |
@@ -506,7 +498,19 @@ Resources:
               OutputArtifacts:
                 - Name: BuildOutput
               RunOrder: 6
-
+      Triggers:
+        - GitConfiguration:
+            Push:
+              - Branches:
+                  Includes:
+                    - !Ref GitRepoBranch
+                FilePaths:
+                  Includes:
+                    - "./**"
+                  Excludes:
+                    - infrastructure/hosting-pipeline/**
+            SourceActionName: Application
+          ProviderType: CodeStarSourceConnection
   # Infrastructure pipeline
   InfrastructurePipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -519,6 +523,7 @@ Resources:
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactBucket
+      PipelineType: V2
       Stages:
         - Name: Containers
           Actions:
@@ -539,15 +544,14 @@ Resources:
             - Name: Infrastructure
               ActionTypeId:
                 Category: Source
-                Owner: ThirdParty
-                Provider: GitHub
+                Owner: AWS
+                Provider: CodeStarSourceConnection
                 Version: "1"
               Configuration:
-                Owner: !Ref GitHubOrg
-                OAuthToken: !Sub "{{resolve:ssm:GitHubToken}}"
-                Repo: !Ref InfrastructureRepo
-                Branch: !Ref InfrastructureRepoBranch
-                PollForSourceChanges: false
+                ConnectionArn: !Ref CodeConnectionArn
+                FullRepositoryId: !Sub ${GitOrg}/${GitRepo}
+                BranchName: !Ref GitRepoBranch
+                DetectChanges: false
               OutputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 1
@@ -566,7 +570,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub "${ProjectName}-${EnvironmentName}-fargate-cluster"
-                TemplatePath: InfrastructureArtifact::stacks/fargate-cluster.yaml
+                TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/fargate-cluster.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub |
                   {
@@ -590,7 +594,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub "${ProjectName}-${EnvironmentName}-load-balancer"
-                TemplatePath: InfrastructureArtifact::stacks/load-balancer.yaml
+                TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/load-balancer.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub
                   - |
@@ -621,7 +625,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub "${ProjectName}-${EnvironmentName}-email"
-                TemplatePath: InfrastructureArtifact::stacks/email.yaml
+                TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/email.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub |
                   {
@@ -648,7 +652,7 @@ Resources:
                   ActionMode: CREATE_UPDATE
                   RoleArn: !GetAtt CloudFormationDeployRole.Arn
                   StackName: !Sub "${ProjectName}-${EnvironmentName}-database"
-                  TemplatePath: InfrastructureArtifact::stacks/database.yaml
+                  TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/database.yaml
                   Capabilities: CAPABILITY_NAMED_IAM,CAPABILITY_AUTO_EXPAND
                   ParameterOverrides: !Sub
                     - |
@@ -680,7 +684,7 @@ Resources:
                   ActionMode: CREATE_UPDATE
                   RoleArn: !GetAtt CloudFormationDeployRole.Arn
                   StackName: !Sub "${ProjectName}-${EnvironmentName}-efs"
-                  TemplatePath: InfrastructureArtifact::stacks/efs.yaml
+                  TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/efs.yaml
                   Capabilities: CAPABILITY_NAMED_IAM
                   ParameterOverrides: !Sub
                     - |
@@ -710,7 +714,7 @@ Resources:
                   ActionMode: CREATE_UPDATE
                   RoleArn: !GetAtt CloudFormationDeployRole.Arn
                   StackName: !Sub "${ProjectName}-${EnvironmentName}-auth"
-                  TemplatePath: InfrastructureArtifact::stacks/auth.yaml
+                  TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/auth.yaml
                   Capabilities: CAPABILITY_NAMED_IAM
                   ParameterOverrides: !Sub |
                     {
@@ -736,7 +740,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub ${ProjectName}-${EnvironmentName}-import-export-build
-                TemplatePath: InfrastructureArtifact::infrastructure/stacks/import-export-build.yaml
+                TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/import-export-build.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub
                   - |
@@ -768,7 +772,7 @@ Resources:
                 ActionMode: CREATE_UPDATE
                 RoleArn: !GetAtt CloudFormationDeployRole.Arn
                 StackName: !Sub "${ProjectName}-${EnvironmentName}-fargate-service"
-                TemplatePath: InfrastructureArtifact::stacks/fargate-service.yaml
+                TemplatePath: InfrastructureArtifact::infrastructure/stacks/hosting-pipeline/fargate-service.yaml
                 Capabilities: CAPABILITY_NAMED_IAM
                 ParameterOverrides: !Sub
                   - |
@@ -785,6 +789,17 @@ Resources:
               InputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 1
-
-        # - Name: Testing (Burpsuite)
-
+      Triggers:
+        - !If
+          - IsNotProduction
+          - GitConfiguration:
+              Push:
+                - Branches:
+                    Includes:
+                      - !Ref GitRepoBranch
+                  FilePaths:
+                    Includes:
+                      - infrastructure/stacks/hosting-pipeline/**
+              SourceActionName: Infrastructure
+            ProviderType: CodeStarSourceConnection
+          - !Ref AWS::NoValue
