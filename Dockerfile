@@ -19,8 +19,17 @@ RUN yum -y update && yum -y install \
 # Install apache httpd and php (currently via php-fpm)
 RUN yum -y install httpd \
     && yum clean metadata \
-        && yum -y install php-{apcu,bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xcache,xml} \
+        && yum -y install php-{apcu,bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xml} \
     && yum clean all
+
+RUN { \
+    echo 'opcache.enable=1'; \
+    echo 'opcache.memory_consumption=256'; \
+    echo 'opcache.interned_strings_buffer=16'; \
+    echo 'opcache.max_accelerated_files=20000'; \
+    echo 'opcache.validate_timestamps=0'; \
+    echo 'opcache.save_comments=1'; \
+} > /etc/php.d/99-opcache.ini
 
 # We need python for reasons
 RUN yum -y install python3 && yum clean all
