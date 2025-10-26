@@ -583,8 +583,7 @@ Resources:
                 ParameterOverrides: !Sub |
                   {
                     "EnvironmentName": "${EnvironmentName}",
-                    "ProjectName": "${ProjectName}",
-                    "VPCID": "${VPCID}"
+                    "ProjectName": "${ProjectName}"
                   }
               InputArtifacts:
                 - Name: InfrastructureArtifact

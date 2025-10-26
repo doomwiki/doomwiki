@@ -117,6 +117,23 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+  AccessLogBucketPolicy:
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket: !Ref AccessLogBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowSSLRequestsOnly"
+            Effect: "Deny"
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt AccessLogBucket.Arn
+              - !Join ["", [!GetAtt AccessLogBucket.Arn, "/*"]]
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
