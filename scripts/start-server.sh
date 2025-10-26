@@ -12,7 +12,7 @@ sudo crond
 # The web server is the primary maintainer of these files and should have
 # ownership. Only directores need any execute permission. Our Doomwiki 
 # user should be a member of the apache group.
-fileDirs=("/var/www/files" "/var/www/private")
+fileDirs=("/var/www/images")
 for fileDir in ${fileDirs[@]}; do
   echo "Updating owner and groups for $fileDir..."
   sudo chown -R apache:apache $fileDir

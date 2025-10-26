@@ -21,8 +21,8 @@ services:
       # filesystem on the host (e.g. WSL) this could be simplfied as a single
       # mapping of the entire /app directory, but that will be too slow at
       # runtime if mapping from NTFS volumes on the host.
-      - ./app/composer.json:/home/doomwiki/app/composer.json
-      - ./app/composer.lock:/home/doomwiki/app/composer.lock
+      - ./app/w/composer.json:/home/doomwiki/public_html/w/composer.json
+      - ./app/composer.lock:/home/doomwiki/public_html/w/composer.lock
     env_file: .env
 
   # Doomwiki service to simulate a deploy.
@@ -43,8 +43,7 @@ services:
     ports:
       - ${COMPOSE_WEB_PORT_DEPLOY:-8081}:8080
     volumes:
-      - ./app/web/sites/default/files:/var/www/files
-      - ./app/private:/var/www/private
+      - ./public_html/w/images:/var/www/images
     env_file: .env
 
   # DB service, with persistent named volume storage, that's a local stand-in

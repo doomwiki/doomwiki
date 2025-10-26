@@ -71,6 +71,8 @@ RUN chmod 777 /var/log/amazon
 USER doomwiki
 WORKDIR /home/doomwiki
 
+RUN mkdir -p public_html
+
 # Install cron task
 RUN crontab /etc/cron.d/doomwiki-cron
 
@@ -86,10 +88,10 @@ COPY --chown=doomwiki:doomwiki ./scripts/start-server.sh ./start
 COPY --chown=doomwiki:doomwiki ./.env .
 
 # Copy application source code (until we get dynamic installation working)
-COPY --chown=doomwiki:doomwiki /app/* .
+COPY --chown=doomwiki:doomwiki /app/* ./public_html/
 
 # Set permissions
-RUN chmod 755 -R .
+RUN chmod 755 -R ./
 
 # Start php-fpm and apache httpd on container run
 CMD [ "/home/doomwiki/start" ]
@@ -113,10 +115,10 @@ USER root
 # Copy specific doomwiki customizations
 
 # Copy google search console verification file
-COPY --chown=doomwiki:doomwiki ./google*.html ./web/
+COPY --chown=doomwiki:doomwiki ./google*.html ./public_html/
 
 # Symlink to EFS Volume
-RUN ln -s /var/www/files web/sites/default/files
+RUN ln -s /var/www/images ./public_html/w/images
 
 USER doomwiki
 WORKDIR /home/doomwiki/app

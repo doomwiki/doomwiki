@@ -37,11 +37,22 @@ if ( $wgCommandLineMode ) {
 		die( "This script must be run from the command line\n" );
 	}
 }
+
+/*
+ * Note that this snippet could be removed if using the a dotenv extension
+ * which may also offer some small performance advantages. 
+ */
+foreach (parse_ini_file('/home/doomwiki/.env') as $key => $value) {
+  if (!getenv($key)) {
+    putenv("$key=$value");
+  }
+}
+
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
 
-$wgServer            = "https://doomwiki.org";
-$wgCanonicalServer   = "https://doomwiki.org";
+$wgServer            = "https://".getenv("APP_DOMAIN");
+$wgCanonicalServer   = "https://".getenv("APP_DOMAIN");
 $wgSitename          = "DoomWiki.org";
 $wgMetaNamespace     = "Doom_Wiki";
 $wgMetaNamespaceTalk = "Doom_Wiki_talk";
