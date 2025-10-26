@@ -89,6 +89,7 @@ COPY --chown=doomwiki:doomwiki ./.env .
 
 # Copy application source code (until we get dynamic installation working)
 COPY --chown=doomwiki:doomwiki /app/* ./public_html/
+RUN mkdir -p public_html/w/images
 
 # Set permissions
 RUN chmod 755 -R ./
