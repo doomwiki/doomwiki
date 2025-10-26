@@ -94,6 +94,9 @@ Resources:
           Logging: DEFAULT
           # LogConfiguration:
           #   CloudWatchLogGroupName: !Sub ${ProjectName}-${EnvironmentName}-cluster
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
 
 # These are the values output by the CloudFormation template. Be careful
 # about changing any of them, because of them are exported with specific

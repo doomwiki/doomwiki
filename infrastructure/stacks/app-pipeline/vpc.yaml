@@ -17,6 +17,8 @@ Parameters:
     Type: AWS::EC2::AvailabilityZone::Name
   AzB:
     Type: AWS::EC2::AvailabilityZone::Name
+  AzC:
+    Type: AWS::EC2::AvailabilityZone::Name
 
 Resources:
   Vpc:
@@ -27,14 +29,23 @@ Resources:
       EnableDnsSupport: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-VPC" }]
 
-  PublicSubnet:
+  PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref Vpc
       AvailabilityZone: !Ref AzA
-      CidrBlock: 10.0.0.0/24
+      CidrBlock: 10.0.10.0/24
       MapPublicIpOnLaunch: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-public-subnet1" }]
+
+  PublicSubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      AvailabilityZone: !Ref AzB
+      CidrBlock: 10.0.11.0/24
+      MapPublicIpOnLaunch: true
+      Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-public-subnet2" }]
 
   PrivateSubnetA:
     Type: AWS::EC2::Subnet
@@ -60,35 +71,61 @@ Resources:
       VpcId: !Ref Vpc
       InternetGatewayId: !Ref IGW
 
-  PublicRT:
+  PublicRTA:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+  PublicRTB:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref Vpc
 
-  PublicRtAssoc:
+  PublicRtAssocA:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet
-      RouteTableId: !Ref PublicRT
+      SubnetId: !Ref PublicSubnetA
+      RouteTableId: !Ref PublicRTA
+  PublicRtAssocB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnetB
+      RouteTableId: !Ref PublicRTB
 
-  PublicDefaultRoute:
+  PublicDefaultRouteA:
     Type: AWS::EC2::Route
     Properties:
-      RouteTableId: !Ref PublicRT
+      RouteTableId: !Ref PublicRTA
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+  PublicDefaultRouteB:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRTB
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref IGW
 
-  NatEIP:
+  NatEIPA:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+  NatEIPB:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
 
-  NatGateway:
+  NatGatewayA:
     Type: AWS::EC2::NatGateway
     Properties:
-      AllocationId: !GetAtt NatEIP.AllocationId
-      SubnetId: !Ref PublicSubnet
-    Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-gateway" }]
+      AllocationId: !GetAtt NatEIPA.AllocationId
+      SubnetId: !Ref PublicSubnetA
+      Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-gateway" }]
+
+  NatGatewayB:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatEIPB.AllocationId
+      SubnetId: !Ref PublicSubnetB
+      Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-gateway" }]
 
 
   PrivateRTA:
@@ -105,7 +142,6 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnetA
       RouteTableId: !Ref PrivateRTA
-
   PrivateRtAssocB:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -117,18 +153,19 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRTA
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
-
+      NatGatewayId: !Ref NatGatewayA
   PrivateDefaultRouteB:
     Type: AWS::EC2::Route
     Properties:
       RouteTableId: !Ref PrivateRTB
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGateway
+      NatGatewayId: !Ref NatGatewayB
 
 Outputs:
   VpcId: { Value: !Ref Vpc }
-  PublicSubnetId: { Value: !Ref PublicSubnet }
+  PublicSubnetAId: { Value: !Ref PublicSubnetA }
+  PublicSubnetBId: { Value: !Ref PublicSubnetB }
   PrivateSubnetAId: { Value: !Ref PrivateSubnetA }
   PrivateSubnetBId: { Value: !Ref PrivateSubnetB }
-  NatGatewayId: { Value: !Ref NatGateway }
+  NatGatewayAId: { Value: !Ref NatGatewayA }
+  NatGatewayBId: { Value: !Ref NatGatewayB }
