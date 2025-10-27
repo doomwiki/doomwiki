@@ -669,7 +669,8 @@ Resources:
                         "DatabaseEngine": "${DatabaseEngine}",
                         "ProjectName": "${ProjectName}",
                         "VPCID": "${VPCID}",
-                        "DatabaseSubnetList": "${VPCSubnets}"
+                        "DatabaseSubnetList": "${VPCSubnets}",
+                        "DefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
                       }
                     - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
