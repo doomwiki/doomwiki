@@ -134,6 +134,16 @@ Resources:
             Condition:
               Bool:
                 aws:SecureTransport: "false"
+          - Sid: "AllowALBAccessLogs"
+            Effect: "Allow"
+            Principal:
+              Service: "logdelivery.elasticloadbalancing.amazonaws.com"
+            Action: "s3:PutObject"
+            Resource:
+              - !Join ["", [!GetAtt AccessLogBucket.Arn, "/*"]]
+            Condition:
+              StringEquals:
+                s3:x-amz-acl: "bucket-owner-full-control"
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
