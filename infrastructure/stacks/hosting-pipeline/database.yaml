@@ -257,9 +257,6 @@ Resources:
       SecretId: !Ref DatabaseSecret
       TargetId: !Ref DatabaseCluster
       TargetType: AWS::RDS::DBCluster
-      Tags:
-        - Key: platform
-          Value: !Ref ProjectName
 
 Outputs:
   DatabaseCluster:

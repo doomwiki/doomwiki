@@ -50,9 +50,6 @@ Resources:
       SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
-    Tags:
-      - Key: platform
-        Value: !Ref ProjectName
 
 Outputs:
   FileSystemResource:
