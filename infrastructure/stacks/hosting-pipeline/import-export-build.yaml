@@ -13,7 +13,6 @@ Metadata:
           default: EFS FileSystem Information
         Parameters:
           - ContentFilesSystemId
-          - ContentPrivateFilesSystemId
       - Label:
           default: Network Information
         Parameters:
@@ -177,10 +176,6 @@ Resources:
           Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
           MountPoint: "/mnt/files"
           Type: EFS
-        - Identifier: "ContentPrivateFiles"
-          Location: !Sub "${ContentPrivateFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
-          MountPoint: "/mnt/private"
-          Type: EFS
       Artifacts:
         Type: S3
         Location: !Ref MaintenanceArtifactBucket
@@ -258,10 +253,6 @@ Resources:
         - Identifier: "ContentFiles"
           Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
           MountPoint: "/mnt/files"
-          Type: EFS
-        - Identifier: "ContentPrivateFiles"
-          Location: !Sub "${ContentPrivateFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
-          MountPoint: "/mnt/private"
           Type: EFS
       Artifacts:
         Type: S3
