@@ -756,10 +756,10 @@ Resources:
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectName": "${ProjectName}",
                       "ContentFilesSystemId": "#{EFSVars.FileSystemResource}",
-                      "DBAccessSecret": "#{DBVars.DatabasePassword}",
+                      "DBAccessSecret": "#{DBVars.DBAdminSecret}",
                       "VPCID": "${VPCID}",
                       "VPCSubnets": "${VPCSubnets}",
-                      "VPCDefaultSecurityGroup": "#{ClusterVars.ContainerHostSecurityGroup}"
+                      "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
 

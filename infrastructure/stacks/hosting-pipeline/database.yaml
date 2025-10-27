@@ -263,3 +263,6 @@ Outputs:
   DatabaseCluster:
     Description: Database cluster information
     Value: !Ref DatabaseCluster
+  DBAdminSecret:
+    Description: Database admin secret ARN
+    Value: !Ref DatabaseSecret
