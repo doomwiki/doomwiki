@@ -194,6 +194,7 @@ Resources:
       DBSubnetGroupName: !Ref "DatabaseSubnetGroup"
       DeletionProtection: true
       EnableIAMDatabaseAuthentication: true
+      EnableHttpEndpoint: true
       Engine: !Ref DatabaseEngine
       MasterUsername: !Sub "{{resolve:secretsmanager:${DatabaseSecret}::username}}"
       MasterUserPassword: !Sub "{{resolve:secretsmanager:${DatabaseSecret}::password}}"

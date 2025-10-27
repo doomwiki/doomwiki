@@ -762,6 +762,7 @@ Resources:
                       "VPCDefaultSecurityGroup": "#{ClusterVars.ContainerHostSecurityGroup}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
+
               InputArtifacts:
                 - Name: InfrastructureArtifact
               RunOrder: 4
