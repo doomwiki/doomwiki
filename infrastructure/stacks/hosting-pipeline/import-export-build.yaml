@@ -146,7 +146,7 @@ Resources:
       ServiceRole: !Ref CodeBuildContentServiceRole
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
-        Image: "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
         Type: LINUX_CONTAINER
         PrivilegedMode: true
         EnvironmentVariables:
@@ -224,7 +224,7 @@ Resources:
       ServiceRole: !Ref CodeBuildContentServiceRole
       Environment:
         ComputeType: BUILD_GENERAL1_MEDIUM
-        Image: "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+        Image: "aws/codebuild/amazonlinux2-x86_64-standard:5.0"
         Type: LINUX_CONTAINER
         PrivilegedMode: true
         EnvironmentVariables:
@@ -277,7 +277,6 @@ Resources:
                 - cd $CODEBUILD_SRC_DIR
                 - ls -al
                 - ls -al /mnt/files
-                - ls -al /mnt/private
             build:
               commands:
                 # Before importing DB drop all tables as having orphaned tables can create future issues
@@ -291,6 +290,4 @@ Resources:
                 # TODO: Is rsync really needed here or should we just purge /mnt/files and extract the tar
                 # directly into it?
                 - if [ -f "files.tar" ]; then mkdir files; tar xpf files.tar -C files; rsync -a --delete --force files/ /mnt/files/; fi
-                - if [ -f "private.tar" ]; then mkdir private; tar xpf private.tar -C private; rsync -a --delete --force private/ /mnt/private/; fi
                 - ls -al /mnt/files
-                - ls -al /mnt/private
