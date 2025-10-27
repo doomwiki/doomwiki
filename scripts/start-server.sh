@@ -22,6 +22,9 @@ for fileDir in ${fileDirs[@]}; do
   sudo find $fileDir -type f -exec chmod 664 '{}' ';'
 done
 
+echo "Start rsyslog daemon..."
+sudo rsyslogd
+
 echo "Start php-fpm daemon..."
 # Uncomment the lines below to allow php-fpm to inherit .env directly.
 # This is only needed if Doomwiki is not sourcing the environment itself. Note
