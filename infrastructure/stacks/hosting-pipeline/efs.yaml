@@ -50,6 +50,13 @@ Resources:
       SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
+  EFSTargetMount2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref FileSystemResource
+      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
 
 Outputs:
   FileSystemResource:
