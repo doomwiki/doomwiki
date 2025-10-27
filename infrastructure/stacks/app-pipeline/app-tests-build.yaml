@@ -80,8 +80,6 @@ Resources:
         EnvironmentVariables:
           - Name: ENV
             Value: !Ref EnvironmentName
-          - Name: DB_SECRET
-            Value: !Sub ${EnvironmentName}DatabasePassword
       ServiceRole: !Ref CodeTestBuildServiceRole
       Tags:
         - Key: platform
