@@ -51,7 +51,7 @@ foreach (parse_ini_file('/home/doomwiki/.env') as $key => $value) {
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
 
-$wgServer            = "https://".getenv("APP_DOMAIN");
+$wgServer            = "//".getenv("APP_DOMAIN");
 $wgCanonicalServer   = "https://".getenv("APP_DOMAIN");
 $wgSitename          = "DoomWiki.org";
 $wgMetaNamespace     = "Doom_Wiki";

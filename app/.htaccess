@@ -32,9 +32,9 @@ RewriteCond %{HTTP_USER_AGENT} GPTBot [NC]
 RewriteRule ^(.*)$ - [F]
 
 # Do the rewrite
-RewriteRule ^wiki/(.*)$ /w/index.php?title=$1 [PT,L,QSA]
-RewriteRule ^wiki/*$ /w/index.php [L,QSA]
-RewriteRule ^/*$ /w/index.php [L,QSA]
+RewriteRule ^wiki/(.*)$ /w/index.php?title=$1 [PT,END,QSA]
+RewriteRule ^wiki/*$ /w/index.php [END,QSA]
+RewriteRule ^/*$ /w/index.php [END,QSA]
 
 AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
 
