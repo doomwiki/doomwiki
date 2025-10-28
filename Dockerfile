@@ -83,7 +83,7 @@ RUN crontab /etc/cron.d/doomwiki-cron
 RUN mkdir .composer
 WORKDIR /home/doomwiki/.composer
 RUN wget https://getcomposer.org/installer && php installer --filename=composer
-ENV PATH /home/doomwiki/.composer:$PATH
+ENV PATH=/home/doomwiki/.composer:$PATH
 
 # Copy support scripts
 WORKDIR /home/doomwiki
@@ -114,7 +114,7 @@ WORKDIR /home/doomwiki
 USER root
 #COPY --chown=doomwiki:doomwiki ./app/composer.* .
 #RUN composer install --no-dev
-#ENV PATH /home/doomwiki/public_html/w:$PATH
+#ENV PATH=/home/doomwiki/public_html/w:$PATH
 
 # Copy specific doomwiki customizations
 
@@ -163,5 +163,5 @@ COPY --chown=doomwiki:doomwiki ./scripts/start-server.dev.sh ./start
 RUN chmod 755 -R .
 
 # Prepare CLI environment for dev.
-ENV PATH /home/doomwiki/public_html/w:$PATH
+ENV PATH=/home/doomwiki/public_html/w:$PATH
 WORKDIR /home/doomwiki/public_html

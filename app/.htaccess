@@ -28,32 +28,8 @@ RewriteCond %{HTTP_USER_AGENT} ^.*goblox [NC,OR]
 RewriteCond %{HTTP_USER_AGENT} ^.*sun4u [NC,OR]
 RewriteCond %{HTTP_USER_AGENT} GPTBot [NC,OR]
 RewriteCond %{HTTP_REFERER} ^https?://(([^.]+\.)+)?amazonaws\.com [NC,OR]
-RewriteCond %{REMOTE_HOST} ^.*\.amazonaws\.com$ [NC]
+#RewriteCond %{REMOTE_HOST} ^.*\.amazonaws\.com$ [NC]
 RewriteRule ^(.*)$ - [F]
-
-RewriteCond %{HTTP_HOST} ^.*\.doomwiki.org$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTP_HOST} ^doomwiki\.co$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTP_HOST} ^doomwiki\.net$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTP_HOST} ^doomwiki\.info$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTP_HOST} ^.*\.doomwiki\.co$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTP_HOST} ^.*\.doomwiki\.net$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTP_HOST} ^.*\.doomwiki\.info$ [NC]
-RewriteRule ^(.*)$ http://doomwiki.org/$1 [R=301,L]
-
-RewriteCond %{HTTPS} off
-RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
 
 # Do the rewrite
 RewriteRule ^wiki/(.*)$ /w/index.php?title=$1 [PT,L,QSA]
