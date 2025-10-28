@@ -6,19 +6,21 @@ Redirect 301 /index.php /w/index.php
 # already.  That might cause weird errors.
 RewriteEngine on
 
-# Hotlinking blacklist - haleyjd 20170827
-RewriteCond %{HTTP_REFERER} ^https?://(m\.)?joemonster\.org/.*$ [NC]
-RewriteRule \.(gif|jpe?g|png)$ - [F]
-
 # Skip all rules for ELB Health Checker
 RewriteCond %{HTTP_USER_AGENT} ^ELB-HealthChecker/2\.0$ [NC]
 RewriteRule ^ - [L]
 
-# Skip rewrite for robots.txt and existing files/directories
-RewriteRule ^robots\.txt$ - [L]
+# Skip rewrite for existing files and directories
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+
+# Handle index.php redirect
+RewriteRule ^index\.php$ /w/index.php [R=301,L]
+
+# Hotlinking blacklist - haleyjd 20170827
+RewriteCond %{HTTP_REFERER} ^https?://(m\.)?joemonster\.org/.*$ [NC]
+RewriteRule \.(gif|jpe?g|png)$ - [F]
 
 # Commercial scraping blacklist - haleyjd 20171007
 RewriteCond %{HTTP_USER_AGENT} atraxbot [NC,OR]
@@ -38,10 +40,10 @@ RewriteCond %{HTTP_USER_AGENT} ^.*sun4u [NC,OR]
 RewriteCond %{HTTP_USER_AGENT} GPTBot [NC]
 RewriteRule ^(.*)$ - [F]
 
-# Do the rewrite
-RewriteRule ^wiki/(.*)$ /w/index.php?title=$1 [PT,END,QSA]
-RewriteRule ^wiki/*$ /w/index.php [END,QSA]
-RewriteRule ^/*$ /w/index.php [END,QSA]
+# MediaWiki rewrites
+RewriteRule ^wiki/(.*)$ /w/index.php?title=$1 [L,QSA]
+RewriteRule ^wiki/*$ /w/index.php [L]
+RewriteRule ^/*$ /w/index.php [L]
 
 AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
 
