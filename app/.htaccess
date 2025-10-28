@@ -10,8 +10,15 @@ RewriteEngine on
 RewriteCond %{HTTP_REFERER} ^https?://(m\.)?joemonster\.org/.*$ [NC]
 RewriteRule \.(gif|jpe?g|png)$ - [F]
 
-# Allow ELB Health Checker
-RewriteCond %{HTTP_USER_AGENT} !^ELB-HealthChecker/2\.0$ [NC]
+# Skip all rules for ELB Health Checker
+RewriteCond %{HTTP_USER_AGENT} ^ELB-HealthChecker/2\.0$ [NC]
+RewriteRule ^ - [L]
+
+# Skip rewrite for robots.txt and existing files/directories
+RewriteRule ^robots\.txt$ - [L]
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
 # Commercial scraping blacklist - haleyjd 20171007
 RewriteCond %{HTTP_USER_AGENT} atraxbot [NC,OR]
