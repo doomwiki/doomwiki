@@ -92,7 +92,7 @@ COPY --chown=doomwiki:doomwiki ./.env .
 
 # Copy application source code (until we get dynamic installation working)
 COPY --chown=doomwiki:doomwiki /app/* ./public_html/
-RUN mkdir -p public_html/w/images
+RUN mkdir -p ./public_html/w/images
 
 # Set permissions
 RUN chmod 755 -R ./
@@ -114,7 +114,7 @@ WORKDIR /home/doomwiki
 USER root
 #COPY --chown=doomwiki:doomwiki ./app/composer.* .
 #RUN composer install --no-dev
-#ENV PATH /home/doomwiki/app/vendor/bin:$PATH
+#ENV PATH /home/doomwiki/public_html/w:$PATH
 
 # Copy specific doomwiki customizations
 
@@ -125,7 +125,7 @@ COPY --chown=doomwiki:doomwiki ./google*.html ./public_html/
 RUN ln -s /var/www/images ./public_html/w/images
 
 USER doomwiki
-WORKDIR /home/doomwiki/app
+WORKDIR /home/doomwiki/public_html
 
 VOLUME /home/doomwiki/ /tmp/ /var/run/ /etc/ /var/lib/amazon/ /var/log/amazon/
 
@@ -163,5 +163,5 @@ COPY --chown=doomwiki:doomwiki ./scripts/start-server.dev.sh ./start
 RUN chmod 755 -R .
 
 # Prepare CLI environment for dev.
-ENV PATH /home/doomwiki/app/vendor/bin:$PATH
-WORKDIR /home/doomwiki/app
+ENV PATH /home/doomwiki/public_html/w:$PATH
+WORKDIR /home/doomwiki/public_html
