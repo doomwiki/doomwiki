@@ -39,7 +39,6 @@ RUN yum -y install python3 && yum clean all
 COPY --chown=root:root infrastructure/doomwiki.vhost.conf /etc/httpd/conf.d
 COPY --chown=root:root infrastructure/access.conf /etc/httpd/access.conf
 COPY --chown=root:root infrastructure/php.custom.ini /etc/php.d/40-doomwiki-custom.ini
-COPY --chown=root:root infrastructure/rsyslog.conf /etc/rsyslog.d/doomwiki.conf
 RUN echo Listen 8080 > /etc/httpd/conf.d/ports.conf
 RUN mkdir /run/php-fpm
 
