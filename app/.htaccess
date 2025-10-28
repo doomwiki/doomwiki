@@ -27,8 +27,6 @@ RewriteCond %{HTTP_USER_AGENT} ^.*casper [NC,OR]
 RewriteCond %{HTTP_USER_AGENT} ^.*goblox [NC,OR]
 RewriteCond %{HTTP_USER_AGENT} ^.*sun4u [NC,OR]
 RewriteCond %{HTTP_USER_AGENT} GPTBot [NC,OR]
-RewriteCond %{HTTP_REFERER} ^https?://(([^.]+\.)+)?amazonaws\.com [NC,OR]
-RewriteCond %{REMOTE_HOST} ^.*\.amazonaws\.com$ [NC]
 RewriteRule ^(.*)$ - [F]
 
 # Do the rewrite

@@ -14,7 +14,6 @@ RUN yum -y update && yum -y install \
     nano \
     xz \
     patch \
-    rsyslog \
     aws-kinesis-agent && \
     yum clean all
 
