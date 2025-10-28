@@ -92,7 +92,6 @@ COPY --chown=doomwiki:doomwiki ./.env .
 
 # Copy application source code (until we get dynamic installation working)
 COPY --chown=doomwiki:doomwiki ./app/. ./public_html/
-RUN mkdir -p ./public_html/w/images
 
 # Set permissions
 RUN chmod 755 -R ./
@@ -122,7 +121,7 @@ USER root
 COPY --chown=doomwiki:doomwiki ./google*.html ./public_html/
 
 # Symlink to EFS Volume
-RUN ln -s /var/www/images ./public_html/w/images
+RUN ln -s /var/www/images ./public_html/w/
 
 USER doomwiki
 WORKDIR /home/doomwiki/public_html
