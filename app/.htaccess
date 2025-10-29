@@ -2,18 +2,17 @@ Options +FollowSymLinks
 
 Redirect 301 /index.php /w/index.php
 
-# first, enable the processing - Unless your ISP has it enabled
-# already.  That might cause weird errors.
+# Enable rewrite engine
 RewriteEngine on
 
-# Skip all rules for ELB Health Checker
-RewriteCond %{HTTP_USER_AGENT} ^ELB-HealthChecker/2\.0$ [NC]
-RewriteRule ^ - [L]
-
-# Skip rewrite for existing files and directories
+# Handle direct file and directory access first - no rewriting needed
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^ - [L]
+
+# Handle health checks
+RewriteCond %{HTTP_USER_AGENT} ^ELB-HealthChecker/2\.0$ [NC]
+RewriteRule ^ /w/index.php [L]
 
 # Handle index.php redirect
 RewriteRule ^index\.php$ /w/index.php [R=301,L]
