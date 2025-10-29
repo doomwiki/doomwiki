@@ -19,6 +19,9 @@ Parameters:
     Type: AWS::EC2::AvailabilityZone::Name
   AzC:
     Type: AWS::EC2::AvailabilityZone::Name
+  VpcEndpointSgId:
+    Description: Security Group ID to associate with VPC endpoints
+    Type: AWS::EC2::SecurityGroup::Id
 
 Resources:
   Vpc:
@@ -160,6 +163,47 @@ Resources:
       RouteTableId: !Ref PrivateRTB
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NatGatewayB
+
+  S3GatewayEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcEndpointType: Gateway
+      RouteTableIds:
+        - !Ref PrivateRTA
+        - !Ref PrivateRTB
+
+  CodeBuildEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.codebuild
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      SecurityGroupIds: [!Ref VpcEndpointSgId]
+      PrivateDnsEnabled: true
+
+  LogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      SecurityGroupIds: [!Ref VpcEndpointSgId]
+      PrivateDnsEnabled: true
+
+  StsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.sts
+      SubnetIds: [!Ref PrivateSubnetA, !Ref PrivateSubnetB]
+      SecurityGroupIds: [!Ref VpcEndpointSgId]
+      PrivateDnsEnabled: true
+
 
 Outputs:
   VpcId: { Value: !Ref Vpc }
