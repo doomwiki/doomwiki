@@ -1,0 +1,26 @@
+template-file-path: infrastructure/pipeline.yaml
+parameters:
+  GitRepoBranch: main
+  CodeConnectionArn: >-
+    arn:aws:codeconnections:us-east-1:593793030920:connection/adf50e4f-e7f8-45e2-a504-86b37adf369e
+  UseEFS: 'Yes'
+  EnvironmentName: prod
+  ProjectName: doomwiki
+  DomainName: doomwiki.dev
+  VPCID: vpc-08bc2a6b353ad3c28
+  HostedZoneId: Z102856325TZADX2NJ8YK
+  DatabaseEngine: aurora-mysql
+  UseVeracode: 'No'
+  LoadBalancerAccessType: Public
+  AlertsEmailAddress: doomwiki@mancubus.net
+  DatabaseName: doomwiki
+  WAFArn: >-
+    arn:aws:wafv2:us-east-2:593793030920:regional/webacl/doomwiki/1fd825c3-82c6-48af-9709-abe9ef8e6b4d
+  UseCognito: 'No'
+  VPCPrivateSubnets: subnet-05e2da6a7935df9a6,subnet-0012e1f910819dcb8
+  GitRepo: doomwiki
+  VPCPublicSubnets: subnet-01827f62d396427a6,subnet-02959eb61b7cbe9a6
+  IncludeDatabase: 'Yes'
+  GitOrg: doomwiki
+  VPCDefaultSecurityGroup: sg-00ab9ec807b935a3f
+tags: {}
