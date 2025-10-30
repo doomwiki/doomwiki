@@ -20,7 +20,7 @@ fileDirs=("/var/www/images")
 #  sudo find $fileDir -type d -exec chmod 775 '{}' ';'
 #  echo "Updating file permissions for $fileDir..."
 #  sudo find $fileDir -type f -exec chmod 664 '{}' ';'
-done
+#done
 
 echo "Start php-fpm daemon..."
 sudo bash -c 'echo "clear_env = no" >> /etc/php-fpm.d/www.conf'
