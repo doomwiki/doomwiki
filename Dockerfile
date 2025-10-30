@@ -21,7 +21,9 @@ RUN yum -y update && yum -y install \
 RUN yum -y install httpd \
     && yum clean metadata \
         && yum -y install php-{apcu,bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xml} \
-    && yum clean all
+    && yum clean all \
+    && mkdir -p /run/php-fpm \
+    && chown apache:apache /run/php-fpm
 
 RUN { \
     echo 'opcache.enable=1'; \
@@ -39,9 +41,8 @@ RUN yum -y install python3 && yum clean all
 COPY --chown=root:root infrastructure/doomwiki.vhost.conf /etc/httpd/conf.d
 COPY --chown=root:root infrastructure/access.conf /etc/httpd/access.conf
 COPY --chown=root:root infrastructure/php.custom.ini /etc/php.d/40-doomwiki-custom.ini
-COPY --chown=root:root infrastructure/php-fpm.conf /etc/php-fpm.conf
+COPY --chown=root:root infrastructure/php-fpm-apache.conf /etc/httpd/conf.d/php-fpm.conf
 RUN echo Listen 8080 > /etc/httpd/conf.d/ports.conf
-RUN mkdir /run/php-fpm
 
 # Set up global cron task
 COPY --chown=root:root infrastructure/doomwiki-cron /etc/cron.d/doomwiki-cron

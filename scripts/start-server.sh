@@ -23,12 +23,8 @@ for fileDir in ${fileDirs[@]}; do
 done
 
 echo "Start php-fpm daemon..."
-# Uncomment the lines below to allow php-fpm to inherit .env directly.
-# This is only needed if Doomwiki is not sourcing the environment itself. Note
-# that this is needed even if loading the environment externally with Docker.
-# sudo bash -c 'cat /home/doomwiki/.env >> /etc/environment'
-# sudo bash -c 'echo "clear_env = no" >> /etc/php-fpm.d/www.conf'
-sudo php-fpm
+sudo bash -c 'echo "clear_env = no" >> /etc/php-fpm.d/www.conf'
+sudo php-fpm --nodaemonize
 
 echo "Start apache httpd (in the foreground)..."
 sudo /usr/sbin/httpd -D FOREGROUND
