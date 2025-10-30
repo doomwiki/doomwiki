@@ -13,18 +13,18 @@ sudo crond
 # ownership. Only directores need any execute permission. Our Doomwiki 
 # user should be a member of the apache group.
 fileDirs=("/var/www/images")
-for fileDir in ${fileDirs[@]}; do
-  echo "Updating owner and groups for $fileDir..."
-  sudo chown -R apache:apache $fileDir
-  echo "Updating directory permissions for $fileDir..."
-  sudo find $fileDir -type d -exec chmod 775 '{}' ';'
-  echo "Updating file permissions for $fileDir..."
-  sudo find $fileDir -type f -exec chmod 664 '{}' ';'
+#for fileDir in ${fileDirs[@]}; do
+#  echo "Updating owner and groups for $fileDir..."
+#  sudo chown -R apache:apache $fileDir
+#  echo "Updating directory permissions for $fileDir..."
+#  sudo find $fileDir -type d -exec chmod 775 '{}' ';'
+#  echo "Updating file permissions for $fileDir..."
+#  sudo find $fileDir -type f -exec chmod 664 '{}' ';'
 done
 
 echo "Start php-fpm daemon..."
 sudo bash -c 'echo "clear_env = no" >> /etc/php-fpm.d/www.conf'
-sudo php-fpm --nodaemonize
+sudo php-fpm --nodaemonize 2>&1 &
 
 echo "Start apache httpd (in the foreground)..."
-sudo /usr/sbin/httpd -D FOREGROUND
+sudo /usr/sbin/httpd -D FOREGROUND 2>&1
