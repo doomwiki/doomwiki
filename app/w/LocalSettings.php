@@ -128,7 +128,7 @@ $wgDBadminpassword  = getenv('MYSQL_ADMINPASSWORD');
 // When set, this overrides the simple $wgDBserver/$wgDBname/... variables above
 // and lets us specify 'port' and 'connTimeout'.
 $wgDBservers = [ [
-    'host'        => getenv('MYSQL_HOSTNAME'),
+    'host'        => getenv('MYSQL_HOSTNAME').":".getenv('MYSQL_PORT'),
     'port'        => (int)(getenv('MYSQL_PORT') ?: 3306),
     'dbname'      => getenv('MYSQL_DATABASE'),
     'user'        => getenv('MYSQL_USERNAME'),
