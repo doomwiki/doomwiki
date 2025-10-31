@@ -1,4 +1,4 @@
-FROM amazonlinux:latest AS base
+FROM amazonlinux:2 AS base
 
 EXPOSE 8080
 
@@ -17,10 +17,12 @@ RUN yum -y update && yum -y install \
     aws-kinesis-agent && \
     yum clean all
 
-# Install apache httpd and php (currently via php-fpm)
-RUN yum -y install httpd \
+# Enable PHP 7.4 from amazon-linux-extras and install apache httpd + php-fpm
+RUN yum -y install amazon-linux-extras \
+    && amazon-linux-extras enable php7.4 \
     && yum clean metadata \
-        && yum -y install php-{apcu,bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xml} \
+    && yum -y install httpd \
+    && yum -y install php-{apcu,bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xcache,xml} \
     && yum clean all \
     && mkdir -p /run/php-fpm \
     && chown apache:apache /run/php-fpm

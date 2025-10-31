@@ -15,6 +15,14 @@
 //error_reporting(-1);
 //ini_set("display_errors", 1);
 
+// Ensure legacy MediaWiki works on PHP 8+ by disabling mysqli exceptions
+// (some distros enable MYSQLI_REPORT_ERROR|MYSQLI_REPORT_STRICT by default).
+// This must be set before any DB activity.
+if (function_exists('mysqli_report')) {
+    @ini_set('mysqli.report_mode', 0);
+    @mysqli_report(MYSQLI_REPORT_OFF);
+}
+
 // 20170905: jobs need to be run through a cronjob
 $wgJobRunRate = 0;
 
@@ -50,6 +58,13 @@ foreach (parse_ini_file('/home/doomwiki/.env') as $key => $value) {
 
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
+
+// Debug/diagnostics: show full exception details and DB backtraces
+// and write a consolidated debug log. Disable or adjust in production.
+$wgShowExceptionDetails = true;
+$wgShowSQLErrors = true;
+$wgShowDBErrorBacktrace = true;
+if (empty($wgDebugLogFile)) { $wgDebugLogFile = '/tmp/mw-debug.log'; }
 
 $wgServer            = "//".getenv("APP_DOMAIN");
 $wgCanonicalServer   = "https://".getenv("APP_DOMAIN");
