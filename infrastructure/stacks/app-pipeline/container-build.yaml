@@ -113,7 +113,7 @@ Resources:
           - Name: ENV
             Value: !Ref EnvironmentName
           - Name: DB_SECRET
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabasePassword
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret
           - Name: ECR_URL
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
       Name: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildProject
