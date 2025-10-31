@@ -18,14 +18,15 @@ MYSQL_USERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r
 MYSQL_PASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.password'`"
 MYSQL_ADMINUSERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.username'`"
 MYSQL_ADMINPASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.password'`"
-SMTP_HOST=`echo $WIKI_CONF_OVERRIDES | jq -r '.smtp_settings.smtp_host'`
-SMTP_PORT=`echo $WIKI_CONF_OVERRIDES | jq -r '.smtp_settings.smtp_port'`
-SMTP_USERNAME="`echo $WIKI_CONF_OVERRIDES | jq -r '.smtp_settings.smtp_username'`"
-SMTP_PASSWORD="`echo $WIKI_CONF_OVERRIDES | jq -r '.smtp_settings.smtp_password'`"
-WIKI_SECRET_KEY="`echo $WIKI_CONF_OVERRIDES | jq -r '.wiki_secret_key'`"
-WIKI_UB_UPLOAD_BLACKLIST="`echo $WIKI_CONF_OVERRIDES | jq -r '.wiki_ub_upload_blacklist'`"
-WIKI_MONACO_PAYPAL_ID="`echo $WIKI_CONF_OVERRIDES | jq -r '.wiki_monaco_paypal_id'`"
-WIKI_GOOGLE_SITE_VERIFICATION="`echo $WIKI_CONF_OVERRIDES | jq -r '.wiki_google_site_verification'`"
+SMTP_HOST=`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.smtp_settings.smtp_host'`
+SMTP_PORT=`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.smtp_settings.smtp_port'`
+SMTP_USERNAME="`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.smtp_settings.smtp_username'`"
+SMTP_PASSWORD="`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.smtp_settings.smtp_password'`"
+WIKI_SECRET_KEY="`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.wiki_secret_key'`"
+WIKI_UB_UPLOAD_BLACKLIST="`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.wiki_ub_upload_blacklist'`"
+WIKI_MONACO_PAYPAL_ID="`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.wiki_monaco_paypal_id'`"
+WIKI_GOOGLE_SITE_VERIFICATION="`aws ssm get-parameter --name WikiConfOverrides --query "Parameter.Value" | jq -r '.wiki_google_site_verification'`"
 APP_DOMAIN='$DOMAIN'
 APP_ENV='$ENV'
 EOF
+

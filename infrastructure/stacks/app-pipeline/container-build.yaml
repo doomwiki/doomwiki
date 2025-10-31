@@ -89,7 +89,7 @@ Resources:
                 - cd $CODEBUILD_SRC_DIR
                 # DATABASE
                 - chmod +x ./scripts/*.sh
-                - ./scripts/config-generator.sh $ENV ${AWS::Region} $DB_SECRET {{resolve:ssm:WikiConfOverrides}} ${DomainName} > .env
+                - ./scripts/config-generator.sh $ENV ${AWS::Region} $DB_SECRET WikiConfOverrides ${DomainName} > .env
                 # DEPLOY CONTAINER IMAGE
                 - aws ecr get-login-password --region ${AWS::Region} | docker login --username AWS --password-stdin $ECR_URL
                 - aws ecr put-image-tag-mutability --repository-name ${ProjectName}-${EnvironmentName} --image-tag-mutability MUTABLE --region ${AWS::Region}
