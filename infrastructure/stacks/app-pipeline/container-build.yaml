@@ -58,6 +58,7 @@ Resources:
                   - "rds:*"
                   - "rds-data:*"
                   - "secretsmanager:*"
+                  - "ssm:*"
                   - "kms:Encrypt"
                   - "kms:Decrypt"
                   - "kms:ReEncrypt*"
