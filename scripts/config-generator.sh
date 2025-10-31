@@ -26,7 +26,7 @@ WIKI_SECRET_KEY="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Param
 WIKI_UB_UPLOAD_BLACKLIST="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.wiki_ub_upload_blacklist'`"
 WIKI_MONACO_PAYPAL_ID="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.wiki_monaco_paypal_id'`"
 WIKI_GOOGLE_SITE_VERIFICATION="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.wiki_google_site_verification'`"
-APP_DOMAIN='$DOMAIN'
-APP_ENV='$ENV'
+APP_DOMAIN="$DOMAIN"
+APP_ENV="$ENV"
 EOF
 
