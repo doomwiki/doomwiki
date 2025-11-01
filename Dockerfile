@@ -14,6 +14,7 @@ RUN yum -y update && yum -y install \
     nano \
     xz \
     patch \
+    procps-ng \
     aws-kinesis-agent && \
     yum clean all
 
