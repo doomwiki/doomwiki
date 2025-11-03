@@ -31,7 +31,12 @@ Resources:
       EnableDnsHostnames: true
       EnableDnsSupport: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-VPC" }]
-
+  ipv6CidrBlock:
+    Type: AWS::EC2::VPCCidrBlock
+    Properties:
+      VpcId: !Ref Vpc
+      AmazonProvidedIpv6CidrBlock: true
+  
   PublicSubnetA:
     Type: AWS::EC2::Subnet
     Properties:
@@ -39,6 +44,8 @@ Resources:
       AvailabilityZone: !Ref AzA
       CidrBlock: 10.0.10.0/24
       MapPublicIpOnLaunch: true
+      Ipv6CidrBlock: !Select [ 0, !Cidr [ !Select [ 0, !GetAtt Vpc.Ipv6CidrBlocks], 1, 64 ]]
+      AssignIpv6AddressOnCreation: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-public-subnet1" }]
 
   PublicSubnetB:
@@ -48,6 +55,8 @@ Resources:
       AvailabilityZone: !Ref AzB
       CidrBlock: 10.0.11.0/24
       MapPublicIpOnLaunch: true
+      Ipv6CidrBlock: !Select [ 1, !Cidr [ !Select [ 0, !GetAtt Vpc.Ipv6CidrBlocks], 2, 64 ]]
+      AssignIpv6AddressOnCreation: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-public-subnet2" }]
 
   PrivateSubnetA:
@@ -111,10 +120,10 @@ Resources:
     Type: AWS::EC2::EIP
     Properties:
       Domain: vpc
-  NatEIPB:
-    Type: AWS::EC2::EIP
-    Properties:
-      Domain: vpc
+  #NatEIPB:
+  #  Type: AWS::EC2::EIP
+  #  Properties:
+  #    Domain: vpc
 
   NatGatewayA:
     Type: AWS::EC2::NatGateway
@@ -123,13 +132,12 @@ Resources:
       SubnetId: !Ref PublicSubnetA
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-gateway" }]
 
-  NatGatewayB:
-    Type: AWS::EC2::NatGateway
-    Properties:
-      AllocationId: !GetAtt NatEIPB.AllocationId
-      SubnetId: !Ref PublicSubnetB
-      Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-gateway" }]
-
+  #NatGatewayB:
+  #  Type: AWS::EC2::NatGateway
+  #  Properties:
+  #    AllocationId: !GetAtt NatEIPB.AllocationId
+  #    SubnetId: !Ref PublicSubnetB
+  #    Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-gateway" }]
 
   PrivateRTA:
     Type: AWS::EC2::RouteTable
@@ -162,7 +170,7 @@ Resources:
     Properties:
       RouteTableId: !Ref PrivateRTB
       DestinationCidrBlock: 0.0.0.0/0
-      NatGatewayId: !Ref NatGatewayB
+      NatGatewayId: !Ref NatGatewayA
 
   S3GatewayEndpoint:
     Type: AWS::EC2::VPCEndpoint
@@ -262,4 +270,4 @@ Outputs:
   PrivateSubnetAId: { Value: !Ref PrivateSubnetA }
   PrivateSubnetBId: { Value: !Ref PrivateSubnetB }
   NatGatewayAId: { Value: !Ref NatGatewayA }
-  NatGatewayBId: { Value: !Ref NatGatewayB }
+  #NatGatewayBId: { Value: !Ref NatGatewayB }

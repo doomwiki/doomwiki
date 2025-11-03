@@ -149,7 +149,7 @@ Resources:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
     DependsOn: AccessLogBucketPolicy
     Properties:
-      IpAddressType: ipv4
+      IpAddressType: dualstack
       Scheme: !If
         - IsPrivate
         - internal
