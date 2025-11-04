@@ -28,6 +28,10 @@ Parameters:
     Description: WAF V2 Web ACL Arn for Load Balancer
     Type: String
     Default: ""
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""    
 Conditions:
   IsPrivate: !Equals
     - !Ref LoadBalancerAccessType
@@ -46,6 +50,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   LoadBalancerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -72,6 +78,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   EcsSecurityGroupIngressFromPrivateALB:
     Type: AWS::EC2::SecurityGroupIngress
@@ -117,6 +125,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   AccessLogBucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -177,6 +187,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   LoadBalancerWAFAssociation:
     Type: AWS::WAFv2::WebACLAssociation

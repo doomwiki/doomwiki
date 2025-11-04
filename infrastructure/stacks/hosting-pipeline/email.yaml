@@ -14,6 +14,10 @@ Parameters:
   HostedZoneId:
     Description: Custom hosted zone
     Type: String
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 
 Resources:
   EmailConfigurationSet:
@@ -33,6 +37,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   EmailIdentity:
     Type: AWS::SES::EmailIdentity
@@ -52,3 +58,5 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn

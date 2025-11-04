@@ -30,6 +30,10 @@ Parameters:
   DatabasePort:
     Type: Number
     Default: "5000"
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 
 Conditions:
   Production: !Equals [!Ref EnvironmentName, prod]
@@ -50,6 +54,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   #DatabaseSecretRotationSchedule:
   #  Type: "AWS::SecretsManager::RotationSchedule"
@@ -75,6 +81,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   PostgreSQLClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -88,6 +96,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   MySQLClusterParameterGroup:
     Type: AWS::RDS::DBClusterParameterGroup
@@ -103,6 +113,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   MySQLInstanceParameterGroup:
     Type: AWS::RDS::DBParameterGroup
@@ -115,6 +127,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   SGCidrPrefixList:
     Type: AWS::EC2::PrefixList
@@ -130,6 +144,8 @@ Resources:
           Value: "Doomwiki Privileged Users"
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -150,6 +166,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   EnhancedMonitoringRole:
     Type: AWS::IAM::Role
@@ -178,6 +196,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   DatabaseCluster:
     Type: AWS::RDS::DBCluster
@@ -214,6 +234,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   DatabaseInstance:
     Type: AWS::RDS::DBInstance
@@ -231,6 +253,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   DatabaseInstance2:
     Condition: Production
@@ -249,6 +273,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   #This is a SecretTargetAttachment resource which updates the referenced Secret resource with properties about
   #the referenced RDS instance

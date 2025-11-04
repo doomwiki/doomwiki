@@ -12,6 +12,7 @@ Metadata:
           - HostedZoneId
           - LoadBalancerAccessType
           - AlertsEmailAddress
+          - AWSApplicationArn
       - Label:
           default: Database
         Parameters:
@@ -67,6 +68,10 @@ Parameters:
       - "Private"
   AlertsEmailAddress:
     Description: Email address for receiving pipeline failures
+    Type: String
+    Default: ""
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
     Type: String
     Default: ""
   IncludeDatabase:
@@ -194,7 +199,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
-
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   CloudFormationDeployRole:
     Type: AWS::IAM::Role
     Properties:
@@ -245,6 +251,7 @@ Resources:
                   - "ses:*"
                   - "elasticfilesystem:*"
                   - "cloudformation:*"
+                  - "codestar-connections:PassConnection"
                 Resource: "*"
               - Effect: Allow
                 Action:
@@ -258,6 +265,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   # Event role for triggering the pipeline based on ECR change event
   InfrastructurePipelineEventRole:
@@ -284,6 +293,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   Repository:
     Type: AWS::ECR::Repository
     Properties:
@@ -323,6 +334,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   # While the build is in progress we need a place to store artifacts
   ArtifactBucket:
@@ -347,6 +360,11 @@ Resources:
         BlockPublicPolicy: true
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   ArtifactBucketPolicy:
     Type: "AWS::S3::BucketPolicy"
     Properties:
@@ -401,6 +419,10 @@ Resources:
       Tags:
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
       RoleArn: !GetAtt CodePipelineServiceRole.Arn
       ArtifactStore:
         Type: S3
@@ -570,6 +592,10 @@ Resources:
       Tags:
         - Key: EnvironmentName
           Value: !Ref EnvironmentName
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
       RoleArn: !GetAtt CodePipelineServiceRole.Arn
       ArtifactStore:
         Type: S3
@@ -626,7 +652,8 @@ Resources:
                 ParameterOverrides: !Sub |
                   {
                     "EnvironmentName": "${EnvironmentName}",
-                    "ProjectName": "${ProjectName}"
+                    "ProjectName": "${ProjectName}",
+                    "AWSApplicationArn": "${AWSApplicationArn}"
                   }
               InputArtifacts:
                 - Name: InfrastructureArtifact
@@ -656,7 +683,8 @@ Resources:
                       "LoadBalancerAccessType": "${LoadBalancerAccessType}",
                       "WAFArn": "${WAFArn}",
                       "VPCID": "${VPCID}",
-                      "VPCSubnets": "${VPCSubnets}"
+                      "VPCSubnets": "${VPCSubnets}",
+                      "AWSApplicationArn": "${AWSApplicationArn}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPublicSubnets]
               InputArtifacts:
@@ -682,7 +710,8 @@ Resources:
                     "EnvironmentName": "${EnvironmentName}",
                     "ProjectName": "${ProjectName}",
                     "DomainName": "${DomainName}",
-                    "HostedZoneId": "${HostedZoneId}"
+                    "HostedZoneId": "${HostedZoneId}",
+                    "AWSApplicationArn": "${AWSApplicationArn}"
                   }
               InputArtifacts:
                 - Name: InfrastructureArtifact
@@ -713,7 +742,8 @@ Resources:
                         "ProjectName": "${ProjectName}",
                         "VPCID": "${VPCID}",
                         "DatabaseSubnetList": "${VPCSubnets}",
-                        "DefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
+                        "DefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
+                        "AWSApplicationArn": "${AWSApplicationArn}"
                       }
                     - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
@@ -743,7 +773,8 @@ Resources:
                         "EnvironmentName": "${EnvironmentName}",
                         "ProjectName": "${ProjectName}",
                         "VPCSubnets": "${VPCSubnets}",
-                        "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}"
+                        "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
+                        "AWSApplicationArn": "${AWSApplicationArn}"
                       }
                     - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
                 InputArtifacts:
@@ -772,7 +803,8 @@ Resources:
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectURL": "${DomainName}",
                       "DBAdminSecret": "#{DBVars.DBAdminSecret}",
-                      "DBCluster": "#{DBVars.DatabaseCluster}"
+                      "DBCluster": "#{DBVars.DatabaseCluster}",
+                      "AWSApplicationArn": "${AWSApplicationArn}"
                     }
                 InputArtifacts:
                   - Name: InfrastructureArtifact
@@ -802,7 +834,8 @@ Resources:
                       "DBAccessSecret": "#{DBVars.DBAdminSecret}",
                       "VPCID": "${VPCID}",
                       "VPCSubnets": "${VPCSubnets}",
-                      "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}"
+                      "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
+                      "AWSApplicationArn": "${AWSApplicationArn}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
 
@@ -835,7 +868,8 @@ Resources:
                       "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
                       "VPCID": "${VPCID}",
                       "VPCSubnets": "${VPCSubnets}",
-                      "EFSFileSystem": "#{EFSVars.FileSystemResource}"
+                      "EFSFileSystem": "#{EFSVars.FileSystemResource}",
+                      "AWSApplicationArn": "${AWSApplicationArn}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
               InputArtifacts:

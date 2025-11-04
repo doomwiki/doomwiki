@@ -46,6 +46,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Ipv6CidrBlock: !Select [ 0, !Cidr [ !Select [ 0, !GetAtt Vpc.Ipv6CidrBlocks], 1, 64 ]]
       AssignIpv6AddressOnCreation: true
+      EnableDns64: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-public-subnet1" }]
 
   PublicSubnetB:
@@ -57,6 +58,7 @@ Resources:
       MapPublicIpOnLaunch: true
       Ipv6CidrBlock: !Select [ 1, !Cidr [ !Select [ 0, !GetAtt Vpc.Ipv6CidrBlocks], 2, 64 ]]
       AssignIpv6AddressOnCreation: true
+      EnableDns64: true
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-public-subnet2" }]
 
   PrivateSubnetA:

@@ -8,6 +8,10 @@ Parameters:
   ProjectName:
     Description: Primary project short name, environments will be added as subdomains e.g. fpar2.mathematica-dev.org
     Type: String
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 
 Resources:
   LogGroup:
@@ -17,6 +21,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   AutoscalingRole:
     Type: AWS::IAM::Role
     Properties:
@@ -45,6 +51,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   ECSRole:
     Type: AWS::IAM::Role
     Properties:
@@ -81,6 +89,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
   ECSCluster:
     Type: AWS::ECS::Cluster
     Properties:
@@ -97,6 +107,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
 # These are the values output by the CloudFormation template. Be careful
 # about changing any of them, because of them are exported with specific

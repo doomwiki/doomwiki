@@ -61,6 +61,10 @@ Parameters:
   EFSFileSystem:
     Type: String
     Default: ""
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 
 Conditions:
   IncludeEFS: !Not [!Equals [!Ref EFSFileSystem, ""]]
@@ -74,6 +78,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   ECSTaskRole:
     Type: AWS::IAM::Role
@@ -107,6 +113,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   # This is a role which is used by the ECS tasks themselves.
   ECSTaskExecutionRole:
@@ -154,6 +162,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   # The task definition. This is a simple metadata description of what
   # container to run, and what resource requirements it has.
@@ -197,7 +207,12 @@ Resources:
             EFSVolumeConfiguration:
               FilesystemId: !Ref EFSFileSystem
           - !Ref AWS::NoValue
-
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
+  
   # A target group. This is used for keeping track of all the tasks, and
   # what IP addresses / port numbers they have. You can query it yourself,
   # to use the addresses yourself, but most often this target group is just
@@ -221,6 +236,11 @@ Resources:
       ProtocolVersion: HTTP1
       UnhealthyThresholdCount: 4
       VpcId: !Ref VPCID
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   # Create a rule on the load balancer for routing traffic to the target group
   LoadBalancerRule:
@@ -264,3 +284,8 @@ Resources:
         - ContainerName: !Ref ProjectName
           ContainerPort: !Ref ContainerPort
           TargetGroupArn: !Ref TargetGroup
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn

@@ -14,6 +14,10 @@ Parameters:
   VPCSubnets:
     Description: Comma-separated list of private subnets associated with the existing VPC
     Type: List<AWS::EC2::Subnet::Id>
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 
 Resources:
   FileSystemResource:
@@ -42,6 +46,8 @@ Resources:
           Value: Public File Storage
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   EFSTargetMount1:
     Type: AWS::EFS::MountTarget

@@ -21,6 +21,10 @@ Parameters:
   EmailDomainSourceArn:
     Type: String
     Default: ""
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 
 Conditions:
   IsLocal: !Equals
@@ -75,6 +79,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   # This section defines an execution role and Lambda functions called by Cognito to manage
   # actions and additional custom logic during the authentication process. This was originally
@@ -153,6 +159,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   CognitoUnAuthorizedRole:
     Type: "AWS::IAM::Role"
@@ -184,6 +192,8 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   CognitoAuthorizedRole:
     Type: "AWS::IAM::Role"
@@ -216,16 +226,23 @@ Resources:
       Tags:
         - Key: platform
           Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
 
   LambdaCreateAuthChallenge:
     Type: "AWS::Lambda::Function"
     Condition: CreateSecurityScanResources
     Properties:
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn    
       FunctionName: !Sub "${EnvironmentName}-create-auth-challenge"
       Handler: index.handler
       MemorySize: 128
       Role: !GetAtt CognitoAuthLambdasRole.Arn
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       Timeout: 3
       Code:
         ZipFile: |
@@ -245,11 +262,16 @@ Resources:
     Type: "AWS::Lambda::Function"
     Condition: CreateSecurityScanResources
     Properties:
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn    
       FunctionName: !Sub "${EnvironmentName}-define-auth-challenge"
       Handler: index.handler
       MemorySize: 128
       Role: !GetAtt CognitoAuthLambdasRole.Arn
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       Timeout: 3
       Code:
         ZipFile: |
@@ -309,11 +331,16 @@ Resources:
   LambdaCustomEmails:
     Type: "AWS::Lambda::Function"
     Properties:
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn    
       FunctionName: !Sub "${EnvironmentName}-custom-emails"
       Handler: index.handler
       MemorySize: 128
       Role: !GetAtt CognitoAuthLambdasRole.Arn
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       Timeout: 3
       Environment:
         Variables:
@@ -339,11 +366,16 @@ Resources:
     Type: "AWS::Lambda::Function"
     Condition: CreateSecurityScanResources
     Properties:
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
       FunctionName: !Sub "${EnvironmentName}-verify-auth-challenge"
       Handler: index.handler
       MemorySize: 128
       Role: !GetAtt CognitoAuthLambdasRole.Arn
-      Runtime: nodejs16.x
+      Runtime: nodejs20.x
       Timeout: 3
       Code:
         ZipFile: |
@@ -364,6 +396,11 @@ Resources:
     Type: "AWS::Cognito::UserPool"
     Properties:
       UserPoolName: !Sub "${EnvironmentName}-user-pool"
+      UserPoolTags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
       AccountRecoverySetting:
         RecoveryMechanisms:
           - Name: verified_email
@@ -375,23 +412,8 @@ Resources:
             <html>
             <body>
             <font face="Calibri,sans-serif">
-            <p>Dear PREP system user:</p>
-            <p>An account for the PREP PLUS Portal was created for you. 
-            To connect to the Portal:</p>
-            <ol style="margin-top:0;margin-bottom:0;">
-            <li style="margin-bottom:10pt;">Navigate to <a href="https://${ProjectURL}">https://${ProjectURL}</a>.
-            For the best experience, we recommend using Chrome, Edge, or Firefox.</li>
-            <li style="margin-bottom:10pt;">Use the following credentials to sign in:</li>
-            </ol>
-            <p style="margin:14pt 0 12pt 50pt;">
-            Username: {username}<br>
-            Password: {####}
-            </p>
-            <ol start="3" style="margin-top:0;margin-bottom:0;">
-            <li>The first time that you sign into the Portal, you will be prompted to change your 
-            password and provide a cell phone number to receive a security code to use to 
-            verify your identity on subsequent sign-in attempts.</li>
-            </ol>
+            <p>Dear user:</p>
+            <p></p>
             </body>
             </html>
           EmailSubject: !Ref EmailInvitationSubject
@@ -432,7 +454,7 @@ Resources:
       SmsAuthenticationMessage: "Your PREP Evaluation authentication code is {####}"
       SmsVerificationMessage: "Your PREP Evaluation verification code is {####}"
       SmsConfiguration:
-        ExternalId: !Sub "${EnvironmentName}-external"
+        ExternalId: !Sub "${ProjectName}-${EnvironmentName}-external"
         SnsCallerArn: !GetAtt SNSRole.Arn
       Schema:
         - Name: name
@@ -465,7 +487,7 @@ Resources:
             MaxLength: 2048
       EmailConfiguration:
         EmailSendingAccount: DEVELOPER
-        From: !Sub "PREP Evaluation System <no-reply@${ProjectURL}>"
+        From: !Sub "System <no-reply@${ProjectURL}>"
         ReplyToEmailAddress: !Ref ReplyToEmailAddress
         SourceArn: !Sub "arn:aws:ses:us-east-1:${AWS::AccountId}:identity/${ProjectURL}"
 
@@ -506,11 +528,16 @@ Resources:
   LambdaPrePostAuthTrigger:
     Type: "AWS::Lambda::Function"
     Properties:
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
       FunctionName: !Sub "${EnvironmentName}-pre-post-auth-trigger"
       Handler: index.lambda_handler
       MemorySize: 128
       Role: !GetAtt CognitoAuthLambdasRole.Arn
-      Runtime: python3.9
+      Runtime: python3.11
       Timeout: 10
       Environment:
         Variables:
@@ -521,9 +548,6 @@ Resources:
         ZipFile: !Sub |
           import boto3
           import os
-
-          #### See project documentation for purpose and explanation of this function:
-          #### https://mathematicampr.atlassian.net/wiki/spaces/FPAR/pages/2210267224/Invalid+Sign-In+Lockout
 
           def lambda_handler(event, context):
             

@@ -49,7 +49,10 @@ Parameters:
   DBAccessSecret:
     Description: The name of the secret that contains the database access credentials. It must contain keys for username, host, dbname, port and password.
     Type: String
-
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
 Resources:
   CodeBuildContentServiceRole:
     Type: "AWS::IAM::Role"
