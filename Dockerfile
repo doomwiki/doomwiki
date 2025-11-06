@@ -56,7 +56,7 @@ RUN touch /var/log/cron.log
 # Add the base user (no root allowed, but add to sudo)
 RUN useradd -s /bin/false -r doomwiki -m
 RUN usermod -aG wheel doomwiki
-# Also allow the doomwiki user to run drush commands that many manipulate files
+# Also allow the doomwiki user to run commands that many manipulate files
 # directories maintained by apache.
 RUN usermod -aG apache doomwiki
 RUN echo -e "doomwiki\tALL=(ALL)\tNOPASSWD: ALL" > /etc/sudoers.d/020_sudo_for_local
@@ -92,7 +92,10 @@ ENV PATH=/home/doomwiki/.composer:$PATH
 # Copy support scripts
 WORKDIR /home/doomwiki
 COPY --chown=doomwiki:doomwiki ./scripts/start-server.sh ./start
+COPY --chown=doomwiki:doomwiki ./scripts/doomwiki-jobs.sh ./doomwiki-jobs
+COPY --chown=doomwiki:doomwiki ./scripts/dump-db.sh ./dump-db
 COPY --chown=doomwiki:doomwiki ./.env .
+RUN mkdir dbdump
 
 # Copy application source code (until we get dynamic installation working)
 COPY --chown=doomwiki:doomwiki ./app/. ./public_html/
@@ -145,7 +148,6 @@ FROM base AS dev
 USER root
 # While most development will happen on mapped volumes via an IDE, it can be
 # useful to have some additional dev tools available inside the container.
-# Note that a local MySQL client is also required for some Drush operations.
 RUN yum -y install \
     vim \
     mariadb105 && \

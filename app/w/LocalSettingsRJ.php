@@ -37,11 +37,22 @@ if ( $wgCommandLineMode ) {
 		die( "This script must be run from the command line\n" );
 	}
 }
+
+/*
+ * Note that this snippet could be removed if using the a dotenv extension
+ * which may also offer some small performance advantages. 
+ */
+foreach (parse_ini_file('/home/doomwiki/.env') as $key => $value) {
+  if (!getenv($key)) {
+    putenv("$key=$value");
+  }
+}
+
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
 
-$wgServer            = "https://doomwiki.org";
-$wgCanonicalServer   = "https://doomwiki.org";
+$wgServer            = "//".getenv("APP_DOMAIN");
+$wgCanonicalServer   = "https://".getenv("APP_DOMAIN");
 $wgSitename          = "DoomWiki.org";
 $wgMetaNamespace     = "Doom_Wiki";
 $wgMetaNamespaceTalk = "Doom_Wiki_talk";
@@ -87,12 +98,29 @@ $wgEmailAuthentication = true;
 
 ## Database settings
 $wgDBtype           = "mysql";
-$wgDBserver         = getenv('MYSQL_HOSTNAME');
+$wgDBserver         = getenv('MYSQL_HOSTNAME').":".getenv('MYSQL_PORT');
+$wgDBport           = getenv('MYSQL_PORT');
 $wgDBname           = getenv('MYSQL_DATABASE');
 $wgDBuser           = getenv('MYSQL_USERNAME');
 $wgDBpassword       = getenv('MYSQL_PASSWORD');
 $wgDBadminuser      = getenv('MYSQL_ADMINUSERNAME');
 $wgDBadminpassword  = getenv('MYSQL_ADMINPASSWORD');
+
+// Explicit DB server configuration to support custom port and connection timeout
+// When set, this overrides the simple $wgDBserver/$wgDBname/... variables above
+// and lets us specify 'port' and 'connTimeout'.
+$wgDBservers = [ [
+    'host'        => getenv('MYSQL_HOSTNAME').":".getenv('MYSQL_PORT'),
+    'port'        => (int)(getenv('MYSQL_PORT') ?: 3306),
+    'dbname'      => getenv('MYSQL_DATABASE'),
+    'user'        => getenv('MYSQL_USERNAME'),
+    'password'    => getenv('MYSQL_PASSWORD'),
+    'type'        => 'mysql',
+    'flags'       => DBO_DEFAULT,
+    'load'        => 1,
+    // Connection timeout in seconds; set MYSQL_CONNECT_TIMEOUT env to override
+    'connTimeout' => (int)(getenv('MYSQL_CONNECT_TIMEOUT') ?: 15),
+] ];
 
 # MySQL specific settings
 $wgDBprefix         = "";
@@ -145,7 +173,7 @@ $wgUseTeX           = false;
 ## Set $wgCacheDirectory to a writable directory on the web server
 ## to make your wiki go slightly faster. The directory should not
 ## be publically accessible from the web.
-$wgCacheDirectory = "$IP/cache";
+$wgCacheDirectory = '/tmp/mw-cache';
 $wgUseFileCache = false;
 $wgShowIPinHeader = false;
 ## $wgUseGzip = true;

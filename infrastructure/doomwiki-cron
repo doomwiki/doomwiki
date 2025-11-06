@@ -1,2 +1,4 @@
-# Run Doomwiki cron after sourcing environment using Drush
-# @see https://www.drush.org/12.x/cron/
+# Run Doomwiki cron after sourcing environment
+
+*/15 * * * * doomwiki /home/doomwiki/doomwiki-jobs
+21 3 * * *  doomwiki  /home/doomwiki/dump-db

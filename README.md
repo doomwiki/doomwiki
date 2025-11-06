@@ -103,11 +103,11 @@ When adapting a development workflow for a containerized environment it can be h
 | ----------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Git Operations          | Outside Container | Git is only available outside the container.                                                                                                                                        |
 | Composer Operations     | Inside Container  | Folders managed by composer are not bind-mounted and only available inside container. However, composer.json and composer.lock are bind-mounted and can be committed.               |
-| MediaWiki Operations    | Inside Container  | Drush must be run inside a full running stack inside the container.                                                                                                                 |
+| MediaWiki Operations    | Inside Container  | Maintenance scripts must be run inside a full running stack inside the container.                                                                                                   |
 | MySQL Import/Export     | Depends           | CLI operations using `mysql` or `mysqldump` can be run inside container. A client connection from outside the container (MySQL Workbench) is also supported on port 33060.          |
 | Environment/Stack Edits | Outside Container | The environment/stack is immutable, even in local dev environments. When altering any environment files (e.g. Dockerfile, docker-compose.yml) the containers must be rebuilt.       |
 
-Note also that individual commands can be executed inside the container from an environment outside the container using the [docker exec](https://docs.docker.com/engine/reference/commandline/exec/) (e.g. `docker exec -i base drush status`). This can be useful for running quick drush and composer commands without leaving a local git-bash or VSCode window.
+Note also that individual commands can be executed inside the container from an environment outside the container using the [docker exec](https://docs.docker.com/engine/reference/commandline/exec/) (e.g. `docker exec -i base php  dbping`). This can be useful for running quick system and composer commands without leaving a local git-bash or VSCode window.
 
 ### Debugging
 
