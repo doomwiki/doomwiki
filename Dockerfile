@@ -20,7 +20,7 @@ RUN yum -y update && yum -y install \
 
 # Enable PHP 7.4 from amazon-linux-extras and install apache httpd + php-fpm
 RUN yum -y install amazon-linux-extras \
-    && amazon-linux-extras enable php7.4 \
+    && amazon-linux-extras enable php7.2 \
     && yum clean metadata \
     && yum -y install httpd \
     && yum -y install php-pecl-apcu php-{bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xml} \
