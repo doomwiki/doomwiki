@@ -48,18 +48,61 @@ Resources:
           Value: !Ref ProjectName
         - Key: awsApplication
           Value: !Ref AWSApplicationArn
-
-  EFSTargetMount1:
+  SystemCacheResource:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      BackupPolicy:
+        Status: ENABLED
+      Encrypted: true
+      FileSystemPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action:
+              - "elasticfilesystem:ClientRootAccess"
+              - "elasticfilesystem:ClientWrite"
+              - "elasticfilesystem:ClientMount"
+            Principal:
+              AWS: "*"
+            Condition:
+              Bool:
+                "elasticfilesystem:AccessedViaMountTarget": true
+      LifecyclePolicies:
+        - TransitionToPrimaryStorageClass: AFTER_1_ACCESS
+      FileSystemTags:
+        - Key: Name
+          Value: Public File Storage
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
+  
+  FileTargetMount1:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
       SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
-  EFSTargetMount2:
+  FileTargetMount2:
     Type: AWS::EFS::MountTarget
     Properties:
       FileSystemId: !Ref FileSystemResource
+      SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
+  
+  CacheTargetMount1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref SystemCacheResource
+      SubnetId: !Select [0, !Split [",", !Join [",", !Ref VPCSubnets]]]
+      SecurityGroups:
+        - !Sub ${ContainerSecurityGroup}
+  CacheTargetMount2:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref SystemCacheResource
       SubnetId: !Select [1, !Split [",", !Join [",", !Ref VPCSubnets]]]
       SecurityGroups:
         - !Sub ${ContainerSecurityGroup}
@@ -68,3 +111,6 @@ Outputs:
   FileSystemResource:
     Description: General EFS file system resource
     Value: !Ref FileSystemResource
+  SystemCacheResource:
+    Description: System cache EFS file system resource
+    Value: !Ref SystemCacheResource

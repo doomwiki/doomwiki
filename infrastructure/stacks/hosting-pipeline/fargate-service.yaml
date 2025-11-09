@@ -58,7 +58,10 @@ Parameters:
     Type: Number
     Default: "2"
     Description: How many copies of the service task to run
-  EFSFileSystem:
+  EFSImageSystem:
+    Type: String
+    Default: ""
+  EFSCacheSystem:
     Type: String
     Default: ""
   AWSApplicationArn:
@@ -67,7 +70,7 @@ Parameters:
     Default: ""
 
 Conditions:
-  IncludeEFS: !Not [!Equals [!Ref EFSFileSystem, ""]]
+  IncludeEFS: !Not [!Equals [!Ref EFSImageSystem, ""]]
 
 Resources:
   # A log group for storing the stdout logs from this service's containers
@@ -197,15 +200,26 @@ Resources:
           MountPoints: #TODO: Implement DoEFSVolumeCheck
             - !If
               - IncludeEFS
-              - SourceVolume: "files"
+              - SourceVolume: "images"
                 ContainerPath: /var/www/images
+              - !Ref AWS::NoValue
+            - !If
+              - IncludeEFS
+              - SourceVolume: "cache"
+                ContainerPath: /tmp/cache
               - !Ref AWS::NoValue
       Volumes: #TODO: Implement DoEFSVolumeCheck
         - !If
           - IncludeEFS
-          - Name: "files"
+          - Name: "images"
             EFSVolumeConfiguration:
-              FilesystemId: !Ref EFSFileSystem
+              FilesystemId: !Ref EFSImageSystem
+          - !Ref AWS::NoValue
+        - !If
+          - IncludeEFS
+          - Name: "cache"
+            EFSVolumeConfiguration:
+              FilesystemId: !Ref EFSCacheSystem
           - !Ref AWS::NoValue
       Tags:
         - Key: platform

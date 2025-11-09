@@ -868,7 +868,8 @@ Resources:
                       "ContainerSecurityGroup":"#{LoadBalancerVars.ContainerSecurityGroup}",
                       "VPCID": "${VPCID}",
                       "VPCSubnets": "${VPCSubnets}",
-                      "EFSFileSystem": "#{EFSVars.FileSystemResource}",
+                      "EFSImageSystem": "#{EFSVars.FileSystemResource}",
+                      "EFSCacheSystem": "#{EFSVars.SystemCacheResource}",
                       "AWSApplicationArn": "${AWSApplicationArn}"
                     }
                   - VPCSubnets: !Join [",", !Ref VPCPrivateSubnets]
