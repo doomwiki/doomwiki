@@ -57,7 +57,7 @@ Resources:
   CodeBuildContentServiceRole:
     Type: "AWS::IAM::Role"
     Properties:
-      RoleName: !Sub ${ProjectName}-${EnvironmentName}-MathRole-CodeBuildContentServiceRole
+      RoleName: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildContentServiceRole
       Path: /
       AssumeRolePolicyDocument:
         Version: 2012-10-17

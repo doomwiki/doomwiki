@@ -71,7 +71,7 @@ Resources:
         - TransitionToPrimaryStorageClass: AFTER_1_ACCESS
       FileSystemTags:
         - Key: Name
-          Value: Public File Storage
+          Value: System Cache Storage
         - Key: platform
           Value: !Ref ProjectName
         - Key: awsApplication
