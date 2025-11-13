@@ -30,7 +30,7 @@ RUN yum -y install amazon-linux-extras \
     && chown apache:apache /run/php-fpm
 
 RUN { \
-    echo 'opcache.enable=1'; \
+    echo 'opcache.enable=0'; \
     echo 'opcache.memory_consumption=256'; \
     echo 'opcache.interned_strings_buffer=16'; \
     echo 'opcache.max_accelerated_files=20000'; \
