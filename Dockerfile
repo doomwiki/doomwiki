@@ -30,12 +30,12 @@ RUN yum -y install amazon-linux-extras \
     && chown apache:apache /run/php-fpm
 
 RUN { \
-    echo 'opcache.enable=0'; \
-    echo 'opcache.memory_consumption=256'; \
-    echo 'opcache.interned_strings_buffer=16'; \
-    echo 'opcache.max_accelerated_files=20000'; \
+    echo 'opcache.enable=1'; \
+    echo 'opcache.memory_consumption=64'; \
+    echo 'opcache.interned_strings_buffer=4'; \
+    echo 'opcache.max_accelerated_files=2000'; \
     echo 'opcache.validate_timestamps=1'; \
-    echo 'opcache.revalidate_freq=1'; \
+    echo 'opcache.revalidate_freq=2'; \
     echo 'opcache.save_comments=1'; \
 } > /etc/php.d/99-opcache.ini
 
@@ -44,6 +44,7 @@ RUN yum -y install python3 && yum clean all
 
 # Add customizations and required elements for apache httpd and php
 COPY --chown=root:root infrastructure/doomwiki.vhost.conf /etc/httpd/conf.d
+COPY --chown=root:root infrastructure/compression.conf /etc/httpd/conf.d
 COPY --chown=root:root infrastructure/access.conf /etc/httpd/access.conf
 COPY --chown=root:root infrastructure/php.custom.ini /etc/php.d/40-doomwiki-custom.ini
 COPY --chown=root:root infrastructure/php-fpm-apache.conf /etc/httpd/conf.d/php-fpm.conf
