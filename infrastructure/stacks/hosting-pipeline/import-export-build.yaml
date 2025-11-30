@@ -157,19 +157,19 @@ Resources:
             Value: !Ref EnvironmentName
           - Name: DB_USER
             Type: SECRETS_MANAGER
-            Value: !Sub ${DBAccessSecret}:username
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:username
           - Name: DB_HOST
             Type: SECRETS_MANAGER
-            Value: !Sub ${DBAccessSecret}:host
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:host
           - Name: DB_PASSWORD
             Type: SECRETS_MANAGER
-            Value: !Sub ${DBAccessSecret}:password
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:password
           - Name: DB_NAME
             Type: SECRETS_MANAGER
-            Value: !Sub ${DBAccessSecret}:dbname
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:dbname
           - Name: DB_PORT
             Type: SECRETS_MANAGER
-            Value: !Sub ${DBAccessSecret}:port
+            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:port
       FileSystemLocations:
         - Identifier: "ContentFiles"
           Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
