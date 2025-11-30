@@ -11,10 +11,6 @@ Parameters:
     Type: String
     Default: >
       PREP Evaluation: Your User Account
-  DBAdminSecret:
-    Type: String
-  DBCluster:
-    Type: String
   ReplyToEmailAddress:
     Type: String
     Default: "doomwiki@mancubus.net"
@@ -524,46 +520,6 @@ Resources:
       Roles:
         authenticated: !GetAtt CognitoAuthorizedRole.Arn
         unauthenticated: !GetAtt CognitoUnAuthorizedRole.Arn
-
-  LambdaPrePostAuthTrigger:
-    Type: "AWS::Lambda::Function"
-    Properties:
-      Tags:
-        - Key: platform
-          Value: !Ref ProjectName
-        - Key: awsApplication
-          Value: !Ref AWSApplicationArn
-      FunctionName: !Sub "${EnvironmentName}-pre-post-auth-trigger"
-      Handler: index.lambda_handler
-      MemorySize: 128
-      Role: !GetAtt CognitoAuthLambdasRole.Arn
-      Runtime: python3.11
-      Timeout: 10
-      Environment:
-        Variables:
-          ENV: !Ref EnvironmentName
-          DB_AdminSecret: !Ref DBAdminSecret
-          DB_Cluster: !Ref DBCluster
-      Code:
-        ZipFile: !Sub |
-          import boto3
-          import os
-
-          def lambda_handler(event, context):
-            
-            return event
-            
-          def pre_auth(params):
-            '''TODO: Checks whether user is already locked out - if so, rejects authentication attempt.
-              Otherwise, logs data to be used in calculating future lockout periods.'''
-            
-            return True
-            
-          def post_auth(params):
-            '''TODO: Re-sets user's lockout status/time and failed auth attempts log upon
-              successful authentication (post-auth Cognito trigger).'''
-            
-            return True
 
   LambdaCreateAuthChallengePermission:
     Type: AWS::Lambda::Permission
