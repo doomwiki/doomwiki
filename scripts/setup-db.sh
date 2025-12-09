@@ -246,11 +246,14 @@ SQL
 log "Creating application DB/user"
 mysql -u root -p"${DB_ROOT_PASSWORD}" <<SQL
 CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${DB_APP_USER}'@'%' IDENTIFIED BY '${DB_APP_PASSWORD}';
-ALTER USER '${DB_APP_USER}'@'%' IDENTIFIED BY '${DB_APP_PASSWORD}';
+CREATE USER IF NOT EXISTS '${DB_APP_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${DB_APP_PASSWORD}';
+ALTER USER '${DB_APP_USER}'@'%' IDENTIFIED WITH mysql_native_password BY '${DB_APP_PASSWORD}';
 GRANT ALL PRIVILEGES ON \`${DB_NAME}\`.* TO '${DB_APP_USER}'@'%';
 FLUSH PRIVILEGES;
 SQL
+if [ "${GRANT_APP_PROCESS}" = "true" ]; then
+  mysql -u root -p"${DB_ROOT_PASSWORD}" -e "GRANT PROCESS ON *.* TO '${DB_APP_USER}'@'%'; FLUSH PRIVILEGES;"
+fi
 
 log "Configuring MySQL bind-address, port, and basic hardening"
 ensure_includedir() {

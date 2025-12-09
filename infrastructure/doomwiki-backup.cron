@@ -1,0 +1,3 @@
+# Run Doomwiki backup cron after sourcing environment
+
+21 3 * * *  doomwiki  /home/doomwiki/dump-db

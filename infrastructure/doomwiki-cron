@@ -1,4 +1,3 @@
 # Run Doomwiki cron after sourcing environment
 
 */15 * * * * doomwiki /home/doomwiki/doomwiki-jobs
-21 3 * * *  doomwiki  /home/doomwiki/dump-db

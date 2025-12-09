@@ -12,21 +12,23 @@ EFS_CACHE_ID="${EFS_CACHE_ID:-fs-0bd3bcda2f2a25776}"
 EFS_MEDIA_ID="${EFS_MEDIA_ID:-fs-04b6382ca7829ef79}"
 EFS_MOUNT_BASE="${EFS_MOUNT_BASE:-/mnt/efs}"
 EFS_CACHE_MOUNT="${EFS_CACHE_MOUNT:-${EFS_MOUNT_BASE}/cache}"
-EFS_MEDIA_MOUNT="${EFS_MEDIA_MOUNT:-${EFS_MOUNT_BASE}/media}"
-EFS_OPTS="${EFS_OPTS:-_netdev,noresvport,tls}"
+EFS_MEDIA_MOUNT="${EFS_MEDIA_MOUNT:-${EFS_MOUNT_BASE}/images}"
+EFS_OPTS="${EFS_OPTS:-_netdev,noresvport,tls,nofail}"
+EFS_MOUNT_TIMEOUT="${EFS_MOUNT_TIMEOUT:-20}" # seconds per mount attempt
 
 ENABLE_FIREWALLD="${ENABLE_FIREWALLD:-true}"
 RSYNC_PORT="${RSYNC_PORT:-873}"
 OPEN_RSYNC_PORT="${OPEN_RSYNC_PORT:-false}" # set true only if running rsync daemon; ssh is preferred
-SSH_KEY_PATH="${SSH_KEY_PATH:-/root/.ssh/doomwiki_backup_ed25519}"
+SSH_KEY_PATH="${SSH_KEY_PATH:-/home/doomwiki/.ssh/doomwiki_backup_ed25519}"
+GENERATE_SSH_KEY="${GENERATE_SSH_KEY:-true}" # set true to generate a local keypair; default expects operator provides pubkey
 
 CRON_FILE="${CRON_FILE:-/etc/cron.d/doomwiki-backup}"
 
 # Optional script copy support: set COPY_SCRIPTS (space-separated filenames)
 # and COPY_SCRIPTS_FROM (source dir) / COPY_SCRIPTS_TO (dest dir)
 COPY_SCRIPTS="${COPY_SCRIPTS:-}"
-COPY_SCRIPTS_FROM="${COPY_SCRIPTS_FROM:-}"
-COPY_SCRIPTS_TO="${COPY_SCRIPTS_TO:-/usr/local/sbin}"
+COPY_SCRIPTS_FROM="${COPY_SCRIPTS_FROM:-./}"
+COPY_SCRIPTS_TO="${COPY_SCRIPTS_TO:-/home/doomwiki}"
 
 log() { echo "[$(date -Is)] $*"; }
 require_root() { [ "$(id -u)" -eq 0 ] || { log "Run as root or with sudo"; exit 1; }; }
@@ -46,6 +48,15 @@ ensure_package rsync
 ensure_package amazon-efs-utils
 ensure_package firewalld
 ensure_package openssh-clients
+
+if id "doomwiki" >/dev/null 2>&1; then
+  log "User 'doomwiki' already exists"
+else
+  log "Creating user 'doomwiki'"
+  useradd -m -s /bin/bash doomwiki
+  read -s -p "Enter password for user 'doomwiki': " _PW && echo
+  echo "doomwiki:${_PW}" | chpasswd
+fi
 
 log "Enabling cron service"
 systemctl enable crond
@@ -74,8 +85,24 @@ log "Configuring EFS mounts"
 ensure_mount "${EFS_CACHE_ID}" "${EFS_CACHE_MOUNT}"
 ensure_mount "${EFS_MEDIA_ID}" "${EFS_MEDIA_MOUNT}"
 
-log "Mounting EFS volumes"
-mount -a
+mount_efs_now() {
+  local fs_id="$1"
+  local mount_point="$2"
+  log "Mounting ${fs_id} to ${mount_point} (timeout ${EFS_MOUNT_TIMEOUT}s)"
+  if timeout "${EFS_MOUNT_TIMEOUT}" mount -t efs -o "${EFS_OPTS}" "${fs_id}:/" "${mount_point}"; then
+    return 0
+  else
+    log "WARN: Mount attempt timed out or failed for ${fs_id} at ${mount_point}"
+    return 1
+  fi
+}
+
+mount_efs_now "${EFS_CACHE_ID}" "${EFS_CACHE_MOUNT}" || true
+mount_efs_now "${EFS_MEDIA_ID}" "${EFS_MEDIA_MOUNT}" || true
+
+log "Ensuring symlink /home/doomwiki/images -> ${EFS_MEDIA_MOUNT}"
+ln -sfn "${EFS_MEDIA_MOUNT}" /home/doomwiki/images
+chown -h doomwiki:doomwiki /home/doomwiki/images
 
 log "Preparing cron file ${CRON_FILE}"
 cat > "${CRON_FILE}" <<'EOF'
@@ -103,21 +130,29 @@ copy_scripts_if_requested() {
 }
 copy_scripts_if_requested
 
-ensure_ssh_key() {
+ensure_ssh_dir() {
   local key="${SSH_KEY_PATH}"
   local dir
   dir="$(dirname "${key}")"
   mkdir -p "${dir}"
+  chown doomwiki:doomwiki "${dir}"
   chmod 700 "${dir}"
-  if [ ! -f "${key}" ]; then
-    log "Generating SSH keypair for backup rsync over SSH: ${key}"
-    ssh-keygen -t ed25519 -N '' -f "${key}" -C "doomwiki-backup" >/dev/null
-    chmod 600 "${key}"
-    chmod 644 "${key}.pub"
-  else
-    log "SSH key already present at ${key}"
-  fi
 }
-ensure_ssh_key
+ensure_ssh_dir
+
+if [ "${GENERATE_SSH_KEY}" = "true" ]; then
+  if [ ! -f "${SSH_KEY_PATH}" ]; then
+    log "Generating SSH keypair for backup rsync over SSH: ${SSH_KEY_PATH}"
+    sudo -u doomwiki ssh-keygen -t ed25519 -N '' -f "${SSH_KEY_PATH}" -C "doomwiki-backup" >/dev/null
+    chown doomwiki:doomwiki "${SSH_KEY_PATH}" "${SSH_KEY_PATH}.pub"
+    chmod 600 "${SSH_KEY_PATH}"
+    chmod 644 "${SSH_KEY_PATH}.pub"
+  else
+    log "SSH key already present at ${SSH_KEY_PATH}"
+    chown doomwiki:doomwiki "${SSH_KEY_PATH}" "${SSH_KEY_PATH}.pub" >/dev/null 2>&1 || true
+  fi
+else
+  log "Skipping SSH key generation (GENERATE_SSH_KEY=${GENERATE_SSH_KEY}). Place operator public key in $(dirname "${SSH_KEY_PATH}")/authorized_keys"
+fi
 
 log "Backup setup complete."
