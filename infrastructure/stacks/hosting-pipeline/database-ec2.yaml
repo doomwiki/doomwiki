@@ -1,0 +1,157 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Create an RDS database cluster with Secrets Manager integration (PostgreSQL or MySQL)
+Transform: AWS::SecretsManager-2020-07-23
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: dev
+    Description: Enter stage (dev, staging, prod)
+  ProjectName:
+    Description: Primary project short name
+    Type: String
+  VPCID:
+    Type: AWS::EC2::VPC::Id
+  DefaultSecurityGroup:
+    Description: Default security group associated with the existing VPC
+    Type: AWS::EC2::SecurityGroup::Id
+  DatabaseSubnetList:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Enter at least two subnet IDs for the database cluster
+  DatabaseName:
+    Type: String
+    Description: Name of primary database
+  DatabaseEngine:
+    Default: aurora-postgresql
+    Description: Engine for database (default PostgreSQL)
+    Type: String
+    AllowedValues:
+      - aurora-postgresql
+      - aurora-mysql
+  DatabasePort:
+    Type: Number
+    Default: "5000"
+  AWSApplicationArn:
+    Description: ARN of the associated, pre-defined AWS Application
+    Type: String
+    Default: ""
+
+Conditions:
+  Production: !Equals [!Ref EnvironmentName, prod]
+  IsPostgreSQLDB: !Equals [!Ref DatabaseEngine, aurora-postgresql]
+  IsMySQLDB: !Equals [!Ref DatabaseEngine, aurora-mysql]
+
+Resources:
+  DatabaseSecret:
+    Type: "AWS::SecretsManager::Secret"
+    Properties:
+      Name: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret
+      Description: !Sub "Dynamically generated secret password for ${ProjectName} ${EnvironmentName} database"
+      GenerateSecretString:
+        SecretStringTemplate: '{"username": "db_admin"}'
+        GenerateStringKey: "password"
+        PasswordLength: 41
+        ExcludeCharacters: '"@/\\.:%?`'
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
+
+  #DatabaseSecretRotationSchedule:
+  #  Type: "AWS::SecretsManager::RotationSchedule"
+  #  DependsOn: SecretRDSInstanceAttachment
+  #  Properties:
+  #    RotateImmediatelyOnUpdate: true
+  #    SecretId: !Ref DatabaseSecret
+  #    HostedRotationLambda:
+  #      RotationType: MySQLSingleUser
+  #      RotationLambdaName: !Sub ${ProjectName}-${EnvironmentName}-DatabaseSecretRotation
+  #      #VpcSecurityGroupIds: !Ref DefaultSecurityGroup
+  #      #VpcSubnetIds: !Join [",", !Ref DatabaseSubnetList]
+  #      ExcludeCharacters: '"@/\.:%?`'
+  #    RotationRules:
+  #      AutomaticallyAfterDays: 90
+  #      Duration: 2h
+
+  SGCidrPrefixList:
+    Type: AWS::EC2::PrefixList
+    Properties:
+      PrefixListName: "Doomwiki Privileged Users"
+      AddressFamily: "IPv4"
+      MaxEntries: 3
+      Entries:
+        - Cidr: "24.13.235.119/32"
+          Description: "Mike L."
+      Tags:
+        - Key: "Name"
+          Value: "Doomwiki Privileged Users"
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub ${ProjectName}-${EnvironmentName}-database-cluster
+      GroupDescription: !Sub Access ${ProjectName} database cluster
+      VpcId: !Ref VPCID
+      SecurityGroupIngress:
+        - SourcePrefixListId: !Ref SGCidrPrefixList
+          IpProtocol: tcp
+          FromPort: !Ref DatabasePort
+          ToPort: !Ref DatabasePort
+        - SourceSecurityGroupId:
+            Fn::ImportValue: !Sub "${ProjectName}-${EnvironmentName}:FargateContainerSecurityGroup"
+          IpProtocol: "-1"
+        - SourceSecurityGroupId: !Ref DefaultSecurityGroup
+          IpProtocol: "-1"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
+
+  EnhancedMonitoringRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub DatabaseEnhancedMonitoringRole-${ProjectName}-${EnvironmentName}
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [monitoring.rds.amazonaws.com]
+            Action: ["sts:AssumeRole"]
+      Path: /
+      Policies:
+        - PolicyName: !Sub DatabaseEnhancedMonitoringPolicy-${ProjectName}-${EnvironmentName}
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "logs:CreateLogGroup"
+                  - "logs:PutRetentionPolicy"
+                  - "logs:CreateLogStream"
+                  - "logs:PutLogEvents"
+                  - "logs:DescribeLogStreams"
+                  - "logs:GetLogEvents"
+                Resource: "*"
+      Tags:
+        - Key: platform
+          Value: !Ref ProjectName
+        - Key: awsApplication
+          Value: !Ref AWSApplicationArn
+
+  #This is a SecretTargetAttachment resource which updates the referenced Secret resource with properties about
+  #the referenced RDS instance
+  #SecretInstanceAttachment:
+  #  Type: "AWS::SecretsManager::SecretTargetAttachment"
+  #  Properties:
+  #    SecretId: !Ref DatabaseSecret
+  #    TargetId: !Ref DatabaseCluster
+  #    TargetType: AWS::RDS::DBCluster
+
+Outputs:
+  DBAdminSecret:
+    Description: Database admin secret ARN
+    Value: !Ref DatabaseSecret

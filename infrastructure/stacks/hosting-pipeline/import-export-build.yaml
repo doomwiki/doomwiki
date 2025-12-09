@@ -157,19 +157,19 @@ Resources:
             Value: !Ref EnvironmentName
           - Name: DB_USER
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:username
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:app_user'
           - Name: DB_HOST
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:host
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:mysql_listen_addr'
           - Name: DB_PASSWORD
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:password
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:app_password'
           - Name: DB_NAME
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:dbname
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:db_name'
           - Name: DB_PORT
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:port
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:mysql_port'
       FileSystemLocations:
         - Identifier: "ContentFiles"
           Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
@@ -233,19 +233,19 @@ Resources:
             Value: !Ref EnvironmentName
           - Name: DB_USER
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:username
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:app_user'
           - Name: DB_HOST
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:host
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:mysql_listen_addr'
           - Name: DB_PASSWORD
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:password
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:app_password'
           - Name: DB_NAME
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:dbname
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:db_name'
           - Name: DB_PORT
             Type: SECRETS_MANAGER
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret:port
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials:mysql_port'
       FileSystemLocations:
         - Identifier: "ContentFiles"
           Location: !Sub "${ContentFilesSystemId}.efs.${AWS::Region}.amazonaws.com:/"
