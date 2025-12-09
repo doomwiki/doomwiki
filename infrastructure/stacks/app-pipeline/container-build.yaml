@@ -114,7 +114,7 @@ Resources:
           - Name: ENV
             Value: !Ref EnvironmentName
           - Name: DB_SECRET
-            Value: !Sub ${ProjectName}-${EnvironmentName}DatabaseSecret
+            Value: !Sub 'mysql/${ProjectName}/${EnvironmentName}/db-credentials'
           - Name: ECR_URL
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
       Name: !Sub ${ProjectName}-${EnvironmentName}-CodeBuildProject

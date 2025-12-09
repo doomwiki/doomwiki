@@ -11,13 +11,13 @@ DOMAIN=$5
 # Values in $WIKI_CONF_OVERRIDES are expected to be properly formatted json.
 
 cat << EOF
-MYSQL_PORT=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.port'`
-MYSQL_DATABASE=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.dbname'`
-MYSQL_HOSTNAME=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.host'`
-MYSQL_USERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.username'`"
-MYSQL_PASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.password'`"
-MYSQL_ADMINUSERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.username'`"
-MYSQL_ADMINPASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.password'`"
+MYSQL_PORT=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_port'`
+MYSQL_DATABASE=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.db_name'`
+MYSQL_HOSTNAME=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_listen_addr'`
+MYSQL_USERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_user'`"
+MYSQL_PASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_password'`"
+MYSQL_ADMINUSERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.root_user'`"
+MYSQL_ADMINPASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.root_password'`"
 SMTP_HOST=`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.smtp_settings.smtp_host'`
 SMTP_PORT=`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.smtp_settings.smtp_port'`
 SMTP_USERNAME="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.smtp_settings.smtp_username'`"

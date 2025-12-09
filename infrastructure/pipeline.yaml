@@ -802,8 +802,6 @@ Resources:
                     {
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectURL": "${DomainName}",
-                      "DBAdminSecret": "#{DBVars.DBAdminSecret}",
-                      "DBCluster": "#{DBVars.DatabaseCluster}",
                       "AWSApplicationArn": "${AWSApplicationArn}"
                     }
                 InputArtifacts:
@@ -831,7 +829,6 @@ Resources:
                       "EnvironmentName": "${EnvironmentName}",
                       "ProjectName": "${ProjectName}",
                       "ContentFilesSystemId": "#{EFSVars.FileSystemResource}",
-                      "DBAccessSecret": "#{DBVars.DBAdminSecret}",
                       "VPCID": "${VPCID}",
                       "VPCSubnets": "${VPCSubnets}",
                       "VPCDefaultSecurityGroup": "${VPCDefaultSecurityGroup}",
