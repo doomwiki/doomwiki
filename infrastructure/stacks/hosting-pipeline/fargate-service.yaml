@@ -25,7 +25,7 @@ Parameters:
     Type: List<AWS::EC2::Subnet::Id>
   ContainerCpu:
     Type: Number
-    Default: "256"
+    Default: "512"
     Description: How much CPU to give the container. 1024 is 1 CPU
   ContainerMemory:
     Type: Number
@@ -56,7 +56,7 @@ Parameters:
       assigned to different paths on the load balancer.
   DesiredCount:
     Type: Number
-    Default: "2"
+    Default: "4"
     Description: How many copies of the service task to run
   EFSImageSystem:
     Type: String
