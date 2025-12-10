@@ -153,19 +153,20 @@ $memList = array_filter( array_map( 'trim', explode( ',', getenv( 'MEMCACHED_SER
 if ( $memList ) {
 	$wgMemCachedServers = $memList;
 }
-if ( $wgMemCachedServers ) {
-	$wgMainCacheType       = CACHE_MEMCACHED;
-	$wgParserCacheType     = CACHE_MEMCACHED;
-	$wgMessageCacheType    = CACHE_MEMCACHED;
-	$wgSessionCacheType    = CACHE_DB; // or CACHE_MEMCACHED if desired
-	$wgMemCachedTimeout    = 0.05;     // seconds; keep low to avoid blocking
-	$wgMemCachedPersistent = false;
-} else {
-	$wgMainCacheType       = CACHE_ACCEL;
-	$wgParserCacheType     = CACHE_DB;
-	$wgMessageCacheType    = CACHE_ACCEL;
-	$wgSessionCacheType    = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
-}
+$wgObjectCaches['memcached-pecl'] = [
+    'class'         => 'MemcachedPeclBagOStuff',
+    'servers'       => $wgMemCachedServers,
+    'persistent'    => false,
+    'timeout'       => 0.05,
+    'retry_timeout' => -1,
+    'serialization' => 'php',
+];
+
+// use the PECL backend
+$wgMainCacheType    = 'memcached-pecl';
+$wgParserCacheType  = 'memcached-pecl';
+$wgMessageCacheType = 'memcached-pecl';
+$wgSessionCacheType    = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
 
 ## To enable image uploads, make sure the 'images' directory
 ## is writable, then set this to true:
