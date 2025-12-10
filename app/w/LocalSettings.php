@@ -142,12 +142,30 @@ $wgDBTableOptions   = "ENGINE=InnoDB, DEFAULT CHARSET=binary";
 $wgDBmysql5 = true;
 
 ## Shared memory settings
-$wgMemCachedServers = [getenv('MEMCACHED_HOSTNAME').":".getenv('MEMCACHED_PORT')]; // EC2 private IP:port
-$wgMainCacheType    = CACHE_MEMCACHED;
-$wgParserCacheType  = CACHE_MEMCACHED;
-$wgMessageCacheType = CACHE_MEMCACHED;
-$wgSessionCacheType = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
-
+$wgMemCachedServers = [];
+$memHost = getenv('MEMCACHED_HOSTNAME');
+$memPort = getenv('MEMCACHED_PORT') ?: '11211';
+if ( !empty( $memHost ) ) {
+	$wgMemCachedServers[] = "{$memHost}:{$memPort}"; // EC2 private IP:port
+}
+// Allow list via MEMCACHED_SERVERS env (comma-separated) as an alternative
+$memList = array_filter( array_map( 'trim', explode( ',', getenv( 'MEMCACHED_SERVERS' ) ?: '' ) ) );
+if ( $memList ) {
+	$wgMemCachedServers = $memList;
+}
+if ( $wgMemCachedServers ) {
+	$wgMainCacheType       = CACHE_MEMCACHED;
+	$wgParserCacheType     = CACHE_MEMCACHED;
+	$wgMessageCacheType    = CACHE_MEMCACHED;
+	$wgSessionCacheType    = CACHE_DB; // or CACHE_MEMCACHED if desired
+	$wgMemCachedTimeout    = 0.05;     // seconds; keep low to avoid blocking
+	$wgMemCachedPersistent = false;
+} else {
+	$wgMainCacheType       = CACHE_ACCEL;
+	$wgParserCacheType     = CACHE_DB;
+	$wgMessageCacheType    = CACHE_ACCEL;
+	$wgSessionCacheType    = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
+}
 
 ## To enable image uploads, make sure the 'images' directory
 ## is writable, then set this to true:

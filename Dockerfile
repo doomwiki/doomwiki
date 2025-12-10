@@ -23,7 +23,7 @@ RUN yum -y install amazon-linux-extras \
     && amazon-linux-extras enable php7.2 \
     && yum clean metadata \
     && yum -y install httpd \
-    && yum -y install php-pecl-apcu php-{bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xml} \
+    && yum -y install php-pecl-apcu php-pecl-memcached php-{bcmath,cli,curl,devel,fpm,gd,json,ldap,mbstring,mysqlnd,opcache,pdo,pdo_mysql,pear,sodium,xml} \
     && yum -y install ImageMagick librsvg2-tools \
     && yum clean all \
     && mkdir -p /run/php-fpm \

@@ -13,6 +13,10 @@ for f in ${SETTINGS_FILES}; do
   if [ -f "${src}" ] && [ ! -f "${dest}" ]; then
     sudo mv "${src}" "${dest}"
   fi
+  if [ -f "${dest}" ]; then
+    sudo chown apache:apache "${dest}"
+    sudo chmod 640 "${dest}"
+  fi
 done
 for f in ${SETTINGS_FILES}; do
   if [ -f "${CACHE_DIR}/${f}" ]; then
