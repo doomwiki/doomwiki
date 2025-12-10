@@ -11,6 +11,9 @@ DOMAIN=$5
 # Values in $WIKI_CONF_OVERRIDES are expected to be properly formatted json.
 
 cat << EOF
+APP_DOMAIN="$DOMAIN"
+APP_ENV="$ENV"
+# DB Connection
 MYSQL_PORT=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_port'`
 MYSQL_DATABASE=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.db_name'`
 MYSQL_HOSTNAME=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_listen_addr'`
@@ -18,6 +21,12 @@ MYSQL_USERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r
 MYSQL_PASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_password'`"
 MYSQL_ADMINUSERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.root_user'`"
 MYSQL_ADMINPASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.root_password'`"
+
+# Memcached Connection
+MEMCACHED_HOSTNAME=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_listen_addr'`
+MEMCACHED_PORT="11211"
+
+# Wiki Specific Settings
 SMTP_HOST=`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.smtp_settings.smtp_host'`
 SMTP_PORT=`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.smtp_settings.smtp_port'`
 SMTP_USERNAME="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.smtp_settings.smtp_username'`"
@@ -26,7 +35,5 @@ WIKI_SECRET_KEY="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Param
 WIKI_UB_UPLOAD_BLACKLIST="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.wiki_ub_upload_blacklist'`"
 WIKI_MONACO_PAYPAL_ID="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.wiki_monaco_paypal_id'`"
 WIKI_GOOGLE_SITE_VERIFICATION="`aws ssm get-parameter --name WikiConfOverrides | jq -r '.Parameter.Value' | jq -r '.wiki_google_site_verification'`"
-APP_DOMAIN="$DOMAIN"
-APP_ENV="$ENV"
 EOF
 

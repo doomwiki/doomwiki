@@ -10,6 +10,7 @@ AWS_REGION="${AWS_REGION:-}"
 BACKUP_DIR="${BACKUP_DIR:-/home/doomwiki/dbdump}"
 RETENTION_DAYS="${RETENTION_DAYS:-7}"
 DB_NAME="${DB_NAME:-}"
+MEDIAWIKI="/mnt/efs/cache"
 
 current_date=$(date +%Y%m%d)
 backup_dbfile="${BACKUP_DIR}/backup${current_date}.sql.gz"
@@ -47,6 +48,9 @@ mkdir -p "${BACKUP_DIR}"
 log "Pruning backups older than ${RETENTION_DAYS} days in ${BACKUP_DIR}"
 find "${BACKUP_DIR}" -type f -name '*.gz' -mtime +"${RETENTION_DAYS}" -exec rm -f {} \;
 
+log "Locking MediaWiki"
+sed -i '/wgReadOnly = /s~^//~~' $MEDIAWIKI/LocalSettings.php $MEDIAWIKI/LocalSettingsRJ.php
+
 log "Running mysqldump for ${DB_NAME}"
 mysqldump \
   --lock-tables \
@@ -54,5 +58,8 @@ mysqldump \
   --set-gtid-purged=OFF \
   -h "${DB_HOST}" -P "${DB_PORT}" -u "${DB_USER}" -p"${DB_PASSWORD}" \
   "${DB_NAME}" | gzip -9 > "${backup_dbfile}"
+
+log "Unlock MediaWiki"
+sed -i '/wgReadOnly = /s~^~//~' $MEDIAWIKI/LocalSettings.php $MEDIAWIKI/LocalSettingsRJ.php
 
 log "Backup complete: ${backup_dbfile}"

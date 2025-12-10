@@ -195,8 +195,16 @@ apply_secret_overrides
 : "${DB_APP_PASSWORD:?DB_APP_PASSWORD must be set (inline or in secret ${SECRET_ID})}"
 
 log "Enabling and starting MySQL"
-systemctl enable mysqld
-systemctl start mysqld
+ensure_mysqld_running() {
+  systemctl daemon-reload || true
+  systemctl enable mysqld || true
+  systemctl restart mysqld
+  if ! systemctl is-active --quiet mysqld; then
+    log "ERROR: mysqld failed to start; check journalctl -u mysqld"
+    exit 1
+  fi
+}
+ensure_mysqld_running
 
 log "Securing MySQL (no interactive prompts)"
 # Ensure root can auth via password; handle first-run temporary password and reruns

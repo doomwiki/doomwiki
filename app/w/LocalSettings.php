@@ -142,7 +142,10 @@ $wgDBTableOptions   = "ENGINE=InnoDB, DEFAULT CHARSET=binary";
 $wgDBmysql5 = true;
 
 ## Shared memory settings
-$wgMainCacheType = CACHE_ACCEL;
+$wgMemCachedServers = [getenv('MEMCACHED_HOSTNAME').":".getenv('MEMCACHED_PORT')]; // EC2 private IP:port
+$wgMainCacheType    = CACHE_MEMCACHED;
+$wgParserCacheType  = CACHE_MEMCACHED;
+$wgMessageCacheType = CACHE_MEMCACHED;
 $wgSessionCacheType = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
 
 
