@@ -17,7 +17,7 @@
 
 // 20170905: jobs need to be run through a cronjob
 $wgJobRunRate = 0;
-
+putenv("MW_INSTALL_PATH=/home/doomwiki/public_html/w");
 # If you customize your file layout, set $IP to the directory that contains
 # the other MediaWiki files. It will be used as a base to locate files.
 if( getenv('MW_INSTALL_PATH') ) {
@@ -168,6 +168,17 @@ $wgParserCacheType  = 'memcached-pecl';
 $wgMessageCacheType = CACHE_DB;
 $wgUseLocalMessageCache = false;
 $wgSessionCacheType    = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
+
+## Email settings
+$wgSMTP = [
+    'host'      => getenv('SMTP_HOST'), // could also be an IP address. Where the SMTP server is located. If using SSL or TLS, add the prefix "ssl://" or "tls://".
+    'IDHost'    => getenv("APP_DOMAIN"),      // Generally this will be the domain name of your website (aka mywiki.org)
+    'localhost' => getenv("APP_DOMAIN"),      // Same as IDHost above; required by some mail servers
+    'port'      => 587,                // Port to use when connecting to the SMTP server
+    'auth'      => true,               // Should we use SMTP authentication (true or false)
+    'username'  => getenv('SMTP_USERNAME'),     // Username to use for SMTP authentication (if being used)
+    'password'  => getenv('SMTP_PASSWORD')       // Password to use for SMTP authentication (if being used)
+];
 
 ## To enable image uploads, make sure the 'images' directory
 ## is writable, then set this to true:
