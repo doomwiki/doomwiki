@@ -20,10 +20,10 @@ $wgJobRunRate = 0;
 
 # If you customize your file layout, set $IP to the directory that contains
 # the other MediaWiki files. It will be used as a base to locate files.
-if( defined( 'MW_INSTALL_PATH' ) ) {
-	$IP = MW_INSTALL_PATH;
+if( getenv('MW_INSTALL_PATH') ) {
+        $IP = getenv('MW_INSTALL_PATH');
 } else {
-	$IP = dirname( __FILE__ );
+        $IP = dirname( __FILE__ );
 }
 date_default_timezone_set('America/Chicago');
 $today = getdate();

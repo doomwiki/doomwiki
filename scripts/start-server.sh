@@ -1,5 +1,25 @@
 #!/bin/sh
 
+MW_INSTALL_PATH="/home/doomwiki/public_html/w"
+export MW_INSTALL_PATH
+CACHE_DIR="/tmp/cache"
+SETTINGS_FILES="LocalSettings.php LocalSettingsRJ.php"
+
+echo "Relocate LocalSettings files to ${CACHE_DIR} and symlink main file back"
+sudo mkdir -p "${CACHE_DIR}"
+for f in ${SETTINGS_FILES}; do
+  src="${MW_INSTALL_PATH}/${f}"
+  dest="${CACHE_DIR}/${f}"
+  if [ -f "${src}" ] && [ ! -f "${dest}" ]; then
+    sudo mv "${src}" "${dest}"
+  fi
+done
+for f in ${SETTINGS_FILES}; do
+  if [ -f "${CACHE_DIR}/${f}" ]; then
+    sudo ln -sfn "${CACHE_DIR}/${f}" "${MW_INSTALL_PATH}/${f}"
+  fi
+done
+
 echo "Start cron"
 sudo crond
 
