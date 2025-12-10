@@ -165,7 +165,8 @@ $wgObjectCaches['memcached-pecl'] = [
 // use the PECL backend
 $wgMainCacheType    = 'memcached-pecl';
 $wgParserCacheType  = 'memcached-pecl';
-$wgMessageCacheType = 'memcached-pecl';
+$wgMessageCacheType = CACHE_DB;
+$wgUseLocalMessageCache = false;
 $wgSessionCacheType    = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
 
 ## To enable image uploads, make sure the 'images' directory
