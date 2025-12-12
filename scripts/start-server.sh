@@ -15,7 +15,6 @@ for f in ${SETTINGS_FILES}; do
   fi
   if [ -f "${dest}" ]; then
     sudo chown apache:apache "${dest}"
-    sudo chmod 640 "${dest}"
   fi
 done
 for f in ${SETTINGS_FILES}; do
