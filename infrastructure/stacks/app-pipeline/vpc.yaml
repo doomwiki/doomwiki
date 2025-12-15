@@ -22,6 +22,56 @@ Parameters:
   VpcEndpointSgId:
     Description: Security Group ID to associate with VPC endpoints
     Type: AWS::EC2::SecurityGroup::Id
+  EnableCodeBuildEndpoint:
+    Description: Whether to create VPC endpoint for CodeBuild
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  EnableSTSEndpoint:
+    Description: Whether to create VPC endpoint for STS
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  EnableSSMEndpoint:
+    Description: Whether to create VPC endpoint for STS
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  EnableLogsEndpoint:
+    Description: Whether to create VPC endpoint for CloudWatch Logs
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  EnableECRAPIEndpoint:
+    Description: Whether to create VPC endpoint for ECR API
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+  EnableECRDKREndpoint:
+    Description: Whether to create VPC endpoint for ECR DKR
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
+
+Conditions:
+  CreateCodeBuildEndpoint: !Equals [ !Ref EnableCodeBuildEndpoint, "true" ]
+  CreateSTSEndpoint: !Equals [ !Ref EnableSTSEndpoint, "true" ]
+  CreateSSMEndpoint: !Equals [ !Ref EnableSSMEndpoint, "true" ]
+  CreateLogsEndpoint: !Equals [ !Ref EnableLogsEndpoint, "true" ]
+  CreateECRAPIEndpoint: !Equals [ !Ref EnableECRAPIEndpoint, "true" ]
+  CreateECRDKREndpoint: !Equals [ !Ref EnableECRDKREndpoint, "true" ]
 
 Resources:
   Vpc:
@@ -68,6 +118,7 @@ Resources:
       AvailabilityZone: !Ref AzA
       CidrBlock: 10.0.1.0/24
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-private-subnet1" }]
+      MapPublicIpOnLaunch: false
 
   PrivateSubnetB:
     Type: AWS::EC2::Subnet
@@ -76,6 +127,7 @@ Resources:
       AvailabilityZone: !Ref AzB
       CidrBlock: 10.0.2.0/24
       Tags: [{ Key: Name, Value: !Sub "${ProjectName}-${EnvironmentName}-private-subnet2" }]
+      MapPublicIpOnLaunch: false
 
   IGW:
     Type: AWS::EC2::InternetGateway
@@ -186,6 +238,7 @@ Resources:
 
   CodeBuildEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateCodeBuildEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
@@ -196,6 +249,7 @@ Resources:
 
   LogsEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateLogsEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
@@ -206,6 +260,7 @@ Resources:
 
   StsEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateSTSEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
@@ -216,6 +271,7 @@ Resources:
 
   EcrApiEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateECRAPIEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
@@ -226,6 +282,7 @@ Resources:
 
   EcrDkrEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateECRDKREndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
@@ -246,6 +303,7 @@ Resources:
 
   SsmEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateSSMEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
@@ -256,6 +314,7 @@ Resources:
 
   SsmMessagesEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateSSMEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
