@@ -56,7 +56,7 @@ Parameters:
       assigned to different paths on the load balancer.
   DesiredCount:
     Type: Number
-    Default: "3"
+    Default: "4"
     Description: How many copies of the service task to run
   EFSImageSystem:
     Type: String
