@@ -128,5 +128,20 @@ Crawl-delay: 5
 
 # Main rule; allow all except /w/images/cache; specify sitemap
 User-agent: *
+# Block unnecessary MediaWiki paths to improve crawl efficiency
+Disallow: /w/api.php
+Disallow: /w/index.php?
+Disallow: /wiki/*?
+Disallow: /w/thumb.php
+Disallow: /w/load.php
 Disallow: /w/images/cache/
+Disallow: /w/images/deleted/
+Disallow: /w/images/temp/
+Disallow: /w/maintenance/
+Disallow: /w/extensions/
+Disallow: /w/vendor/
+Disallow: /w/serialized/
+# Allow clean URLs
+Allow: /wiki/
+# Specify sitemaps
 Sitemap: https://doomwiki.org/w/sitemap.xml
