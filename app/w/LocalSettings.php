@@ -229,6 +229,10 @@ $wgShowIPinHeader = false;
 
 $wgCachePages = true;
 
+// Enable sidebar caching for better performance
+$wgEnableSidebarCache = true;
+$wgSidebarCacheExpiry = 86400; // 1 day
+
 $wgLocalInterwiki   = strtolower( $wgSitename );
 
 $wgLanguageCode = "en";
@@ -503,6 +507,13 @@ $wgHooks['BeforePageDisplay'][] = 'wfAddGoogleAndMetas';
 function wfAddGoogleAndMetas(&$out, &$skin)
 {
   $out->addMeta('google-site-verification', getenv('WIKI_GOOGLE_SITE_VERIFICATION'));
+  
+  // Add preconnect for performance
+  $out->addLink([
+    'rel' => 'preconnect',
+    'href' => 'https://i.creativecommons.org'
+  ]);
+  
   //$out->addMeta('twitter:card', 'summary');
   //$out->addMeta('twitter:site', '@doomwiki');
   return true;
