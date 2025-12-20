@@ -64,6 +64,13 @@ Parameters:
     AllowedValues:
       - "true"
       - "false"
+  EnableSecretsManagerEndpoint:
+    Description: Whether to create VPC endpoint for Secrets Manager
+    Type: String
+    Default: "true"
+    AllowedValues:
+      - "true"
+      - "false"
 
 Conditions:
   CreateCodeBuildEndpoint: !Equals [ !Ref EnableCodeBuildEndpoint, "true" ]
@@ -72,6 +79,7 @@ Conditions:
   CreateLogsEndpoint: !Equals [ !Ref EnableLogsEndpoint, "true" ]
   CreateECRAPIEndpoint: !Equals [ !Ref EnableECRAPIEndpoint, "true" ]
   CreateECRDKREndpoint: !Equals [ !Ref EnableECRDKREndpoint, "true" ]
+  CreateSecretsManagerEndpoint: !Equals [ !Ref EnableSecretsManagerEndpoint, "true" ]
 
 Resources:
   Vpc:
@@ -293,6 +301,7 @@ Resources:
 
   SecretsManagerEndpoint:
     Type: AWS::EC2::VPCEndpoint
+    Condition: CreateSecretsManagerEndpoint
     Properties:
       VpcId: !Ref Vpc
       VpcEndpointType: Interface
