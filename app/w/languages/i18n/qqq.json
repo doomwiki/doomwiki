@@ -342,7 +342,8 @@
 	"errorpagetitle": "Message shown in browser title bar when encountering error operation.\n\n{{Identical|Error}}",
 	"returnto": "{{Identical|Return to $1}}",
 	"tagline": "{{doc-important|Do not change <code><nowiki>{{SITENAME}}</nowiki></code>.}}\nUsed to identify the source of copied information.",
-	"help": "General text (noun) used in the sidebar (by default).\n\nSee also {{msg-mw|Helppage}} and {{msg-mw|Edithelp}}.\n\nSee also:\n* {{msg-mw|Help}}\n* {{msg-mw|Accesskey-n-help}}\n* {{msg-mw|Tooltip-n-help}}\n{{Identical|Help}}",
+	"help": "General text (noun).\n\nSee also {{msg-mw|Helppage}} and {{msg-mw|Edithelp}}.\n\nSee also:\n* {{msg-mw|Help}}\n* {{msg-mw|Accesskey-n-help}}\n* {{msg-mw|Tooltip-n-help}}\n{{Identical|Help}}",
+	"help-mediawiki": "Text ('Help' is a noun) used in the sidebar (by default) to link to the MediaWiki help on mediawiki.org.",
 	"search": "{{doc-special|Search}}\nNoun. Text of menu section shown on every page of the wiki above the search form.\n\nSee also:\n* {{msg-mw|Search}}\n* {{msg-mw|Accesskey-search}}\n* {{msg-mw|Tooltip-search}}\n{{Identical|Search}}",
 	"searchbutton": "The button you can see in the sidebar, below the search input box. The \"Go\" button is {{msg-mw|Searcharticle}}.\n{{Identical|Search}}",
 	"go": "See also:\n* {{msg-mw|Go}}\n* {{msg-mw|Accesskey-search-go}}\n* {{msg-mw|Tooltip-search-go}}\n{{Identical|Go}}",
@@ -3909,9 +3910,6 @@
 	"dberr-again": "This message does not allow any wiki nor html markup.",
 	"dberr-info": "This message does not allow any wiki nor html markup. Parameters:\n* $1 - database server name\nSee also:\n* {{msg-mw|Dberr-info-hidden}} - hides database server name",
 	"dberr-info-hidden": "This message does not allow any wiki nor html markup.\n\nSee also:\n* {{msg-mw|Dberr-info}} - shows database server name",
-	"dberr-usegoogle": "This message does not allow any wiki nor html markup.",
-	"dberr-outofdate": "{{doc-singularthey}}\nIn this sentence, '''their''' indexes refers to '''Google's''' indexes. This message does not allow any wiki nor html markup.",
-	"dberr-cachederror": "Used as error message at the bottom of the page.",
 	"htmlform-invalid-input": "Used as error message in HTML forms.\n\n* {{msg-mw|Htmlform-required}}\n* {{msg-mw|Htmlform-float-invalid}}\n* {{msg-mw|Htmlform-int-invalid}}\n* {{msg-mw|Htmlform-int-toolow}}\n* {{msg-mw|Htmlform-int-toohigh}}\n* {{msg-mw|Htmlform-select-badoption}}",
 	"htmlform-select-badoption": "Used as error message in HTML forms.\n\n* {{msg-mw|Htmlform-invalid-input}}\n* {{msg-mw|Htmlform-required}}\n* {{msg-mw|Htmlform-float-invalid}}\n* {{msg-mw|Htmlform-int-invalid}}\n* {{msg-mw|Htmlform-int-toolow}}\n* {{msg-mw|Htmlform-int-toohigh}}",
 	"htmlform-int-invalid": "Used as error message in HTML forms.\n\n* {{msg-mw|Htmlform-invalid-input}}\n* {{msg-mw|Htmlform-required}}\n* {{msg-mw|Htmlform-float-invalid}}\n* {{msg-mw|Htmlform-int-toolow}}\n* {{msg-mw|Htmlform-int-toohigh}}\n* {{msg-mw|Htmlform-select-badoption}}",
@@ -4357,5 +4355,9 @@
 	"gotointerwiki-invalid": "Message shown on Special:GoToInterwiki if given an invalid title.",
 	"gotointerwiki-external": "Message shown on Special:GoToInterwiki if given a external interwiki link (e.g. [[Special:GoToInterwiki/Google:Foo]]). $1 is the full url the user is trying to get to. $2 is the text of the interwiki link (e.g. \"Google:foo\").",
 	"undelete-cantedit": "Shown if the user tries to undelete a page that they cannot edit",
-	"undelete-cantcreate": "Shown if the user tries to undelete a page which currently does not exist, and they are not allowed to create it. This could for example happen on a wiki with custom protection levels where the page name has been create-protected and the user has the right to undelete but not the right to edit protected pages."
+	"undelete-cantcreate": "Shown if the user tries to undelete a page which currently does not exist, and they are not allowed to create it. This could for example happen on a wiki with custom protection levels where the page name has been create-protected and the user has the right to undelete but not the right to edit protected pages.",
+	"unregistered-user-config": "Shown when viewing a user JS, CSS or JSON subpage with ?action=raw&ctype=<mime type> where there is no such user. It is shown as a paragraph after a header saying 'Forbidden'.",
+	"unprotected-js": "Error message shown when trying to load javascript via action=raw that is not protected",
+	"userlogout-continue": "Shown if user attempted to log out without a token specified. Probably the user clicked on an old link that hasn't been updated to use the new system. $1 - url that user should click on in order to log out.",
+	"userlogout-sessionerror": "Shown when a user tries to log out with an invalid token. $1 is url with correct token that user should click."
 }

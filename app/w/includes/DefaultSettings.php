@@ -75,7 +75,7 @@ $wgConfigRegistry = [
  * MediaWiki version number
  * @since 1.2
  */
-$wgVersion = '1.27.5';
+$wgVersion = '1.27.6';
 
 /**
  * Name of the site. It must be changed in LocalSettings.php
@@ -5535,6 +5535,10 @@ $wgRateLimits = [
 		'ip' => [ 5, 86400 ],
 		'newbie' => [ 5, 86400 ],
 		'user' => [ 20, 86400 ],
+	],
+	'changeemail' => [
+		'ip-all' => [ 10, 3600 ],
+		'user' => [ 4, 86400 ]
 	],
 	// Purging pages
 	'purge' => [

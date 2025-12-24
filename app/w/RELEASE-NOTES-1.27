@@ -1,3 +1,41 @@
+== MediaWiki 1.27.6 ==
+
+This is a security and maintenance release of the MediaWiki 1.27 branch.
+
+=== Changes since MediaWiki 1.27.6 ===
+* (T204729) WatchedItemStore::countVisitingWatchersMultiple() shouldn't query all
+  titles when asked for none.
+* (T109121) Remove deprecated pear/mail_mime-decode from composer suggested libraries.
+* (T207241) Augment precision of updatelist time.
+* (T207540) Include IP address in "Login for $1 succeeded" log entry.
+* (T205765) Don't link to the obsolete "Extension Matrix" page in installer.
+* (T207603) SECURITY: User JS may no longer be loaded with mime type text/javascript if
+  there is no account associated with the username.
+* (T113042) SECURITY: Do not allow loading pages raw with a text/javascript MIME type if
+  non-admins can edit the page.
+* (T207541) Pass email address to mail().
+* (T209335) Clarify the default sidebar 'Help' link is about MediaWiki itself.
+* (T213359) Update mediawiki/mediawiki-codesniffer to 0.8.1.
+* (T208871) The hard-coded Google search form on the database error page was
+  removed.
+* (T216968) Return pageid as int in both list=iwbacklinks and list=langbacklinks.
+* (T218608) Fix an issue that prevents Extension:OAuth working when
+  $wgBlockDisablesLogin is true.
+* (T219728) Added support for new Japanese era name "Reiwa".
+* (T25227) SECURITY: action=logout now requires to be posted and have a csrf token.
+* SpecialPage::checkLoginSecurityLevel() will now preserve POST data when
+  reauthenticating.
+* FormSpecialPage::execute() will now call checkLoginSecurityLevel() if
+  getLoginSecurityLevel() returns non-false.
+* (T197279) SECURITY: Fix reauth in Special:ChangeEmail.
+* T208881) SECURITY: blacklist CSS var().
+* (T209794) SECURITY: rate-limit and prevent blocked users from changing email.
+* (T199540) SECURITY: API: Respect $wgBlockCIDRLimit in action=block.
+* (T212118) SECURITY: Fix cache mode for (un)patrolled recent changes query.
+* (T222036, T222038) SECURITY: Add permission check for user is permitted to
+  view the log type.
+* (T221739) SECURITY: resources: Patch jQuery 1.11.3 for CVE-2019-11358.
+
 == MediaWiki 1.27.5 ==
 
 This is a security and maintenance release of the MediaWiki 1.27 branch.

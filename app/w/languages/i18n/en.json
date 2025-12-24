@@ -2,7 +2,7 @@
 	"@metadata": {
 		"authors": []
 	},
-	"sidebar": "\n* navigation\n** mainpage|mainpage-description\n** recentchanges-url|recentchanges\n** randompage-url|randompage\n** helppage|help\n* SEARCH\n* TOOLBOX\n* LANGUAGES",
+	"sidebar": "\n* navigation\n** mainpage|mainpage-description\n** recentchanges-url|recentchanges\n** randompage-url|randompage\n** helppage|help-mediawiki\n* SEARCH\n* TOOLBOX\n* LANGUAGES",
 	"tog-underline": "Link underlining:",
 	"tog-hideminor": "Hide minor edits from recent changes",
 	"tog-hidepatrolled": "Hide patrolled edits from recent changes",
@@ -165,6 +165,7 @@
 	"returnto": "Return to $1.",
 	"tagline": "From {{SITENAME}}",
 	"help": "Help",
+	"help-mediawiki": "Help about MediaWiki",
 	"search": "Search",
 	"searchbutton": "Search",
 	"go": "Go",
@@ -3731,9 +3732,6 @@
 	"dberr-again": "Try waiting a few minutes and reloading.",
 	"dberr-info": "(Cannot access the database: $1)",
 	"dberr-info-hidden": "(Cannot access the database)",
-	"dberr-usegoogle": "You can try searching via Google in the meantime.",
-	"dberr-outofdate": "Note that their indexes of our content may be out of date.",
-	"dberr-cachederror": "This is a cached copy of the requested page, and may not be up to date.",
 	"htmlform-invalid-input": "There are problems with some of your input.",
 	"htmlform-select-badoption": "The value you specified is not a valid option.",
 	"htmlform-int-invalid": "The value you specified is not an integer.",
@@ -4179,5 +4177,9 @@
 	"gotointerwiki-invalid": "The specified title was invalid.",
 	"gotointerwiki-external": "You are about to leave {{SITENAME}} to visit [[$2]] which is a separate website.\n\n[$1 Click here to continue on to $1].",
 	"undelete-cantedit": "You cannot undelete this page as you are not allowed to edit this page.",
-	"undelete-cantcreate": "You cannot undelete this page as there is no existing page with this name and you are not allowed to create this page."
+	"undelete-cantcreate": "You cannot undelete this page as there is no existing page with this name and you are not allowed to create this page.",
+	"unregistered-user-config": "For security reasons JavaScript, CSS and JSON user subpages cannot be loaded for unregistered users.",
+	"unprotected-js": "For security reasons JavaScript cannot be loaded from unprotected pages. Please only create javascript in the MediaWiki: namespace or as a User subpage",
+	"userlogout-continue": "If you wish to log out please [$1 continue to the log out page].",
+	"userlogout-sessionerror": "Log out failed due to session error. Please [$1 try again]."
 }

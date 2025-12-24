@@ -1,11 +1,10 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "hash": "d4b69794468f794a8350339881319948",
-    "content-hash": "fbadb58818d15bd051e858b533bf2252",
+    "content-hash": "d87dc81759a28a9d93b73c190ff80340",
     "packages": [
         {
             "name": "composer/semver",
@@ -67,7 +66,7 @@
                 "validation",
                 "versioning"
             ],
-            "time": "2016-03-30 13:16:03"
+            "time": "2016-03-30T13:16:03+00:00"
         },
         {
             "name": "cssjanus/cssjanus",
@@ -102,7 +101,7 @@
                 "Apache-2.0"
             ],
             "description": "Convert CSS stylesheets between left-to-right and right-to-left.",
-            "time": "2015-06-15 17:20:16"
+            "time": "2015-06-15T17:20:16+00:00"
         },
         {
             "name": "firebase/php-jwt",
@@ -145,7 +144,7 @@
             ],
             "description": "A simple library to encode and decode JSON Web Tokens (JWT) in PHP. Should conform to the current spec.",
             "homepage": "https://github.com/firebase/php-jwt",
-            "time": "2015-07-22 18:31:08"
+            "time": "2015-07-22T18:31:08+00:00"
         },
         {
             "name": "justinrainbow/json-schema",
@@ -211,7 +210,7 @@
                 "json",
                 "schema"
             ],
-            "time": "2016-01-25 15:43:01"
+            "time": "2016-01-25T15:43:01+00:00"
         },
         {
             "name": "liuggio/statsd-php-client",
@@ -261,7 +260,7 @@
                 "php",
                 "statsd"
             ],
-            "time": "2015-07-23 23:12:45"
+            "time": "2015-07-23T23:12:45+00:00"
         },
         {
             "name": "mediawiki/at-ease",
@@ -308,7 +307,8 @@
             ],
             "description": "Safe replacement to @ for suppressing warnings.",
             "homepage": "https://www.mediawiki.org/wiki/at-ease",
-            "time": "2015-09-18 07:02:06"
+            "abandoned": "wikimedia/at-ease",
+            "time": "2015-09-18T07:02:06+00:00"
         },
         {
             "name": "monolog/monolog",
@@ -386,19 +386,19 @@
                 "logging",
                 "psr-3"
             ],
-            "time": "2016-04-02 13:12:58"
+            "time": "2016-04-02T13:12:58+00:00"
         },
         {
             "name": "nmred/kafka-php",
             "version": "v0.1.5",
             "source": {
                 "type": "git",
-                "url": "https://github.com/nmred/kafka-php.git",
+                "url": "https://github.com/weiboad/kafka-php.git",
                 "reference": "317ad8c208684db8b9e6d2f5bf7f471e89a8b4eb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nmred/kafka-php/zipball/317ad8c208684db8b9e6d2f5bf7f471e89a8b4eb",
+                "url": "https://api.github.com/repos/weiboad/kafka-php/zipball/317ad8c208684db8b9e6d2f5bf7f471e89a8b4eb",
                 "reference": "317ad8c208684db8b9e6d2f5bf7f471e89a8b4eb",
                 "shasum": ""
             },
@@ -426,7 +426,7 @@
                 "client",
                 "kafka"
             ],
-            "time": "2015-12-02 12:06:23"
+            "time": "2015-12-02T12:06:23+00:00"
         },
         {
             "name": "oojs/oojs-ui",
@@ -505,7 +505,7 @@
             ],
             "description": "Provides library of common widgets, layouts, and windows.",
             "homepage": "https://www.mediawiki.org/wiki/OOjs_UI",
-            "time": "2016-05-03 22:34:48"
+            "time": "2016-05-03T22:34:48+00:00"
         },
         {
             "name": "oyejorge/less.php",
@@ -567,7 +567,7 @@
                 "php",
                 "stylesheet"
             ],
-            "time": "2015-12-30 05:47:36"
+            "time": "2015-12-30T05:47:36+00:00"
         },
         {
             "name": "pear/console_getopt",
@@ -614,7 +614,7 @@
                 }
             ],
             "description": "More info available on: http://pear.php.net/package/Console_Getopt",
-            "time": "2015-07-20 20:28:12"
+            "time": "2015-07-20T20:28:12+00:00"
         },
         {
             "name": "pear/mail",
@@ -672,7 +672,7 @@
             ],
             "description": "Class that provides multiple interfaces for sending emails.",
             "homepage": "http://pear.php.net/package/Mail",
-            "time": "2016-01-31 21:32:18"
+            "time": "2016-01-31T21:32:18+00:00"
         },
         {
             "name": "pear/mail_mime",
@@ -718,55 +718,7 @@
             ],
             "description": "Mail_Mime provides classes to create MIME messages",
             "homepage": "http://pear.php.net/package/Mail_Mime",
-            "time": "2015-09-13 12:42:41"
-        },
-        {
-            "name": "pear/mail_mime-decode",
-            "version": "1.5.5.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/dreamfactorysoftware/Mail_mimeDecode.git",
-                "reference": "a53c1ce051b212e23f7f67ea8d31015640de1129"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/dreamfactorysoftware/Mail_mimeDecode/zipball/a53c1ce051b212e23f7f67ea8d31015640de1129",
-                "reference": "a53c1ce051b212e23f7f67ea8d31015640de1129",
-                "shasum": ""
-            },
-            "require": {
-                "pear/pear_exception": "*"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "Mail_mimeDecode": ""
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "include-path": [
-                "./"
-            ],
-            "license": [
-                "BSD-2-Clause"
-            ],
-            "authors": [
-                {
-                    "name": "Cipriano Groenendal",
-                    "email": "cipri@php.net",
-                    "role": "Lead"
-                },
-                {
-                    "name": "Aleksander Machniak",
-                    "email": "alec@php.net",
-                    "role": "Lead"
-                }
-            ],
-            "description": "More info available on: http://pear.php.net/package/Mail_mimeDecode",
-            "time": "2014-04-15 19:29:16"
+            "time": "2015-09-13T12:42:41+00:00"
         },
         {
             "name": "pear/net_smtp",
@@ -826,7 +778,7 @@
                 "mail",
                 "smtp"
             ],
-            "time": "2015-09-07 17:04:16"
+            "time": "2015-09-07T17:04:16+00:00"
         },
         {
             "name": "pear/net_socket",
@@ -879,7 +831,7 @@
                 }
             ],
             "description": "More info available on: http://pear.php.net/package/Net_Socket",
-            "time": "2014-02-20 19:27:06"
+            "time": "2014-02-20T19:27:06+00:00"
         },
         {
             "name": "pear/pear-core-minimal",
@@ -923,7 +875,7 @@
                 }
             ],
             "description": "Minimal set of PEAR core files to be used as composer dependency",
-            "time": "2015-10-17 11:41:19"
+            "time": "2015-10-17T11:41:19+00:00"
         },
         {
             "name": "pear/pear_exception",
@@ -978,7 +930,7 @@
             "keywords": [
                 "exception"
             ],
-            "time": "2015-02-10 20:07:52"
+            "time": "2015-02-10T20:07:52+00:00"
         },
         {
             "name": "psr/log",
@@ -1016,7 +968,7 @@
                 "psr",
                 "psr-3"
             ],
-            "time": "2012-12-21 11:40:51"
+            "time": "2012-12-21T11:40:51+00:00"
         },
         {
             "name": "ruflin/elastica",
@@ -1073,7 +1025,7 @@
                 "client",
                 "search"
             ],
-            "time": "2015-10-19 07:09:10"
+            "time": "2015-10-19T07:09:10+00:00"
         },
         {
             "name": "symfony/process",
@@ -1122,19 +1074,19 @@
             ],
             "description": "Symfony Process Component",
             "homepage": "https://symfony.com",
-            "time": "2016-03-30 10:41:14"
+            "time": "2016-03-30T10:41:14+00:00"
         },
         {
             "name": "wikimedia/assert",
             "version": "v0.2.2",
             "source": {
                 "type": "git",
-                "url": "https://github.com/wmde/Assert.git",
+                "url": "https://github.com/wikimedia/Assert.git",
                 "reference": "2da55927525975f8d52825fc3ee02e5e36f5036c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wmde/Assert/zipball/2da55927525975f8d52825fc3ee02e5e36f5036c",
+                "url": "https://api.github.com/repos/wikimedia/Assert/zipball/2da55927525975f8d52825fc3ee02e5e36f5036c",
                 "reference": "2da55927525975f8d52825fc3ee02e5e36f5036c",
                 "shasum": ""
             },
@@ -1167,7 +1119,7 @@
                 "precondition",
                 "qa"
             ],
-            "time": "2015-04-29 17:23:50"
+            "time": "2015-04-29T17:23:50+00:00"
         },
         {
             "name": "wikimedia/avro",
@@ -1234,7 +1186,7 @@
             "keywords": [
                 "serialization"
             ],
-            "time": "2015-09-05 18:49:27"
+            "time": "2015-09-05T18:49:27+00:00"
         },
         {
             "name": "wikimedia/base-convert",
@@ -1280,7 +1232,7 @@
             ],
             "description": "Convert an arbitrarily-long string from one numeric base to another, optionally zero-padding to a minimum column width.",
             "homepage": "https://www.mediawiki.org/wiki/base_convert",
-            "time": "2015-10-29 22:19:02"
+            "time": "2015-10-29T22:19:02+00:00"
         },
         {
             "name": "wikimedia/cdb",
@@ -1330,7 +1282,7 @@
             ],
             "description": "Constant Database (CDB) wrapper library for PHP. Provides pure-PHP fallback when dba_* functions are absent.",
             "homepage": "https://www.mediawiki.org/wiki/CDB",
-            "time": "2015-09-08 19:53:04"
+            "time": "2015-09-08T19:53:04+00:00"
         },
         {
             "name": "wikimedia/cldr-plural-rule-parser",
@@ -1376,7 +1328,7 @@
             ],
             "description": "Evaluates plural rules specified in the CLDR project notation.",
             "homepage": "https://www.mediawiki.org/wiki/CLDRPluralRuleParser",
-            "time": "2015-08-28 17:03:03"
+            "time": "2015-08-28T17:03:03+00:00"
         },
         {
             "name": "wikimedia/composer-merge-plugin",
@@ -1425,7 +1377,7 @@
                 }
             ],
             "description": "Composer plugin to merge multiple composer.json files",
-            "time": "2016-03-08 17:11:37"
+            "time": "2016-03-08T17:11:37+00:00"
         },
         {
             "name": "wikimedia/html-formatter",
@@ -1467,7 +1419,7 @@
             ],
             "description": "Performs transformations of HTML by wrapping around libxml2 and working around its countless bugs.",
             "homepage": "https://www.mediawiki.org/wiki/HtmlFormatter",
-            "time": "2016-04-07 21:25:47"
+            "time": "2016-04-07T21:25:47+00:00"
         },
         {
             "name": "wikimedia/ip-set",
@@ -1509,7 +1461,7 @@
             ],
             "description": "Efficiently match IP addresses against a set of CIDR specifications.",
             "homepage": "https://github.com/wikimedia/IPSet",
-            "time": "2016-02-12 15:19:10"
+            "time": "2016-02-12T15:19:10+00:00"
         },
         {
             "name": "wikimedia/php-session-serializer",
@@ -1553,7 +1505,7 @@
             ],
             "description": "Provides methods like PHP's session_encode and session_decode that don't mess with $_SESSION",
             "homepage": "https://www.mediawiki.org/wiki/Php-session-serializer",
-            "time": "2015-11-10 22:16:03"
+            "time": "2015-11-10T22:16:03+00:00"
         },
         {
             "name": "wikimedia/relpath",
@@ -1595,7 +1547,7 @@
             ],
             "description": "Compute a relative filepath between two paths.",
             "homepage": "https://www.mediawiki.org/wiki/RelPath",
-            "time": "2015-09-29 21:17:03"
+            "time": "2015-09-29T21:17:03+00:00"
         },
         {
             "name": "wikimedia/running-stat",
@@ -1637,7 +1589,7 @@
             ],
             "description": "PHP implementations of online statistical algorithms",
             "homepage": "https://www.mediawiki.org/wiki/RunningStat",
-            "time": "2015-10-28 22:29:15"
+            "time": "2015-10-28T22:29:15+00:00"
         },
         {
             "name": "wikimedia/textcat",
@@ -1678,7 +1630,7 @@
                 }
             ],
             "description": "PHP port of the TextCat language guesser utility, see http://odur.let.rug.nl/~vannoord/TextCat/.",
-            "time": "2016-03-04 20:59:24"
+            "time": "2016-03-04T20:59:24+00:00"
         },
         {
             "name": "wikimedia/utfnormal",
@@ -1722,7 +1674,7 @@
             ],
             "description": "Contains Unicode normalization routines, including both pure PHP implementations and automatic use of the 'intl' PHP extension when present",
             "homepage": "https://www.mediawiki.org/wiki/utfnormal",
-            "time": "2015-08-29 14:13:27"
+            "time": "2015-08-29T14:13:27+00:00"
         },
         {
             "name": "wikimedia/wrappedstring",
@@ -1764,7 +1716,7 @@
             ],
             "description": "Automatically compact sequentially-outputted strings that share a common prefix / suffix pair.",
             "homepage": "https://www.mediawiki.org/wiki/WrappedString",
-            "time": "2015-07-31 00:06:22"
+            "time": "2015-07-31T00:06:22+00:00"
         },
         {
             "name": "zordius/lightncandy",
@@ -1811,7 +1763,7 @@
                 "php",
                 "template"
             ],
-            "time": "2015-11-05 07:14:57"
+            "time": "2015-11-05T07:14:57+00:00"
         }
     ],
     "packages-dev": [],
