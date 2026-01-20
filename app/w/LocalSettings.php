@@ -156,9 +156,10 @@ if ( $memList ) {
 $wgObjectCaches['memcached-pecl'] = [
     'class'         => 'MemcachedPeclBagOStuff',
     'servers'       => $wgMemCachedServers,
-    'persistent'    => false,
+    'persistent'    => true,
     'timeout'       => 0.05,
-    'retry_timeout' => -1,
+    'retry_timeout' => 5,
+    'server_failure_limit' => 3,
     'serialization' => 'php',
 ];
 
