@@ -131,7 +131,7 @@ class ApiQueryAllRevisions extends ApiQueryRevisionsBase {
 		}
 
 		if ( $params['user'] !== null || $params['excludeuser'] !== null ) {
-			// Paranoia: avoid brute force searches (bug 17342)
+			// Paranoia: avoid brute force searches (T19342)
 			if ( !$this->getUser()->isAllowed( 'deletedhistory' ) ) {
 				$bitmask = Revision::DELETED_USER;
 			} elseif ( !$this->getUser()->isAllowedAny( 'suppressrevision', 'viewsuppressed' ) ) {
@@ -166,12 +166,20 @@ class ApiQueryAllRevisions extends ApiQueryRevisionsBase {
 		$orderby[] = "rev_id $sort";
 		$this->addOption( 'ORDER BY', $orderby );
 
-		$res = $this->select( __METHOD__ );
+		$hookData = [];
+		$res = $this->select( __METHOD__, [], $hookData );
 		$pageMap = []; // Maps rev_page to array index
 		$count = 0;
 		$nextIndex = 0;
 		$generated = [];
 		foreach ( $res as $row ) {
+			if ( $count === 0 && $resultPageSet !== null ) {
+				// Set the non-continue since the list of all revisions is
+				// prone to having entries added at the start frequently.
+				$this->getContinuationManager()->addGeneratorNonContinueParam(
+					$this, 'continue', "$row->rev_timestamp|$row->rev_id"
+				);
+			}
 			if ( ++$count > $this->limit ) {
 				// We've had enough
 				$this->setContinueEnumParameter( 'continue', "$row->rev_timestamp|$row->rev_id" );
@@ -203,12 +211,12 @@ class ApiQueryAllRevisions extends ApiQueryRevisionsBase {
 					];
 					ApiResult::setIndexedTagName( $a['revisions'], 'rev' );
 					ApiQueryBase::addTitleInfo( $a, $title );
-					$fit = $result->addValue( [ 'query', $this->getModuleName() ], $index, $a );
+					$fit = $this->processRow( $row, $a['revisions'][0], $hookData ) &&
+						$result->addValue( [ 'query', $this->getModuleName() ], $index, $a );
 				} else {
 					$index = $pageMap[$row->rev_page];
-					$fit = $result->addValue(
-						[ 'query', $this->getModuleName(), $index, 'revisions' ],
-						null, $rev );
+					$fit = $this->processRow( $row, $rev, $hookData ) &&
+						$result->addValue( [ 'query', $this->getModuleName(), $index, 'revisions' ], null, $rev );
 				}
 				if ( !$fit ) {
 					$this->setContinueEnumParameter( 'continue', "$row->rev_timestamp|$row->rev_id" );
@@ -282,6 +290,6 @@ class ApiQueryAllRevisions extends ApiQueryRevisionsBase {
 	}
 
 	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/API:Allrevisions';
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Allrevisions';
 	}
 }

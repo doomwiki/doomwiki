@@ -26,6 +26,8 @@
 
 require_once __DIR__ . '/Maintenance.php';
 
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * Maintenance script that will find all rows in the categorylinks table
  * whose collation is out-of-date.
@@ -34,7 +36,7 @@ require_once __DIR__ . '/Maintenance.php';
  */
 class UpdateCollation extends Maintenance {
 	const BATCH_SIZE = 100; // Number of rows to process in one batch
-	const SYNC_INTERVAL = 20; // Wait for slaves after this many batches
+	const SYNC_INTERVAL = 5; // Wait for replica DBs after this many batches
 
 	public $sizeHistogram = [];
 
@@ -70,6 +72,7 @@ TEXT
 		global $wgCategoryCollation;
 
 		$dbw = $this->getDB( DB_MASTER );
+		$dbr = $this->getDB( DB_REPLICA );
 		$force = $this->getOption( 'force' );
 		$dryRun = $this->getOption( 'dry-run' );
 		$verboseStats = $this->getOption( 'verbose-stats' );
@@ -97,9 +100,10 @@ TEXT
 		$options = [
 			'LIMIT' => self::BATCH_SIZE,
 			'ORDER BY' => $orderBy,
+			'STRAIGHT_JOIN' // per T58041
 		];
 
-		if ( $force || $dryRun ) {
+		if ( $force ) {
 			$collationConds = [];
 		} else {
 			if ( $this->hasOption( 'previous-collation' ) ) {
@@ -110,7 +114,7 @@ TEXT
 				];
 			}
 
-			$count = $dbw->estimateRowCount(
+			$count = $dbr->estimateRowCount(
 				'categorylinks',
 				'*',
 				$collationConds,
@@ -118,7 +122,7 @@ TEXT
 			);
 			// Improve estimate if feasible
 			if ( $count < 1000000 ) {
-				$count = $dbw->selectField(
+				$count = $dbr->selectField(
 					'categorylinks',
 					'COUNT(*)',
 					$collationConds,
@@ -130,7 +134,12 @@ TEXT
 
 				return;
 			}
-			$this->output( "Fixing collation for $count rows.\n" );
+			if ( $dryRun ) {
+				$this->output( "$count rows would be updated.\n" );
+			} else {
+				$this->output( "Fixing collation for $count rows.\n" );
+			}
+			wfWaitForSlaves();
 		}
 		$count = 0;
 		$batchCount = 0;
@@ -217,7 +226,7 @@ TEXT
 			$this->output( "$count done.\n" );
 
 			if ( !$dryRun && ++$batchCount % self::SYNC_INTERVAL == 0 ) {
-				$this->output( "Waiting for slaves ... " );
+				$this->output( "Waiting for replica DBs ... " );
 				wfWaitForSlaves();
 				$this->output( "done\n" );
 			}
@@ -235,7 +244,7 @@ TEXT
 	 * Return an SQL expression selecting rows which sort above the given row,
 	 * assuming an ordering of cl_collation, cl_to, cl_type, cl_from
 	 * @param stdClass $row
-	 * @param DatabaseBase $dbw
+	 * @param IDatabase $dbw
 	 * @return string
 	 */
 	function getBatchCondition( $row, $dbw ) {

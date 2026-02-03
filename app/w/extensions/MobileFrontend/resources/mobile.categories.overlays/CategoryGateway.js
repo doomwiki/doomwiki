@@ -11,6 +11,8 @@
 		CategoryGateway.parent.apply( this, arguments );
 	}
 	prototype = {
+		continueParams: {},
+		canContinue: true,
 		/**
 		 * @inheritdoc
 		 */
@@ -18,9 +20,9 @@
 
 		/**
 		 * Saves the categories passed to this function to the page
-		 * @param {String} title Title of the current page (to add the categories to)
-		 * @param {String} categories List of Categories to add
-		 * @returns {jQuery.Deferred}
+		 * @param {string} title Title of the current page (to add the categories to)
+		 * @param {string} categories List of Categories to add
+		 * @return {jQuery.Deferred}
 		 */
 		save: function ( title, categories ) {
 			return this.api.postWithToken( 'edit', {
@@ -33,16 +35,31 @@
 
 		/**
 		 * Returns the categories the title belongs to.
-		 * @param {String} title Title of the current page (to add the categories to)
-		 * @returns {jQuery.Deferred}
+		 * @param {string} title Title of the current page (to add the categories to)
+		 * @return {jQuery.Deferred|boolean} False, if no further continuation is possible, jQuery.Deferred otherwise.
 		 */
 		getCategories: function ( title ) {
-			return this.api.get( {
+			var self = this;
+
+			if ( this.canContinue === false ) {
+				return false;
+			}
+
+			return this.api.get( $.extend( {}, {
 				action: 'query',
 				prop: 'categories',
 				titles: title,
 				clprop: 'hidden',
-				cllimit: 50 // FIXME: Replace with InfiniteScroll
+				cllimit: 50,
+				formatversion: 2
+			}, this.continueParams ) ).then( function ( data ) {
+				if ( data.hasOwnProperty( 'continue' ) ) {
+					self.continueParams = data.continue;
+				} else {
+					self.canContinue = false;
+				}
+
+				return data;
 			} );
 		}
 	};

@@ -1,11 +1,15 @@
 // FIXME: some of this could be removed if we reused .page-list styling
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 .notifications-overlay {
 	// position: fixed + sliding drawer causes weird rendering bugs in Android
 	// Browser (tested on 4.0.4 and 4.2.1)
 	padding-top: 0;
+
+	&-header-markAllRead {
+		padding-right: 1em;
+	}
 
 	.overlay-header-container {
 		position: static !important;
@@ -21,9 +25,8 @@
 		.mw-echo-ui-actionMenuPopupWidget-menu {
 			padding: 0.5em;
 			font-size: 1.5em;
-			border: 0;
 			box-shadow: none;
-			border: 1px solid #666666;
+			border: 1px solid @colorGray6;
 			// Override the positioning of the menu
 			// so it is "stuck" on the bottom of the
 			// notification overlay panel
@@ -62,7 +65,7 @@
 	}
 }
 
-@media all and (min-width: @deviceWidthTablet) {
+@media all and ( min-width: @deviceWidthTablet ) {
 	.notifications-overlay {
 		.mw-echo-notification {
 			padding: 1.75em @contentPaddingTablet;

@@ -5,12 +5,14 @@
 			"Lejonel",
 			"Lokal Profil",
 			"M.M.S.",
-			"Skalman"
+			"Skalman",
+			"Jopparn",
+			"WikiPhoenix"
 		]
 	},
 	"antispoof-desc": "Förhindrar registreringen av konton med förvirrande eller liknande namn samt användarnamn som innehåller blandade skriftsystem.",
 	"antispoof-conflict-top": "Namnet \"$1\" är för likt {{PLURAL:$2|följande användarnamn|de följande användarnamnen}}:",
-	"antispoof-conflict-bottom": "Välj ett annat namn.",
+	"antispoof-conflict-bottom": "Välj ett annat användarnamn.",
 	"antispoof-name-illegal": "För att förhindra förvirrande eller falska användarnamn, är namnet \"$1\" inte tillåtet. Anledning: $2\nVälj ett annat namn istället.",
 	"antispoof-badtype": "Felaktig datatyp",
 	"antispoof-empty": "Tom sträng",
@@ -22,6 +24,7 @@
 	"antispoof-mixedscripts": "Innehåller flera inkompatibla skriftsystem",
 	"antispoof-tooshort": "Det kanoniserade namnet är för kort",
 	"antispoof-ignore": "Ignorera missbrukskontroller",
+	"antispoof-ignore-help": "Tillåter användare med tillräckliga behörigheter att skapa ett konto, även om dess namn är liknande namnet på ett befintligt konto.",
 	"right-override-antispoof": "Slipper kontroller mot förvirrande användarnamn",
 	"apihelp-antispoof-description": "Kontrollera ett användarnamn mot AntiSpoofs normaliseringskontroller.",
 	"apihelp-antispoof-param-username": "Det användarnamn som ska kontrolleras mot AntiSpoof.",

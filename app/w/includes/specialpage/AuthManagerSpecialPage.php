@@ -4,7 +4,6 @@ use MediaWiki\Auth\AuthenticationRequest;
 use MediaWiki\Auth\AuthenticationResponse;
 use MediaWiki\Auth\AuthManager;
 use MediaWiki\Logger\LoggerFactory;
-use MediaWiki\Session\SessionManager;
 use MediaWiki\Session\Token;
 
 /**
@@ -44,7 +43,7 @@ abstract class AuthManagerSpecialPage extends SpecialPage {
 	 * Change the form descriptor that determines how a field will look in the authentication form.
 	 * Called from fieldInfoToFormDescriptor().
 	 * @param AuthenticationRequest[] $requests
-	 * @param string $fieldInfo Field information array (union of all
+	 * @param array $fieldInfo Field information array (union of all
 	 *    AuthenticationRequest::getFieldInfo() responses).
 	 * @param array $formDescriptor HTMLForm descriptor. The special key 'weight' can be set to
 	 *    change the order of the fields.
@@ -199,13 +198,12 @@ abstract class AuthManagerSpecialPage extends SpecialPage {
 	 * @param string $subPage Subpage of the special page.
 	 * @return string an AuthManager::ACTION_* constant.
 	 */
-	protected function getDefaultAction( $subPage ) {
-		throw new BadMethodCallException( 'Subclass did not implement getDefaultAction' );
-	}
+	abstract protected function getDefaultAction( $subPage );
 
 	/**
 	 * Return custom message key.
 	 * Allows subclasses to customize messages.
+	 * @param string $defaultKey
 	 * @return string
 	 */
 	protected function messageKey( $defaultKey ) {
@@ -456,7 +454,7 @@ abstract class AuthManagerSpecialPage extends SpecialPage {
 				// passed to AuthManager. Normally we would display the form with an error message,
 				// but for the data we received via the redirect flow that would not be helpful at all.
 				// Let's just submit the data to AuthManager directly instead.
-				LoggerFactory::getInstance( 'authmanager' )
+				LoggerFactory::getInstance( 'authentication' )
 					->warning( 'Validation error on return', [ 'data' => $form->mFieldData,
 						'status' => $status->getWikiText() ] );
 				$status = $this->handleFormSubmit( $form->mFieldData );
@@ -669,6 +667,7 @@ abstract class AuthManagerSpecialPage extends SpecialPage {
 	 * Maps an authentication field configuration for a single field (as returned by
 	 * AuthenticationRequest::getFieldInfo()) to a HTMLForm field descriptor.
 	 * @param array $singleFieldInfo
+	 * @param string $fieldName
 	 * @return array
 	 */
 	protected static function mapSingleFieldInfo( $singleFieldInfo, $fieldName ) {
@@ -680,7 +679,7 @@ abstract class AuthManagerSpecialPage extends SpecialPage {
 		];
 
 		if ( $type === 'submit' && isset( $singleFieldInfo['label'] ) ) {
-			$descriptor['default'] = wfMessage( $singleFieldInfo['label'] )->plain();
+			$descriptor['default'] = $singleFieldInfo['label']->plain();
 		} elseif ( $type !== 'submit' ) {
 			$descriptor += array_filter( [
 				// help-message is omitted as it is usually not really useful for a web interface

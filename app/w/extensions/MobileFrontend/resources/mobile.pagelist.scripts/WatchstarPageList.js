@@ -1,9 +1,8 @@
 ( function ( M, $ ) {
 
-	var mWatchstar,
-		PageList = M.require( 'mobile.pagelist/PageList' ),
+	var PageList = M.require( 'mobile.startup/PageList' ),
 		Watchstar = M.require( 'mobile.watchstar/Watchstar' ),
-		user = M.require( 'mobile.user/user' ),
+		user = M.require( 'mobile.startup/user' ),
 		Page = M.require( 'mobile.startup/Page' ),
 		WatchstarGateway = M.require( 'mobile.watchstar/WatchstarGateway' );
 
@@ -14,6 +13,9 @@
 	 * @uses WatchstarGateway
 	 * @uses Watchstar
 	 * @extends View
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function WatchstarPageList( options ) {
 		this.wsGateway = new WatchstarGateway( options.api );
@@ -95,6 +97,6 @@
 		}
 	} );
 
-	mWatchstar = M.define( 'mobile.pagelist.scripts/WatchstarPageList', WatchstarPageList );
+	M.define( 'mobile.pagelist.scripts/WatchstarPageList', WatchstarPageList );
 
 }( mw.mobileFrontend, jQuery ) );

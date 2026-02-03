@@ -1,37 +1,74 @@
-@import "minerva.mixins";
-@import "minerva.variables";
+@import 'minerva.mixins';
+@import 'minerva.variables';
 
 @thumbGap: 15px;
 @thumbWidth: 70px;
-.mw-ui-icon-clear {
-	.m-background-image('clear.png');
-}
+@colorSpinnerOverlayBackground: #fff;
+@clearIconRightGutterWidth: 0.5em;
 
 .mw-ui-icon-search-content {
-	.m-background-image('search-content.png');
+	.m-background-image( 'search-content.png' );
 }
 
 .search-overlay {
-	background: white;
+	background: #fff;
 
-	.overlay-header,
+	.spinner-container {
+		background-color: @colorSpinnerOverlayBackground;
+		bottom: 0;
+		display: none;
+		left: 0;
+		opacity: 0.7;
+		right: 0;
+		top: @headerHeight;
+		z-index: @z-indexOverOverlay;
+
+		.spinner {
+			display: block;
+			left: 50%;
+			margin-left: -( @iconSize + @iconGutterWidth * 2 ) / 2;
+			position: absolute;
+			top: 10%;
+		}
+	}
+
+	.search-box {
+		display: block;
+	}
+
 	.results,
 	.search-feedback {
 		// don't use background to preserve .loading properties
 		background-color: #fff;
 	}
+	.overlay-header {
+		background-color: transparent;
+	}
+	.overlay-title {
+		// because the clear icon is absolutely positioned
+		position: relative;
+		padding-left: 15px;
+	}
 
-	input {
-		border: none;
-		padding: 0;
+	.header input {
+		border: 0;
+		// save space for the clear icon
+		padding-right: ( @iconSize + @iconGutterWidth + @clearIconRightGutterWidth );
 
 		// See https://msdn.microsoft.com/en-us/library/windows/apps/hh465740.aspx (T102325)
 		&::-ms-clear {
 			display: none;
 		}
 	}
+	.clear {
+		position: absolute;
+		top: ( @headerHeight / 2 ) - ( @iconSize / 2 );
+		right: 0;
+		margin-top: @headerMarginTop;
+	}
 
 	.overlay-content {
+		position: relative;
 		// used to close the overlay in firefox
 		height: 100%;
 		width: 100%;
@@ -42,7 +79,7 @@
 		cursor: pointer;
 
 		.caption {
-			padding: 1em @headerTitlePaddingH;
+			padding: 1em 0;
 		}
 
 		// FIXME: This is not a overlay-header so please find a more meaningful class name
@@ -53,11 +90,11 @@
 	}
 
 	.results {
-		box-shadow: 0 3px 3px 0 rgba(117, 117, 117, .3);
+		box-shadow: 0 3px 3px 0 rgba( 117, 117, 117, 0.3 );
 
 		// Since search results only contain one line, shrink the space taken up by the thumbnails
 		li {
-			padding-left: @headerHeight + @headerTitlePaddingH;
+			padding-left: @headerHeight;
 
 			.list-thumb {
 				width: @headerHeight;
@@ -65,7 +102,7 @@
 		}
 
 		li:last-child {
-			border-bottom: none;
+			border-bottom: 0;
 		}
 
 		h2 {
@@ -89,47 +126,109 @@
 			margin: 0;
 		}
 		.wikidata-description {
-			font-size: .8em;
+			font-size: 0.8em;
 			margin-top: 0.5em;
 		}
 	}
 
 	.search-feedback {
-		box-shadow: 0 3px 3px 0 rgba(117, 117, 117, .3);
+		box-shadow: 0 3px 3px 0 rgba( 117, 117, 117, 0.3 );
 		border-top: 1px solid @colorGray12;
-		font-size: .8em;
-		padding: .5em 1em;
+		font-size: 0.8em;
+		padding: 0.5em 1em;
 	}
 
 	&.no-results .search-feedback {
-		border-top: none;
+		border-top: 0;
+	}
+}
+
+@-webkit-keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@-webkit-keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+@keyframes fadeOut {
+	from {
+		opacity: 1;
+	}
+	to {
+		opacity: 0;
+	}
+}
+
+.animations {
+	.search-overlay {
+		&.visible {
+			.animation( fadeIn 0.5s );
+		}
+		&.fade-out {
+			.animation( fadeOut 0.5s );
+		}
+
+		// see T156509
+		&.overlay-ios {
+			.animation( none );
+		}
+	}
+}
+
+@media all and ( min-width: @deviceWidthTablet ) {
+	.search-overlay {
+		.search-box {
+			display: table-cell;
+		}
+		.spinner-container,
+		.search-content,
+		.results {
+			width: @searchBoxWidth;
+			margin-left: (@iconSize + 2 * @iconGutterWidth) + @brandingBoxWidth;
+		}
+
+		.overlay-title {
+			width: @searchBoxWidth;
+			padding-left: (@iconSize + 2 * @iconGutterWidth) + @brandingBoxWidth;
+		}
+
+		.spinner-container {
+			left: auto;
+			right: auto;
+		}
+
+		ul {
+			width: auto;
+		}
 	}
 
 }
 
-@-webkit-keyframes fadeIn {
-	from { opacity: 0; }
-	to { opacity: 1; }
-}
-@keyframes fadeIn {
-	from { opacity: 0; }
-	to { opacity: 1; }
-}
-@-webkit-keyframes fadeOut {
-	from { opacity: 1; }
-	to { opacity: 0; }
-}
-@keyframes fadeOut {
-	from { opacity: 1; }
-	to { opacity: 0; }
-}
-.animations {
+@media all and ( min-width: @wgMFDeviceWidthDesktop ) {
 	.search-overlay {
-		&.visible {
-			.animation(fadeIn .5s);
-		}
-		&.fade-out {
-			.animation(fadeOut .5s);
+		.overlay-content {
+			// align with the search form
+			max-width: @contentMaxWidthTablet + ( 2 * @iconGutterWidth );
 		}
 	}
 }

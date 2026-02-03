@@ -11,7 +11,6 @@
  * @copyright © 2012, Niklas Laxström
  * @copyright © 2012, Santhosh Thottingal
  * @copyright © 2012, Timo Tijhof
- *
  */
 class ResourcesTest extends MediaWikiTestCase {
 
@@ -40,7 +39,7 @@ class ResourcesTest extends MediaWikiTestCase {
 		$data = self::getAllModules();
 		foreach ( $data['modules'] as $moduleName => $module ) {
 			$version = $module->getVersionHash( $data['context'] );
-			$this->assertEquals( 8, strlen( $version ), "$moduleName must use ResourceLoader::makeHash" );
+			$this->assertEquals( 7, strlen( $version ), "$moduleName must use ResourceLoader::makeHash" );
 		}
 	}
 
@@ -87,6 +86,24 @@ class ResourcesTest extends MediaWikiTestCase {
 	}
 
 	/**
+	 * Verify that all specified messages actually exist.
+	 */
+	public function testMissingMessages() {
+		$data = self::getAllModules();
+		$lang = Language::factory( 'en' );
+
+		/** @var ResourceLoaderModule $module */
+		foreach ( $data['modules'] as $moduleName => $module ) {
+			foreach ( $module->getMessages() as $msgKey ) {
+				$this->assertTrue(
+					wfMessage( $msgKey )->useDatabase( false )->inLanguage( $lang )->exists(),
+					"Message '$msgKey' required by '$moduleName' must exist"
+				);
+			}
+		}
+	}
+
+	/**
 	 * Verify that all dependencies of all modules are always satisfiable with the 'targets' defined
 	 * for the involved modules.
 	 *
@@ -95,7 +112,6 @@ class ResourcesTest extends MediaWikiTestCase {
 	 */
 	public function testUnsatisfiableDependencies() {
 		$data = self::getAllModules();
-		$validDeps = array_keys( $data['modules'] );
 
 		/** @var ResourceLoaderModule $module */
 		foreach ( $data['modules'] as $moduleName => $module ) {

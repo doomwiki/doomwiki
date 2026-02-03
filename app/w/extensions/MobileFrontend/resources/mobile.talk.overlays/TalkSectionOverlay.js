@@ -1,7 +1,7 @@
 ( function ( M, $ ) {
 	var TalkOverlayBase = M.require( 'mobile.talk.overlays/TalkOverlayBase' ),
-		popup = M.require( 'mobile.toast/toast' ),
-		user = M.require( 'mobile.user/user' ),
+		popup = M.require( 'mobile.startup/toast' ),
+		user = M.require( 'mobile.startup/user' ),
 		Page = M.require( 'mobile.startup/Page' ),
 		Button = M.require( 'mobile.startup/Button' );
 
@@ -25,10 +25,10 @@
 		/**
 		 * @inheritdoc
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.title Title.
+		 * @cfg {string} defaults.title Title.
 		 * @cfg {Section} defaults.section that is currently being viewed in overlay.
-		 * @cfg {String} defaults.reply Reply heading.
-		 * @cfg {String} defaults.info Message that informs the user their talk reply will be
+		 * @cfg {string} defaults.reply Reply heading.
+		 * @cfg {string} defaults.info Message that informs the user their talk reply will be
 		 * automatically signed.
 		 */
 		defaults: $.extend( {}, TalkOverlayBase.prototype.defaults, {

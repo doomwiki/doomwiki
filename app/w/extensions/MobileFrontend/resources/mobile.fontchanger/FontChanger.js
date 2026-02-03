@@ -1,7 +1,7 @@
 ( function ( M, $ ) {
-	var View = M.require( 'mobile.view/View' ),
+	var View = M.require( 'mobile.startup/View' ),
 		Button = M.require( 'mobile.startup/Button' ),
-		settings = M.require( 'mobile.settings/settings' );
+		settings = M.require( 'mobile.startup/settings' );
 
 	/**
 	 * FontChanger wrapper
@@ -59,9 +59,9 @@
 			this.setPercentage( settings.get( this.options.name, true ) || 100 );
 
 			this.fontchanger.on( 'click', function () {
-					self.setPercentage( 100 );
-					return false;
-				} );
+				self.setPercentage( 100 );
+				return false;
+			} );
 
 			this.changeMinus.on( 'click', function () {
 				self.setPercentage( self.fontchanger.val() - 10 );
@@ -77,7 +77,7 @@
 
 		/**
 		 * Set a new percentage (doesn't change the value higher then 200% and lower then 10%)
-		 * @param {Number} percentage New percentage value
+		 * @param {number} percentage New percentage value
 		 */
 		setPercentage: function ( percentage ) {
 			// disallow changes under 10% and over 200%

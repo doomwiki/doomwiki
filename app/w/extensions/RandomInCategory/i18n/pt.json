@@ -2,7 +2,8 @@
 	"@metadata": {
 		"authors": [
 			"Lijealso",
-			"Malafaya"
+			"Malafaya",
+			"Hamilton Abreu"
 		]
 	},
 	"randomincategory": "Página aleatória na categoria",
@@ -10,5 +11,5 @@
 	"randomincategory-toolbox": "Página aleatória",
 	"randomincategory-nocategory": "A categoria $1 não existe ou está vazia",
 	"randomincategory-label": "Categoria:",
-	"randomincategory-submit": "Ir"
+	"randomincategory-submit": "Continuar"
 }

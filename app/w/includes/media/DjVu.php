@@ -170,7 +170,7 @@ class DjVuHandler extends ImageHandler {
 				'thumbnail_error',
 				$width,
 				$height,
-				wfMessage( 'thumbnail_dest_directory' )->text()
+				wfMessage( 'thumbnail_dest_directory' )
 			);
 		}
 
@@ -197,7 +197,7 @@ class DjVuHandler extends ImageHandler {
 
 			return new MediaTransformError( 'thumbnail_error',
 				$params['width'], $params['height'],
-				wfMessage( 'filemissing' )->text()
+				wfMessage( 'filemissing' )
 			);
 		}
 
@@ -235,7 +235,7 @@ class DjVuHandler extends ImageHandler {
 	/**
 	 * Cache an instance of DjVuImage in an Image object, return that instance
 	 *
-	 * @param File $image
+	 * @param File|FSFile $image
 	 * @param string $path
 	 * @return DjVuImage
 	 */
@@ -335,11 +335,6 @@ class DjVuHandler extends ImageHandler {
 		}
 	}
 
-	/**
-	 * @param File $image
-	 * @param string $path
-	 * @return bool|array False on failure
-	 */
 	function getImageSize( $image, $path ) {
 		return $this->getDjVuImage( $image, $path )->getImageSize();
 	}

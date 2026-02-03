@@ -1,5 +1,5 @@
 ( function ( M, $ ) {
-	var Overlay = M.require( 'mobile.overlays/Overlay' ),
+	var Overlay = M.require( 'mobile.startup/Overlay' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		icon = new Icon( {
 			name: 'cleanup-gray',
@@ -11,6 +11,10 @@
 	 * Overlay for displaying page issues
 	 * @class CleanupOverlay
 	 * @extends Overlay
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
+	 * @param {string} options.headingText
 	 */
 	function CleanupOverlay( options ) {
 		options.heading = '<strong>' + options.headingText + '</strong>';
@@ -24,7 +28,7 @@
 		/**
 		 * @inheritdoc
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.className Class name of the 'cleanup-gray' icon.
+		 * @cfg {string} defaults.className Class name of the 'cleanup-gray' icon.
 		 */
 		defaults: $.extend( {}, Overlay.prototype.defaults, {
 			className: icon.getClassName()

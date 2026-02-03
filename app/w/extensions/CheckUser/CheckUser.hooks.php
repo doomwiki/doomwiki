@@ -1,4 +1,7 @@
 <?php
+
+use MediaWiki\MediaWikiServices;
+
 class CheckUserHooks {
 	/**
 	 * Hook function for RecentChange_save
@@ -53,7 +56,7 @@ class CheckUserHooks {
 
 		$dbw = wfGetDB( DB_MASTER );
 		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
-		$rcRow = array(
+		$rcRow = [
 			'cuc_id'         => $cuc_id,
 			'cuc_namespace'  => $attribs['rc_namespace'],
 			'cuc_title'      => $attribs['rc_title'],
@@ -71,13 +74,13 @@ class CheckUserHooks {
 			'cuc_xff'        => !$isSquidOnly ? $xff : '',
 			'cuc_xff_hex'    => ( $xff_ip && !$isSquidOnly ) ? IP::toHex( $xff_ip ) : null,
 			'cuc_agent'      => $agent
-		);
+		];
 		# On PG, MW unsets cur_id due to schema incompatibilites. So it may not be set!
 		if ( isset( $attribs['rc_cur_id'] ) ) {
 			$rcRow['cuc_page_id'] = $attribs['rc_cur_id'];
 		}
 
-		Hooks::run( 'CheckUserInsertForRecentChange', array( $rc, &$rcRow ) );
+		Hooks::run( 'CheckUserInsertForRecentChange', [ $rc, &$rcRow ] );
 		$dbw->insert( 'cu_changes', $rcRow, __METHOD__ );
 
 		return true;
@@ -102,7 +105,7 @@ class CheckUserHooks {
 		$agent = $wgRequest->getHeader( 'User-Agent' );
 		$dbw = wfGetDB( DB_MASTER );
 		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
-		$rcRow = array(
+		$rcRow = [
 			'cuc_id'         => $cuc_id,
 			'cuc_namespace'  => NS_USER,
 			'cuc_title'      => '',
@@ -121,15 +124,19 @@ class CheckUserHooks {
 			'cuc_xff'        => !$isSquidOnly ? $xff : '',
 			'cuc_xff_hex'    => ( $xff_ip && !$isSquidOnly ) ? IP::toHex( $xff_ip ) : null,
 			'cuc_agent'      => $agent
-		);
+		];
 		$dbw->insert( 'cu_changes', $rcRow, __METHOD__ );
 
 		return true;
 	}
 
 	/**
-	 * Hook function to store email data
-	 * Saves user data into the cu_changes table
+	 * Hook function to store email data.
+	 *
+	 * Saves user data into the cu_changes table.
+	 * Uses a deferred update to save the data, because emails can be sent from code paths
+	 * that don't open master connections.
+	 *
 	 * @param MailAddress $to
 	 * @param MailAddress $from
 	 * @param string $subject
@@ -138,9 +145,13 @@ class CheckUserHooks {
 	 */
 	public static function updateCUEmailData( $to, $from, $subject, $text ) {
 		global $wgSecretKey, $wgRequest, $wgCUPublicKey;
+
 		if ( !$wgSecretKey || $from->name == $to->name ) {
 			return true;
+		} elseif ( wfReadOnly() ) {
+			return true;
 		}
+
 		$userFrom = User::newFromName( $from->name );
 		$userTo = User::newFromName( $to->name );
 		$hash = md5( $userTo->getEmail() . $userTo->getId() . $wgSecretKey );
@@ -151,10 +162,9 @@ class CheckUserHooks {
 		list( $xff_ip, $isSquidOnly ) = self::getClientIPfromXFF( $xff );
 		// Get agent
 		$agent = $wgRequest->getHeader( 'User-Agent' );
-		$dbw = wfGetDB( DB_MASTER );
-		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
-		$rcRow = array(
-			'cuc_id'         => $cuc_id,
+
+		$dbr = wfGetDB( DB_SLAVE );
+		$rcRow = [
 			'cuc_namespace'  => NS_USER,
 			'cuc_title'      => '',
 			'cuc_minor'      => 0,
@@ -166,20 +176,25 @@ class CheckUserHooks {
 			'cuc_this_oldid' => 0,
 			'cuc_last_oldid' => 0,
 			'cuc_type'       => RC_LOG,
-			'cuc_timestamp'  => $dbw->timestamp( wfTimestampNow() ),
+			'cuc_timestamp'  => $dbr->timestamp( wfTimestampNow() ),
 			'cuc_ip'         => IP::sanitizeIP( $ip ),
 			'cuc_ip_hex'     => $ip ? IP::toHex( $ip ) : null,
 			'cuc_xff'        => !$isSquidOnly ? $xff : '',
 			'cuc_xff_hex'    => ( $xff_ip && !$isSquidOnly ) ? IP::toHex( $xff_ip ) : null,
 			'cuc_agent'      => $agent
-		);
+		];
 		if ( trim( $wgCUPublicKey ) != '' ) {
 			$privateData = $userTo->getEmail() . ":" . $userTo->getId();
 			$encryptedData = new CheckUserEncryptedData( $privateData, $wgCUPublicKey );
-			$rcRow = array_merge( $rcRow, array( 'cuc_private' => serialize( $encryptedData ) ) );
+			$rcRow = array_merge( $rcRow, [ 'cuc_private' => serialize( $encryptedData ) ] );
 		}
 
-		$dbw->insert( 'cu_changes', $rcRow, __METHOD__ );
+		$fname = __METHOD__;
+		DeferredUpdates::addCallableUpdate( function () use ( $rcRow, $fname ) {
+			$dbw = wfGetDB( DB_MASTER );
+			$rcRow['cuc_id'] = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
+			$dbw->insert( 'cu_changes', $rcRow, $fname );
+		} );
 
 		return true;
 	}
@@ -216,7 +231,7 @@ class CheckUserHooks {
 		$agent = $wgRequest->getHeader( 'User-Agent' );
 		$dbw = wfGetDB( DB_MASTER );
 		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
-		$rcRow = array(
+		$rcRow = [
 			'cuc_id'         => $cuc_id,
 			'cuc_page_id'    => 0,
 			'cuc_namespace'  => NS_USER,
@@ -235,7 +250,7 @@ class CheckUserHooks {
 			'cuc_xff'        => !$isSquidOnly ? $xff : '',
 			'cuc_xff_hex'    => ( $xff_ip && !$isSquidOnly ) ? IP::toHex( $xff_ip ) : null,
 			'cuc_agent'      => $agent
-		);
+		];
 		$dbw->insert( 'cu_changes', $rcRow, __METHOD__ );
 
 		return true;
@@ -255,13 +270,13 @@ class CheckUserHooks {
 				$encCutoff = $dbw->addQuotes( $dbw->timestamp( time() - $wgCUDMaxAge ) );
 				$ids = $dbw->selectFieldValues( 'cu_changes',
 					'cuc_id',
-					array( "cuc_timestamp < $encCutoff" ),
+					[ "cuc_timestamp < $encCutoff" ],
 					$fname,
-					array( 'LIMIT' => 500 )
+					[ 'LIMIT' => 500 ]
 				);
 
 				if ( $ids ) {
-					$dbw->delete( 'cu_changes', array( 'cuc_id' => $ids ), $fname );
+					$dbw->delete( 'cu_changes', [ 'cuc_id' => $ids ], $fname );
 				}
 			} );
 		}
@@ -286,12 +301,19 @@ class CheckUserHooks {
 		global $wgUsePrivateIPs;
 
 		if ( !strlen( $xff ) ) {
-			return array( null, false );
+			return [ null, false ];
 		}
 
 		# Get the list in the form of <PROXY N, ... PROXY 1, CLIENT>
 		$ipchain = array_map( 'trim', explode( ',', $xff ) );
 		$ipchain = array_reverse( $ipchain );
+
+		if ( class_exists( ProxyLookup::class ) ) { // MW 1.28+
+			$proxyLookup = MediaWikiServices::getInstance()->getProxyLookup();
+		} else {
+			// This is kind of sketch, but is good enough for back-compat
+			$proxyLookup = new IP();
+		}
 
 		$client = null; // best guess of the client IP
 		$isSquidOnly = false; // all proxy servers where site Squid/Varnish servers?
@@ -304,7 +326,7 @@ class CheckUserHooks {
 			if ( $curIP === null ) {
 				break; // not a valid IP address
 			}
-			$curIsSquid = IP::isConfiguredProxy( $curIP );
+			$curIsSquid = $proxyLookup->isConfiguredProxy( $curIP );
 			if ( $client === null ) {
 				$client = $curIP;
 				$isSquidOnly = $curIsSquid;
@@ -325,45 +347,60 @@ class CheckUserHooks {
 			break;
 		}
 
-		return array( $client, $isSquidOnly );
+		return [ $client, $isSquidOnly ];
 	}
 
-	public static function checkUserSchemaUpdates( DatabaseUpdater $updater ) {
-		$base = dirname( __FILE__ );
+	public static function onLoadExtensionSchemaUpdates( DatabaseUpdater $updater ) {
+		$base = __DIR__;
+		$dbType = $updater->getDB()->getType();
+		$isCUInstalled = $updater->tableExists( 'cu_changes' );
 
-		$updater->addExtensionUpdate( array( 'CheckUserHooks::checkUserCreateTables' ) );
-		if ( $updater->getDB()->getType() == 'mysql' ) {
-			$updater->addExtensionUpdate( array( 'addIndex', 'cu_changes',
-				'cuc_ip_hex_time', "$base/archives/patch-cu_changes_indexes.sql", true ) );
-			$updater->addExtensionUpdate( array( 'addIndex', 'cu_changes',
-				'cuc_user_ip_time', "$base/archives/patch-cu_changes_indexes2.sql", true ) );
+		$updater->addExtensionTable(
+			'cu_changes', self::getTableFileName( $dbType, 'cu_changes' )
+		);
+		$updater->addExtensionTable(
+			'cu_log', self::getTableFileName( $dbType, 'cu_log' )
+		);
+
+		if ( $dbType === 'mysql' ) {
+			$updater->addExtensionIndex(
+				'cu_changes',
+				'cuc_ip_hex_time',
+				"$base/archives/patch-cu_changes_indexes.sql"
+			);
+			$updater->addExtensionIndex(
+				'cu_changes',
+				'cuc_user_ip_time',
+				"$base/archives/patch-cu_changes_indexes2.sql"
+			);
 			$updater->addExtensionField(
-				'cu_changes', 'cuc_private', "$base/archives/patch-cu_changes_privatedata.sql" );
-		} elseif ( $updater->getDB()->getType() == 'postgres' ) {
+				'cu_changes',
+				'cuc_private',
+				"$base/archives/patch-cu_changes_privatedata.sql"
+			);
+		} elseif ( $dbType === 'postgres' ) {
 			$updater->addExtensionUpdate(
-				array( 'addPgField', 'cu_changes', 'cuc_private', 'BYTEA' ) );
+				[ 'addPgField', 'cu_changes', 'cuc_private', 'BYTEA' ]
+			);
 		}
 
-		return true;
+		if ( !$isCUInstalled ) {
+			// First time so populate cu_changes with recentchanges data.
+			// Note: We cannot completely rely on updatelog here for old entries
+			// as populateCheckUserTable.php doesn't check for duplicates
+			$updater->addPostDatabaseUpdateMaintenance( 'PopulateCheckUserTable' );
+		}
 	}
 
-	public static function checkUserCreateTables( DatabaseUpdater $updater ) {
-		$base = dirname( __FILE__ );
-
-		$db = $updater->getDB();
-		if ( $db->tableExists( 'cu_changes' ) ) {
-			$updater->output( "...cu_changes table already exists.\n" );
-		} else {
-			require_once "$base/install.inc";
-			create_cu_changes( $db );
-		}
-
-		if ( $db->tableExists( 'cu_log' ) ) {
-			$updater->output( "...cu_log table already exists.\n" );
-		} else {
-			require_once "$base/install.inc";
-			create_cu_log( $db );
-		}
+	/**
+	 * @param string $type DB type
+	 * @param string $name Table name
+	 */
+	private static function getTableFileName( $type, $name ) {
+		$file = __DIR__ . '/' . $name;
+		return $type === 'postgres'
+			? $file . '.pg.sql'
+			: $file . '.sql';
 	}
 
 	/**
@@ -392,19 +429,19 @@ class CheckUserHooks {
 			$links[] = Linker::linkKnown(
 				SpecialPage::getTitleFor( 'CheckUser' ),
 				wfMessage( 'checkuser-contribs' )->escaped(),
-				array(),
-				array( 'user' => $nt->getText() )
+				[],
+				[ 'user' => $nt->getText() ]
 			);
 		}
 		if ( $wgUser->isAllowed( 'checkuser-log' ) ) {
 			$links[] = Linker::linkKnown(
 				SpecialPage::getTitleFor( 'CheckUserLog' ),
 				wfMessage( 'checkuser-contribs-log' )->escaped(),
-				array(),
-				array(
+				[],
+				[
 					'cuSearchType' => 'target',
 					'cuSearch' => $nt->getText()
-				)
+				]
 			);
 		}
 		return true;
@@ -423,16 +460,16 @@ class CheckUserHooks {
 
 		$user = User::newFromName( (string)$block->getTarget(), false );
 		if ( !$user->getId() ) {
-			return array(); // user in an IP?
+			return []; // user in an IP?
 		}
 
-		$options = array( 'ORDER BY' => 'cuc_timestamp DESC' );
+		$options = [ 'ORDER BY' => 'cuc_timestamp DESC' ];
 		$options['LIMIT'] = 1; // just the last IP used
 
 		$res = $dbr->select( 'cu_changes',
-			array( 'cuc_ip' ),
-			array( 'cuc_user' => $user->getId() ),
-			__METHOD__ ,
+			[ 'cuc_ip' ],
+			[ 'cuc_user' => $user->getId() ],
+			__METHOD__,
 			$options
 		);
 
@@ -440,7 +477,9 @@ class CheckUserHooks {
 		foreach ( $res as $row ) {
 			if ( $row->cuc_ip ) {
 				$id = $block->doAutoblock( $row->cuc_ip );
-				if ( $id ) $blockIds[] = $id;
+				if ( $id ) {
+					$blockIds[] = $id;
+				}
 			}
 		}
 
@@ -448,9 +487,9 @@ class CheckUserHooks {
 	}
 
 	public static function onUserMergeAccountFields( array &$updateFields ) {
-		$updateFields[] = array( 'cu_changes', 'cuc_user', 'cuc_user_text' );
-		$updateFields[] = array( 'cu_log', 'cul_user', 'cul_user_text' );
-		$updateFields[] = array( 'cu_log', 'cul_target_id' );
+		$updateFields[] = [ 'cu_changes', 'cuc_user', 'cuc_user_text' ];
+		$updateFields[] = [ 'cu_log', 'cul_user', 'cul_user_text' ];
+		$updateFields[] = [ 'cu_log', 'cul_target_id' ];
 
 		return true;
 	}
@@ -462,11 +501,15 @@ class CheckUserHooks {
 	 * @return bool
 	 */
 	public static function onRenameUserSQL( RenameuserSQL $renameUserSQL ) {
-		$renameUserSQL->tables['cu_changes'] = array( 'cuc_user_text', 'cuc_user' );
-		$renameUserSQL->tables['cu_log'] = array( 'cul_user_text', 'cul_user' );
+		$renameUserSQL->tablesJob['cu_changes'] = [
+			RenameuserSQL::NAME_COL => 'cuc_user_text',
+			RenameuserSQL::UID_COL  => 'cuc_user',
+			RenameuserSQL::TIME_COL => 'cuc_timestamp',
+			'uniqueKey'    => 'cuc_id'
+		];
+
+		$renameUserSQL->tables['cu_log'] = [ 'cul_user_text', 'cul_user' ];
 
 		return true;
 	}
-
-
 }

@@ -153,7 +153,7 @@ class AvroFormatter implements FormatterInterface {
 	 */
 	public function getSchemaRevisionId( $channel ) {
 		if ( isset( $this->schemas[$channel]['revision'] ) ) {
-			return (int) $this->schemas[$channel]['revision'];
+			return (int)$this->schemas[$channel]['revision'];
 		}
 		return null;
 	}

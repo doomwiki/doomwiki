@@ -3,19 +3,23 @@
 class ApiCategoryTree extends ApiBase {
 	public function execute() {
 		$params = $this->extractRequestParams();
-		$options = array();
+		$options = [];
 		if ( isset( $params['options'] ) ) {
 			$options = FormatJson::decode( $params['options'] );
 			if ( !is_object( $options ) ) {
-				$this->dieUsage( 'Options must be valid a JSON object', 'invalidjson' );
+				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+					$this->dieWithError( 'apierror-categorytree-invalidjson', 'invalidjson' );
+				} else {
+					$this->dieUsage( 'Options must be valid a JSON object', 'invalidjson' );
+				}
 				return;
 			}
 			$options = get_object_vars( $options );
 		}
 		$depth = isset( $options['depth'] ) ? (int)$options['depth'] : 1;
 
-		$ct = new CategoryTree( $options, true );
-		$depth = efCategoryTreeCapDepth( $ct->getOption( 'mode' ), $depth );
+		$ct = new CategoryTree( $options );
+		$depth = CategoryTree::capDepth( $ct->getOption( 'mode' ), $depth );
 		$title = CategoryTree::makeTitle( $params['category'] );
 		$config = $this->getConfig();
 		$ctConfig = ConfigFactory::getDefaultInstance()->makeConfig( 'categorytree' );
@@ -46,10 +50,10 @@ class ApiCategoryTree extends ApiBase {
 			$params = $this->extractRequestParams();
 			$title = CategoryTree::makeTitle( $params['category'] );
 			return wfGetDB( DB_SLAVE )->selectField( 'page', 'page_touched',
-				array(
+				[
 					'page_namespace' => NS_CATEGORY,
 					'page_title' => $title->getDBkey(),
-				),
+				],
 				__METHOD__
 			);
 		}
@@ -89,10 +93,10 @@ class ApiCategoryTree extends ApiBase {
 
 			$wgMemc->set(
 				$mckey,
-				array(
+				[
 					'timestamp' => wfTimestampNow(),
 					'value' => $html
-				),
+				],
 				86400
 			);
 		}
@@ -100,15 +104,15 @@ class ApiCategoryTree extends ApiBase {
 	}
 
 	public function getAllowedParams() {
-		return array(
-			'category' => array(
+		return [
+			'category' => [
 				ApiBase::PARAM_TYPE => 'string',
 				ApiBase::PARAM_REQUIRED => true,
-			),
-			'options' => array(
+			],
+			'options' => [
 				ApiBase::PARAM_TYPE => 'string',
-			),
-		);
+			],
+		];
 	}
 
 	public function isInternal() {

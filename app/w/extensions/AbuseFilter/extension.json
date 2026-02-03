@@ -70,15 +70,16 @@
 		"AbuseFilterAliases": "AbuseFilter.alias.php"
 	},
 	"AutoloadClasses": {
-		"AbuseFilter": "AbuseFilter.class.php",
-		"AbuseFilterParser": "AbuseFilter.parser.php",
-		"AbuseFilterTokenizer": "AbuseFilterTokenizer.php",
+		"AbuseFilter": "includes/AbuseFilter.class.php",
+		"AbuseFilterCachingParser" : "includes/parser/AbuseFilterCachingParser.php",
+		"AbuseFilterParser": "includes/parser/AbuseFilterParser.php",
+		"AbuseFilterTokenizer": "includes/parser/AbuseFilterTokenizer.php",
 		"AbuseFilterHooks": "AbuseFilter.hooks.php",
-		"AbuseFilterPreAuthenticationProvider": "AbuseFilterPreAuthenticationProvider.php",
+		"AbuseFilterPreAuthenticationProvider": "includes/AbuseFilterPreAuthenticationProvider.php",
 		"SpecialAbuseLog": "special/SpecialAbuseLog.php",
 		"AbuseLogPager": "special/SpecialAbuseLog.php",
 		"SpecialAbuseFilter": "special/SpecialAbuseFilter.php",
-		"AbuseLogHitFormatter": "AbuseLogHitFormatter.php",
+		"AbuseLogHitFormatter": "includes/AbuseLogHitFormatter.php",
 		"AbuseFilterViewList": "Views/AbuseFilterViewList.php",
 		"AbuseFilterPager": "Views/AbuseFilterViewList.php",
 		"GlobalAbuseFilterPager": "Views/AbuseFilterViewList.php",
@@ -95,13 +96,15 @@
 		"AbuseFilterViewDiff": "Views/AbuseFilterViewDiff.php",
 		"TableDiffFormatterFullContext": "Views/AbuseFilterViewDiff.php",
 		"AbuseFilterViewImport": "Views/AbuseFilterViewImport.php",
-		"AbuseFilterVariableHolder": "AbuseFilterVariableHolder.php",
-		"AFComputedVariable": "AbuseFilterVariableHolder.php",
-		"AFPData": "AbuseFilter.parser.php",
-		"AFPException": "AbuseFilter.parser.php",
-		"AFPParserState": "AbuseFilter.parser.php",
-		"AFPToken": "AbuseFilter.parser.php",
-		"AFPUserVisibleException": "AbuseFilter.parser.php",
+		"AbuseFilterVariableHolder": "includes/AbuseFilterVariableHolder.php",
+		"AFComputedVariable": "includes/AFComputedVariable.php",
+		"AFPData": "includes/parser/AFPData.php",
+		"AFPException": "includes/parser/AFPException.php",
+		"AFPParserState": "includes/parser/AFPParserState.php",
+		"AFPToken": "includes/parser/AFPToken.php",
+		"AFPTreeNode": "includes/parser/AFPTreeNode.php",
+		"AFPTreeParser": "includes/parser/AFPTreeParser.php",
+		"AFPUserVisibleException": "includes/parser/AFPUserVisibleException.php",
 		"ApiQueryAbuseLog": "api/ApiQueryAbuseLog.php",
 		"ApiQueryAbuseFilters": "api/ApiQueryAbuseFilters.php",
 		"ApiAbuseFilterCheckSyntax": "api/ApiAbuseFilterCheckSyntax.php",
@@ -167,6 +170,13 @@
 		"remoteExtPath": "AbuseFilter/modules"
 	},
 	"callback": "AbuseFilterHooks::onRegistration",
+	"GrantPermissions": {
+		"basic": {
+			"abusefilter-view": true,
+			"abusefilter-log-detail": true,
+			"abusefilter-log": true
+		}
+	},
 	"Hooks": {
 		"EditFilterMergedContent": "AbuseFilterHooks::onEditFilterMergedContent",
 		"GetAutoPromoteGroups": "AbuseFilterHooks::onGetAutoPromoteGroups",
@@ -179,17 +189,16 @@
 		"LoadExtensionSchemaUpdates": "AbuseFilterHooks::onLoadExtensionSchemaUpdates",
 		"ContributionsToolLinks": "AbuseFilterHooks::onContributionsToolLinks",
 		"UploadVerifyFile": "AbuseFilterHooks::onUploadVerifyFile",
+		"UploadVerifyUpload": "AbuseFilterHooks::onUploadVerifyUpload",
+		"UploadStashFile": "AbuseFilterHooks::onUploadStashFile",
 		"MakeGlobalVariablesScript": "AbuseFilterHooks::onMakeGlobalVariablesScript",
-		"ArticleSaveComplete": "AbuseFilterHooks::onArticleSaveComplete",
-		"APIEditBeforeSave": "AbuseFilterHooks::onAPIEditBeforeSave",
+		"PageContentSaveComplete": "AbuseFilterHooks::onPageContentSaveComplete",
 		"UserMergeAccountFields": "AbuseFilterHooks::onUserMergeAccountFields",
-		"ParserOutputStashForEdit": "AbuseFilterHooks::onParserOutputStashForEdit",
-		"UnitTestsList": "AbuseFilterHooks::onUnitTestsList"
+		"ParserOutputStashForEdit": "AbuseFilterHooks::onParserOutputStashForEdit"
 	},
 	"config": {
 		"@doc": "see AbuseFilter.php",
 		"AbuseFilterActions": {
-			"flag": true,
 			"throttle": true,
 			"warn": true,
 			"disallow": true,
@@ -201,6 +210,7 @@
 			"_merge_strategy": "array_plus"
 		},
 		"AbuseFilterConditionLimit": 1000,
+		"AbuseFilterParserClass": "AbuseFilterParser",
 		"AbuseFilterEmergencyDisableThreshold": {
 			"default": 0.05,
 			"_merge_strategy": "array_plus"
@@ -213,7 +223,6 @@
 			"default": 86400,
 			"_merge_strategy": "array_plus"
 		},
-		"AbuseFilterParserClass": "AbuseFilterParser",
 		"AbuseFilterRestrictions": {
 			"flag": false,
 			"throttle": false,

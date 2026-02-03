@@ -1,4 +1,4 @@
-( function ( M, $ ) {
+( function ( M ) {
 	/**
 	 * Utility function for the structured language overlay
 	 *
@@ -16,8 +16,8 @@
 	 *
 	 * @ignore
 	 * @param {Object[]} languages list of language objects as returned by the API
-	 * @param {String|undefined} deviceLanguage the device's primary language
-	 * @returns {String|undefined} Return undefined if the article is not available in
+	 * @param {string|undefined} deviceLanguage the device's primary language
+	 * @return {string|undefined} Return undefined if the article is not available in
 	 *  the (general or variant) device language
 	 */
 	function getDeviceLanguageOrParent( languages, deviceLanguage ) {
@@ -34,7 +34,7 @@
 			parentLanguage = deviceLanguage.slice( 0, index );
 		}
 
-		$.each( languages, function ( i, language ) {
+		languages.forEach( function ( language ) {
 			if ( language.lang === parentLanguage || language.lang === deviceLanguage ) {
 				deviceLanguagesWithVariants[ language.lang ] = true;
 			}
@@ -50,33 +50,34 @@
 	}
 
 	/**
-	 * Return two sets of languages: preferred and all (everything else)
+	 * Return two sets of languages: suggested and all (everything else)
 	 *
-	 * Preferred languages are the ones that the user has used before. This also
-	 * includes the user device's primary language. Preferred languages are ordered
+	 * Suggested languages are the ones that the user has used before. This also
+	 * includes the user device's primary language. Suggested languages are ordered
 	 * by frequency in descending order. The device's language is always at the top.
 	 * This group also includes the variants.
 	 *
-	 * All languages are the languages that are not preferred.
+	 * All languages are the languages that are not suggested.
 	 * Languages in this list are ordered in the lexicographical order of
 	 * their language names.
 	 *
 	 * @param {Object[]} languages list of language objects as returned by the API
-	 * @param {Array|Boolean} variants language variant objects or false if no variants exist
+	 * @param {Array|boolean} variants language variant objects or false if no variants exist
 	 * @param {Object} frequentlyUsedLanguages list of the frequently used languages
-	 * @param {String|undefined} deviceLanguage the device's primary language
+	 * @param {string} [deviceLanguage] the device's primary language
 	 * @return {Object[]}
 	 */
 	util.getStructuredLanguages = function ( languages, variants, frequentlyUsedLanguages, deviceLanguage ) {
 		var maxFrequency = 0,
 			minFrequency = 0,
-			preferredLanguages = [],
+			suggestedLanguages = [],
 			allLanguages = [];
 
 		// Is the article available in the user's device language?
 		deviceLanguage = getDeviceLanguageOrParent( languages, deviceLanguage );
 		if ( deviceLanguage ) {
-			$.each( frequentlyUsedLanguages, function ( language, frequency ) {
+			Object.keys( frequentlyUsedLanguages ).forEach( function ( language ) {
+				var frequency = frequentlyUsedLanguages[ language ];
 				maxFrequency = maxFrequency < frequency ? frequency : maxFrequency;
 				minFrequency = minFrequency > frequency ? frequency : minFrequency;
 			} );
@@ -86,33 +87,33 @@
 			frequentlyUsedLanguages[ deviceLanguage ] = maxFrequency + 1;
 		}
 
-		// Separate languages into preferred and all languages.
-		$.each( languages, function ( i, language ) {
+		// Separate languages into suggested and all languages.
+		languages.forEach( function ( language ) {
 			if ( frequentlyUsedLanguages.hasOwnProperty( language.lang ) ) {
 				language.frequency = frequentlyUsedLanguages[ language.lang ];
-				preferredLanguages.push( language );
+				suggestedLanguages.push( language );
 			} else {
 				allLanguages.push( language );
 			}
 		} );
 
-		// Add variants to the preferred languages list and assign the lowest
+		// Add variants to the suggested languages list and assign the lowest
 		// frequency because the variant hasn't been clicked on yet.
 		// Note that the variants data doesn't contain the article title, thus
 		// we cannot show it for the variants.
 		if ( variants ) {
-			$.each( variants, function ( i, variant ) {
+			variants.forEach( function ( variant ) {
 				if ( frequentlyUsedLanguages.hasOwnProperty( variant.lang ) ) {
-					variant.frequency =  frequentlyUsedLanguages[variant.lang];
+					variant.frequency = frequentlyUsedLanguages[variant.lang];
 				} else {
 					variant.frequency = minFrequency - 1;
 				}
-				preferredLanguages.push( variant );
+				suggestedLanguages.push( variant );
 			} );
 		}
 
-		// sort preferred languages in descending order by frequency
-		preferredLanguages = preferredLanguages.sort( function ( a, b ) {
+		// sort suggested languages in descending order by frequency
+		suggestedLanguages = suggestedLanguages.sort( function ( a, b ) {
 			return b.frequency - a.frequency;
 		} );
 
@@ -122,15 +123,16 @@
 		 * @ignore
 		 * @param {Object} a first language
 		 * @param {Object} b second language
+		 * @return {number} Comparison value, 1 or -1
 		 */
 		function compareLanguagesByLanguageName( a, b ) {
-			return a.autonym < b.autonym ? -1 : 1;
+			return a.autonym.toLocaleLowerCase() < b.autonym.toLocaleLowerCase() ? -1 : 1;
 		}
 
 		allLanguages = allLanguages.sort( compareLanguagesByLanguageName );
 
 		return {
-			preferred: preferredLanguages,
+			suggested: suggestedLanguages,
 			all: allLanguages
 		};
 	};
@@ -138,12 +140,12 @@
 	/**
 	 * Return a map of frequently used languages on the current device.
 	 *
-	 * @returns {Object}
+	 * @return {Object}
 	 */
 	util.getFrequentlyUsedLanguages = function () {
 		var languageMap = mw.storage.get( 'langMap' );
 
-		return languageMap ? $.parseJSON( languageMap ) : {};
+		return languageMap ? JSON.parse( languageMap ) : {};
 	};
 
 	/**
@@ -159,7 +161,7 @@
 	 * Increment the current language usage by one and save it to the device.
 	 * Cap the result at 100.
 	 *
-	 * @param {String} languageCode
+	 * @param {string} languageCode
 	 * @param {Object} frequentlyUsedLanguages list of the frequently used languages
 	 */
 	util.saveLanguageUsageCount = function ( languageCode, frequentlyUsedLanguages ) {
@@ -173,4 +175,4 @@
 
 	M.define( 'mobile.languages.structured/util', util );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

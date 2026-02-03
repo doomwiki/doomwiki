@@ -1,4 +1,3 @@
-/* jshint bitwise:false */
 ( function ( mw, $ ) {
 
 	var CONTROL_BUCKET = 'control',
@@ -7,16 +6,17 @@
 	/**
 	 * An implementation of Jenkins' one-at-a-time hash.
 	 *
-	 * @see http://en.wikipedia.org/wiki/Jenkins_hash_function
+	 * @see https://en.wikipedia.org/wiki/Jenkins_hash_function
 	 *
 	 * @param {string} string String to hash
 	 * @return {number} The hash as a 32-bit unsigned integer
 	 * @ignore
 	 *
 	 * @author Ori Livneh <ori@wikimedia.org>
-	 * @see http://jsbin.com/kejewi/4/watch?js,console
+	 * @see https://jsbin.com/kejewi/4/watch?js,console
 	 */
 	function hashString( string ) {
+		/* eslint-disable no-bitwise */
 		var hash = 0,
 			i = string.length;
 
@@ -30,6 +30,7 @@
 		hash += ( hash << 15 );
 
 		return hash >>> 0;
+		/* eslint-enable no-bitwise */
 	}
 
 	/**

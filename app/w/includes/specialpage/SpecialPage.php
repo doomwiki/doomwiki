@@ -1,6 +1,4 @@
 <?php
-use MediaWiki\MediaWikiServices;
-
 /**
  * Parent class for all special pages.
  *
@@ -24,6 +22,8 @@ use MediaWiki\MediaWikiServices;
  */
 
 use MediaWiki\Auth\AuthManager;
+use MediaWiki\Linker\LinkRenderer;
+use MediaWiki\MediaWikiServices;
 
 /**
  * Parent class for all special pages.
@@ -61,7 +61,14 @@ class SpecialPage {
 	protected $mContext;
 
 	/**
+	 * @var \MediaWiki\Linker\LinkRenderer|null
+	 */
+	private $linkRenderer;
+
+	/**
 	 * Get a localised Title object for a specified special page name
+	 * If you don't need a full Title object, consider using TitleValue through
+	 * getTitleValueFor() below.
 	 *
 	 * @since 1.9
 	 * @since 1.21 $fragment parameter added
@@ -73,9 +80,24 @@ class SpecialPage {
 	 * @throws MWException
 	 */
 	public static function getTitleFor( $name, $subpage = false, $fragment = '' ) {
+		return Title::newFromTitleValue(
+			self::getTitleValueFor( $name, $subpage, $fragment )
+		);
+	}
+
+	/**
+	 * Get a localised TitleValue object for a specified special page name
+	 *
+	 * @since 1.28
+	 * @param string $name
+	 * @param string|bool $subpage Subpage string, or false to not use a subpage
+	 * @param string $fragment The link fragment (after the "#")
+	 * @return TitleValue
+	 */
+	public static function getTitleValueFor( $name, $subpage = false, $fragment = '' ) {
 		$name = SpecialPageFactory::getLocalNameFor( $name, $subpage );
 
-		return Title::makeTitle( NS_SPECIAL, $name, $fragment );
+		return new TitleValue( NS_SPECIAL, $name, $fragment );
 	}
 
 	/**
@@ -173,6 +195,27 @@ class SpecialPage {
 	 */
 	public function isIncludable() {
 		return $this->mIncludable;
+	}
+
+	/**
+	 * How long to cache page when it is being included.
+	 *
+	 * @note If cache time is not 0, then the current user becomes an anon
+	 *   if you want to do any per-user customizations, than this method
+	 *   must be overriden to return 0.
+	 * @since 1.26
+	 * @return int Time in seconds, 0 to disable caching altogether,
+	 *  false to use the parent page's cache settings
+	 */
+	public function maxIncludeCacheTime() {
+		return $this->getConfig()->get( 'MiserMode' ) ? $this->getCacheTTL() : 0;
+	}
+
+	/**
+	 * @return int Seconds that this page can be cached
+	 */
+	protected function getCacheTTL() {
+		return 60 * 60;
 	}
 
 	/**
@@ -310,23 +353,6 @@ class SpecialPage {
 	}
 
 	/**
-	 * Record preserved POST data after a reauthentication.
-	 *
-	 * This is called from checkLoginSecurityLevel() when returning from the
-	 * redirect for reauthentication, if the redirect had been served in
-	 * response to a POST request.
-	 *
-	 * The base SpecialPage implementation does nothing. If your subclass uses
-	 * getLoginSecurityLevel() or checkLoginSecurityLevel(), it should probably
-	 * implement this to do something with the data.
-	 *
-	 * @since 1.32
-	 * @param array $data
-	 */
-	protected function setReauthPostData( array $data ) {
-	}
-
-	/**
 	 * Verifies that the user meets the security level, possibly reauthenticating them in the process.
 	 *
 	 * This should be used when the page does something security-sensitive and needs extra defense
@@ -352,42 +378,16 @@ class SpecialPage {
 	 */
 	protected function checkLoginSecurityLevel( $level = null ) {
 		$level = $level ?: $this->getName();
-		$key = 'SpecialPage:reauth:' . $this->getName();
-		$request = $this->getRequest();
-
 		$securityStatus = AuthManager::singleton()->securitySensitiveOperationStatus( $level );
 		if ( $securityStatus === AuthManager::SEC_OK ) {
-			$uniqueId = $request->getVal( 'postUniqueId' );
-			if ( $uniqueId ) {
-				$key = $key . ':' . $uniqueId;
-				$session = $request->getSession();
-				$data = $session->getSecret( $key );
-				if ( $data ) {
-					$session->remove( $key );
-					$this->setReauthPostData( $data );
-				}
-			}
 			return true;
 		} elseif ( $securityStatus === AuthManager::SEC_REAUTH ) {
-			$title = self::getTitleFor( 'Userlogin' );
-			$queryParams = $request->getQueryValues();
-
-			if ( $request->wasPosted() ) {
-				$data = array_diff_assoc( $request->getValues(), $request->getQueryValues() );
-				if ( $data ) {
-					// unique ID in case the same special page is open in multiple browser tabs
-					$uniqueId = MWCryptRand::generateHex( 6 );
-					$key = $key . ':' . $uniqueId;
-					$queryParams['postUniqueId'] = $uniqueId;
-					$session = $request->getSession();
-					$session->persist(); // Just in case
-					$session->setSecret( $key, $data );
-				}
-			}
-
+			$request = $this->getRequest();
+			$title = SpecialPage::getTitleFor( 'Userlogin' );
 			$query = [
 				'returnto' => $this->getFullTitle()->getPrefixedDBkey(),
-				'returntoquery' => wfArrayToCgi( array_diff_key( $queryParams, [ 'title' => true ] ) ),
+				'returntoquery' => wfArrayToCgi( array_diff_key( $request->getQueryValues(),
+					[ 'title' => true ] ) ),
 				'force' => $level,
 			];
 			$url = $title->getFullURL( $query, false, PROTO_HTTPS );
@@ -568,10 +568,7 @@ class SpecialPage {
 	public function execute( $subPage ) {
 		$this->setHeaders();
 		$this->checkPermissions();
-		$securityLevel = $this->getLoginSecurityLevel();
-		if ( $securityLevel !== false && !$this->checkLoginSecurityLevel( $securityLevel ) ) {
-			return;
-		}
+		$this->checkLoginSecurityLevel( $this->getLoginSecurityLevel() );
 		$this->outputHeader();
 	}
 
@@ -742,6 +739,7 @@ class SpecialPage {
 	/**
 	 * Wrapper around wfMessage that sets the current context.
 	 *
+	 * @since 1.16
 	 * @return Message
 	 * @see wfMessage
 	 */
@@ -849,5 +847,25 @@ class SpecialPage {
 		if ( $this->getRequest()->wasPosted() ) {
 			wfTransactionalTimeLimit();
 		}
+	}
+
+	/**
+	 * @since 1.28
+	 * @return \MediaWiki\Linker\LinkRenderer
+	 */
+	public function getLinkRenderer() {
+		if ( $this->linkRenderer ) {
+			return $this->linkRenderer;
+		} else {
+			return MediaWikiServices::getInstance()->getLinkRenderer();
+		}
+	}
+
+	/**
+	 * @since 1.28
+	 * @param \MediaWiki\Linker\LinkRenderer $linkRenderer
+	 */
+	public function setLinkRenderer( LinkRenderer $linkRenderer ) {
+		$this->linkRenderer = $linkRenderer;
 	}
 }

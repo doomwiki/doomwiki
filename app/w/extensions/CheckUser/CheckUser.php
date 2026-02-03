@@ -18,14 +18,6 @@ if ( function_exists( 'wfLoadExtension' ) ) {
 // Global declarations and documentation kept for IDEs and PHP documentors.
 // This code is never executed.
 
-/**
- * Legacy variable, no longer used. Used to point to a file in the server where
- * CheckUser would log all queries done through Special:CheckUser.
- * If this file exists, the installer will try to import data from this file to
- * the 'cu_log' table in the database.
- */
-$wgCheckUserLog = '/home/wikipedia/logs/checkuser.log';
-
 /** How long to keep CU data (in seconds)? */
 $wgCUDMaxAge = 3 * 30 * 24 * 3600; // 3 months
 
@@ -39,10 +31,10 @@ $wgCheckUserMaxBlocks = 200;
 $wgCheckUserForceSummary = false;
 
 /** Shortest CIDR limits that can be checked in any individual range check */
-$wgCheckUserCIDRLimit = array(
+$wgCheckUserCIDRLimit = [
 	'IPv4' => 16,
 	'IPv6' => 32,
-);
+];
 
 /**
  * Public key to encrypt private data that may need to be read later
@@ -51,3 +43,17 @@ $wgCheckUserCIDRLimit = array(
  * and paste the contents of cu.pub here
  */
 $wgCUPublicKey = '';
+
+/**
+ * This can be used to add a link to Special:MultiLock by CentralAuth
+ * to the Special:CheckUser's mass block form. This requires CentralAuth
+ * extension to be installed on the wiki.
+ * To enable this, set this to an array with a central wiki's database name
+ * and an array with the name(s) of the global group(s) to add the link for.
+ * Example:
+ *  $wgCheckUserCAMultiLock = array(
+ *  	'centralDB' => 'metawiki',
+ *  	'groups' => array( 'steward' )
+ *  );
+ */
+$wgCheckUserCAMultiLock = false;

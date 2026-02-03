@@ -22,12 +22,12 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 	protected $fileVersion = '';            # File page file version (flat string)
 	protected $validatedParams = '';        # Parameter key
 	protected $comment = '';                # Review comments
-	protected $dims = array();              # Review flags (for approval)
+	protected $dims = [];              # Review flags (for approval)
 	protected $lastChangeTime = null;       # Conflict handling
 	protected $newLastChangeTime = null;    # Conflict handling
 
 	protected $oldFrev = null;              # Prior FlaggedRevision for Rev with ID $oldid
-	protected $oldFlags = array();          # Prior flags for Rev with ID $oldid
+	protected $oldFlags = [];          # Prior flags for Rev with ID $oldid
 
 	protected $sessionKey = '';             # User session key
 	protected $skipValidationKey = false;   # Skip validatedParams check
@@ -242,9 +242,9 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 		$tag = FlaggedRevs::binaryTagName();
 		if ( $tag ) {
 			if ( $this->approve ) {
-				return array( $tag => 1 );
+				return [ $tag => 1 ];
 			} elseif ( $this->unapprove ) {
-				return array( $tag => 0 );
+				return [ $tag => 0 ];
 			}
 		}
 		return null;
@@ -271,6 +271,8 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 	 * @return mixed (true on success, error string on failure)
 	 */
 	public function doSubmit() {
+		global $wgContLang;
+
 		# Double-check permissions
 		if ( !$this->isAllowed() ) {
 			return 'review_denied';
@@ -324,57 +326,65 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 			}
 			$article = new WikiPage( $this->page );
 			# Get text with changes after $oldRev up to and including $newRev removed
-			$new_text = $article->getUndoContent( $newRev, $oldRev );
-			if ( $new_text === false ) {
+			$new_content = $article->getUndoContent( $newRev, $oldRev );
+			if ( $new_content === false ) {
 				return 'review_cannot_undo';
 			}
 			$baseRevId = $newRev->isCurrent() ? $oldRev->getId() : 0;
 
+			# Truncate for whole multibyte characters
+			$comment = $wgContLang->truncate( $this->getComment(), 255 );
+
 			# Actually make the edit...
-			$editStatus = $article->doEdit(
-				ContentHandler::getContentText( $new_text ), $this->getComment(), 0, $baseRevId, $this->user );
+			$editStatus = $article->doEditContent(
+				$new_content,
+				$comment,
+				0,
+				$baseRevId,
+				$this->user
+			);
 
 			$status = $editStatus->isOK() ? true : 'review_cannot_undo';
 
 			if ( $editStatus->isOK() && class_exists( 'EchoEvent' ) && $editStatus->value['revision'] ) {
-				$affectedRevisions = array(); // revid -> userid
+				$affectedRevisions = []; // revid -> userid
 				$revisions = wfGetDB( DB_SLAVE )->select(
 					'revision',
-					array( 'rev_id', 'rev_user' ),
-					array(
+					[ 'rev_id', 'rev_user' ],
+					[
 						'rev_id <= ' . $newRev->getId(),
 						'rev_timestamp <= ' . $newRev->getTimestamp(),
 						'rev_id > ' . $oldRev->getId(),
 						'rev_timestamp > ' . $oldRev->getTimestamp(),
 						'rev_page' => $article->getId(),
-					),
+					],
 					__METHOD__
 				);
 				foreach ( $revisions as $row ) {
 					$affectedRevisions[$row->rev_id] = $row->rev_user;
 				}
 
-				EchoEvent::create( array(
+				EchoEvent::create( [
 					'type' => 'reverted',
 					'title' => $this->page,
-					'extra' => array(
+					'extra' => [
 						'revid' => $editStatus->value['revision']->getId(),
 						'reverted-users-ids' => array_values( $affectedRevisions ),
 						'reverted-revision-ids' => array_keys( $affectedRevisions ),
 						'method' => 'flaggedrevs-reject',
-					),
+					],
 					'agent' => $this->user,
-				) );
+				] );
 
 			}
 
 			# If this undid one edit by another logged-in user, update user tallies
 			if ( $status === true
 				&& $newRev->getParentId() == $oldRev->getId()
-				&& $newRev->getRawUser() )
+				&& $newRev->getUser( Revision::RAW ) )
 			{
-				if ( $newRev->getRawUser() != $this->user->getId() ) { // no self-reverts
-					FRUserCounters::incCount( $newRev->getRawUser(), 'revertedEdits' );
+				if ( $newRev->getUser( Revision::RAW ) != $this->user->getId() ) { // no self-reverts
+					FRUserCounters::incCount( $newRev->getUser( Revision::RAW ), 'revertedEdits' );
 				}
 			}
 		}
@@ -385,7 +395,7 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 			}
 		}
 
-		Hooks::run( 'FlaggedRevsRevisionReviewFormAfterDoSubmit', array( $this, $status ) );
+		Hooks::run( 'FlaggedRevsRevisionReviewFormAfterDoSubmit', [ $this, $status ] );
 
 		return $status;
 	}
@@ -409,7 +419,7 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 			$this->templateParams, $this->imageParams
 		);
 		# If this is an image page, store corresponding file info
-		$fileData = array( 'name' => null, 'timestamp' => null, 'sha1' => null );
+		$fileData = [ 'name' => null, 'timestamp' => null, 'sha1' => null ];
 		if ( $this->page->getNamespace() == NS_FILE && $this->fileVersion ) {
 			# Stable upload version for file pages...
 			$data = explode( '#', $this->fileVersion, 2 );
@@ -435,7 +445,7 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 		}
 
 		# The new review entry...
-		$flaggedRevision = new FlaggedRevision( array(
+		$flaggedRevision = new FlaggedRevision( [
 			'rev'               => $rev,
 			'user_id'           => $this->user->getId(),
 			'timestamp'         => wfTimestampNow(),
@@ -447,7 +457,7 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 			'templateVersions'  => $tmpVersions,
 			'fileVersions'      => $fileVersions,
 			'flags'             => ''
-		) );
+		] );
 		# Delete the old review entry if it exists...
 		if ( $oldFrev ) {
 			$oldFrev->delete();
@@ -461,7 +471,7 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 		# Update the article review log...
 		$oldSvId = $oldSv ? $oldSv->getRevId() : 0;
 		FlaggedRevsLog::updateReviewLog( $this->page, $this->dims, $this->oldFlags,
-			$this->comment, $this->oldid, $oldSvId, true );
+			$this->comment, $this->oldid, $oldSvId, true, false, $this->user );
 
 		# Get the new stable version as of now
 		$sv = FlaggedRevision::determineStable( $this->page, FR_MASTER /*consistent*/ );
@@ -491,13 +501,14 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 		# Delete from flaggedrevs table
 		$frev->delete();
 
-		# Update the article review log
-		$oldSvId = $oldSv ? $oldSv->getRevId() : 0;
-		FlaggedRevsLog::updateReviewLog( $this->page, $this->dims, $this->oldFlags,
-			$this->comment, $this->oldid, $oldSvId, false );
-
 		# Get the new stable version as of now
 		$sv = FlaggedRevision::determineStable( $this->page, FR_MASTER /*consistent*/ );
+
+		# Update the article review log
+		$svId = $sv ? $sv->getRevId() : 0;
+		FlaggedRevsLog::updateReviewLog( $this->page, $this->dims, $this->oldFlags,
+			$this->comment, $this->oldid, $svId, false, false, $this->user );
+
 		# Update recent changes
 		self::updateRecentChanges( $frev->getRevision(), 'unpatrol', $sv );
 		# Update page and tracking tables and clear cache
@@ -540,8 +551,6 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 	 * @return void
 	 */
 	public static function updateRecentChanges( $rev, $patrol, $srev ) {
-		global $wgUseRCPatrol;
-
 		if ( $rev instanceof RecentChange ) {
 			$pageId = $rev->mAttribs['rc_cur_id'];
 		} else {
@@ -551,33 +560,43 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 
 		$dbw = wfGetDB( DB_MASTER );
 		$limit = 100; // sanity limit to avoid slave lag (most useful when FR is first enabled)
-		$conds = array( 'rc_cur_id' => $pageId );
-		if ( !$wgUseRCPatrol ) {
-			# No sense in updating all the rows, only the new page one is used.
-			# If $wgUseNPPatrol is off, then not even those are used.
-			$conds['rc_type'] = RC_NEW; // reduce rows to UPDATE
-		}
+		$conds = [ 'rc_cur_id' => $pageId ];
+
+		$newPatrolState = null; // set rc_patrolled to this value
 		# If we accepted this rev, then mark prior revs as patrolled...
 		if ( $patrol === 'patrol' ) {
 			if ( $sTimestamp ) { // sanity check; should always be set
 				$conds[] = 'rc_timestamp <= ' . $dbw->addQuotes( $dbw->timestamp( $sTimestamp ) );
-				$dbw->update( 'recentchanges',
-					array( 'rc_patrolled' => 1 ),
-					$conds,
-					__METHOD__,
-					array( 'LIMIT' => $limit ) // performance
-				);
+				$newPatrolState = 1;
 			}
 		# If we un-accepted this rev, then mark now-pending revs as unpatrolled...
 		} elseif ( $patrol === 'unpatrol' ) {
 			if ( $sTimestamp ) {
 				$conds[] = 'rc_timestamp > ' . $dbw->addQuotes( $dbw->timestamp( $sTimestamp ) );
 			}
-			$dbw->update( 'recentchanges',
-				array( 'rc_patrolled' => 0 ),
-				$conds,
-				__METHOD__,
-				array( 'LIMIT' => $limit ) // performance
+			$newPatrolState = 0;
+		}
+
+		if ( $newPatrolState === null ) {
+			return; // leave alone
+		}
+
+		// Only update rows that need it
+		$conds['rc_patrolled'] = $newPatrolState ? 0 : 1;
+		// SELECT and update by PK to avoid lag
+		$rcIds = $dbw->selectFieldValues(
+			'recentchanges',
+			'rc_id',
+			$conds,
+			__METHOD__,
+			[ 'LIMIT' => $limit ]
+		);
+		if ( $rcIds ) {
+			$dbw->update(
+				'recentchanges',
+				[ 'rc_patrolled' => $newPatrolState ],
+				[ 'rc_id' => $rcIds ],
+				__METHOD__
 			);
 		}
 	}
@@ -587,7 +606,7 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 	 * @param $templateIDs Array (from ParserOutput/OutputPage->mTemplateIds)
 	 * @param $imageSHA1Keys Array (from ParserOutput/OutputPage->mImageTimeKeys)
 	 * @param $fileVersion Array|null version of file for File: pages (time,sha1)
-	 * @return array( templateParams, imageParams, fileVersion )
+	 * @return [ templateParams, imageParams, fileVersion ]
 	 */
 	public static function getIncludeParams(
 		array $templateIDs, array $imageSHA1Keys, $fileVersion
@@ -608,19 +627,19 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 		if ( is_array( $fileVersion ) ) {
 			$fileParam = $fileVersion['time'] . "#" . $fileVersion['sha1'];
 		}
-		return array( $templateParams, $imageParams, $fileParam );
+		return [ $templateParams, $imageParams, $fileParam ];
 	}
 
 	/**
 	 * Get template and image versions from form value for parser output.
 	 * @param string $templateParams
 	 * @param string $imageParams
-	 * @return array( templateIds, fileSHA1Keys )
+	 * @return [ templateIds, fileSHA1Keys ]
 	 * templateIds like ParserOutput->mTemplateIds
 	 * fileSHA1Keys like ParserOutput->mImageTimeKeys
 	 */
 	public static function getIncludeVersions( $templateParams, $imageParams ) {
-		$templateIds = array();
+		$templateIds = [];
 		$templateMap = explode( '#', trim( $templateParams ) );
 		foreach ( $templateMap as $template ) {
 			if ( !$template ) {
@@ -637,12 +656,12 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 				continue; // Page must be valid!
 			}
 			if ( !isset( $templateIds[$tmp_title->getNamespace()] ) ) {
-				$templateIds[$tmp_title->getNamespace()] = array();
+				$templateIds[$tmp_title->getNamespace()] = [];
 			}
 			$templateIds[$tmp_title->getNamespace()][$tmp_title->getDBkey()] = $rev_id;
 		}
 		# Our image version pointers
-		$fileSHA1Keys = array();
+		$fileSHA1Keys = [];
 		$imageMap = explode( '#', trim( $imageParams ) );
 		foreach ( $imageMap as $image ) {
 			if ( !$image ) {
@@ -659,10 +678,10 @@ class RevisionReviewForm extends FRGenericSubmitForm {
 			if ( is_null( $img_title ) ) {
 				continue; // Page must be valid!
 			}
-			$fileSHA1Keys[$img_title->getDBkey()] = array();
+			$fileSHA1Keys[$img_title->getDBkey()] = [];
 			$fileSHA1Keys[$img_title->getDBkey()]['time'] = $time ? $time : false;
 			$fileSHA1Keys[$img_title->getDBkey()]['sha1'] = strlen( $key ) ? $key : false;
 		}
-		return array( $templateIds, $fileSHA1Keys );
+		return [ $templateIds, $fileSHA1Keys ];
 	}
 }

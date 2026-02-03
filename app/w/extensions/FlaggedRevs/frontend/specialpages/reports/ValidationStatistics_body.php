@@ -63,7 +63,7 @@ class ValidationStatistics extends IncludableSpecialPage {
 		$out->addWikiMsg( 'validationstatistics-pndtime',
 			$lang->formatTimePeriod( $pt, 'avoidminutes' ) );
 		# Show review time stats...
-		if ( !FlaggedRevs::useOnlyIfProtected() ) {
+		if ( !FlaggedRevs::useSimpleConfig() ) {
 			$out->addWikiMsg( 'validationstatistics-revtime',
 				$lang->formatTimePeriod( $mt, 'avoidminutes' ),
 				$lang->formatTimePeriod( $mdt, 'avoidminutes' ),
@@ -73,14 +73,14 @@ class ValidationStatistics extends IncludableSpecialPage {
 		# Show per-namespace stats table...
 		$out->addWikiMsg( 'validationstatistics-table' );
 		$out->addHTML(
-			Xml::openElement( 'table', array( 'class' => 'wikitable flaggedrevs_stats_table' ) )
+			Xml::openElement( 'table', [ 'class' => 'wikitable flaggedrevs_stats_table' ] )
 		);
 		$out->addHTML( "<tr>\n" );
 		// Headings (for a positive grep result):
 		// validationstatistics-ns, validationstatistics-total, validationstatistics-stable,
 		// validationstatistics-latest, validationstatistics-synced, validationstatistics-old,
 		// validationstatistics-unreviewed
-		$msgs = array( 'ns', 'total', 'stable', 'latest', 'synced', 'old' ); // our headings
+		$msgs = [ 'ns', 'total', 'stable', 'latest', 'synced', 'old' ]; // our headings
 		if ( !$wgFlaggedRevsProtection ) {
 			$msgs[] = 'unreviewed';
 		}
@@ -149,8 +149,8 @@ class ValidationStatistics extends IncludableSpecialPage {
 					<td>" .
 						Linker::linkKnown( SpecialPage::getTitleFor( 'PendingChanges' ),
 							htmlspecialchars( $outdated ),
-							array(),
-							array( 'namespace' => $namespace )
+							[],
+							[ 'namespace' => $namespace ]
 						) .
 					"</td>"
 			);
@@ -159,8 +159,8 @@ class ValidationStatistics extends IncludableSpecialPage {
 					<td>" .
 						Linker::linkKnown( SpecialPage::getTitleFor( 'UnreviewedPages' ),
 							htmlspecialchars( $unreviewed ),
-							array(),
-							array( 'namespace' => $namespace )
+							[],
+							[ 'namespace' => $namespace ]
 						) .
 					"</td>"
 				);
@@ -199,14 +199,14 @@ class ValidationStatistics extends IncludableSpecialPage {
 			return false;
 		}
 
-		$dbCache = wfGetCache( CACHE_DB );
-		$key = wfMemcKey( 'flaggedrevs', 'statsUpdated' );
-		$keySQL = wfMemcKey( 'flaggedrevs', 'statsUpdating' );
+		$stash = ObjectCache::getMainStashInstance();
+		$key = $stash->makeKey( 'flaggedrevs', 'statsUpdated' );
+		$keySQL = $stash->makeKey( 'flaggedrevs', 'statsUpdating' );
 		// If a cache update is needed, do so asynchronously.
 		// Don't trigger query while another is running.
-		if ( $dbCache->get( $key ) ) {
+		if ( $stash->get( $key ) ) {
 			wfDebugLog( 'ValidationStatistics', __METHOD__ . " skipping, got data" );
-		} elseif ( $dbCache->get( $keySQL ) ) {
+		} elseif ( $stash->get( $keySQL ) ) {
 			wfDebugLog( 'ValidationStatistics', __METHOD__ . " skipping, in progress" );
 		} else {
 			global $wgPhpCli;
@@ -232,13 +232,19 @@ class ValidationStatistics extends IncludableSpecialPage {
 
 	protected function getEditorCount() {
 		return $this->db->selectField( 'user_groups', 'COUNT(*)',
-			array( 'ug_group' => 'editor' ),
+			[
+				'ug_group' => 'editor',
+				'ug_expiry IS NULL OR ug_expiry >= ' . $this->db->addQuotes( $this->db->timestamp() )
+			],
 			__METHOD__ );
 	}
 
 	protected function getReviewerCount() {
 		return $this->db->selectField( 'user_groups', 'COUNT(*)',
-			array( 'ug_group' => 'reviewer' ),
+			[
+				'ug_group' => 'reviewer',
+				'ug_expiry IS NULL OR ug_expiry >= ' . $this->db->addQuotes( $this->db->timestamp() )
+			],
 			__METHOD__ );
 	}
 
@@ -299,34 +305,36 @@ class ValidationStatistics extends IncludableSpecialPage {
 	protected function getTopReviewers() {
 		global $wgFlaggedRevsStats;
 
-		$key = wfMemcKey( 'flaggedrevs', 'reviewTopUsers' );
-		$dbCache = wfGetCache( CACHE_DB );
-		$data = $dbCache->get( $key );
+		$stash = ObjectCache::getMainStashInstance();
+		$key = $stash->makeKey( 'flaggedrevs', 'reviewTopUsers' );
+		$data = $stash->get( $key );
 		if ( is_array( $data ) ) {
 			return $data; // cache hit
 		}
+
+		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
 		$limit = (int)$wgFlaggedRevsStats['topReviewersCount'];
 		$seconds = 3600*$wgFlaggedRevsStats['topReviewersHours'];
-
-		$dbr = wfGetDB( DB_SLAVE );
 		$cutoff = $dbr->timestamp( time() - $seconds );
 		$res = $dbr->select( 'logging',
-			array( 'log_user', 'COUNT(*) AS reviews' ),
-			array(
+			[ 'log_user', 'COUNT(*) AS reviews' ],
+			[
 				'log_type' => 'review', // page reviews
 				// manual approvals (filter on log_action)
-				'log_action' => array( 'approve', 'approve2', 'approve-i', 'approve2-i' ),
+				'log_action' => [ 'approve', 'approve2', 'approve-i', 'approve2-i' ],
 				'log_timestamp >= ' . $dbr->addQuotes( $cutoff ) // last hour
-			),
+			],
 			__METHOD__,
-			array( 'GROUP BY' => 'log_user', 'ORDER BY' => 'reviews DESC', 'LIMIT' => $limit )
+			[ 'GROUP BY' => 'log_user', 'ORDER BY' => 'reviews DESC', 'LIMIT' => $limit ]
 		);
-		$data = array();
+
+		$data = [];
 		foreach ( $res as $row ) {
 			$data[$row->log_user] = $row->reviews;
 		}
+
 		// Save/cache users
-		$dbCache->set( $key, $data, 3600 );
+		$stash->set( $key, $data, 3600 );
 
 		return $data;
 	}

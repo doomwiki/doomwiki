@@ -27,6 +27,9 @@ if ( !defined( 'MEDIAWIKI' ) ) {
 use Liuggio\StatsdClient\Sender\SocketSender;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\Session\SessionManager;
+use MediaWiki\MediaWikiServices;
+use Wikimedia\ScopedCallback;
+use Wikimedia\Rdbms\DBReplicationWaitError;
 
 // Hide compatibility functions from Doxygen
 /// @cond
@@ -39,7 +42,7 @@ use MediaWiki\Session\SessionManager;
  */
 
 // hash_equals function only exists in PHP >= 5.6.0
-// http://php.net/hash_equals
+// https://secure.php.net/hash_equals
 if ( !function_exists( 'hash_equals' ) ) {
 	/**
 	 * Check whether a user-provided string is equal to a fixed-length secret string
@@ -221,18 +224,18 @@ function wfAppendToArrayIfNotDefault( $key, $value, $default, &$changed ) {
 /**
  * Merge arrays in the style of getUserPermissionsErrors, with duplicate removal
  * e.g.
- *	wfMergeErrorArrays(
- *		array( array( 'x' ) ),
- *		array( array( 'x', '2' ) ),
- *		array( array( 'x' ) ),
- *		array( array( 'y' ) )
- *	);
+ *     wfMergeErrorArrays(
+ *       [ [ 'x' ] ],
+ *       [ [ 'x', '2' ] ],
+ *       [ [ 'x' ] ],
+ *       [ [ 'y' ] ]
+ *     );
  * returns:
- * 		array(
- *   		array( 'x', '2' ),
- *   		array( 'x' ),
- *   		array( 'y' )
- *   	)
+ *     [
+ *       [ 'x', '2' ],
+ *       [ 'x' ],
+ *       [ 'y' ]
+ *     ]
  *
  * @param array $array1,...
  * @return array
@@ -358,7 +361,7 @@ function wfRandomString( $length = 32 ) {
  *
  * ;:@$!*(),/~
  *
- * However, IIS7 redirects fail when the url contains a colon (Bug 22709),
+ * However, IIS7 redirects fail when the url contains a colon (see T24709),
  * so no fancy : for IIS7.
  *
  * %2F in the page titles seems to fatally break for some reason.
@@ -544,7 +547,7 @@ function wfAppendQuery( $url, $query ) {
  * @param string $url Either fully-qualified or a local path + query
  * @param string $defaultProto One of the PROTO_* constants. Determines the
  *    protocol to use if $url or $wgServer is protocol-relative
- * @return string Fully-qualified URL, current-path-relative URL or false if
+ * @return string|false Fully-qualified URL, current-path-relative URL or false if
  *    no valid URL can be constructed
  */
 function wfExpandUrl( $url, $defaultProto = PROTO_CURRENT ) {
@@ -617,7 +620,7 @@ function wfExpandUrl( $url, $defaultProto = PROTO_CURRENT ) {
  * This is the basic structure used (brackets contain keys for $urlParts):
  * [scheme][delimiter][user]:[pass]@[host]:[port][path]?[query]#[fragment]
  *
- * @todo Need to integrate this into wfExpandUrl (bug 32168)
+ * @todo Need to integrate this into wfExpandUrl (see T34168)
  *
  * @since 1.19
  * @param array $urlParts URL parts, as output from wfParseUrl
@@ -670,7 +673,7 @@ function wfAssembleUrl( $urlParts ) {
  * '/a/./b/../c/' becomes '/a/c/'.  For details on the algorithm, please see
  * RFC3986 section 5.2.4.
  *
- * @todo Need to integrate this into wfExpandUrl (bug 32168)
+ * @todo Need to integrate this into wfExpandUrl (see T34168)
  *
  * @param string $urlPath URL path, potentially containing dot-segments
  * @return string URL path with all dot-segments removed
@@ -811,7 +814,7 @@ function wfUrlProtocolsWithoutProtRel() {
  * 3) Adds a "delimiter" element to the array, either '://', ':' or '//' (see (2)).
  *
  * @param string $url A URL to parse
- * @return string[] Bits of the URL in an associative array, per PHP docs
+ * @return string[]|bool Bits of the URL in an associative array, per PHP docs, false on failure
  */
 function wfParseUrl( $url ) {
 	global $wgUrlProtocols; // Allow all protocols defined in DefaultSettings/LocalSettings.php
@@ -827,7 +830,7 @@ function wfParseUrl( $url ) {
 	$bits = parse_url( $url );
 	MediaWiki\restoreWarnings();
 	// parse_url() returns an array without scheme for some invalid URLs, e.g.
-	// parse_url("%0Ahttp://example.com") == array( 'host' => '%0Ahttp', 'path' => 'example.com' )
+	// parse_url("%0Ahttp://example.com") == [ 'host' => '%0Ahttp', 'path' => 'example.com' ]
 	if ( !$bits || !isset( $bits['scheme'] ) ) {
 		return false;
 	}
@@ -850,11 +853,11 @@ function wfParseUrl( $url ) {
 		return false;
 	}
 
-	/* Provide an empty host for eg. file:/// urls (see bug 28627) */
+	/* Provide an empty host for eg. file:/// urls (see T30627) */
 	if ( !isset( $bits['host'] ) ) {
 		$bits['host'] = '';
 
-		// bug 45069
+		// See T47069
 		if ( isset( $bits['path'] ) ) {
 			/* parse_url loses the third / for file:///c:/ urls (but not on variants) */
 			if ( substr( $bits['path'], 0, 1 ) !== '/' ) {
@@ -1195,7 +1198,10 @@ function wfLogProfilingData() {
 			$statsdPort = isset( $statsdServer[1] ) ? $statsdServer[1] : 8125;
 			$statsdSender = new SocketSender( $statsdHost, $statsdPort );
 			$statsdClient = new SamplingStatsdClient( $statsdSender, true, false );
-			$statsdClient->send( $context->getStats()->getBuffer() );
+			$statsdClient->setSamplingRates( $config->get( 'StatsdSamplingRates' ) );
+			$statsdClient->send(
+				MediaWikiServices::getInstance()->getStatsdDataFactory()->getBuffer()
+			);
 		} catch ( Exception $ex ) {
 			MWExceptionHandler::logException( $ex );
 		}
@@ -1260,7 +1266,7 @@ function wfLogProfilingData() {
  * @return void
  */
 function wfIncrStats( $key, $count = 1 ) {
-	$stats = RequestContext::getMain()->getStats();
+	$stats = MediaWikiServices::getInstance()->getStatsdDataFactory();
 	$stats->updateCount( $key, $count );
 }
 
@@ -1270,31 +1276,21 @@ function wfIncrStats( $key, $count = 1 ) {
  * @return bool
  */
 function wfReadOnly() {
-	return wfReadOnlyReason() !== false;
+	return \MediaWiki\MediaWikiServices::getInstance()->getReadOnlyMode()
+		->isReadOnly();
 }
 
 /**
  * Check if the site is in read-only mode and return the message if so
  *
  * This checks wfConfiguredReadOnlyReason() and the main load balancer
- * for slave lag. This may result in DB_SLAVE connection being made.
+ * for replica DB lag. This may result in DB connection being made.
  *
  * @return string|bool String when in read-only mode; false otherwise
  */
 function wfReadOnlyReason() {
-	$readOnly = wfConfiguredReadOnlyReason();
-	if ( $readOnly !== false ) {
-		return $readOnly;
-	}
-
-	static $lbReadOnly = null;
-	if ( $lbReadOnly === null ) {
-		// Callers use this method to be aware that data presented to a user
-		// may be very stale and thus allowing submissions can be problematic.
-		$lbReadOnly = wfGetLB()->getReadOnlyReason();
-	}
-
-	return $lbReadOnly;
+	return \MediaWiki\MediaWikiServices::getInstance()->getReadOnlyMode()
+		->getReason();
 }
 
 /**
@@ -1304,18 +1300,8 @@ function wfReadOnlyReason() {
  * @since 1.27
  */
 function wfConfiguredReadOnlyReason() {
-	global $wgReadOnly, $wgReadOnlyFile;
-
-	if ( $wgReadOnly === null ) {
-		// Set $wgReadOnly for faster access next time
-		if ( is_file( $wgReadOnlyFile ) && filesize( $wgReadOnlyFile ) > 0 ) {
-			$wgReadOnly = file_get_contents( $wgReadOnlyFile );
-		} else {
-			$wgReadOnly = false;
-		}
-	}
-
-	return $wgReadOnly;
+	return \MediaWiki\MediaWikiServices::getInstance()->getConfiguredReadOnlyMode()
+		->getReason();
 }
 
 /**
@@ -1383,12 +1369,16 @@ function wfGetLangObj( $langcode = false ) {
  * @see Message::__construct
  */
 function wfMessage( $key /*...*/ ) {
+	$message = new Message( $key );
+
+	// We call Message::params() to reduce code duplication
 	$params = func_get_args();
 	array_shift( $params );
-	if ( isset( $params[0] ) && is_array( $params[0] ) ) {
-		$params = $params[0];
+	if ( $params ) {
+		call_user_func_array( [ $message, 'params' ], $params );
 	}
-	return new Message( $key, $params );
+
+	return $message;
 }
 
 /**
@@ -1623,11 +1613,13 @@ function wfShowingResults( $offset, $limit ) {
 }
 
 /**
- * @todo document
- * @todo FIXME: We may want to blacklist some broken browsers
+ * Whether the client accept gzip encoding
  *
- * @param bool $force
- * @return bool Whereas client accept gzip compression
+ * Uses the Accept-Encoding header to check if the client supports gzip encoding.
+ * Use this when considering to send a gzip-encoded response to the client.
+ *
+ * @param bool $force Forces another check even if we already have a cached result.
+ * @return bool
  */
 function wfClientAcceptsGzip( $force = false ) {
 	static $result = null;
@@ -1664,8 +1656,11 @@ function wfClientAcceptsGzip( $force = false ) {
  * @return string
  */
 function wfEscapeWikiText( $text ) {
+	global $wgEnableMagicLinks;
 	static $repl = null, $repl2 = null;
-	if ( $repl === null ) {
+	if ( $repl === null || defined( 'MW_PARSER_TEST' ) || defined( 'MW_PHPUNIT_TEST' ) ) {
+		// Tests depend upon being able to change $wgEnableMagicLinks, so don't cache
+		// in those situations
 		$repl = [
 			'"' => '&#34;', '&' => '&#38;', "'" => '&#39;', '<' => '&#60;',
 			'=' => '&#61;', '>' => '&#62;', '[' => '&#91;', ']' => '&#93;',
@@ -1681,8 +1676,9 @@ function wfEscapeWikiText( $text ) {
 			'__' => '_&#95;', '://' => '&#58;//',
 		];
 
+		$magicLinks = array_keys( array_filter( $wgEnableMagicLinks ) );
 		// We have to catch everything "\s" matches in PCRE
-		foreach ( [ 'ISBN', 'RFC', 'PMID' ] as $magic ) {
+		foreach ( $magicLinks as $magic ) {
 			$repl["$magic "] = "$magic&#32;";
 			$repl["$magic\t"] = "$magic&#9;";
 			$repl["$magic\r"] = "$magic&#13;";
@@ -1775,6 +1771,7 @@ function wfHttpError( $code, $label, $desc ) {
 		$wgOut->sendCacheControl();
 	}
 
+	MediaWiki\HeaderCallback::warnIfHeadersSent();
 	header( 'Content-type: text/html; charset=utf-8' );
 	print '<!DOCTYPE html>' .
 		'<html><head><title>' .
@@ -1987,59 +1984,6 @@ function wfRestoreWarnings() {
 	MediaWiki\suppressWarnings( true );
 }
 
-# Autodetect, convert and provide timestamps of various types
-
-/**
- * Unix time - the number of seconds since 1970-01-01 00:00:00 UTC
- */
-define( 'TS_UNIX', 0 );
-
-/**
- * MediaWiki concatenated string timestamp (YYYYMMDDHHMMSS)
- */
-define( 'TS_MW', 1 );
-
-/**
- * MySQL DATETIME (YYYY-MM-DD HH:MM:SS)
- */
-define( 'TS_DB', 2 );
-
-/**
- * RFC 2822 format, for E-mail and HTTP headers
- */
-define( 'TS_RFC2822', 3 );
-
-/**
- * ISO 8601 format with no timezone: 1986-02-09T20:00:00Z
- *
- * This is used by Special:Export
- */
-define( 'TS_ISO_8601', 4 );
-
-/**
- * An Exif timestamp (YYYY:MM:DD HH:MM:SS)
- *
- * @see http://exif.org/Exif2-2.PDF The Exif 2.2 spec, see page 28 for the
- *       DateTime tag and page 36 for the DateTimeOriginal and
- *       DateTimeDigitized tags.
- */
-define( 'TS_EXIF', 5 );
-
-/**
- * Oracle format time.
- */
-define( 'TS_ORACLE', 6 );
-
-/**
- * Postgres format time.
- */
-define( 'TS_POSTGRES', 7 );
-
-/**
- * ISO 8601 basic format with no timezone: 19860209T200000Z.  This is used by ResourceLoader
- */
-define( 'TS_ISO_8601_BASIC', 9 );
-
 /**
  * Get a timestamp string in one of various formats
  *
@@ -2049,13 +1993,11 @@ define( 'TS_ISO_8601_BASIC', 9 );
  * @return string|bool String / false The same date in the format specified in $outputtype or false
  */
 function wfTimestamp( $outputtype = TS_UNIX, $ts = 0 ) {
-	try {
-		$timestamp = new MWTimestamp( $ts );
-		return $timestamp->getTimestamp( $outputtype );
-	} catch ( TimestampException $e ) {
+	$ret = MWTimestamp::convert( $outputtype, $ts );
+	if ( $ret === false ) {
 		wfDebug( "wfTimestamp() fed bogus time value: TYPE=$outputtype; VALUE=$ts\n" );
-		return false;
 	}
+	return $ret;
 }
 
 /**
@@ -2081,7 +2023,7 @@ function wfTimestampOrNull( $outputtype = TS_UNIX, $ts = null ) {
  */
 function wfTimestampNow() {
 	# return NOW
-	return wfTimestamp( TS_MW, time() );
+	return MWTimestamp::now( TS_MW );
 }
 
 /**
@@ -2124,35 +2066,7 @@ function wfTempDir() {
 		return $wgTmpDirectory;
 	}
 
-	$tmpDir = array_map( "getenv", [ 'TMPDIR', 'TMP', 'TEMP' ] );
-	$tmpDir[] = sys_get_temp_dir();
-	$tmpDir[] = ini_get( 'upload_tmp_dir' );
-
-	foreach ( $tmpDir as $tmp ) {
-		if ( $tmp && file_exists( $tmp ) && is_dir( $tmp ) && is_writable( $tmp ) ) {
-			return $tmp;
-		}
-	}
-
-	/**
-	 * PHP on Windows will detect C:\Windows\Temp as not writable even though PHP can write to it
-	 * so create a directory within that called 'mwtmp' with a suffix of the user running the
-	 * current process.
-	 * The user is included as if various scripts are run by different users they will likely
-	 * not be able to access each others temporary files.
-	 */
-	if ( wfIsWindows() ) {
-		$tmp = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'mwtmp' . '-' . get_current_user();
-		if ( !file_exists( $tmp ) ) {
-			mkdir( $tmp );
-		}
-		if ( file_exists( $tmp ) && is_dir( $tmp ) && is_writable( $tmp ) ) {
-			return $tmp;
-		}
-	}
-
-	throw new MWException( 'No writable temporary directory could be found. ' .
-		'Please set $wgTmpDirectory to a writable directory.' );
+	return TempFSFile::getUsableTempDirectory();
 }
 
 /**
@@ -2209,7 +2123,7 @@ function wfMkdirParents( $dir, $mode = null, $caller = null ) {
  */
 function wfRecursiveRemoveDir( $dir ) {
 	wfDebug( __FUNCTION__ . "( $dir )\n" );
-	// taken from http://de3.php.net/manual/en/function.rmdir.php#98622
+	// taken from https://secure.php.net/manual/en/function.rmdir.php#98622
 	if ( is_dir( $dir ) ) {
 		$objects = scandir( $dir );
 		foreach ( $objects as $object ) {
@@ -2270,12 +2184,11 @@ function wfIniGetBool( $setting ) {
 }
 
 /**
- * Windows-compatible version of escapeshellarg()
- * Windows doesn't recognise single-quotes in the shell, but the escapeshellarg()
- * function puts single quotes in regardless of OS.
+ * Version of escapeshellarg() that works better on Windows.
  *
- * Also fixes the locale problems on Linux in PHP 5.2.6+ (bug backported to
- * earlier distro releases of PHP)
+ * Originally, this fixed the incorrect use of single quotes on Windows
+ * (https://bugs.php.net/bug.php?id=26285) and the locale problems on Linux in
+ * PHP 5.2.6+ (bug backported to earlier distro releases of PHP).
  *
  * @param string ... strings to escape and glue together, or a single array of strings parameter
  * @return string
@@ -2303,9 +2216,9 @@ function wfEscapeShellArg( /*...*/ ) {
 			// Escaping for an MSVC-style command line parser and CMD.EXE
 			// @codingStandardsIgnoreStart For long URLs
 			// Refs:
-			//  * http://web.archive.org/web/20020708081031/http://mailman.lyra.org/pipermail/scite-interest/2002-March/000436.html
-			//  * http://technet.microsoft.com/en-us/library/cc723564.aspx
-			//  * Bug #13518
+			//  * https://web.archive.org/web/20020708081031/http://mailman.lyra.org/pipermail/scite-interest/2002-March/000436.html
+			//  * https://technet.microsoft.com/en-us/library/cc723564.aspx
+			//  * T15518
 			//  * CR r63214
 			// Double the backslashes before any double quotes. Escape the double quotes.
 			// @codingStandardsIgnoreEnd
@@ -2404,7 +2317,7 @@ function wfShellExec( $cmd, &$retval = null, $environ = [],
 		if ( wfIsWindows() ) {
 			/* Surrounding a set in quotes (method used by wfEscapeShellArg) makes the quotes themselves
 			 * appear in the environment variable, so we must use carat escaping as documented in
-			 * http://technet.microsoft.com/en-us/library/cc723564.aspx
+			 * https://technet.microsoft.com/en-us/library/cc723564.aspx
 			 * Note however that the quote isn't listed there, but is needed, and the parentheses
 			 * are listed there but doesn't appear to need it.
 			 */
@@ -2499,14 +2412,6 @@ function wfShellExec( $cmd, &$retval = null, $environ = [],
 	$eintr = defined( 'SOCKET_EINTR' ) ? SOCKET_EINTR : 4;
 	$eintrMessage = "stream_select(): unable to select [$eintr]";
 
-	// Build a table mapping resource IDs to pipe FDs to work around a
-	// PHP 5.3 issue in which stream_select() does not preserve array keys
-	// <https://bugs.php.net/bug.php?id=53427>.
-	$fds = [];
-	foreach ( $pipes as $fd => $pipe ) {
-		$fds[(int)$pipe] = $fd;
-	}
-
 	$running = true;
 	$timeout = null;
 	$numReadyPipes = 0;
@@ -2541,9 +2446,8 @@ function wfShellExec( $cmd, &$retval = null, $environ = [],
 				break;
 			}
 		}
-		foreach ( $readyPipes as $pipe ) {
+		foreach ( $readyPipes as $fd => $pipe ) {
 			$block = fread( $pipe, 65536 );
-			$fd = $fds[(int)$pipe];
 			if ( $block === '' ) {
 				// End of file
 				fclose( $pipes[$fd] );
@@ -2633,7 +2537,7 @@ function wfShellExecWithStderr( $cmd, &$retval = null, $environ = [], $limits = 
 }
 
 /**
- * Workaround for http://bugs.php.net/bug.php?id=45132
+ * Workaround for https://bugs.php.net/bug.php?id=45132
  * escapeshellarg() destroys non-ASCII characters if LANG is not a UTF-8 locale
  */
 function wfInitShellLocale() {
@@ -2655,8 +2559,8 @@ function wfInitShellLocale() {
  * @param string $script MediaWiki cli script path
  * @param array $parameters Arguments and options to the script
  * @param array $options Associative array of options:
- * 		'php': The path to the php executable
- * 		'wrapper': Path to a PHP wrapper to handle the maintenance script
+ *     'php': The path to the php executable
+ *     'wrapper': Path to a PHP wrapper to handle the maintenance script
  * @return string
  */
 function wfShellWikiCmd( $script, array $parameters = [], array $options = [] ) {
@@ -2885,7 +2789,7 @@ function wfUseMW( $req_ver ) {
 /**
  * Return the final portion of a pathname.
  * Reimplemented because PHP5's "basename()" is buggy with multibyte text.
- * http://bugs.php.net/bug.php?id=33898
+ * https://bugs.php.net/bug.php?id=33898
  *
  * PHP's basename() only considers '\' a pathchar on Windows and Netware.
  * We'll consider it so always, as we don't want '\s' in our Unix paths either.
@@ -2961,7 +2865,7 @@ function wfRelativePath( $path, $from ) {
  * Supports base 2 through 36; digit values 10-36 are represented
  * as lowercase letters a-z. Input is case-insensitive.
  *
- * @deprecated 1.27 Use Wikimedia\base_convert() directly
+ * @deprecated since 1.27 Use Wikimedia\base_convert() directly
  *
  * @param string $input Input number
  * @param int $sourceBase Base of the input number
@@ -3135,7 +3039,7 @@ function wfSplitWikiID( $wiki ) {
  * Get a Database object.
  *
  * @param int $db Index of the connection to get. May be DB_MASTER for the
- *            master (for write queries), DB_SLAVE for potentially lagged read
+ *            master (for write queries), DB_REPLICA for potentially lagged read
  *            queries, or an integer >= 0 for a particular server.
  *
  * @param string|string[] $groups Query groups. An array of group names that this query
@@ -3144,14 +3048,17 @@ function wfSplitWikiID( $wiki ) {
  *
  * @param string|bool $wiki The wiki ID, or false for the current wiki
  *
- * Note: multiple calls to wfGetDB(DB_SLAVE) during the course of one request
+ * Note: multiple calls to wfGetDB(DB_REPLICA) during the course of one request
  * will always return the same object, unless the underlying connection or load
  * balancer is manually destroyed.
  *
  * Note 2: use $this->getDB() in maintenance scripts that may be invoked by
  * updater to ensure that a proper database is being updated.
  *
- * @return DatabaseBase
+ * @todo Replace calls to wfGetDB with calls to LoadBalancer::getConnection()
+ *       on an injected instance of LoadBalancer.
+ *
+ * @return \Wikimedia\Rdbms\Database
  */
 function wfGetDB( $db, $groups = [], $wiki = false ) {
 	return wfGetLB( $wiki )->getConnection( $db, $groups, $wiki );
@@ -3160,20 +3067,30 @@ function wfGetDB( $db, $groups = [], $wiki = false ) {
 /**
  * Get a load balancer object.
  *
+ * @deprecated since 1.27, use MediaWikiServices::getDBLoadBalancer()
+ *              or MediaWikiServices::getDBLoadBalancerFactory() instead.
+ *
  * @param string|bool $wiki Wiki ID, or false for the current wiki
- * @return LoadBalancer
+ * @return \Wikimedia\Rdbms\LoadBalancer
  */
 function wfGetLB( $wiki = false ) {
-	return wfGetLBFactory()->getMainLB( $wiki );
+	if ( $wiki === false ) {
+		return \MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancer();
+	} else {
+		$factory = \MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+		return $factory->getMainLB( $wiki );
+	}
 }
 
 /**
  * Get the load balancer factory object
  *
- * @return LBFactory
+ * @deprecated since 1.27, use MediaWikiServices::getDBLoadBalancerFactory() instead.
+ *
+ * @return \Wikimedia\Rdbms\LBFactory
  */
 function wfGetLBFactory() {
-	return LBFactory::singleton();
+	return \MediaWiki\MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 }
 
 /**
@@ -3276,10 +3193,10 @@ function wfGetNull() {
 }
 
 /**
- * Waits for the slaves to catch up to the master position
+ * Waits for the replica DBs to catch up to the master position
  *
  * Use this when updating very large numbers of rows, as in maintenance scripts,
- * to avoid causing too much lag. Of course, this is a no-op if there are no slaves.
+ * to avoid causing too much lag. Of course, this is a no-op if there are no replica DBs.
  *
  * By default this waits on the main DB cluster of the current wiki.
  * If $cluster is set to "*" it will wait on all DB clusters, including
@@ -3348,9 +3265,9 @@ function wfCountDown( $seconds ) {
 }
 
 /**
- * Replace all invalid characters with -
- * Additional characters can be defined in $wgIllegalFileChars (see bug 20489)
- * By default, $wgIllegalFileChars = ':'
+ * Replace all invalid characters with '-'.
+ * Additional characters can be defined in $wgIllegalFileChars (see T22489).
+ * By default, $wgIllegalFileChars includes ':', '/', '\'.
  *
  * @param string $name Filename to process
  * @return string
@@ -3358,12 +3275,13 @@ function wfCountDown( $seconds ) {
 function wfStripIllegalFilenameChars( $name ) {
 	global $wgIllegalFileChars;
 	$illegalFileChars = $wgIllegalFileChars ? "|[" . $wgIllegalFileChars . "]" : '';
-	$name = wfBaseName( $name );
 	$name = preg_replace(
 		"/[^" . Title::legalChars() . "]" . $illegalFileChars . "/",
 		'-',
 		$name
 	);
+	// $wgIllegalFileChars may not include '/' and '\', so we still need to do this
+	$name = wfBaseName( $name );
 	return $name;
 }
 
@@ -3522,7 +3440,7 @@ function wfGetParserCacheStorage() {
  * @param string|null $deprecatedVersion Optionally mark hook as deprecated with version number
  *
  * @return bool True if no handler aborted the hook
- * @deprecated 1.25 - use Hooks::run
+ * @deprecated since 1.25 - use Hooks::run
  */
 function wfRunHooks( $event, array $args = [], $deprecatedVersion = null ) {
 	return Hooks::run( $event, $args, $deprecatedVersion );
@@ -3587,7 +3505,7 @@ function wfIsBadImage( $name, $contextTitle = false, $blacklist = null ) {
 	# Run the extension hook
 	$bad = false;
 	if ( !Hooks::run( 'BadImage', [ $name, &$bad ] ) ) {
-		return $bad;
+		return (bool)$bad;
 	}
 
 	$cache = ObjectCache::getLocalServerInstance( 'hash' );

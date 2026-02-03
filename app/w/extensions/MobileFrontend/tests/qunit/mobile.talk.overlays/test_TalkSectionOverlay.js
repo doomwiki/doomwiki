@@ -1,11 +1,13 @@
 ( function ( M, $ ) {
 
 	var TalkSectionOverlay = M.require( 'mobile.talk.overlays/TalkSectionOverlay' ),
-		user = M.require( 'mobile.user/user' ),
+		user = M.require( 'mobile.startup/user' ),
 		renderFromApiSpy;
 
 	QUnit.module( 'MobileFrontend TalkSectionOverlay - logged in', {
 		setup: function () {
+			// don't create toasts in test environment
+			this.toastStub = this.sandbox.stub( mw, 'notify' );
 			this.api = new mw.Api();
 			renderFromApiSpy = this.sandbox.stub( TalkSectionOverlay.prototype, 'renderFromApi' );
 			this.sandbox.stub( user, 'isAnon' ).returns( false );
@@ -13,14 +15,16 @@
 	} );
 
 	QUnit.test( 'Load section from api only, if needed', 2, function ( assert ) {
-		var overlay = new TalkSectionOverlay( {
+		// eslint-disable-next-line no-new
+		new TalkSectionOverlay( {
 			api: this.api,
 			section: 'Testtext'
 		} );
 
 		assert.strictEqual( renderFromApiSpy.callCount, 0, 'Section requested from api, if no section given.' );
 
-		overlay = new TalkSectionOverlay( {
+		// eslint-disable-next-line no-new
+		new TalkSectionOverlay( {
 			api: this.api
 		} );
 		assert.ok( renderFromApiSpy.calledOnce, 'No Api request, if section given' );

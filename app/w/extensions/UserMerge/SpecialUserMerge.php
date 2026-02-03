@@ -15,6 +15,8 @@
  *
  */
 
+use MediaWiki\MediaWikiServices;
+
 class SpecialUserMerge extends FormSpecialPage {
 	public function __construct() {
 		parent::__construct( 'UserMerge', 'usermerge' );
@@ -133,7 +135,7 @@ class SpecialUserMerge extends FormSpecialPage {
 
 		// Validation passed, let's merge the user now.
 		$um = new MergeUser( $oldUser, $newUser, new UserMergeLogger() );
-		$um->merge( $this->getUser() );
+		$um->merge( $this->getUser(), __METHOD__ );
 
 		$out = $this->getOutput();
 
@@ -152,13 +154,14 @@ class SpecialUserMerge extends FormSpecialPage {
 			if ( $failed ) {
 				// Output an error message for failed moves
 				$out->addHTML( Html::openElement( 'ul' ) );
+				$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 				foreach ( $failed as $oldTitleText => $newTitle ) {
 					$oldTitle = Title::newFromText( $oldTitleText );
 					$out->addHTML(
 						Html::rawElement( 'li', [],
 							$this->msg( 'usermerge-page-unmoved' )->rawParams(
-								Linker::link( $oldTitle ),
-								Linker::link( $newTitle )
+								$linkRenderer->makeLink( $oldTitle ),
+								$linkRenderer->makeLink( $newTitle )
 							)->escaped()
 						)
 					);
@@ -173,11 +176,4 @@ class SpecialUserMerge extends FormSpecialPage {
 	protected function getGroupName() {
 		return 'users';
 	}
-}
-
-/**
- * Former class name, for backwards compatability
- * @deprecated
- */
-class UserMerge extends SpecialUserMerge {
 }

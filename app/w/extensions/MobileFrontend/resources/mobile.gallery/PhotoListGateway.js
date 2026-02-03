@@ -4,7 +4,9 @@
 	/**
 	 * API for retrieving gallery photos
 	 * @class PhotoListApi
-	 * @param {Object} options
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 * @param {mw.Api} options.api
 	 */
 	function PhotoListGateway( options ) {
@@ -13,7 +15,7 @@
 		this.category = options.category;
 		this.limit = 10;
 		this.continueParams = {
-			continue: ''
+			'continue': ''
 		};
 		this.canContinue = true;
 	}
@@ -26,8 +28,8 @@
 		 * date suffix in format YYYY-MM-DD HH-MM
 		 * @method
 		 * @private
-		 * @param {String} title Title of file
-		 * @return {String} Description for file
+		 * @param {string} title Title of file
+		 * @return {string} Description for file
 		 */
 		_getDescription: function ( title ) {
 			title = title.replace( /\.[^\. ]+$/, '' ); // replace filename suffix
@@ -38,6 +40,7 @@
 		/**
 		 * Returns the value in pixels of a medium thumbnail
 		 * @method
+		 * @return {number}
 		 */
 		getWidth: function () {
 			return IMAGE_WIDTH;
@@ -108,11 +111,12 @@
 					var photos;
 					if ( resp.query && resp.query.pages ) {
 						// FIXME: [API] in an ideal world imageData would be a sorted array
-						photos = $.map( resp.query.pages, function ( page ) {
-								return self._getImageDataFromPage.call( self, page );
-							} ).sort( function ( a, b ) {
-								return a.timestamp < b.timestamp ? 1 : -1;
-							} );
+						// but it is a map of {[id]: page}
+						photos = Object.keys( resp.query.pages ).map( function ( id ) {
+							return self._getImageDataFromPage.call( self, resp.query.pages[id] );
+						} ).sort( function ( a, b ) {
+							return a.timestamp < b.timestamp ? 1 : -1;
+						} );
 
 						if ( resp.hasOwnProperty( 'continue' ) ) {
 							self.continueParams = resp.continue;

@@ -1,10 +1,11 @@
 ( function ( M, $ ) {
-	var Page = M.require( 'mobile.startup/Page' );
+	var Page = M.require( 'mobile.startup/Page' ),
+		extendSearchParams = M.require( 'mobile.search.util/extendSearchParams' );
 
 	/**
 	 * @class WatchListGateway
 	 * @param {mw.Api} api
-	 * @param {String} lastTitle of page listed in Watchlist to be used as a continuation parameter
+	 * @param {string} lastTitle of page listed in Watchlist to be used as a continuation parameter
 	 */
 	function WatchListGateway( api, lastTitle ) {
 		this.api = api;
@@ -13,13 +14,13 @@
 
 		if ( lastTitle ) {
 			this.continueParams = {
-				continue: 'gwrcontinue||',
+				'continue': 'gwrcontinue||',
 				gwrcontinue: '0|' + lastTitle.replace( / /g, '_' )
 			};
 			this.shouldSkipFirstTitle = true;
 		} else {
 			this.continueParams = {
-				continue: ''
+				'continue': ''
 			};
 			this.shouldSkipFirstTitle = false;
 		}
@@ -30,19 +31,19 @@
 	WatchListGateway.prototype = {
 		/**
 		 * Load the list of items on the watchlist
-		 * @returns {jQuery.Deferred}
+		 * @return {jQuery.Deferred}
 		 */
 		loadWatchlist: function () {
 			var self = this,
-				params = $.extend( {
-					prop: [ 'info', 'revisions' ].concat( mw.config.get( 'wgMFQueryPropModules' ) ),
+				params = extendSearchParams( 'watchlist', {
+					prop: [ 'info', 'revisions' ],
 					format: 'json',
 					formatversion: 2,
 					rvprop: 'timestamp|user',
 					generator: 'watchlistraw',
 					gwrnamespace: '0',
 					gwrlimit: this.limit
-				}, mw.config.get( 'wgMFSearchAPIParams' ), this.continueParams );
+				}, this.continueParams );
 
 			if ( this.canContinue === false ) {
 				return $.Deferred();
@@ -81,8 +82,8 @@
 			}
 
 			// Convert the map to an Array.
-			pages = $.map( data.query.pages, function ( page ) {
-				return page;
+			pages = Object.keys( data.query.pages ).map( function ( id ) {
+				return data.query.pages[ id ];
 			} );
 
 			// Sort results alphabetically (the api map doesn't have any order). The
@@ -99,7 +100,7 @@
 			}
 
 			// Transform the items to a sensible format
-			return $.map( pages, function ( item ) {
+			return pages.map( function ( item ) {
 				return Page.newFromJSON( item );
 			} );
 		}

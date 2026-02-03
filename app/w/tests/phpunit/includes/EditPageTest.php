@@ -53,7 +53,7 @@ class EditPageTest extends MediaWikiLangTestCase {
 				false
 			],
 			[
-				"An initial section with a fake heder (bug 32617)\n\n== Test == ??\nwtf",
+				"An initial section with a fake heder (T34617)\n\n== Test == ??\nwtf",
 				false
 			],
 			[
@@ -61,7 +61,7 @@ class EditPageTest extends MediaWikiLangTestCase {
 				"Section"
 			],
 			[
-				"== Section== \t\r\n followed by whitespace (bug 35051)",
+				"== Section== \t\r\n followed by whitespace (T37051)",
 				'Section',
 			],
 		];
@@ -347,6 +347,8 @@ class EditPageTest extends MediaWikiLangTestCase {
 			$pageTitle2, null, $user, $edit, $expectedCode, $expectedText, $desc );
 
 		wfGetDB( DB_MASTER )->commit( __METHOD__ );
+
+		$this->assertEquals( 0, DeferredUpdates::pendingUpdatesCount(), 'No deferred updates' );
 
 		if ( $expectedCode != EditPage::AS_BLANK_ARTICLE ) {
 			$latest = $page->getLatest();

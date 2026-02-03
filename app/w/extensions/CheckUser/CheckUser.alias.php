@@ -45,6 +45,12 @@ $specialPageAliases['ba'] = array(
 	'CheckUserLog' => array( 'CheckUserLog' ),
 );
 
+/** Bengali (বাংলা) */
+$specialPageAliases['bn'] = array(
+	'CheckUser' => array( 'ব্যবহারকারী_পরীক্ষণ' ),
+	'CheckUserLog' => array( 'ব্যবহারকারী_পরীক্ষণের_লগ' ),
+);
+
 /** Bulgarian (български) */
 $specialPageAliases['bg'] = array(
 	'CheckUser' => array( 'Проверка_на_потребител' ),
@@ -87,6 +93,11 @@ $specialPageAliases['cdo'] = array(
 $specialPageAliases['ce'] = array(
 	'CheckUser' => array( 'Декъашхочунга_хьажар' ),
 	'CheckUserLog' => array( 'Декъашхойн_нисдарийн_тептар' ),
+);
+
+$specialPageAliases['cs'] = array(
+	'CheckUser' => array('Zkontrolovat uživatele'),
+	'CheckUserLog' => array('Protokolovací záznamy kontrol uživatele'),
 );
 
 /** German (Deutsch) */
@@ -413,8 +424,8 @@ $specialPageAliases['tr'] = array(
 
 /** Ukrainian (українська) */
 $specialPageAliases['uk'] = array(
-	'CheckUser' => array( 'Перевірити_користувача' ),
-	'CheckUserLog' => array( 'Журнал_перевірок_користувачів' ),
+	'CheckUser' => array( 'Перевірити_користувача', 'Проверить_участника' ),
+	'CheckUserLog' => array( 'Журнал_перевірок_користувачів', 'Журнал_проверок_участников' ),
 );
 
 /** Urdu (اردو) */

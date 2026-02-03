@@ -1,16 +1,15 @@
-@import "mediawiki.ui/variables";
+@import 'mediawiki.ui/variables';
 
-// Search bar
-@searchBarPaddingLeft: 40px;
-@searchBarPaddingRight: 40px;
-@searchResultPaddingVertical: 12px;
-@searchBoxColor: #fafafa;
+@skinContentBgColor: #fff;
 
 // Navigation Drawers
 @menuWidth: 240px;
 @rightDrawerWidth: 60%;
+@primaryNavBackgroundColor: @colorGray14;
 
 // Headings
+@firstHeadingFontSize: 2.6525em; // 42px
+@pageActionFontSize: 1.1em; // Icons are 24px square.
 @fontSizeH1: 1.7em;
 @fontSizeH2: 1.5em;
 @fontSizeH3: 1.2em;
@@ -18,37 +17,35 @@
 // Content
 @contentMargin: 16px;
 
-// old header
-// FIXME: Remove when mediawiki.ui buttons in stable
-@headerElementHeight: 30px;
-@headerBorderBottom: #e3e3e3;
-
-// new header
-@headerTitlePaddingH: .5em;
+// Header
 @headerTitleFontSize: 1em;
 @headerHeight: 3.35em;
+@headerMarginTop: -1px;  // used to hide the header border top when a banner is not present
+@searchBoxWidth: 375/16em;
+@iconSizeTotal: @iconSize + @iconGutterWidth + @iconGutterWidth;
+@deviceWidthTabletEms: unit( @deviceWidthTablet/16, em );
+@brandingBoxWidth: @deviceWidthTabletEms - ( @iconSizeTotal * 3 ) - @searchBoxWidth;
 
 @titleSectionSpacingTop: 20px;
 @titleSectionSpacingBottom: 25px;
 
-@grayDark: #252525;
+@grayDark: @colorGray2;
 @grayMediumDark: @colorGray5;
 @grayMedium: @colorGray7;
 @grayMediumLight: @colorGray10;
 @grayLight: @colorGray12;
 @grayLightest: @colorGray14;
 
-// page actions
-@watchStarSize: 22px;
-
 // colors
-@semiTransparent: rgba(255, 255, 255, .8);
+@chromeColor: @grayLightest;
+@chromeContentSeparator: @colorGray13;
+@semiTransparent: rgba( 0, 0, 0, 0.8 );
 // note this is also used for red links
 @redBase: @colorErrorText;
-@mainMenuBackgroundColor: @colorGray4;
-@colorTutorial: #2E76FF;
+@colorTutorial: #2e76ff;
 @linkColor: #002bb8;
-@lastModifiedBarActiveBackgroundColor: #00AF8B;
+@lastModifiedBarActiveBackgroundColor: #00af89;
+@toastNotificationColor: @colorGray2;
 
 // Use when an element is selected. FIXME: This should be in mediawiki ui.
 @selectedBackgroundColor: #e6eeff;
@@ -64,18 +61,16 @@
 @colorErrorBorder: #fac5c5;
 
 // typography
-@fontFamily: "Helvetica Neue", "Helvetica", "Nimbus Sans L", "Arial", "Liberation Sans", sans-serif;
-@fontFamilyHeading: "Linux Libertine", Georgia, Times, serif;
-@fontScalingFactor: 1.0;
+@fontFamily: 'Helvetica Neue', 'Helvetica', 'Nimbus Sans L', 'Arial', 'Liberation Sans', sans-serif;
+@fontFamilyHeading: 'Linux Libertine', 'Georgia', 'Times', serif;
+@fontScalingFactor: 1;
 @contentLineHeight: 1.65;
 
-@headingMargin: .5em;
-// FIXME: Merge with @grayLightest (?)
-@sectionBorderColor: #E2E3E4;
+@headingMargin: 0.5em;
 @sectionIconWidth: 30px;
 
 // information messages, e.g. empty watchlist message
-@infoColor: #707070;
+@infoColor: @colorGray7;
 
 // blockquotes
 @blockquotePaddingRight: 25px;
@@ -91,12 +86,6 @@
 @contentMaxWidthTablet: @wgMFDeviceWidthDesktop - ( 2 * @contentPaddingTablet );
 @contentTopPadding: 1.6em;
 
-// calculated values
-@secondaryNavWidth: @headerElementHeight;
-
-// calculated colors
-@searchBoxColorTo: darken( @searchBoxColor, 2.75% );
-
 // Wiki specific variables
 @infoboxWidth: 320px;
 
@@ -110,6 +99,21 @@
 @z-indexOverOverlay: 2;
 
 // table of contents
-@tocFontSize: .8em;
+@tocFontSize: 0.8em;
 // indicators
-@indicatorFontSize: .4em;
+@indicatorFontSize: 0.4em;
+
+@lastModifiedBarBgColor: @chromeColor;
+@lastModifiedBarActiveBgColor: @lastModifiedBarActiveBackgroundColor;
+@lastModifiedBarTextColor: @colorGray6;
+
+@footerBorderColor: @grayLight;
+
+@notificationBackgroundRead: @colorGray14;
+@notificationColorRead: @colorGray5;
+@notificationBackgroundUnread: @colorDestructive;
+@notificationColorUnread: #fff;
+
+// Print specific
+@printBorderColor: #9aa0a7;
+@printBorderColorLight: @colorGray12;

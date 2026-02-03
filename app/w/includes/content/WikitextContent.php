@@ -38,7 +38,7 @@ class WikitextContent extends TextContent {
 	}
 
 	/**
-	 * @param string|number $sectionId
+	 * @param string|int $sectionId
 	 *
 	 * @return Content|bool|null
 	 *
@@ -58,7 +58,7 @@ class WikitextContent extends TextContent {
 	}
 
 	/**
-	 * @param string|number|null|bool $sectionId
+	 * @param string|int|null|bool $sectionId
 	 * @param Content $with
 	 * @param string $sectionTitle
 	 *
@@ -138,7 +138,6 @@ class WikitextContent extends TextContent {
 
 		$text = $this->getNativeData();
 		$pst = $wgParser->preSaveTransform( $text, $title, $user, $popts );
-		rtrim( $pst );
 
 		return ( $text === $pst ) ? $this : new static( $pst );
 	}

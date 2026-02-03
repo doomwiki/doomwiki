@@ -51,13 +51,12 @@
 	 */
 	/**
 	 * Constructor.
-	 * @param {Number} threshold distance in pixels used to calculate if scroll
+	 * @param {number} threshold distance in pixels used to calculate if scroll
 	 * position is near the end of the $el
 	 */
 	function InfiniteScroll( threshold ) {
 		this.threshold = threshold || 100;
-		this.enabled = true;
-		this._bindScroll();
+		this.enable();
 		OO.EventEmitter.call( this );
 	}
 	OO.mixinClass( InfiniteScroll, OO.EventEmitter );
@@ -69,10 +68,21 @@
 		 * @private
 		 */
 		_bindScroll: function () {
-			// FIXME: Consider using setInterval instead or some sort of
-			// dethrottling/debouncing to avoid performance degradation
-			// e.g. http://benalman.com/projects/jquery-throttle-debounce-plugin/
-			$( window ).on( 'scroll', $.proxy( this, '_onScroll' ) );
+			if ( !this._scrollHandler ) {
+				this._scrollHandler = $.proxy( this, '_onScroll' );
+				M.on( 'scroll:throttled', this._scrollHandler );
+			}
+		},
+		/**
+		 * Unbind scroll handler
+		 * @method
+		 * @private
+		 */
+		_unbindScroll: function () {
+			if ( this._scrollHandler ) {
+				M.off( 'scroll:throttled', this._scrollHandler );
+				this._scrollHandler = null;
+			}
 		},
 		/**
 		 * Scroll handler. Triggers load event when near the end of the container.
@@ -96,7 +106,7 @@
 		 * Is the scroll position near the end of the container element?
 		 * @method
 		 * @private
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		scrollNearEnd: function () {
 			var scrollBottom = $( window ).scrollTop() + $( window ).height(),
@@ -109,6 +119,7 @@
 		 */
 		enable: function () {
 			this.enabled = true;
+			this._bindScroll();
 		},
 		/**
 		 * Disable the InfiniteScroll so that it doesn't trigger events.
@@ -116,6 +127,7 @@
 		 */
 		disable: function () {
 			this.enabled = false;
+			this._unbindScroll();
 		},
 		/**
 		 * Set the element to compare to scroll position to

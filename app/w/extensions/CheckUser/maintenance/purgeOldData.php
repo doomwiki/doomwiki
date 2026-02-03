@@ -2,15 +2,17 @@
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
-	$IP = dirname( __FILE__ ) . '/../../..';
+	$IP = __DIR__ . '/../../..';
 }
-require_once( "$IP/maintenance/Maintenance.php" );
+require_once ( "$IP/maintenance/Maintenance.php" );
 
 class PurgeOldIPAddressData extends Maintenance {
 	public function __construct() {
 		parent::__construct();
 		$this->mDescription = "Purge expired rows in CheckUser and RecentChanges";
 		$this->setBatchSize( 200 );
+
+		$this->requireExtension( 'CheckUser' );
 	}
 
 	public function execute() {
@@ -40,7 +42,7 @@ class PurgeOldIPAddressData extends Maintenance {
 			$res = $dbw->select( $table, $ts_column,
 				$expiredCond,
 				__METHOD__,
-				array( 'ORDER BY' => "$ts_column ASC", 'LIMIT' => $this->mBatchSize )
+				[ 'ORDER BY' => "$ts_column ASC", 'LIMIT' => $this->mBatchSize ]
 			);
 			if ( !$res->numRows() ) {
 				break; // all cleared
@@ -54,7 +56,7 @@ class PurgeOldIPAddressData extends Maintenance {
 			// Do the actual delete...
 			$this->beginTransaction( $dbw, __METHOD__ );
 			$dbw->delete( $table,
-				array( "$ts_column BETWEEN $blockStart AND $blockEnd" ), __METHOD__ );
+				[ "$ts_column BETWEEN $blockStart AND $blockEnd" ], __METHOD__ );
 			$count += $dbw->affectedRows();
 			$this->commitTransaction( $dbw, __METHOD__ );
 
@@ -66,4 +68,4 @@ class PurgeOldIPAddressData extends Maintenance {
 }
 
 $maintClass = "PurgeOldIPAddressData";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once ( RUN_MAINTENANCE_IF_MAIN );

@@ -11,11 +11,14 @@ class ApiBlockTest extends ApiTestCase {
 	protected function setUp() {
 		parent::setUp();
 		$this->doLogin();
+	}
 
-		$this->setMwGlobals( 'wgBlockCIDRLimit', [
-			'IPv4' => 16,
-			'IPv6' => 19,
-		] );
+	protected function tearDown() {
+		$block = Block::newFromTarget( 'UTApiBlockee' );
+		if ( !is_null( $block ) ) {
+			$block->delete();
+		}
+		parent::tearDown();
 	}
 
 	protected function getTokens() {
@@ -70,8 +73,37 @@ class ApiBlockTest extends ApiTestCase {
 	}
 
 	/**
-	 * @expectedException UsageException
-	 * @expectedExceptionMessage The token parameter must be set
+	 * Block by user ID
+	 */
+	public function testMakeNormalBlockId() {
+		$tokens = $this->getTokens();
+		$user = User::newFromName( 'UTApiBlockee' );
+
+		if ( !$user->getId() ) {
+			$this->markTestIncomplete( "The user UTApiBlockee does not exist." );
+		}
+
+		if ( !array_key_exists( 'blocktoken', $tokens ) ) {
+			$this->markTestIncomplete( "No block token found" );
+		}
+
+		$data = $this->doApiRequest( [
+			'action' => 'block',
+			'userid' => $user->getId(),
+			'reason' => 'Some reason',
+			'token' => $tokens['blocktoken'] ], null, false, self::$users['sysop']->getUser() );
+
+		$block = Block::newFromTarget( 'UTApiBlockee' );
+
+		$this->assertTrue( !is_null( $block ), 'Block is valid.' );
+		$this->assertEquals( 'UTApiBlockee', (string)$block->getTarget() );
+		$this->assertEquals( 'Some reason', $block->mReason );
+		$this->assertEquals( 'infinity', $block->mExpiry );
+	}
+
+	/**
+	 * @expectedException ApiUsageException
+	 * @expectedExceptionMessage The "token" parameter must be set
 	 */
 	public function testBlockingActionWithNoToken() {
 		$this->doApiRequest(

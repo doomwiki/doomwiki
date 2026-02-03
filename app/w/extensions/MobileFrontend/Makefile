@@ -2,6 +2,10 @@ MEDIAWIKI_LOAD_URL ?= http://localhost:8080/w/load.php
 ifndef MW_INSTALL_PATH
 $(error MW_INSTALL_PATH is not set. Please set it to your root mediawiki installation.)
 endif
+GRUNT=${MW_INSTALL_PATH}/extensions/MobileFrontend/node_modules/grunt/bin/grunt
+WIKI=wiki
+PROJECT=MobileFrontend
+
 
 # From https://gist.github.com/prwhite/8168133
 help:					## Show this help message
@@ -38,14 +42,11 @@ docs: jsduck phpdoc			## Build the styleguide, JavaScript, and PHP documentation
 nodecheck:
 	@dev-scripts/nodecheck.sh
 
-jscs: nodecheck			## Check the JavaScript coding style
-	@grunt jscs
+mwnodecheck:
+	@dev-scripts/nodecheck.sh ${MW_INSTALL_PATH}
 
-jshinttests: nodecheck			## Lint the JS tests
-	@grunt jshint:tests
-
-jshint: nodecheck 	## Lint the JavaScript files
-	@grunt jshint
+eslint: nodecheck			## Check the JavaScript coding style
+	@${GRUNT} eslint:all
 
 dependencies: nodecheck kssnodecheck phpcheck remotes
 
@@ -56,12 +57,12 @@ phplint: phpcheck			## Lint the PHP files
 	@php composer.phar test
 
 phpunit:				## Run the PHPUnit test suite
-	cd ${MW_INSTALL_PATH}/tests/phpunit && php phpunit.php --group MobileFrontend ${MW_INSTALL_PATH}/extensions/MobileFrontend/tests/phpunit
+	cd ${MW_INSTALL_PATH}/tests/phpunit && php phpunit.php --wiki ${WIKI} --group ${PROJECT}
 
-qunit:                 ## Run the QUnit test suite
-	cd ${MW_INSTALL_PATH} && grunt qunit
+qunit: mwnodecheck		## Run the QUnit test suite
+	cd ${MW_INSTALL_PATH} && node_modules/grunt/bin/grunt qunit
 
-tests: jshint phplint phpunit qunit	## Run the PHPUnit test suite after linting
+tests: eslint phplint phpunit qunit	## Run the PHPUnit test suite after linting
 
 cucumber: checkcucumber			## Run the browser test suite
 	@dev-scripts/cucumber.sh
@@ -69,7 +70,7 @@ cucumber: checkcucumber			## Run the browser test suite
 checkcucumber:
 	@dev-scripts/cucumber_check.sh
 
-lint: jshint phplint checkcucumber	## Lint all of the JavaScript, PHP, and browser test files
+lint: eslint phplint checkcucumber	## Lint all of the JavaScript, PHP, and browser test files
 
 installhooks:				## Install the pre-commit and pre-review Git hooks
 	ln -sf ${PWD}/dev-scripts/pre-commit .git/hooks/pre-commit

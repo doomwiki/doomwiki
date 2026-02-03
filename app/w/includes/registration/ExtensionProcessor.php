@@ -8,47 +8,62 @@ class ExtensionProcessor implements Processor {
 	 * @var array
 	 */
 	protected static $globalSettings = [
-		'ResourceLoaderSources',
-		'ResourceLoaderLESSVars',
-		'ResourceLoaderLESSImportPaths',
+		'ActionFilteredLogs',
+		'Actions',
+		'AddGroups',
+		'APIFormatModules',
+		'APIListModules',
+		'APIMetaModules',
+		'APIModules',
+		'APIPropModules',
+		'AuthManagerAutoConfig',
+		'AvailableRights',
+		'CentralIdLookupProviders',
+		'ChangeCredentialsBlacklist',
+		'ConfigRegistry',
+		'ContentHandlers',
 		'DefaultUserOptions',
-		'HiddenPrefs',
+		'ExtensionEntryPointListFiles',
+		'ExtensionFunctions',
+		'FeedClasses',
+		'FileExtensions',
+		'FilterLogTypes',
+		'GrantPermissionGroups',
+		'GrantPermissions',
 		'GroupPermissions',
-		'RevokePermissions',
-		'ImplicitGroups',
 		'GroupsAddToSelf',
 		'GroupsRemoveFromSelf',
-		'AddGroups',
-		'RemoveGroups',
-		'AvailableRights',
-		'ContentHandlers',
-		'ConfigRegistry',
-		'SessionProviders',
-		'AuthManagerAutoConfig',
-		'CentralIdLookupProviders',
-		'RateLimits',
-		'RecentChangesFlags',
-		'MediaHandlers',
-		'ExtensionFunctions',
-		'ExtensionEntryPointListFiles',
-		'SpecialPages',
+		'HiddenPrefs',
+		'ImplicitGroups',
 		'JobClasses',
-		'LogTypes',
-		'LogRestrictions',
-		'FilterLogTypes',
-		'ActionFilteredLogs',
-		'LogNames',
-		'LogHeaders',
 		'LogActions',
 		'LogActionsHandlers',
-		'Actions',
-		'APIModules',
-		'APIFormatModules',
-		'APIMetaModules',
-		'APIPropModules',
-		'APIListModules',
+		'LogHeaders',
+		'LogNames',
+		'LogRestrictions',
+		'LogTypes',
+		'MediaHandlers',
+		'PasswordPolicy',
+		'RateLimits',
+		'RecentChangesFlags',
+		'RemoveCredentialsBlacklist',
+		'RemoveGroups',
+		'ResourceLoaderLESSVars',
+		'ResourceLoaderSources',
+		'RevokePermissions',
+		'SessionProviders',
+		'SpecialPages',
 		'ValidSkinNames',
-		'FeedClasses',
+	];
+
+	/**
+	 * Top-level attributes that come from MW core
+	 *
+	 * @var string[]
+	 */
+	protected static $coreAttributes = [
+		'SkinOOUIThemes',
+		'TrackingCategories',
 	];
 
 	/**
@@ -59,17 +74,19 @@ class ExtensionProcessor implements Processor {
 	 * @var array
 	 */
 	protected static $mergeStrategies = [
-		'wgGroupPermissions' => 'array_plus_2d',
-		'wgRevokePermissions' => 'array_plus_2d',
-		'wgHooks' => 'array_merge_recursive',
+		'wgAuthManagerAutoConfig' => 'array_plus_2d',
+		'wgCapitalLinkOverrides' => 'array_plus',
 		'wgExtensionCredits' => 'array_merge_recursive',
 		'wgExtraGenderNamespaces' => 'array_plus',
-		'wgNamespacesWithSubpages' => 'array_plus',
+		'wgGrantPermissions' => 'array_plus_2d',
+		'wgGroupPermissions' => 'array_plus_2d',
+		'wgHooks' => 'array_merge_recursive',
 		'wgNamespaceContentModels' => 'array_plus',
 		'wgNamespaceProtection' => 'array_plus',
-		'wgCapitalLinkOverrides' => 'array_plus',
+		'wgNamespacesWithSubpages' => 'array_plus',
+		'wgPasswordPolicy' => 'array_merge_recursive',
 		'wgRateLimits' => 'array_plus_2d',
-		'wgAuthManagerAutoConfig' => 'array_plus_2d',
+		'wgRevokePermissions' => 'array_plus_2d',
 	];
 
 	/**
@@ -105,6 +122,8 @@ class ExtensionProcessor implements Processor {
 		'MessagesDirs',
 		'type',
 		'config',
+		'config_prefix',
+		'ServiceWiringFiles',
 		'ParserTestFiles',
 		'AutoloadClasses',
 		'manifest_version',
@@ -152,33 +171,80 @@ class ExtensionProcessor implements Processor {
 	protected $attributes = [];
 
 	/**
+	 * Extension attributes, keyed by name =>
+	 *  settings.
+	 *
+	 * @var array
+	 */
+	protected $extAttributes = [];
+
+	/**
 	 * @param string $path
 	 * @param array $info
 	 * @param int $version manifest_version for info
 	 * @return array
 	 */
 	public function extractInfo( $path, array $info, $version ) {
-		$this->extractConfig( $info );
-		$this->extractHooks( $info );
 		$dir = dirname( $path );
+		if ( $version === 2 ) {
+			$this->extractConfig2( $info, $dir );
+		} else {
+			// $version === 1
+			$this->extractConfig1( $info );
+		}
+		$this->extractHooks( $info );
 		$this->extractExtensionMessagesFiles( $dir, $info );
 		$this->extractMessagesDirs( $dir, $info );
 		$this->extractNamespaces( $info );
 		$this->extractResourceLoaderModules( $dir, $info );
+		$this->extractServiceWiringFiles( $dir, $info );
 		$this->extractParserTestFiles( $dir, $info );
 		$name = $this->extractCredits( $path, $info );
 		if ( isset( $info['callback'] ) ) {
 			$this->callbacks[$name] = $info['callback'];
 		}
 
+		if ( $version === 2 ) {
+			$this->extractAttributes( $path, $info );
+		}
+
 		foreach ( $info as $key => $val ) {
+			// If it's a global setting,
 			if ( in_array( $key, self::$globalSettings ) ) {
 				$this->storeToArray( $path, "wg$key", $val, $this->globals );
+				continue;
+			}
 			// Ignore anything that starts with a @
-			} elseif ( $key[0] !== '@' && !in_array( $key, self::$notAttributes )
-				&& !in_array( $key, self::$creditsAttributes )
-			) {
-				$this->storeToArray( $path, $key, $val, $this->attributes );
+			if ( $key[0] === '@' ) {
+				continue;
+			}
+
+			if ( $version === 2 ) {
+				// Only whitelisted attributes are set
+				if ( in_array( $key, self::$coreAttributes ) ) {
+					$this->storeToArray( $path, $key, $val, $this->attributes );
+				}
+			} else {
+				// version === 1
+				if ( !in_array( $key, self::$notAttributes )
+					&& !in_array( $key, self::$creditsAttributes )
+				) {
+					// If it's not blacklisted, it's an attribute
+					$this->storeToArray( $path, $key, $val, $this->attributes );
+				}
+			}
+
+		}
+	}
+
+	/**
+	 * @param string $path
+	 * @param array $info
+	 */
+	protected function extractAttributes( $path, array $info ) {
+		if ( isset( $info['attributes'] ) ) {
+			foreach ( $info['attributes'] as $extName => $value ) {
+				$this->storeToArray( $path, $extName, $value, $this->extAttributes );
 			}
 		}
 	}
@@ -188,6 +254,22 @@ class ExtensionProcessor implements Processor {
 		foreach ( $this->globals as $key => $val ) {
 			if ( isset( self::$mergeStrategies[$key] ) ) {
 				$this->globals[$key][ExtensionRegistry::MERGE_STRATEGY] = self::$mergeStrategies[$key];
+			}
+		}
+
+		// Merge $this->extAttributes into $this->attributes depending on what is loaded
+		foreach ( $this->extAttributes as $extName => $value ) {
+			// Only set the attribute if $extName is loaded (and hence present in credits)
+			if ( isset( $this->credits[$extName] ) ) {
+				foreach ( $value as $attrName => $attrValue ) {
+					$this->storeToArray(
+						'', // Don't provide a path since it's impossible to generate an error here
+						$extName . $attrName,
+						$attrValue,
+						$this->attributes
+					);
+				}
+				unset( $this->extAttributes[$extName] );
 			}
 		}
 
@@ -201,13 +283,7 @@ class ExtensionProcessor implements Processor {
 	}
 
 	public function getRequirements( array $info ) {
-		$requirements = [];
-		$key = ExtensionRegistry::MEDIAWIKI_CORE;
-		if ( isset( $info['requires'][$key] ) ) {
-			$requirements[$key] = $info['requires'][$key];
-		}
-
-		return $requirements;
+		return isset( $info['requires'] ) ? $info['requires'] : [];
 	}
 
 	protected function extractHooks( array $info ) {
@@ -232,15 +308,8 @@ class ExtensionProcessor implements Processor {
 	protected function extractNamespaces( array $info ) {
 		if ( isset( $info['namespaces'] ) ) {
 			foreach ( $info['namespaces'] as $ns ) {
-				if ( defined( $ns['constant'] ) ) {
-					// If the namespace constant is already defined, use it.
-					// This allows namespace IDs to be overwritten locally.
-					$id = constant( $ns['constant'] );
-				} else {
-					$id = $ns['id'];
-					$this->defines[ $ns['constant'] ] = $id;
-				}
-
+				$id = $ns['id'];
+				$this->defines[$ns['constant']] = $id;
 				if ( !( isset( $ns['conditional'] ) && $ns['conditional'] ) ) {
 					// If it is not conditional, register it
 					$this->attributes['ExtensionNamespaces'][$id] = $ns['name'];
@@ -359,12 +428,12 @@ class ExtensionProcessor implements Processor {
 	}
 
 	/**
-	 * Set configuration settings
+	 * Set configuration settings for manifest_version == 1
 	 * @todo In the future, this should be done via Config interfaces
 	 *
 	 * @param array $info
 	 */
-	protected function extractConfig( array $info ) {
+	protected function extractConfig1( array $info ) {
 		if ( isset( $info['config'] ) ) {
 			if ( isset( $info['config']['_prefix'] ) ) {
 				$prefix = $info['config']['_prefix'];
@@ -376,6 +445,41 @@ class ExtensionProcessor implements Processor {
 				if ( $key[0] !== '@' ) {
 					$this->globals["$prefix$key"] = $val;
 				}
+			}
+		}
+	}
+
+	/**
+	 * Set configuration settings for manifest_version == 2
+	 * @todo In the future, this should be done via Config interfaces
+	 *
+	 * @param array $info
+	 * @param string $dir
+	 */
+	protected function extractConfig2( array $info, $dir ) {
+		if ( isset( $info['config_prefix'] ) ) {
+			$prefix = $info['config_prefix'];
+		} else {
+			$prefix = 'wg';
+		}
+		if ( isset( $info['config'] ) ) {
+			foreach ( $info['config'] as $key => $data ) {
+				$value = $data['value'];
+				if ( isset( $data['merge_strategy'] ) ) {
+					$value[ExtensionRegistry::MERGE_STRATEGY] = $data['merge_strategy'];
+				}
+				if ( isset( $data['path'] ) && $data['path'] ) {
+					$value = "$dir/$value";
+				}
+				$this->globals["$prefix$key"] = $value;
+			}
+		}
+	}
+
+	protected function extractServiceWiringFiles( $dir, array $info ) {
+		if ( isset( $info['ServiceWiringFiles'] ) ) {
+			foreach ( $info['ServiceWiringFiles'] as $path ) {
+				$this->globals['wgServiceWiringFiles'][] = "$dir/$path";
 			}
 		}
 	}

@@ -5,10 +5,14 @@ class ApiAbuseFilterCheckSyntax extends ApiBase {
 	public function execute() {
 		// "Anti-DoS"
 		if ( !$this->getUser()->isAllowed( 'abusefilter-modify' ) ) {
-			$this->dieUsage(
-				'You don\'t have permission to check syntax of abuse filters',
-				'permissiondenied'
-			);
+			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+				$this->dieWithError( 'apierror-abusefilter-cantcheck', 'permissiondenied' );
+			} else {
+				$this->dieUsage(
+					'You don\'t have permission to check syntax of abuse filters',
+					'permissiondenied'
+				);
+			}
 		}
 
 		$params = $this->extractRequestParams();
@@ -34,34 +38,6 @@ class ApiAbuseFilterCheckSyntax extends ApiBase {
 			'filter' => array(
 				ApiBase::PARAM_REQUIRED => true,
 			),
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getParamDescription() {
-		return array(
-			'filter' => 'The full filter text to check syntax on',
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getDescription() {
-		return array(
-			'Check syntax of an AbuseFilter filter'
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getExamples() {
-		return array(
-			'api.php?action=abusefilterchecksyntax&filter="foo"',
-			'api.php?action=abusefilterchecksyntax&filter="bar"%20bad_variable',
 		);
 	}
 

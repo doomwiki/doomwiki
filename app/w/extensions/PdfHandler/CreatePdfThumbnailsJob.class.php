@@ -113,14 +113,16 @@ class CreatePdfThumbnailsJob extends Job {
 
 		$jobs = array();
 		for ( $i = 1; $i <= $pages; $i++ ) {
-			$jobs[] = new CreatePdfThumbnailsJob( $title, 
-								array( 'page' => $i, 'jobtype' => self::BIG_THUMB )
-							);
-			$jobs[] = new CreatePdfThumbnailsJob( $title, 
-								array( 'page' => $i, 'jobtype' => self::SMALL_THUMB )
-							);
+			$jobs[] = new CreatePdfThumbnailsJob(
+				$title,
+				array( 'page' => $i, 'jobtype' => self::BIG_THUMB )
+			);
+			$jobs[] = new CreatePdfThumbnailsJob(
+				$title,
+				array( 'page' => $i, 'jobtype' => self::SMALL_THUMB )
+			);
 		}
-		Job::batchInsert( $jobs );
+		JobQueueGroup::singleton()->push( $jobs );
 		return true;
 	}
 }

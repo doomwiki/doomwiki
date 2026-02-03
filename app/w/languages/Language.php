@@ -1,6 +1,7 @@
 <?php
 /**
  * Internationalisation code.
+ * See https://www.mediawiki.org/wiki/Special:MyLanguage/Localisation for more information.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,11 +26,6 @@
  * @defgroup Language Language
  */
 
-if ( !defined( 'MEDIAWIKI' ) ) {
-	echo "This file is part of MediaWiki, it is not a valid entry point.\n";
-	exit( 1 );
-}
-
 use CLDRPluralRuleParser\Evaluator;
 
 /**
@@ -49,7 +45,9 @@ class Language {
 	public $dateFormatStrings = [];
 	public $mExtendedSpecialPageAliases;
 
-	protected $namespaceNames, $mNamespaceIds, $namespaceAliases;
+	/** @var array|null */
+	protected $namespaceNames;
+	protected $mNamespaceIds, $namespaceAliases;
 
 	/**
 	 * ReplacementArray object caches
@@ -140,6 +138,12 @@ class Language {
 	 * @var array
 	 */
 	static private $fallbackLanguageCache = [];
+
+	/**
+	 * Cache for grammar rules data
+	 * @var MapCacheLRU|null
+	 */
+	static private $grammarTransformations;
 
 	/**
 	 * Cache for language names
@@ -295,7 +299,7 @@ class Language {
 		# Since these are limited, this is safe even later changes to the registry --
 		# the only oddity is that it might change the type of the tag, and thus
 		# the results from the capturing groups.
-		# http://www.iana.org/assignments/language-subtag-registry
+		# https://www.iana.org/assignments/language-subtag-registry
 
 		$grandfathered = "en{$s}GB{$s}oed"
 			. "|i{$s}(?:ami|bnn|default|enochian|hak|klingon|lux|mingo|navajo|pwn|tao|tay|tsu)"
@@ -336,7 +340,7 @@ class Language {
 			// People think language codes are html safe, so enforce it.
 			// Ideally we should only allow a-zA-Z0-9-
 			// but, .+ and other chars are often used for {{int:}} hacks
-			// see bugs 37564, 37587, 36938
+			// see bugs T39564, T39587, T38938
 			$cache[$code] =
 				// Protect against path traversal
 				strcspn( $code, ":/\\\000&<>'\"" ) === strlen( $code )
@@ -411,10 +415,10 @@ class Language {
 	function __construct() {
 		$this->mConverter = new FakeConverter( $this );
 		// Set the code to the name of the descendant
-		if ( get_class( $this ) == 'Language' ) {
+		if ( static::class === 'Language' ) {
 			$this->mCode = 'en';
 		} else {
-			$this->mCode = str_replace( '_', '-', strtolower( substr( get_class( $this ), 8 ) ) );
+			$this->mCode = str_replace( '_', '-', strtolower( substr( static::class, 8 ) ) );
 		}
 		self::getLocalisationCache();
 	}
@@ -461,10 +465,11 @@ class Language {
 		if ( is_null( $this->namespaceNames ) ) {
 			global $wgMetaNamespace, $wgMetaNamespaceTalk, $wgExtraNamespaces;
 
-			$this->namespaceNames = self::$dataCache->getItem( $this->mCode, 'namespaceNames' );
 			$validNamespaces = MWNamespace::getCanonicalNamespaces();
 
-			$this->namespaceNames = $wgExtraNamespaces + $this->namespaceNames + $validNamespaces;
+			$this->namespaceNames = $wgExtraNamespaces +
+				self::$dataCache->getItem( $this->mCode, 'namespaceNames' );
+			$this->namespaceNames += $validNamespaces;
 
 			$this->namespaceNames[NS_PROJECT] = $wgMetaNamespace;
 			if ( $wgMetaNamespaceTalk ) {
@@ -940,14 +945,14 @@ class Language {
 	 * @param string $key
 	 * @return string
 	 */
-	function getMonthAbbreviation( $key ) {
+	public function getMonthAbbreviation( $key ) {
 		return $this->getMessageFromDB( self::$mMonthAbbrevMsgs[$key - 1] );
 	}
 
 	/**
 	 * @return array
 	 */
-	function getMonthAbbreviationsArray() {
+	public function getMonthAbbreviationsArray() {
 		$monthNames = [ '' ];
 		for ( $i = 1; $i < 13; $i++ ) {
 			$monthNames[] = $this->getMonthAbbreviation( $i );
@@ -959,7 +964,7 @@ class Language {
 	 * @param string $key
 	 * @return string
 	 */
-	function getWeekdayName( $key ) {
+	public function getWeekdayName( $key ) {
 		return $this->getMessageFromDB( self::$mWeekdayMsgs[$key - 1] );
 	}
 
@@ -1041,6 +1046,8 @@ class Language {
 	 *    xin  n (month number) in Iranian calendar
 	 *    xiy  y (two digit year) in Iranian calendar
 	 *    xiY  Y (full year) in Iranian calendar
+	 *    xit  t (days in month) in Iranian calendar
+	 *    xiz  z (day of the year) in Iranian calendar
 	 *
 	 *    xjj  j (day number) in Hebrew calendar
 	 *    xjF  F (month name) in Hebrew calendar
@@ -1087,7 +1094,7 @@ class Language {
 	 * @throws MWException
 	 * @return string
 	 */
-	function sprintfDate( $format, $ts, DateTimeZone $zone = null, &$ttl = null ) {
+	public function sprintfDate( $format, $ts, DateTimeZone $zone = null, &$ttl = 'unused' ) {
 		$s = '';
 		$raw = false;
 		$roman = false;
@@ -1336,6 +1343,20 @@ class Language {
 					}
 					$num = substr( $iranian[0], -2 );
 					break;
+				case 'xit':
+					$usedIranianYear = true;
+					if ( !$iranian ) {
+						$iranian = self::tsToIranian( $ts );
+					}
+					$num = self::$IRANIAN_DAYS[$iranian[1] - 1];
+					break;
+				case 'xiz':
+					$usedIranianYear = true;
+					if ( !$iranian ) {
+						$iranian = self::tsToIranian( $ts );
+					}
+					$num = $iranian[3];
+					break;
 				case 'a':
 					$usedAMPM = true;
 					$s .= intval( substr( $ts, 8, 2 ) ) < 12 ? 'am' : 'pm';
@@ -1452,7 +1473,9 @@ class Language {
 			}
 		}
 
-		if ( $usedSecond ) {
+		if ( $ttl === 'unused' ) {
+			// No need to calculate the TTL, the caller wont use it anyway.
+		} elseif ( $usedSecond ) {
 			$ttl = 1;
 		} elseif ( $usedMinute ) {
 			$ttl = 60 - substr( $ts, 12, 2 );
@@ -1592,6 +1615,8 @@ class Language {
 			$jDayNo = floor( ( $jDayNo - 1 ) % 365 );
 		}
 
+		$jz = $jDayNo;
+
 		for ( $i = 0; $i < 11 && $jDayNo >= self::$IRANIAN_DAYS[$i]; $i++ ) {
 			$jDayNo -= self::$IRANIAN_DAYS[$i];
 		}
@@ -1599,7 +1624,7 @@ class Language {
 		$jm = $i + 1;
 		$jd = $jDayNo + 1;
 
-		return [ $jy, $jm, $jd ];
+		return [ $jy, $jm, $jd, $jz ];
 	}
 
 	/**
@@ -1607,7 +1632,7 @@ class Language {
 	 *
 	 * Based on a PHP-Nuke block by Sharjeel which is released under GNU/GPL license
 	 *
-	 * @see http://phpnuke.org/modules.php?name=News&file=article&sid=8234&mode=thread&order=0&thold=0
+	 * @see https://phpnuke.org/modules.php?name=News&file=article&sid=8234&mode=thread&order=0&thold=0
 	 *
 	 * @param string $ts
 	 *
@@ -1836,9 +1861,9 @@ class Language {
 	 * Algorithm to convert Gregorian dates to Thai solar dates,
 	 * Minguo dates or Minguo dates.
 	 *
-	 * Link: http://en.wikipedia.org/wiki/Thai_solar_calendar
-	 *       http://en.wikipedia.org/wiki/Minguo_calendar
-	 *       http://en.wikipedia.org/wiki/Japanese_era_name
+	 * Link: https://en.wikipedia.org/wiki/Thai_solar_calendar
+	 *       https://en.wikipedia.org/wiki/Minguo_calendar
+	 *       https://en.wikipedia.org/wiki/Japanese_era_name
 	 *
 	 * @param string $ts 14-character timestamp
 	 * @param string $cName Calender name
@@ -1901,11 +1926,7 @@ class Language {
 					$gy_offset = '元';
 				}
 				$gy_offset = '昭和' . $gy_offset;
-			} elseif (
-				( ( $gy == 1989 ) && ( $gm == 1 ) && ( $gd >= 8 ) ) ||
-				( ( $gy > 1989 ) && ( $gy < 2019 ) ) ||
-				( ( $gy == 2019 ) && ( $gm < 5 ) )
-			) {
+			} else {
 				# Heisei period
 				$gy_gannen = $gy - 1989 + 1;
 				$gy_offset = $gy_gannen;
@@ -1913,14 +1934,6 @@ class Language {
 					$gy_offset = '元';
 				}
 				$gy_offset = '平成' . $gy_offset;
-			} else {
-				# Reiwa period
-				$gy_gannen = $gy - 2019 + 1;
-				$gy_offset = $gy_gannen;
-				if ( $gy_gannen == 1 ) {
-					$gy_offset = '元';
-				}
-				$gy_offset = '令和' . $gy_offset;
 			}
 		} else {
 			$gy_offset = $gy;
@@ -2077,7 +2090,7 @@ class Language {
 	 *   get user timecorrection setting)
 	 * @return int
 	 */
-	function userAdjust( $ts, $tz = false ) {
+	public function userAdjust( $ts, $tz = false ) {
 		global $wgUser, $wgLocalTZoffset;
 
 		if ( $tz === false ) {
@@ -2087,17 +2100,15 @@ class Language {
 		$data = explode( '|', $tz, 3 );
 
 		if ( $data[0] == 'ZoneInfo' ) {
-			MediaWiki\suppressWarnings();
-			$userTZ = timezone_open( $data[2] );
-			MediaWiki\restoreWarnings();
-			if ( $userTZ !== false ) {
-				$date = date_create( $ts, timezone_open( 'UTC' ) );
-				date_timezone_set( $date, $userTZ );
-				$date = date_format( $date, 'YmdHis' );
-				return $date;
+			try {
+				$userTZ = new DateTimeZone( $data[2] );
+				$date = new DateTime( $ts, new DateTimeZone( 'UTC' ) );
+				$date->setTimezone( $userTZ );
+				return $date->format( 'YmdHis' );
+			} catch ( Exception $e ) {
+				// Unrecognized timezone, default to 'Offset' with the stored offset.
+				$data[0] = 'Offset';
 			}
-			# Unrecognized timezone, default to 'Offset' with the stored offset.
-			$data[0] = 'Offset';
 		}
 
 		if ( $data[0] == 'System' || $tz == '' ) {
@@ -2147,12 +2158,10 @@ class Language {
 	 * the date preference they're supposed to use, it should be used in
 	 * all children.
 	 *
-	 *<code>
-	 * function timeanddate([...], $format = true) {
-	 * 	$datePreference = $this->dateFormat($format);
-	 * [...]
-	 * }
-	 *</code>
+	 *     function timeanddate([...], $format = true) {
+	 *       $datePreference = $this->dateFormat($format);
+	 *       [...]
+	 *     }
 	 *
 	 * @param int|string|bool $usePrefs If true, the user's preference is used
 	 *   if false, the site/language default is used
@@ -2224,7 +2233,7 @@ class Language {
 	 *   validateTimeZone() in Special:Preferences
 	 * @return string
 	 */
-	function date( $ts, $adj = false, $format = true, $timecorrection = false ) {
+	public function date( $ts, $adj = false, $format = true, $timecorrection = false ) {
 		$ts = wfTimestamp( TS_MW, $ts );
 		if ( $adj ) {
 			$ts = $this->userAdjust( $ts, $timecorrection );
@@ -2243,7 +2252,7 @@ class Language {
 	 *   validateTimeZone() in Special:Preferences
 	 * @return string
 	 */
-	function time( $ts, $adj = false, $format = true, $timecorrection = false ) {
+	public function time( $ts, $adj = false, $format = true, $timecorrection = false ) {
 		$ts = wfTimestamp( TS_MW, $ts );
 		if ( $adj ) {
 			$ts = $this->userAdjust( $ts, $timecorrection );
@@ -2263,7 +2272,7 @@ class Language {
 	 *   validateTimeZone() in Special:Preferences
 	 * @return string
 	 */
-	function timeanddate( $ts, $adj = false, $format = true, $timecorrection = false ) {
+	public function timeanddate( $ts, $adj = false, $format = true, $timecorrection = false ) {
 		$ts = wfTimestamp( TS_MW, $ts );
 		if ( $adj ) {
 			$ts = $this->userAdjust( $ts, $timecorrection );
@@ -2299,7 +2308,7 @@ class Language {
 
 	/**
 	 * Takes a number of seconds and returns an array with a set of corresponding intervals.
-	 * For example 65 will be turned into array( minutes => 1, seconds => 5 ).
+	 * For example 65 will be turned into [ minutes => 1, seconds => 5 ].
 	 *
 	 * @since 1.20
 	 *
@@ -2567,9 +2576,9 @@ class Language {
 
 	/**
 	 * @param string $key
-	 * @return array|null
+	 * @return string|null
 	 */
-	function getMessage( $key ) {
+	public function getMessage( $key ) {
 		return self::$dataCache->getSubitem( $this->mCode, 'messages', $key );
 	}
 
@@ -2586,13 +2595,10 @@ class Language {
 	 * @param string $string
 	 * @return string
 	 */
-	function iconv( $in, $out, $string ) {
-		# This is a wrapper for iconv in all languages except esperanto,
-		# which does some nasty x-conversions beforehand
-
+	public function iconv( $in, $out, $string ) {
 		# Even with //IGNORE iconv can whine about illegal characters in
 		# *input* string. We just ignore those too.
-		# REF: http://bugs.php.net/bug.php?id=37166
+		# REF: https://bugs.php.net/bug.php?id=37166
 		# REF: https://phabricator.wikimedia.org/T18885
 		MediaWiki\suppressWarnings();
 		$text = iconv( $in, $out . '//IGNORE', $string );
@@ -2633,7 +2639,7 @@ class Language {
 	 *
 	 * @return string
 	 */
-	function ucfirst( $str ) {
+	public function ucfirst( $str ) {
 		$o = ord( $str );
 		if ( $o < 96 ) { // if already uppercase...
 			return $str;
@@ -2653,7 +2659,7 @@ class Language {
 	 *
 	 * @return string
 	 */
-	function uc( $str, $first = false ) {
+	public function uc( $str, $first = false ) {
 		if ( $first ) {
 			if ( $this->isMultibyte( $str ) ) {
 				return mb_strtoupper( mb_substr( $str, 0, 1 ) ) . mb_substr( $str, 1 );
@@ -2939,46 +2945,29 @@ class Language {
 		}
 	}
 
+	/**
+	 * @deprecated No-op since 1.28
+	 */
 	function initEncoding() {
-		# Some languages may have an alternate char encoding option
-		# (Esperanto X-coding, Japanese furigana conversion, etc)
-		# If this language is used as the primary content language,
-		# an override to the defaults can be set here on startup.
+		// No-op.
 	}
 
 	/**
 	 * @param string $s
 	 * @return string
+	 * @deprecated No-op since 1.28
 	 */
 	function recodeForEdit( $s ) {
-		# For some languages we'll want to explicitly specify
-		# which characters make it into the edit box raw
-		# or are converted in some way or another.
-		global $wgEditEncoding;
-		if ( $wgEditEncoding == '' || $wgEditEncoding == 'UTF-8' ) {
-			return $s;
-		} else {
-			return $this->iconv( 'UTF-8', $wgEditEncoding, $s );
-		}
+		return $s;
 	}
 
 	/**
 	 * @param string $s
 	 * @return string
+	 * @deprecated No-op since 1.28
 	 */
 	function recodeInput( $s ) {
-		# Take the previous into account.
-		global $wgEditEncoding;
-		if ( $wgEditEncoding != '' ) {
-			$enc = $wgEditEncoding;
-		} else {
-			$enc = 'UTF-8';
-		}
-		if ( $enc == 'UTF-8' ) {
-			return $s;
-		} else {
-			return $this->iconv( $enc, 'UTF-8', $s );
-		}
+		return $s;
 	}
 
 	/**
@@ -3295,14 +3284,14 @@ class Language {
 	public function parseFormattedNumber( $number ) {
 		$s = $this->digitTransformTable();
 		if ( $s ) {
-			// eliminate empty array values such as ''. (bug 64347)
+			// eliminate empty array values such as ''. (T66347)
 			$s = array_filter( $s );
 			$number = strtr( $number, array_flip( $s ) );
 		}
 
 		$s = $this->separatorTransformTable();
 		if ( $s ) {
-			// eliminate empty array values such as ''. (bug 64347)
+			// eliminate empty array values such as ''. (T66347)
 			$s = array_filter( $s );
 			$number = strtr( $number, array_flip( $s ) );
 		}
@@ -3506,7 +3495,7 @@ class Language {
 				$string = $ellipsis . $string;
 			}
 		}
-		# Do not truncate if the ellipsis makes the string longer/equal (bug 22181).
+		# Do not truncate if the ellipsis makes the string longer/equal (T24181).
 		# This check is *not* redundant if $adjustLength, due to the single case where
 		# LEN($ellipsis) > ABS($limit arg); $stringOriginal could be shorter than $string.
 		if ( strlen( $string ) < strlen( $stringOriginal ) ) {
@@ -3744,8 +3733,46 @@ class Language {
 			return $wgGrammarForms[$this->getCode()][$case][$word];
 		}
 
+		$grammarTransformations = $this->getGrammarTransformations();
+
+		if ( isset( $grammarTransformations[$case] ) ) {
+			$forms = $grammarTransformations[$case];
+
+			// Some names of grammar rules are aliases for other rules.
+			// In such cases the value is a string rather than object,
+			// so load the actual rules.
+			if ( is_string( $forms ) ) {
+				$forms = $grammarTransformations[$forms];
+			}
+
+			foreach ( array_values( $forms ) as $rule ) {
+				$form = $rule[0];
+
+				if ( $form === '@metadata' ) {
+					continue;
+				}
+
+				$replacement = $rule[1];
+
+				$regex = '/' . addcslashes( $form, '/' ) . '/u';
+				$patternMatches = preg_match( $regex, $word );
+
+				if ( $patternMatches === false ) {
+					wfLogWarning(
+						'An error occurred while processing grammar. ' .
+						"Word: '$word'. Regex: /$form/."
+					);
+				} elseif ( $patternMatches === 1 ) {
+					$word = preg_replace( $regex, $replacement, $word );
+
+					break;
+				}
+			}
+		}
+
 		return $word;
 	}
+
 	/**
 	 * Get the grammar forms for the content language
 	 * @return array Array of grammar forms
@@ -3761,6 +3788,46 @@ class Language {
 
 		return [];
 	}
+
+	/**
+	 * Get the grammar transformations data for the language.
+	 * Used like grammar forms, with {{GRAMMAR}} and cases,
+	 * but uses pairs of regexes and replacements instead of code.
+	 *
+	 * @return array[] Array of grammar transformations.
+	 * @throws MWException
+	 * @since 1.28
+	 */
+	public function getGrammarTransformations() {
+		$languageCode = $this->getCode();
+
+		if ( self::$grammarTransformations === null ) {
+			self::$grammarTransformations = new MapCacheLRU( 10 );
+		}
+
+		if ( self::$grammarTransformations->has( $languageCode ) ) {
+			return self::$grammarTransformations->get( $languageCode );
+		}
+
+		$data = [];
+
+		$grammarDataFile = __DIR__ . "/data/grammarTransformations/$languageCode.json";
+		if ( is_readable( $grammarDataFile ) ) {
+			$data = FormatJson::decode(
+				file_get_contents( $grammarDataFile ),
+				true
+			);
+
+			if ( $data === null ) {
+				throw new MWException( "Invalid grammar data for \"$languageCode\"." );
+			}
+
+			self::$grammarTransformations->set( $languageCode, $data );
+		}
+
+		return $data;
+	}
+
 	/**
 	 * Provides an alternative text depending on specified gender.
 	 * Usage {{gender:username|masculine|feminine|unknown}}.
@@ -3906,10 +3973,11 @@ class Language {
 	 *
 	 * @param string $str The validated block duration in English
 	 * @param User $user User object to use timezone from or null for $wgUser
+	 * @param int $now Current timestamp, for formatting relative block durations
 	 * @return string Somehow translated block duration
 	 * @see LanguageFi.php for example implementation
 	 */
-	function translateBlockExpiry( $str, User $user = null ) {
+	function translateBlockExpiry( $str, User $user = null, $now = 0 ) {
 		$duration = SpecialBlock::getSuggestedDurations( $this );
 		foreach ( $duration as $show => $value ) {
 			if ( strcmp( $str, $value ) == 0 ) {
@@ -3926,12 +3994,13 @@ class Language {
 		}
 
 		// If all else fails, return a standard duration or timestamp description.
-		$time = strtotime( $str, 0 );
+		$time = strtotime( $str, $now );
 		if ( $time === false ) { // Unknown format. Return it as-is in case.
 			return $str;
-		} elseif ( $time !== strtotime( $str, 1 ) ) { // It's a relative timestamp.
-			// $time is relative to 0 so it's a duration length.
-			return $this->formatDuration( $time );
+		} elseif ( $time !== strtotime( $str, $now + 1 ) ) { // It's a relative timestamp.
+			// The result differs based on current time, so the difference
+			// is a fixed duration length.
+			return $this->formatDuration( $time - $now );
 		} else { // It's an absolute timestamp.
 			if ( $time === 0 ) {
 				// wfTimestamp() handles 0 as current time instead of epoch.
@@ -4058,7 +4127,7 @@ class Language {
 	 * Get the list of variants supported by this language
 	 * see sample implementation in LanguageZh.php
 	 *
-	 * @return array An array of language codes
+	 * @return string[] An array of language codes
 	 */
 	public function getVariants() {
 		return $this->mConverter->getVariants();
@@ -4198,6 +4267,17 @@ class Language {
 
 		$this->mParentLanguage = $lang;
 		return $lang;
+	}
+
+	/**
+	 * Compare with an other language object
+	 *
+	 * @since 1.28
+	 * @param Language $lang
+	 * @return boolean
+	 */
+	public function equals( Language $lang ) {
+		return $lang->getCode() === $this->mCode;
 	}
 
 	/**
@@ -4466,14 +4546,15 @@ class Language {
 	}
 
 	/**
-	 * @todo Document
+	 * Formats a time given in seconds into a string representation of that time.
+	 *
 	 * @param int|float $seconds
-	 * @param array $format Optional
-	 *   If $format['avoid'] === 'avoidseconds': don't mention seconds if $seconds >= 1 hour.
-	 *   If $format['avoid'] === 'avoidminutes': don't mention seconds/minutes if $seconds > 48 hours.
+	 * @param array $format An optional argument that formats the returned string in different ways:
+	 *   If $format['avoid'] === 'avoidseconds': don't show seconds if $seconds >= 1 hour,
+	 *   If $format['avoid'] === 'avoidminutes': don't show seconds/minutes if $seconds > 48 hours,
 	 *   If $format['noabbrevs'] is true: use 'seconds' and friends instead of 'seconds-abbrev'
 	 *     and friends.
-	 *   For backwards compatibility, $format may also be one of the strings 'avoidseconds'
+	 * @note For backwards compatibility, $format may also be one of the strings 'avoidseconds'
 	 *     or 'avoidminutes'.
 	 * @return string
 	 */

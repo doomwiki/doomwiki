@@ -1,13 +1,13 @@
 ( function ( $, M ) {
 
 	var Watchstar = M.require( 'mobile.watchstar/Watchstar' ),
-		CtaDrawer = M.require( 'mobile.drawers/CtaDrawer' ),
-		toast = M.require( 'mobile.toast/toast' ),
+		CtaDrawer = M.require( 'mobile.startup/CtaDrawer' ),
+		toast = M.require( 'mobile.startup/toast' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		watchIcon = new Icon( {
 			name: 'watched'
 		} ),
-		user = M.require( 'mobile.user/user' ),
+		user = M.require( 'mobile.startup/user' ),
 		Page = M.require( 'mobile.startup/Page' );
 
 	QUnit.module( 'MobileFrontend: Watchstar.js Anon', {
@@ -20,6 +20,7 @@
 	QUnit.test( 'Anonymous user opens drawer', 1, function ( assert ) {
 		var $el = $( '<div>' );
 
+		// eslint-disable-next-line no-new
 		new Watchstar( {
 			api: new mw.Api(),
 			el: $el,
@@ -36,6 +37,8 @@
 
 	QUnit.module( 'MobileFrontend: Watchstar.js', {
 		setup: function () {
+			// Avoid unnecessary mw.notify animations
+			this.toastStub = this.sandbox.stub( mw, 'notify' );
 			this.sandbox.stub( user, 'isAnon' ).returns( false );
 			this.spy = this.sandbox.stub( mw.Api.prototype, 'postWithToken' )
 				.returns( $.Deferred().resolve() );

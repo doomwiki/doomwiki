@@ -10,13 +10,13 @@
 class RandomImage {
 
 	private $parser = null;
-	
+
 	private $width = false;
 	private $float = false;
 	private $caption = '';
-	
+
 	private $choices = array();
-	
+
 	/**
 	 * Constructor
 	 *
@@ -29,7 +29,7 @@ class RandomImage {
 		$this->caption = $caption;
 		$this->setOptions( $options );
 	}
-	
+
 	/**
 	 * Extract applicable options from tag attributes
 	 *
@@ -39,7 +39,7 @@ class RandomImage {
 		if( isset( $options['size'] ) ) {
 			$size = intval( $options['size'] );
 			if( $size > 0 )
-				$this->width = $size;			
+				$this->width = $size;
 		}
 		if( isset( $options['float'] ) ) {
 			$float = strtolower( $options['float'] );
@@ -53,7 +53,7 @@ class RandomImage {
 				$this->choices = $choices;
 		}
 	}
-	
+
 	/**
 	 * Render a random image
 	 *
@@ -62,7 +62,7 @@ class RandomImage {
 	public function render() {
 		$title = $this->pickImage();
 		if( $title instanceof Title && $this->imageExists( $title ) ) {
-			return $this->removeMagnifier( 
+			return $this->removeMagnifier(
 				$this->parser->recursiveTagParse(
 					$this->buildMarkup( $title )
 				)
@@ -70,7 +70,7 @@ class RandomImage {
 		}
 		return '';
 	}
-	
+
 	/**
 	 * Does the specified image exist?
 	 *
@@ -85,7 +85,7 @@ class RandomImage {
 		$file = wfFindFile( $title );
 		return is_object( $file ) && $file->exists();
 	}
-	
+
 	/**
 	 * Prepare image markup for the given image
 	 *
@@ -126,7 +126,8 @@ class RandomImage {
 	protected function getCaption( $title ) {
 		if( !$this->caption ) {
 			if( $title->exists() ) {
-				$text = Revision::newFromTitle( $title )->getText();
+				$content = Revision::newFromTitle( $title )->getContent();
+				$text = ContentHandler::getContentText( $content );
 				if( preg_match( '!<randomcaption>(.*?)</randomcaption>!i', $text, $matches ) ) {
 					$this->caption = $matches[1];
 				} elseif( preg_match( "!^(.*?)\n!i", $text, $matches ) ) {
@@ -160,7 +161,7 @@ class RandomImage {
 			return $pick;
 		}
 	}
-	
+
 	/**
 	 * Select a random image from the choices given
 	 *
@@ -170,9 +171,9 @@ class RandomImage {
 		$name = count( $this->choices ) > 1
 			? $this->choices[ array_rand( $this->choices ) ]
 			: $this->choices[0];
-		return Title::makeTitleSafe( NS_IMAGE, $name );
+		return Title::makeTitleSafe( NS_FILE, $name );
 	}
-	
+
 	/**
 	 * Select a random image from the database
 	 *
@@ -189,7 +190,7 @@ class RandomImage {
 				'page_title',
 			),
 			array(
-				'page_namespace' => NS_IMAGE,
+				'page_namespace' => NS_FILE,
 				'page_is_redirect' => 0,
 				'page_random > ' . $dbr->addQuotes( wfRandom() ),
 			) + $conds,
@@ -207,7 +208,7 @@ class RandomImage {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Get various options for database selection
 	 *
@@ -236,7 +237,7 @@ class RandomImage {
 			);
 		}
 	}
-	
+
 	/**
 	 * Parser hook callback
 	 *
@@ -252,7 +253,7 @@ class RandomImage {
 		$random = new RandomImage( $parser, $args, $input );
 		return $random->render();
 	}
-	
+
 	/**
 	 * Strip <randomcaption> tags out of page text
 	 *
@@ -264,5 +265,5 @@ class RandomImage {
 		$text = preg_replace( '!</?randomcaption>!i', '', $text );
 		return true;
 	}
-	
+
 }

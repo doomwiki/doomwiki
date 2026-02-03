@@ -6,16 +6,6 @@
  */
 ( function ( $, mw ) {
 
-	var interwikiPrefixesPromise = new mw.Api().get( {
-			action: 'query',
-			meta: 'siteinfo',
-			siprop: 'interwikimap'
-		} ).then( function ( data ) {
-			return $.map( data.query.interwikimap, function ( interwiki ) {
-				return interwiki.prefix;
-			} );
-		} );
-
 	/**
 	 * Mixin for title widgets
 	 *
@@ -30,12 +20,13 @@
 	 * @cfg {boolean} [relative=true] If a namespace is set, display titles relative to it
 	 * @cfg {boolean} [suggestions=true] Display search suggestions
 	 * @cfg {boolean} [showRedirectTargets=true] Show the targets of redirects
-	 * @cfg {boolean} [showRedlink] Show red link to exact match if it doesn't exist
 	 * @cfg {boolean} [showImages] Show page images
 	 * @cfg {boolean} [showDescriptions] Show page descriptions
+	 * @cfg {boolean} [excludeCurrentPage] Exclude the current page from suggestions
 	 * @cfg {boolean} [validateTitle=true] Whether the input must be a valid title (if set to true,
 	 *  the widget will marks itself red for invalid inputs, including an empty query).
 	 * @cfg {Object} [cache] Result cache which implements a 'set' method, taking keyed values as an argument
+	 * @cfg {mw.Api} [api] API object to use, creates a default mw.Api instance if not specified
 	 */
 	mw.widgets.TitleWidget = function MwWidgetsTitleWidget( config ) {
 		// Config initialization
@@ -51,11 +42,12 @@
 		this.relative = config.relative !== undefined ? config.relative : true;
 		this.suggestions = config.suggestions !== undefined ? config.suggestions : true;
 		this.showRedirectTargets = config.showRedirectTargets !== false;
-		this.showRedlink = !!config.showRedlink;
 		this.showImages = !!config.showImages;
 		this.showDescriptions = !!config.showDescriptions;
+		this.excludeCurrentPage = !!config.excludeCurrentPage;
 		this.validateTitle = config.validateTitle !== undefined ? config.validateTitle : true;
 		this.cache = config.cache;
+		this.api = config.api || new mw.Api();
 
 		// Initialization
 		this.$element.addClass( 'mw-widget-titleWidget' );
@@ -64,6 +56,10 @@
 	/* Setup */
 
 	OO.initClass( mw.widgets.TitleWidget );
+
+	/* Static properties */
+
+	mw.widgets.TitleWidget.static.interwikiPrefixesPromiseCache = {};
 
 	/* Methods */
 
@@ -93,12 +89,38 @@
 		this.namespace = namespace;
 	};
 
+	mw.widgets.TitleWidget.prototype.getInterwikiPrefixesPromise = function () {
+		var api = this.getApi(),
+			cache = this.constructor.static.interwikiPrefixesPromiseCache,
+			key = api.defaults.ajax.url;
+		if ( !cache.hasOwnProperty( key ) ) {
+			cache[ key ] = api.get( {
+				action: 'query',
+				meta: 'siteinfo',
+				siprop: 'interwikimap',
+				// Cache client-side for a day since this info is mostly static
+				maxage: 60 * 60 * 24,
+				smaxage: 60 * 60 * 24,
+				// Workaround T97096 by setting uselang=content
+				uselang: 'content'
+			} ).then( function ( data ) {
+				return $.map( data.query.interwikimap, function ( interwiki ) {
+					return interwiki.prefix;
+				} );
+			} );
+		}
+		return cache[ key ];
+	};
+
 	/**
 	 * Get a promise which resolves with an API repsonse for suggested
 	 * links for the current query.
+	 *
+	 * @return {jQuery.Promise} Suggestions promise
 	 */
 	mw.widgets.TitleWidget.prototype.getSuggestionsPromise = function () {
 		var req,
+			api = this.getApi(),
 			query = this.getQueryValue(),
 			widget = this,
 			promiseAbortObject = { abort: function () {
@@ -106,7 +128,7 @@
 			} };
 
 		if ( mw.Title.newFromText( query ) ) {
-			return interwikiPrefixesPromise.then( function ( interwikiPrefixes ) {
+			return this.getInterwikiPrefixesPromise().then( function ( interwikiPrefixes ) {
 				var params,
 					interwiki = query.substring( 0, query.indexOf( ':' ) );
 				if (
@@ -140,9 +162,15 @@
 						params.prop.push( 'pageterms' );
 						params.wbptterms = 'description';
 					}
-					req = new mw.Api().get( params );
+					req = api.get( params );
 					promiseAbortObject.abort = req.abort.bind( req ); // TODO ew
-					return req;
+					return req.then( function ( ret ) {
+						if ( ret.query === undefined ) {
+							ret = api.get( { action: 'query', titles: query } );
+							promiseAbortObject.abort = ret.abort.bind( ret );
+						}
+						return ret;
+					} );
 				}
 			} ).promise( promiseAbortObject );
 		} else {
@@ -153,6 +181,15 @@
 	};
 
 	/**
+	 * Get the API object for title requests
+	 *
+	 * @return {mw.Api} MediaWiki API
+	 */
+	mw.widgets.TitleWidget.prototype.getApi = function () {
+		return this.api;
+	};
+
+	/**
 	 * Get option widgets from the server response
 	 *
 	 * @param {Object} data Query result
@@ -160,6 +197,7 @@
 	 */
 	mw.widgets.TitleWidget.prototype.getOptionsFromData = function ( data ) {
 		var i, len, index, pageExists, pageExistsExact, suggestionPage, page, redirect, redirects,
+			currentPageName = new mw.Title( mw.config.get( 'wgRelevantPageName' ) ).getPrefixedText(),
 			items = [],
 			titles = [],
 			titleObj = mw.Title.newFromText( this.getQueryValue() ),
@@ -176,7 +214,12 @@
 
 		for ( index in data.pages ) {
 			suggestionPage = data.pages[ index ];
+			// When excludeCurrentPage is set, don't list the current page unless the user has type the full title
+			if ( this.excludeCurrentPage && suggestionPage.title === currentPageName && suggestionPage.title !== titleObj.getPrefixedText() ) {
+				continue;
+			}
 			pageData[ suggestionPage.title ] = {
+				known: suggestionPage.known !== undefined,
 				missing: suggestionPage.missing !== undefined,
 				redirect: suggestionPage.redirect !== undefined,
 				disambiguation: OO.getProp( suggestionPage, 'pageprops', 'disambiguation' ) !== undefined,
@@ -196,6 +239,7 @@
 			for ( i = 0, len = redirects.length; i < len; i++ ) {
 				pageData[ redirects[ i ] ] = {
 					missing: false,
+					known: true,
 					redirect: true,
 					disambiguation: false,
 					description: mw.msg( 'mw-widgets-titleinput-description-redirect', suggestionPage.title ),
@@ -211,19 +255,23 @@
 		} );
 
 		// If not found, run value through mw.Title to avoid treating a match as a
-		// mismatch where normalisation would make them matching (bug 48476)
+		// mismatch where normalisation would make them matching (T50476)
 
-		pageExistsExact = titles.indexOf( this.getQueryValue() ) !== -1;
-		pageExists = pageExistsExact || (
-			titleObj && titles.indexOf( titleObj.getPrefixedText() ) !== -1
+		pageExistsExact = (
+			Object.prototype.hasOwnProperty.call( pageData, this.getQueryValue() ) &&
+			(
+				!pageData[ this.getQueryValue() ].missing ||
+				pageData[ this.getQueryValue() ].known
+			)
 		);
-
-		if ( !pageExists ) {
-			pageData[ this.getQueryValue() ] = {
-				missing: true, redirect: false, disambiguation: false,
-				description: mw.msg( 'mw-widgets-titleinput-description-new-page' )
-			};
-		}
+		pageExists = pageExistsExact || (
+			titleObj &&
+			Object.prototype.hasOwnProperty.call( pageData, titleObj.getPrefixedText() ) &&
+			(
+				!pageData[ titleObj.getPrefixedText() ].missing ||
+				pageData[ titleObj.getPrefixedText() ].known
+			)
+		);
 
 		if ( this.cache ) {
 			this.cache.set( pageData );
@@ -233,10 +281,7 @@
 		if ( pageExists && !pageExistsExact ) {
 			titles.unshift( this.getQueryValue() );
 		}
-		// Offer the exact text as a new page if the title is valid
-		if ( this.showRedlink && !pageExists && titleObj ) {
-			titles.push( this.getQueryValue() );
-		}
+
 		for ( i = 0, len = titles.length; i < len; i++ ) {
 			page = pageData[ titles[ i ] ] || {};
 			items.push( new mw.widgets.TitleOptionWidget( this.getOptionWidgetData( titles[ i ], page ) ) );
@@ -253,14 +298,18 @@
 	 * @return {Object} Data for option widget
 	 */
 	mw.widgets.TitleWidget.prototype.getOptionWidgetData = function ( title, data ) {
-		var mwTitle = new mw.Title( title );
+		var mwTitle = new mw.Title( title ),
+			description = data.description;
+		if ( data.missing && !description ) {
+			description = mw.msg( 'mw-widgets-titleinput-description-new-page' );
+		}
 		return {
-			data: this.namespace !== null && this.relative
-				? mwTitle.getRelativeText( this.namespace )
-				: title,
+			data: this.namespace !== null && this.relative ?
+				mwTitle.getRelativeText( this.namespace ) :
+				title,
 			url: mwTitle.getUrl(),
 			imageUrl: this.showImages ? data.imageUrl : null,
-			description: this.showDescriptions ? data.description : null,
+			description: this.showDescriptions ? description : null,
 			missing: data.missing,
 			redirect: data.redirect,
 			disambiguation: data.disambiguation,

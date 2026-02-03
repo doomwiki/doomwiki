@@ -64,9 +64,11 @@ INSERT INTO /*_*/mwuser (user_name) VALUES ('##Anonymous##');
 CREATE TABLE /*_*/user_groups (
    ug_user  INT     NOT NULL REFERENCES /*_*/mwuser(user_id) ON DELETE CASCADE,
    ug_group NVARCHAR(255) NOT NULL DEFAULT '',
+   ug_expiry varchar(14) DEFAULT NULL,
+   PRIMARY KEY(ug_user, ug_group)
 );
-CREATE UNIQUE clustered INDEX /*i*/ug_user_group ON /*_*/user_groups (ug_user, ug_group);
 CREATE INDEX /*i*/ug_group ON /*_*/user_groups(ug_group);
+CREATE INDEX /*i*/ug_expiry ON /*_*/user_groups(ug_expiry);
 
 -- Stores the groups the user has once belonged to.
 -- The user may still belong to these groups (check user_groups).
@@ -299,7 +301,7 @@ CREATE TABLE /*_*/categorylinks (
   -- conversion algorithm is run.  We store this so that we can update
   -- collations without reparsing all pages.
   -- Note: If you change the length of this field, you also need to change
-  -- code in LinksUpdate.php. See bug 25254.
+  -- code in LinksUpdate.php. See T27254.
   cl_sortkey_prefix varbinary(255) NOT NULL default 0x,
 
   -- This isn't really used at present. Provided for an optional
@@ -336,9 +338,9 @@ CREATE INDEX /*i*/cl_timestamp ON /*_*/categorylinks (cl_to,cl_timestamp);
 CREATE INDEX /*i*/cl_collation_ext ON /*_*/categorylinks (cl_collation, cl_to, cl_type, cl_from);
 
 --
--- Track all existing categories.  Something is a category if 1) it has an en-
--- try somewhere in categorylinks, or 2) it once did.  Categories might not
--- have corresponding pages, so they need to be tracked separately.
+-- Track all existing categories. Something is a category if 1) it has an entry
+-- somewhere in categorylinks, or 2) it has a description page. Categories
+-- might not have corresponding pages, so they need to be tracked separately.
 --
 CREATE TABLE /*_*/category (
   -- Primary key
@@ -389,11 +391,18 @@ CREATE TABLE /*_*/externallinks (
   -- which allows for fast searching for all pages under example.com with the
   -- clause:
   --      WHERE el_index LIKE 'http://com.example.%'
-  el_index nvarchar(450) NOT NULL
+  el_index nvarchar(450) NOT NULL,
+
+  -- This is el_index truncated to 60 bytes to allow for sortable queries that
+  -- aren't supported by a partial index.
+  -- @todo Drop the default once this is deployed everywhere and code is populating it.
+  el_index_60 varbinary(60) NOT NULL default ''
 );
 
 CREATE INDEX /*i*/el_from ON /*_*/externallinks (el_from);
 CREATE INDEX /*i*/el_index ON /*_*/externallinks (el_index);
+CREATE INDEX /*i*/el_index_60 ON /*_*/externallinks (el_index_60, el_id);
+CREATE INDEX /*i*/el_from_index_60 ON /*_*/externallinks (el_from, el_index_60, el_id);
 -- el_to index intentionally not added; we cannot index nvarchar(max) columns,
 -- but we also cannot restrict el_to to a smaller column size as the external
 -- link may be larger.
@@ -519,7 +528,7 @@ CREATE TABLE /*_*/ipblocks (
   -- Size chosen to allow IPv6
   -- FIXME: these fields were originally blank for single-IP blocks,
   -- but now they are populated. No migration was ever done. They
-  -- should be fixed to be blank again for such blocks (bug 49504).
+  -- should be fixed to be blank again for such blocks (T51504).
   ipb_range_start varchar(255) NOT NULL,
   ipb_range_end varchar(255) NOT NULL,
 
@@ -577,13 +586,13 @@ CREATE TABLE /*_*/image (
   img_media_type varchar(16) default null,
 
   -- major part of a MIME media type as defined by IANA
-  -- see http://www.iana.org/assignments/media-types/
+  -- see https://www.iana.org/assignments/media-types/
   img_major_mime varchar(16) not null default 'unknown',
 
   -- minor part of a MIME media type as defined by IANA
   -- the minor parts are not required to adher to any standard
   -- but should be consistent throughout the database
-  -- see http://www.iana.org/assignments/media-types/
+  -- see https://www.iana.org/assignments/media-types/
   img_minor_mime nvarchar(100) NOT NULL default 'unknown',
 
   -- Description field as entered by the uploader.
@@ -860,6 +869,7 @@ CREATE INDEX /*i*/new_name_timestamp ON /*_*/recentchanges (rc_new,rc_namespace,
 CREATE INDEX /*i*/rc_ip ON /*_*/recentchanges (rc_ip);
 CREATE INDEX /*i*/rc_ns_usertext ON /*_*/recentchanges (rc_namespace, rc_user_text);
 CREATE INDEX /*i*/rc_user_text ON /*_*/recentchanges (rc_user_text, rc_timestamp);
+CREATE INDEX /*i*/rc_name_type_patrolled_timestamp ON /*_*/recentchanges (rc_namespace, rc_type, rc_patrolled, rc_timestamp);
 
 
 CREATE TABLE /*_*/watchlist (
@@ -1191,6 +1201,7 @@ CREATE TABLE /*_*/updatelog (
 
 -- A table to track tags for revisions, logs and recent changes.
 CREATE TABLE /*_*/change_tag (
+  ct_id int NOT NULL PRIMARY KEY IDENTITY,
   -- RCID for the change
   ct_rc_id int NULL REFERENCES /*_*/recentchanges(rc_id),
   -- LOGID for the change
@@ -1213,6 +1224,7 @@ CREATE INDEX /*i*/change_tag_tag_id ON /*_*/change_tag (ct_tag,ct_rc_id,ct_rev_i
 -- Rollup table to pull a LIST of tags simply without ugly GROUP_CONCAT
 -- that only works on MySQL 4.1+
 CREATE TABLE /*_*/tag_summary (
+  ts_id int NOT NULL PRIMARY KEY IDENTITY,
   -- RCID for the change
   ts_rc_id int NULL REFERENCES /*_*/recentchanges(rc_id),
   -- LOGID for the change

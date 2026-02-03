@@ -1,8 +1,5 @@
 ( function ( mw, $, OO ) {
 	/**
-	 * @class mw.ForeignStructuredUpload
-	 * @extends mw.ForeignUpload
-	 *
 	 * Used to represent an upload in progress on the frontend.
 	 *
 	 * This subclass will upload to a wiki using a structured metadata
@@ -14,7 +11,12 @@
 	 * **TODO: This currently only supports uploads under CC-BY-SA 4.0,
 	 * and should really have support for more licenses.**
 	 *
-	 * @inheritdoc
+	 * @class mw.ForeignStructuredUpload
+	 * @extends mw.ForeignUpload
+	 *
+	 * @constructor
+	 * @param {string} [target]
+	 * @param {Object} [apiconfig]
 	 */
 	function ForeignStructuredUpload( target, apiconfig ) {
 		this.date = undefined;
@@ -65,8 +67,12 @@
 					// Foreign wiki might be running a pre-1.27 MediaWiki, without support for this
 					if ( resp.query && resp.query.uploaddialog ) {
 						upload.config = resp.query.uploaddialog;
+						return upload.config;
+					} else {
+						return $.Deferred().reject( 'upload-foreign-cant-load-config' );
 					}
-					return upload.config;
+				}, function () {
+					return $.Deferred().reject( 'upload-foreign-cant-load-config' );
 				} );
 			} );
 		}
@@ -132,7 +138,7 @@
 	 */
 	ForeignStructuredUpload.prototype.getText = function () {
 		return this.config.format.filepage
-			// Replace "numbered parameters" with the given information
+			// Replace "named parameters" with the given information
 			.replace( '$DESCRIPTION', this.getDescriptions() )
 			.replace( '$DATE', this.getDate() )
 			.replace( '$SOURCE', this.getSource() )
@@ -145,7 +151,12 @@
 	 * @inheritdoc
 	 */
 	ForeignStructuredUpload.prototype.getComment = function () {
-		return this.config.comment
+		var
+			isLocal = this.target === 'local',
+			comment = typeof this.config.comment === 'string' ?
+				this.config.comment :
+				this.config.comment[ isLocal ? 'local' : 'foreign' ];
+		return comment
 			.replace( '$PAGENAME', mw.config.get( 'wgPageName' ) )
 			.replace( '$HOST', location.host );
 	};

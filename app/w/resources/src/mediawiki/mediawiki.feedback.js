@@ -6,8 +6,6 @@
  * @author Moriel Schottlender, 2015
  * @since 1.19
  */
-/*jshint esversion:5 */
-/*global OO*/
 ( function ( mw, $ ) {
 	/**
 	 * This is a way of getting simple feedback from users. It's useful
@@ -116,22 +114,6 @@
 					]
 				};
 				break;
-			case 'error1':
-			case 'error2':
-			case 'error3':
-			case 'error4':
-				dialogConfig = {
-					title: mw.msg( 'feedback-error-title' ),
-					message: mw.msg( 'feedback-' + status ),
-					actions: [
-						{
-							action: 'accept',
-							label: mw.msg( 'feedback-close' ),
-							flags: 'primary'
-						}
-					]
-				};
-				break;
 		}
 
 		// Show the message dialog
@@ -216,12 +198,12 @@
 		{
 			action: 'submit',
 			label: mw.msg( 'feedback-submit' ),
-			flags: [ 'primary', 'constructive' ]
+			flags: [ 'primary', 'progressive' ]
 		},
 		{
 			action: 'external',
 			label: mw.msg( 'feedback-external-bug-report-button' ),
-			flags: 'constructive'
+			flags: 'progressive'
 		},
 		{
 			action: 'cancel',
@@ -312,7 +294,7 @@
 				this.feedbackSubjectInput.getValue()
 			);
 
-		this.actions.setAbilities( { submit:  isValid } );
+		this.actions.setAbilities( { submit: isValid } );
 	};
 
 	/**
@@ -422,13 +404,33 @@
 				}, function () {
 					fb.status = 'error4';
 					mw.log.warn( 'Feedback report failed because MessagePoster could not be fetched' );
-				} ).always( function () {
+				} ).then( function () {
 					fb.close();
+				}, function () {
+					return fb.getErrorMessage();
 				} );
 			}, this );
 		}
 		// Fallback to parent handler
 		return mw.Feedback.Dialog.parent.prototype.getActionProcess.call( this, action );
+	};
+
+	/**
+	 * Returns an error message for the current status.
+	 *
+	 * @private
+	 *
+	 * @return {OO.ui.Error}
+	 */
+	mw.Feedback.Dialog.prototype.getErrorMessage = function () {
+		switch ( this.status ) {
+			case 'error1':
+			case 'error2':
+			case 'error3':
+			case 'error4':
+				// Messages: feedback-error1, feedback-error2, feedback-error3, feedback-error4
+				return new OO.ui.Error( mw.msg( 'feedback-' + this.status ) );
+		}
 	};
 
 	/**
@@ -454,10 +456,10 @@
 				if ( secondaryCode === 'http' ) {
 					fb.status = 'error3';
 					// ajax request failed
-					mw.log.warn( 'Feedback report failed with HTTP error: ' +  details.textStatus );
+					mw.log.warn( 'Feedback report failed with HTTP error: ' + details.textStatus );
 				} else {
 					fb.status = 'error2';
-					mw.log.warn( 'Feedback report failed with API error: ' +  secondaryCode );
+					mw.log.warn( 'Feedback report failed with API error: ' + secondaryCode );
 				}
 			} else {
 				fb.status = 'error1';

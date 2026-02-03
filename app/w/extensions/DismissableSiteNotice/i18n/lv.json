@@ -1,8 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"Xil"
+			"Xil",
+			"Papuass"
 		]
 	},
-	"sitenotice_close": "paslēpt"
+	"sitenotice_close": "paslēpt",
+	"sitenotice-desc": "Ļauj lietotājiem aizvērt paziņojumu"
 }

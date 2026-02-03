@@ -22,6 +22,10 @@
  * @ingroup FileRepo
  */
 
+use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\Database;
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * A repository that stores files in the local filesystem and registers them
  * in the wiki's own database. This is the most commonly used repository class.
@@ -29,28 +33,24 @@
  * @ingroup FileRepo
  */
 class LocalRepo extends FileRepo {
-	/** @var array */
+	/** @var callable */
 	protected $fileFactory = [ 'LocalFile', 'newFromTitle' ];
-
-	/** @var array */
+	/** @var callable */
 	protected $fileFactoryKey = [ 'LocalFile', 'newFromKey' ];
-
-	/** @var array */
+	/** @var callable */
 	protected $fileFromRowFactory = [ 'LocalFile', 'newFromRow' ];
-
-	/** @var array */
+	/** @var callable */
 	protected $oldFileFromRowFactory = [ 'OldLocalFile', 'newFromRow' ];
-
-	/** @var array */
+	/** @var callable */
 	protected $oldFileFactory = [ 'OldLocalFile', 'newFromTitle' ];
-
-	/** @var array */
+	/** @var callable */
 	protected $oldFileFactoryKey = [ 'OldLocalFile', 'newFromKey' ];
 
 	function __construct( array $info = null ) {
 		parent::__construct( $info );
 
-		$this->hasSha1Storage = isset( $info['storageLayout'] ) && $info['storageLayout'] === 'sha1';
+		$this->hasSha1Storage = isset( $info['storageLayout'] )
+			&& $info['storageLayout'] === 'sha1';
 
 		if ( $this->hasSha1Storage() ) {
 			$this->backend = new FileBackendDBRepoWrapper( [
@@ -93,7 +93,7 @@ class LocalRepo extends FileRepo {
 	 *
 	 * @param array $storageKeys
 	 *
-	 * @return FileRepoStatus
+	 * @return Status
 	 */
 	function cleanupDeletedBatch( array $storageKeys ) {
 		if ( $this->hasSha1Storage() ) {
@@ -199,12 +199,12 @@ class LocalRepo extends FileRepo {
 			$expiry = 86400; // has invalidation, 1 day
 		}
 
-		$that = $this;
+		$method = __METHOD__;
 		$redirDbKey = ObjectCache::getMainWANInstance()->getWithSetCallback(
 			$memcKey,
 			$expiry,
-			function ( $oldValue, &$ttl, array &$setOpts ) use ( $that, $title ) {
-				$dbr = $that->getSlaveDB(); // possibly remote DB
+			function ( $oldValue, &$ttl, array &$setOpts ) use ( $method, $title ) {
+				$dbr = $this->getReplicaDB(); // possibly remote DB
 
 				$setOpts += Database::getCacheSetOptions( $dbr );
 
@@ -217,7 +217,7 @@ class LocalRepo extends FileRepo {
 							'page_title' => $title->getDBkey(),
 							'rd_from = page_id'
 						],
-						__METHOD__
+						$method
 					);
 				} else {
 					$row = false;
@@ -227,7 +227,7 @@ class LocalRepo extends FileRepo {
 					? Title::makeTitle( $row->rd_namespace, $row->rd_title )->getDBkey()
 					: ''; // negative cache
 			},
-			[ 'pcTTL' => 30 ]
+			[ 'pcTTL' => WANObjectCache::TTL_PROC_LONG ]
 		);
 
 		// @note: also checks " " for b/c
@@ -302,7 +302,7 @@ class LocalRepo extends FileRepo {
 			}
 		};
 
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 
 		// Query image table
 		$imgNames = [];
@@ -372,7 +372,7 @@ class LocalRepo extends FileRepo {
 	 * @return File[]
 	 */
 	function findBySha1( $hash ) {
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		$res = $dbr->select(
 			'image',
 			LocalFile::selectFields(),
@@ -404,7 +404,7 @@ class LocalRepo extends FileRepo {
 			return []; // empty parameter
 		}
 
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		$res = $dbr->select(
 			'image',
 			LocalFile::selectFields(),
@@ -434,7 +434,7 @@ class LocalRepo extends FileRepo {
 		$selectOptions = [ 'ORDER BY' => 'img_name', 'LIMIT' => intval( $limit ) ];
 
 		// Query database
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		$res = $dbr->select(
 			'image',
 			LocalFile::selectFields(),
@@ -453,23 +453,33 @@ class LocalRepo extends FileRepo {
 	}
 
 	/**
-	 * Get a connection to the slave DB
-	 * @return DatabaseBase
+	 * Get a connection to the replica DB
+	 * @return IDatabase
+	 */
+	function getReplicaDB() {
+		return wfGetDB( DB_REPLICA );
+	}
+
+	/**
+	 * Alias for getReplicaDB()
+	 *
+	 * @return IDatabase
+	 * @deprecated Since 1.29
 	 */
 	function getSlaveDB() {
-		return wfGetDB( DB_SLAVE );
+		return $this->getReplicaDB();
 	}
 
 	/**
 	 * Get a connection to the master DB
-	 * @return DatabaseBase
+	 * @return IDatabase
 	 */
 	function getMasterDB() {
 		return wfGetDB( DB_MASTER );
 	}
 
 	/**
-	 * Get a callback to get a DB handle given an index (DB_SLAVE/DB_MASTER)
+	 * Get a callback to get a DB handle given an index (DB_REPLICA/DB_MASTER)
 	 * @return Closure
 	 */
 	protected function getDBFactory() {
@@ -500,9 +510,12 @@ class LocalRepo extends FileRepo {
 	function invalidateImageRedirect( Title $title ) {
 		$key = $this->getSharedCacheKey( 'image_redirect', md5( $title->getDBkey() ) );
 		if ( $key ) {
-			$this->getMasterDB()->onTransactionPreCommitOrIdle( function() use ( $key ) {
-				ObjectCache::getMainWANInstance()->delete( $key );
-			} );
+			$this->getMasterDB()->onTransactionPreCommitOrIdle(
+				function () use ( $key ) {
+					ObjectCache::getMainWANInstance()->delete( $key );
+				},
+				__METHOD__
+			);
 		}
 	}
 
@@ -559,7 +572,7 @@ class LocalRepo extends FileRepo {
 	 *
 	 * @param string $function
 	 * @param array $args
-	 * @return FileRepoStatus
+	 * @return Status
 	 */
 	protected function skipWriteOperationIfSha1( $function, array $args ) {
 		$this->assertWritableRepo(); // fail out if read-only

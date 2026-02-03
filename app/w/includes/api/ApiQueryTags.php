@@ -50,11 +50,11 @@ class ApiQueryTags extends ApiQueryBase {
 		$limit = $params['limit'];
 		$result = $this->getResult();
 
-		$extensionDefinedTags = array_fill_keys( ChangeTags::listExtensionDefinedTags(), 0 );
+		$softwareDefinedTags = array_fill_keys( ChangeTags::listSoftwareDefinedTags(), 0 );
 		$explicitlyDefinedTags = array_fill_keys( ChangeTags::listExplicitlyDefinedTags(), 0 );
-		$extensionActivatedTags = array_fill_keys( ChangeTags::listExtensionActivatedTags(), 0 );
+		$softwareActivatedTags = array_fill_keys( ChangeTags::listSoftwareActivatedTags(), 0 );
 
-		$definedTags = array_merge( $extensionDefinedTags, $explicitlyDefinedTags );
+		$definedTags = array_merge( $softwareDefinedTags, $explicitlyDefinedTags );
 
 		# Fetch defined tags that aren't past the continuation
 		if ( $params['continue'] !== null ) {
@@ -93,7 +93,7 @@ class ApiQueryTags extends ApiQueryBase {
 			$tag['name'] = $tagName;
 
 			if ( $fld_displayname ) {
-				$tag['displayname'] = ChangeTags::tagDescription( $tagName );
+				$tag['displayname'] = ChangeTags::tagDescription( $tagName, $this );
 			}
 
 			if ( $fld_description ) {
@@ -105,16 +105,17 @@ class ApiQueryTags extends ApiQueryBase {
 				$tag['hitcount'] = $hitcount;
 			}
 
-			$isExtension = isset( $extensionDefinedTags[$tagName] );
+			$isSoftware = isset( $softwareDefinedTags[$tagName] );
 			$isExplicit = isset( $explicitlyDefinedTags[$tagName] );
 
 			if ( $fld_defined ) {
-				$tag['defined'] = $isExtension || $isExplicit;
+				$tag['defined'] = $isSoftware || $isExplicit;
 			}
 
 			if ( $fld_source ) {
 				$tag['source'] = [];
-				if ( $isExtension ) {
+				if ( $isSoftware ) {
+					// TODO: Can we change this to 'software'?
 					$tag['source'][] = 'extension';
 				}
 				if ( $isExplicit ) {
@@ -123,7 +124,7 @@ class ApiQueryTags extends ApiQueryBase {
 			}
 
 			if ( $fld_active ) {
-				$tag['active'] = $isExplicit || isset( $extensionActivatedTags[$tagName] );
+				$tag['active'] = $isExplicit || isset( $softwareActivatedTags[$tagName] );
 			}
 
 			$fit = $result->addValue( [ 'query', $this->getModuleName() ], null, $tag );
@@ -177,6 +178,6 @@ class ApiQueryTags extends ApiQueryBase {
 	}
 
 	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/API:Tags';
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Tags';
 	}
 }

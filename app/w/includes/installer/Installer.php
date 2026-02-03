@@ -23,6 +23,7 @@
  * @file
  * @ingroup Deployment
  */
+use MediaWiki\MediaWikiServices;
 
 /**
  * This documentation group collects source code files with deployment functionality.
@@ -179,6 +180,7 @@ abstract class Installer {
 		'wgUseInstantCommons',
 		'wgUpgradeKey',
 		'wgDefaultSkin',
+		'wgPingback',
 	];
 
 	/**
@@ -214,7 +216,7 @@ abstract class Installer {
 		'_UpgradeKeySupplied' => false,
 		'_ExistingDBSettings' => false,
 
-		// $wgLogo is probably wrong (bug 48084); set something that will work.
+		// $wgLogo is probably wrong (T50084); set something that will work.
 		// Single quotes work fine here, as LocalSettingsGenerator outputs this unescaped.
 		'wgLogo' => '$wgResourceBasePath/resources/assets/wiki.png',
 		'wgAuthenticationTokenVersion' => 1,
@@ -293,10 +295,6 @@ abstract class Installer {
 			'url' => 'https://creativecommons.org/publicdomain/zero/1.0/',
 			'icon' => '$wgResourceBasePath/resources/assets/licenses/cc-0.png',
 		],
-		'pd' => [
-			'url' => '',
-			'icon' => '$wgResourceBasePath/resources/assets/licenses/public-domain.png',
-		],
 		'gfdl' => [
 			'url' => 'https://www.gnu.org/copyleft/fdl.html',
 			'icon' => '$wgResourceBasePath/resources/assets/licenses/gnu-fdl.png',
@@ -351,36 +349,77 @@ abstract class Installer {
 	abstract public function showStatusMessage( Status $status );
 
 	/**
+	 * Constructs a Config object that contains configuration settings that should be
+	 * overwritten for the installation process.
+	 *
+	 * @since 1.27
+	 *
+	 * @param Config $baseConfig
+	 *
+	 * @return Config The config to use during installation.
+	 */
+	public static function getInstallerConfig( Config $baseConfig ) {
+		$configOverrides = new HashConfig();
+
+		// disable (problematic) object cache types explicitly, preserving all other (working) ones
+		// bug T113843
+		$emptyCache = [ 'class' => 'EmptyBagOStuff' ];
+
+		$objectCaches = [
+				CACHE_NONE => $emptyCache,
+				CACHE_DB => $emptyCache,
+				CACHE_ANYTHING => $emptyCache,
+				CACHE_MEMCACHED => $emptyCache,
+			] + $baseConfig->get( 'ObjectCaches' );
+
+		$configOverrides->set( 'ObjectCaches', $objectCaches );
+
+		// Load the installer's i18n.
+		$messageDirs = $baseConfig->get( 'MessagesDirs' );
+		$messageDirs['MediawikiInstaller'] = __DIR__ . '/i18n';
+
+		$configOverrides->set( 'MessagesDirs', $messageDirs );
+
+		$installerConfig = new MultiConfig( [ $configOverrides, $baseConfig ] );
+
+		// make sure we use the installer config as the main config
+		$configRegistry = $baseConfig->get( 'ConfigRegistry' );
+		$configRegistry['main'] = function() use ( $installerConfig ) {
+			return $installerConfig;
+		};
+
+		$configOverrides->set( 'ConfigRegistry', $configRegistry );
+
+		return $installerConfig;
+	}
+
+	/**
 	 * Constructor, always call this from child classes.
 	 */
 	public function __construct() {
-		global $wgMessagesDirs, $wgUser;
+		global $wgMemc, $wgUser, $wgObjectCaches;
+
+		$defaultConfig = new GlobalVarConfig(); // all the stuff from DefaultSettings.php
+		$installerConfig = self::getInstallerConfig( $defaultConfig );
+
+		// Reset all services and inject config overrides
+		MediaWiki\MediaWikiServices::resetGlobalInstance( $installerConfig );
 
 		// Don't attempt to load user language options (T126177)
 		// This will be overridden in the web installer with the user-specified language
 		RequestContext::getMain()->setLanguage( 'en' );
 
 		// Disable the i18n cache
+		// TODO: manage LocalisationCache singleton in MediaWikiServices
 		Language::getLocalisationCache()->disableBackend();
-		// Disable LoadBalancer and wfGetDB etc.
-		LBFactory::disableBackend();
+
+		// Disable all global services, since we don't have any configuration yet!
+		MediaWiki\MediaWikiServices::disableStorageBackend();
 
 		// Disable object cache (otherwise CACHE_ANYTHING will try CACHE_DB and
 		// SqlBagOStuff will then throw since we just disabled wfGetDB)
-		$GLOBALS['wgMemc'] = new EmptyBagOStuff;
-		ObjectCache::clear();
-		$emptyCache = [ 'class' => 'EmptyBagOStuff' ];
-		// disable (problematic) object cache types explicitly, preserving all other (working) ones
-		// bug T113843
-		$GLOBALS['wgObjectCaches'] = [
-			CACHE_NONE => $emptyCache,
-			CACHE_DB => $emptyCache,
-			CACHE_ANYTHING => $emptyCache,
-			CACHE_MEMCACHED => $emptyCache,
-		] + $GLOBALS['wgObjectCaches'];
-
-		// Load the installer's i18n.
-		$wgMessagesDirs['MediawikiInstaller'] = __DIR__ . '/i18n';
+		$wgObjectCaches = MediaWikiServices::getInstance()->getMainConfig()->get( 'ObjectCaches' );
+		$wgMemc = ObjectCache::getInstance( CACHE_NONE );
 
 		// Having a user with id = 0 safeguards us from DB access via User::loadOptions().
 		$wgUser = User::newFromId( 0 );
@@ -407,6 +446,8 @@ abstract class Installer {
 		$this->parserTitle = Title::newFromText( 'Installer' );
 		$this->parserOptions = new ParserOptions( $wgUser ); // language will be wrong :(
 		$this->parserOptions->setEditSection( false );
+		// Don't try to access DB before user language is initialised
+		$this->setParserLanguage( Language::factory( 'en' ) );
 	}
 
 	/**
@@ -528,7 +569,7 @@ abstract class Installer {
 	/**
 	 * Determine if LocalSettings.php exists. If it does, return its variables.
 	 *
-	 * @return array
+	 * @return array|false
 	 */
 	public static function getExistingLocalSettings() {
 		global $IP;
@@ -635,7 +676,7 @@ abstract class Installer {
 		try {
 			$out = $wgParser->parse( $text, $this->parserTitle, $this->parserOptions, $lineStart );
 			$html = $out->getText();
-		} catch ( DBAccessError $e ) {
+		} catch ( MediaWiki\Services\ServiceDisabledException $e ) {
 			$html = '<!--DB access attempted during parse-->  ' . htmlspecialchars( $text );
 
 			if ( !empty( $this->debug ) ) {
@@ -683,6 +724,7 @@ abstract class Installer {
 				'ss_good_articles' => 0,
 				'ss_total_pages' => 0,
 				'ss_users' => 0,
+				'ss_active_users' => 0,
 				'ss_images' => 0
 			],
 			__METHOD__, 'IGNORE'
@@ -1041,7 +1083,7 @@ abstract class Installer {
 	/**
 	 * Convert a hex string representing a Unicode code point to that code point.
 	 * @param string $c
-	 * @return string
+	 * @return string|false
 	 */
 	protected function unicodeChar( $c ) {
 		$c = hexdec( $c );
@@ -1163,7 +1205,7 @@ abstract class Installer {
 			$command = $path . DIRECTORY_SEPARATOR . $name;
 
 			MediaWiki\suppressWarnings();
-			$file_exists = file_exists( $command );
+			$file_exists = is_executable( $command );
 			MediaWiki\restoreWarnings();
 
 			if ( $file_exists ) {
@@ -1382,6 +1424,7 @@ abstract class Installer {
 		$wgAutoloadClasses += $data['autoload'];
 
 		$hooksWeWant = isset( $wgHooks['LoadExtensionSchemaUpdates'] ) ?
+			/** @suppress PhanUndeclaredVariable $wgHooks is set by DefaultSettings */
 			$wgHooks['LoadExtensionSchemaUpdates'] : [];
 
 		if ( isset( $data['globals']['wgHooks']['LoadExtensionSchemaUpdates'] ) ) {
@@ -1391,7 +1434,7 @@ abstract class Installer {
 			);
 		}
 		// Unset everyone else's hooks. Lord knows what someone might be doing
-		// in ParserFirstCallInit (see bug 27171)
+		// in ParserFirstCallInit (see T29171)
 		$GLOBALS['wgHooks'] = [ 'LoadExtensionSchemaUpdates' => $hooksWeWant ];
 
 		return Status::newGood();
@@ -1399,10 +1442,10 @@ abstract class Installer {
 
 	/**
 	 * Get an array of install steps. Should always be in the format of
-	 * array(
+	 * [
 	 *   'name'     => 'someuniquename',
-	 *   'callback' => array( $obj, 'method' ),
-	 * )
+	 *   'callback' => [ $obj, 'method' ],
+	 * ]
 	 * There must be a config-install-$name message defined per step, which will
 	 * be shown on install.
 	 *
@@ -1616,8 +1659,13 @@ abstract class Installer {
 	 */
 	protected function createMainpage( DatabaseInstaller $installer ) {
 		$status = Status::newGood();
+		$title = Title::newMainPage();
+		if ( $title->exists() ) {
+			$status->warning( 'config-install-mainpage-exists' );
+			return $status;
+		}
 		try {
-			$page = WikiPage::factory( Title::newMainPage() );
+			$page = WikiPage::factory( $title );
 			$content = new WikitextContent(
 				wfMessage( 'mainpagetext' )->inContentLanguage()->text() . "\n\n" .
 				wfMessage( 'mainpagedocfooter' )->inContentLanguage()->text()
@@ -1686,7 +1734,7 @@ abstract class Installer {
 	 * Add an installation step following the given step.
 	 *
 	 * @param callable $callback A valid installation callback array, in this form:
-	 *    array( 'name' => 'some-unique-name', 'callback' => array( $obj, 'function' ) );
+	 *    [ 'name' => 'some-unique-name', 'callback' => [ $obj, 'function' ] ];
 	 * @param string $findStep The step to find. Omit to put the step at the beginning
 	 */
 	public function addInstallStep( $callback, $findStep = 'BEGINNING' ) {

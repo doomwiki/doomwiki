@@ -4,9 +4,9 @@
 
 ( function ( M, $ ) {
 
-	var settings = M.require( 'mobile.settings/settings' ),
+	var settings = M.require( 'mobile.startup/settings' ),
 		cookiesEnabled = settings.cookiesEnabled,
-		popup = M.require( 'mobile.toast/toast' );
+		popup = M.require( 'mobile.startup/toast' );
 
 	/**
 	 * An event handler for the toggle to desktop link.
@@ -15,7 +15,7 @@
 	 * If cookies are not enabled, show a toast and die.
 	 * @method
 	 * @ignore
-	 * @returns {Boolean|undefined}
+	 * @return {boolean|undefined}
 	 */
 	function desktopViewClick() {
 		if ( !cookiesEnabled() ) {

@@ -36,8 +36,12 @@ class ApiQueryAbuseFilters extends ApiQueryBase {
 
 	public function execute() {
 		$user = $this->getUser();
-		if ( !$user->isAllowed( 'abusefilter-view' ) ) {
-			$this->dieUsage( 'You don\'t have permission to view abuse filters', 'permissiondenied' );
+		if ( is_callable( [ $this, 'checkUserRightsAny' ] ) ) {
+			$this->checkUserRightsAny( 'abusefilter-view' );
+		} else {
+			if ( !$user->isAllowed( 'abusefilter-view' ) ) {
+				$this->dieUsage( 'You don\'t have permission to view abuse filters', 'permissiondenied' );
+			}
 		}
 
 		$params = $this->extractRequestParams();
@@ -79,12 +83,14 @@ class ApiQueryAbuseFilters extends ApiQueryBase {
 
 			/* Check for conflicting parameters. */
 			if ( ( isset( $show['enabled'] ) && isset( $show['!enabled'] ) )
-					|| ( isset( $show['deleted'] ) && isset( $show['!deleted'] ) )
-					|| ( isset( $show['private'] ) && isset( $show['!private'] ) ) ) {
-					$this->dieUsage(
-						'Incorrect parameter - mutually exclusive values may not be supplied',
-						'show'
-					);
+				|| ( isset( $show['deleted'] ) && isset( $show['!deleted'] ) )
+				|| ( isset( $show['private'] ) && isset( $show['!private'] ) )
+			) {
+				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+					$this->dieWithError( 'apierror-show' );
+				} else {
+					$this->dieUsageMsg( 'show' );
+				}
 			}
 
 			$this->addWhereIf( 'af_enabled = 0', isset( $show['!enabled'] ) );
@@ -97,7 +103,7 @@ class ApiQueryAbuseFilters extends ApiQueryBase {
 
 		$res = $this->select( __METHOD__ );
 
-		$showhidden = $user->isAllowed( 'abusefilter-modify' );
+		$showhidden = $user->isAllowedAny( 'abusefilter-modify', 'abusefilter-view-private' );
 
 		$count = 0;
 		foreach ( $res as $row ) {
@@ -151,11 +157,7 @@ class ApiQueryAbuseFilters extends ApiQueryBase {
 				}
 			}
 		}
-		if ( defined( 'ApiResult::META_CONTENT' ) ) {
-			$result->addIndexedTagName( array( 'query', $this->getModuleName() ), 'filter' );
-		} else {
-			$result->setIndexedTagName_internal( array( 'query', $this->getModuleName() ), 'filter' );
-		}
+		$result->addIndexedTagName( array( 'query', $this->getModuleName() ), 'filter' );
 	}
 
 	public function getAllowedParams() {
@@ -172,10 +174,7 @@ class ApiQueryAbuseFilters extends ApiQueryBase {
 					'newer'
 				),
 				ApiBase::PARAM_DFLT => 'newer',
-				/** @todo Once support for MediaWiki < 1.25 is dropped,
-				 *  just use ApiBase::PARAM_HELP_MSG directly
-				 */
-				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'api-help-param-direction',
+				ApiBase::PARAM_HELP_MSG => 'api-help-param-direction',
 			),
 			'show' => array(
 				ApiBase::PARAM_ISMULTI => true,
@@ -211,37 +210,6 @@ class ApiQueryAbuseFilters extends ApiQueryBase {
 				),
 				ApiBase::PARAM_ISMULTI => true
 			)
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getParamDescription() {
-		return array(
-			'startid' => 'The filter id to start enumerating from',
-			'endid' => 'The filter id to stop enumerating at',
-			'dir' => 'The direction in which to enumerate',
-			'show' => 'Show only filters which meet these criteria',
-			'limit' => 'The maximum number of filters to list',
-			'prop' => 'Which properties to get',
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getDescription() {
-		return 'Show details of the abuse filters.';
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getExamples() {
-		return array(
-			'api.php?action=query&list=abusefilters&abfshow=enabled|!private',
-			'api.php?action=query&list=abusefilters&abfprop=id|description|pattern'
 		);
 	}
 

@@ -5,16 +5,16 @@
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
-	$IP = dirname(__FILE__).'/../../..';
+	$IP = dirname( __FILE__ ).'/../../..';
 }
 
-require_once( "$IP/maintenance/Maintenance.php" );
+require_once ( "$IP/maintenance/Maintenance.php" );
 
 class PruneFRIncludeData extends Maintenance {
 
 	public function __construct() {
 		parent::__construct();
-		$this->mDescription = "This script clears template/image data for reviewed versions" . 
+		$this->mDescription = "This script clears template/image data for reviewed versions" .
 			"that are 1+ month old and have 50+ newer versions in page. By default," .
 			"it will just output how many rows can be deleted. Use the 'prune' option " .
 			"to actually delete them.";
@@ -49,9 +49,9 @@ class PruneFRIncludeData extends Maintenance {
 		$end += $this->mBatchSize - 1; # Do remaining chunk
 		$blockStart = $start;
 		$blockEnd = $start + $this->mBatchSize - 1;
-		
+
 		$tDeleted = $fDeleted = 0; // tallies
-		
+
 		$newerRevs = 50;
 		$cutoff = $db->timestamp( time() - 3600 );
 		while ( $blockEnd <= $end ) {
@@ -64,9 +64,9 @@ class PruneFRIncludeData extends Maintenance {
 				// Get the newest X ($newerRevs) flagged revs for this page
 				$sres = $db->select( 'flaggedrevs',
 					'fr_rev_id',
-					array( 'fr_page_id' => $row->fp_page_id ),
+					[ 'fr_page_id' => $row->fp_page_id ],
 					__METHOD__,
-					array( 'ORDER BY' => 'fr_rev_id DESC', 'LIMIT' => $newerRevs )
+					[ 'ORDER BY' => 'fr_rev_id DESC', 'LIMIT' => $newerRevs ]
 				);
 				// See if there are older revs that can be pruned...
 				if ( $db->numRows( $sres ) == $newerRevs ) {
@@ -78,17 +78,17 @@ class PruneFRIncludeData extends Maintenance {
 					$db->freeResult( $sres );
 					$sres = $db->select( 'flaggedrevs',
 						'fr_rev_id',
-						array(
+						[
 							'fr_page_id' => $row->fp_page_id,
 							'fr_rev_id < '.$oldestId, // not in the newest X
 							'fr_timestamp < '.$db->addQuotes( $cutoff ) // not reviewed recently
-						),
+						],
 						__METHOD__,
 						// Sanity check (start with the oldest)
-						array( 'ORDER BY' => 'fr_rev_id ASC', 'LIMIT' => 5000 )
+						[ 'ORDER BY' => 'fr_rev_id ASC', 'LIMIT' => 5000 ]
 					);
 					// Build an array of these rev Ids
-					$revsClearIncludes = array();
+					$revsClearIncludes = [];
 					foreach ( $sres as $srow ) {
 						$revsClearIncludes[] = $srow->fr_rev_id;
 					}
@@ -98,12 +98,12 @@ class PruneFRIncludeData extends Maintenance {
 					if ( $prune ) {
 						$db->begin();
 						$db->delete( 'flaggedtemplates',
-							array('ft_rev_id' => $revsClearIncludes),
+							[ 'ft_rev_id' => $revsClearIncludes ],
 							__METHOD__
 						);
 						$tDeleted += $db->affectedRows();
 						$db->delete( 'flaggedimages',
-							array('fi_rev_id' => $revsClearIncludes),
+							[ 'fi_rev_id' => $revsClearIncludes ],
 							__METHOD__
 						);
 						$fDeleted += $db->affectedRows();
@@ -112,12 +112,12 @@ class PruneFRIncludeData extends Maintenance {
 					} elseif ( count( $revsClearIncludes ) ) {
 						$tDeleted += $db->selectField( 'flaggedtemplates',
 							'COUNT(*)',
-							array('ft_rev_id' => $revsClearIncludes),
+							[ 'ft_rev_id' => $revsClearIncludes ],
 							__METHOD__
 						);
 						$fDeleted += $db->selectField( 'flaggedimages',
 							'COUNT(*)',
-							array('fi_rev_id' => $revsClearIncludes),
+							[ 'fi_rev_id' => $revsClearIncludes ],
 							__METHOD__
 						);
 					}
@@ -144,4 +144,4 @@ class PruneFRIncludeData extends Maintenance {
 }
 
 $maintClass = "PruneFRIncludeData";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once ( RUN_MAINTENANCE_IF_MAIN );

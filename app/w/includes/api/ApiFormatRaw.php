@@ -49,7 +49,7 @@ class ApiFormatRaw extends ApiFormatBase {
 	public function getMimeType() {
 		$data = $this->getResult()->getResultData();
 
-		if ( isset( $data['error'] ) ) {
+		if ( isset( $data['error'] ) || isset( $data['errors'] ) ) {
 			return $this->errorFallback->getMimeType();
 		}
 
@@ -73,7 +73,7 @@ class ApiFormatRaw extends ApiFormatBase {
 
 	public function initPrinter( $unused = false ) {
 		$data = $this->getResult()->getResultData();
-		if ( isset( $data['error'] ) ) {
+		if ( isset( $data['error'] ) || isset( $data['errors'] ) ) {
 			$this->errorFallback->initPrinter( $unused );
 			if ( $this->mFailWithHTTPError ) {
 				$this->getMain()->getRequest()->response()->statusHeader( 400 );
@@ -85,7 +85,7 @@ class ApiFormatRaw extends ApiFormatBase {
 
 	public function closePrinter() {
 		$data = $this->getResult()->getResultData();
-		if ( isset( $data['error'] ) ) {
+		if ( isset( $data['error'] ) || isset( $data['errors'] ) ) {
 			$this->errorFallback->closePrinter();
 		} else {
 			parent::closePrinter();
@@ -94,7 +94,7 @@ class ApiFormatRaw extends ApiFormatBase {
 
 	public function execute() {
 		$data = $this->getResult()->getResultData();
-		if ( isset( $data['error'] ) ) {
+		if ( isset( $data['error'] ) || isset( $data['errors'] ) ) {
 			$this->errorFallback->execute();
 			return;
 		}

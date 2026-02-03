@@ -2,8 +2,8 @@
 moved from beta_common.css in
 Change-Id: I683d029d09340a460b02016c5c4fbd6ada5a9b35
 */
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 .client-js {
 	.collapsible-heading,
@@ -17,7 +17,7 @@ Change-Id: I683d029d09340a460b02016c5c4fbd6ada5a9b35
 
 		.indicator {
 			float: left;
-			margin-top: .7em;
+			margin-top: 0.7em;
 			font-size: @indicatorFontSize;
 		}
 	}
@@ -25,10 +25,17 @@ Change-Id: I683d029d09340a460b02016c5c4fbd6ada5a9b35
 	.collapsible-block {
 		// bug 41401 - without this content doesn't always take up whole width
 		width: 100%;
-		display: none;
+	}
+}
 
-		&.open-block {
-			display: block;
-		}
+@media print {
+	.collapsible-heading .indicator,
+	.collapsible-heading .edit-page {
+		display: none;
+	}
+
+	// need to be this specific in order to override the default style
+	.client-js .collapsible-block {
+		display: block;
 	}
 }

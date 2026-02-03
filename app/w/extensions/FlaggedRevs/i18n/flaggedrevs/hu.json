@@ -19,7 +19,8 @@
 			"Tgr",
 			"JulesWinnfield-hu",
 			"Csega",
-			"Tacsipacsi"
+			"Tacsipacsi",
+			"Csigabi"
 		]
 	},
 	"action-review": "változatok ellenőrzése",
@@ -50,6 +51,9 @@
 	"group-autoreview": "automatikusan megerősített felhasználók",
 	"group-autoreview-member": "automatikusan megerősített felhasználó",
 	"grouppage-autoreview": "{{ns:project}}:Automatikusan megerősített szerkesztő",
+	"logentry-review-approve": "$1 {{GENDER:$2|ellenőrzötté tette}} a(z) $3 egy változatát",
+	"logentry-review-approve-auto": "$1 automatikusan {{GENDER:$2|ellenőrzötté tette}} a(z) $3 egy változatát",
+	"logentry-review-unapprove": "$1 {{GENDER:$2|elavulttá tette}} a(z) $3 egy változatát",
 	"revreview-hist-draft": "nem ellenőrzött változat",
 	"revreview-hist-pending": "ellenőrzés folyamatban",
 	"revreview-hist-quality": "minőségi változat",
@@ -70,8 +74,6 @@
 	"revreview-log-details-hide": "részletek elrejtése",
 	"revreview-log-details-title": "Rögzítésbeállítás-napló megjelenítésének ki- vagy bekapcsolása",
 	"review-diff2stable": "Összes ellenőrzésre váró szerkesztés megjelenítése",
-	"review-logentry-app": "ellenőrizte a(z) [[$1]] lap egy változatát",
-	"review-logentry-dis": "visszaminősítette a(z) [[$1]] lap egy változatát nem ellenőrzöttnek",
 	"review-logentry-id": "változat: $2",
 	"review-logentry-diff": "ellenőrzött változtatások",
 	"review-logentry-diff2": "nem ellenőrzötté visszaminősített változtatások",
@@ -84,7 +86,6 @@
 	"revreview-accuracy-2": "pontos",
 	"revreview-accuracy-3": "forrásokkal megfelelően alátámasztott",
 	"revreview-accuracy-4": "kiemelt",
-	"revreview-auto": "(automatikus)",
 	"revreview-basic": "Ez a [[{{MediaWiki:Validationpage}}|közzétett változat]], [{{fullurl:{{#Special:Log}}|type=review&page={{FULLPAGENAMEE}}}} ellenőrizve]: <i>$2</i>\n[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} $3 változtatás] vár ellenőrzésre.",
 	"revreview-basic-i": "Ez a [[{{MediaWiki:Validationpage}}|közzétett változat]], [{{fullurl:{{#Special:Log}}|type=review&page={{FULLPAGENAMEE}}}} ellenőrizve]: <i>$2</i>\n[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} Sablon- vagy fájlváltoztatások] várnak ellenőrzésre.",
 	"revreview-basic-old": "Ez egy [[{{MediaWiki:Validationpage}}|ellenőrzött]] változat ([{{fullurl:{{#Special:ReviewedVersions}}|page={{FULLPAGENAMEE}}}} összes]), [{{fullurl:{{#Special:Log}}|type=review&page={{FULLPAGENAMEE}}}} ellenőrizve]: <i>$2</i>.\nAzóta történhettek új [{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} változtatások].",
@@ -98,7 +99,6 @@
 	"revreview-depth-3": "nagy",
 	"revreview-depth-4": "kiemelt",
 	"revreview-draft-title": "Az ellenőrzésre váró változtatások is láthatóak az oldalon",
-	"revreview-edit": "Szerkesztés",
 	"revreview-editnotice": "A változtatásaid akkor lesznek közzétéve, ha egy erre jogosult felhasználó jóváhagyta őket. [[{{MediaWiki:Validationpage}}|(?)]]'''",
 	"revreview-submitedit": "Lap mentése",
 	"revreview-submitedit-title": "Változtatásaid elküldése ellenőrzésre",
@@ -129,7 +129,6 @@
 	"revreview-quick-quality-same": "'''[[{{MediaWiki:Validationpage}}|Minőségi változat]]'''",
 	"revreview-quick-see-basic": "[[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} ellenőrzésre váró változtatások]]",
 	"revreview-quick-see-quality": "[[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} ellenőrzésre váró változtatások]]",
-	"revreview-source": "A lap forrása",
 	"revreview-basic-title": "Ez a lap egy ellenőrzött változata",
 	"revreview-style": "Olvashatóság",
 	"revreview-style-0": "ellenőrizetlen",
@@ -192,5 +191,13 @@
 	"revreview-locked": "'''Megjegyzés:''' a szerkesztéseket [[{{MediaWiki:Validationpage}}|ellenőrizni]] kell, mielőtt megjelennek ezen a lapon.",
 	"revreview-unlocked": "'''Megjegyzés:''' a szerkesztéseket nem kell [[{{MediaWiki:Validationpage}}|ellenőrizni]], mielőtt megjelennek ezen a lapon.",
 	"log-show-hide-review": "ellenőrzési napló $1",
-	"validationpage": "{{ns:help}}:Jelölt lapváltozatok"
+	"validationpage": "{{ns:help}}:Jelölt lapváltozatok",
+	"log-action-filter-review": "Ellenőrzés típusa:",
+	"log-action-filter-review-accept": "Kézi elfogadás",
+	"log-action-filter-review-autoaccept": "Automatikus elfogadás",
+	"log-action-filter-review-unaccept": "Kézi visszautasítás",
+	"log-action-filter-stable": "Konfigurációs változás típusa:",
+	"log-action-filter-stable-config": "Új konfiguráció",
+	"log-action-filter-stable-modify": "Konfiguráció módosítása",
+	"log-action-filter-stable-reset": "Konfiguráció visszaállítása"
 }

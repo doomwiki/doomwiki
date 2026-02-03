@@ -18,7 +18,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 		// New filter button
 		if ( $this->canEdit() ) {
 			$title = $this->getTitle( 'new' );
-			$link = Linker::link( $title, $this->msg( 'abusefilter-new' )->escaped() );
+			$link = $this->linkRenderer->makeLink( $title, $this->msg( 'abusefilter-new' )->text() );
 			$links = Xml::tags( 'p', null, $link ) . "\n";
 			$out->addHTML( $links );
 		}
@@ -63,7 +63,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 		$output .= Xml::element( 'h2', null,
 			$this->msg( 'abusefilter-list' )->parse() );
 
-		$pager = new AbuseFilterPager( $this, $conds );
+		$pager = new AbuseFilterPager( $this, $conds, $this->linkRenderer );
 
 		$deleted = $optarray['deleted'];
 		$hidedisabled = $optarray['hidedisabled'];
@@ -147,7 +147,7 @@ class AbuseFilterViewList extends AbuseFilterView {
 		$output .= $options;
 
 		if ( isset( $wgAbuseFilterCentralDB ) && !$wgAbuseFilterIsCentral && $scope == 'global' ) {
-			$globalPager = new GlobalAbuseFilterPager( $this, $conds );
+			$globalPager = new GlobalAbuseFilterPager( $this, $conds, $this->linkRenderer );
 			$output .=
 				$globalPager->getNavigationBar() .
 				$globalPager->getBody() .
@@ -198,9 +198,16 @@ class AbuseFilterViewList extends AbuseFilterView {
  */
 // Probably no need to autoload this class, as it will only be called from the class above.
 class AbuseFilterPager extends TablePager {
-	function __construct( $page, $conds ) {
+
+	/**
+	 * @var \MediaWiki\Linker\LinkRenderer
+	 */
+	protected $linkRenderer;
+
+	function __construct( $page, $conds, $linkRenderer ) {
 		$this->mPage = $page;
 		$this->mConds = $conds;
+		$this->linkRenderer = $linkRenderer;
 		parent::__construct( $this->mPage->getContext() );
 	}
 
@@ -239,8 +246,11 @@ class AbuseFilterPager extends TablePager {
 			'af_enabled' => 'abusefilter-list-status',
 			'af_timestamp' => 'abusefilter-list-lastmodified',
 			'af_hidden' => 'abusefilter-list-visibility',
-			'af_hit_count' => 'abusefilter-list-hitcount',
 		);
+
+		if ( $this->mPage->getUser()->isAllowed( 'abusefilter-log-detail' ) ) {
+			$headers['af_hit_count'] = 'abusefilter-list-hitcount';
+		}
 
 		global $wgAbuseFilterValidGroups;
 		if ( count( $wgAbuseFilterValidGroups ) > 1 ) {
@@ -260,14 +270,14 @@ class AbuseFilterPager extends TablePager {
 
 		switch ( $name ) {
 			case 'af_id':
-				return Linker::link(
+				return $this->linkRenderer->makeLink(
 					SpecialPage::getTitleFor( 'AbuseFilter', intval( $value ) ),
 					$lang->formatNum( intval( $value ) )
 				);
 			case 'af_public_comments':
-				return Linker::link(
+				return $this->linkRenderer->makeLink(
 					SpecialPage::getTitleFor( 'AbuseFilter', intval( $row->af_id ) ),
-					htmlspecialchars( $value, ENT_QUOTES, 'UTF-8', false )
+					$value
 				);
 			case 'af_actions':
 				$actions = explode( ',', $value );
@@ -296,9 +306,10 @@ class AbuseFilterPager extends TablePager {
 				$msg = $value ? 'abusefilter-hidden' : 'abusefilter-unhidden';
 				return $this->msg( $msg )->parse();
 			case 'af_hit_count':
-				$count_display = $this->msg( 'abusefilter-hitcount' )->numParams( $value )->parse();
 				if ( SpecialAbuseLog::canSeeDetails( $row->af_id, $row->af_hidden ) ) {
-					$link = Linker::linkKnown(
+					$count_display = $this->msg( 'abusefilter-hitcount' )
+						->numParams( $value )->parse();
+					$link = $this->linkRenderer->makeKnownLink(
 						SpecialPage::getTitleFor( 'AbuseLog' ),
 						$count_display,
 						array(),
@@ -352,11 +363,15 @@ class AbuseFilterPager extends TablePager {
 		$sortable_fields = array(
 			'af_id',
 			'af_enabled',
-			'af_hit_count',
 			'af_throttled',
 			'af_user_text',
-			'af_timestamp'
+			'af_timestamp',
+			'af_hidden',
+			'af_group',
 		);
+		if ( $this->mPage->getUser()->isAllowed( 'abusefilter-log-detail' ) ) {
+			$sortable_fields[] = 'af_hit_count';
+		}
 		return in_array( $name, $sortable_fields );
 	}
 }
@@ -365,8 +380,8 @@ class AbuseFilterPager extends TablePager {
  * Class to build paginated filter list for wikis using global abuse filters
  */
 class GlobalAbuseFilterPager extends AbuseFilterPager {
-	function __construct( $page, $conds ) {
-		parent::__construct( $page, $conds );
+	function __construct( $page, $conds, $linkRenderer ) {
+		parent::__construct( $page, $conds, $linkRenderer );
 		global $wgAbuseFilterCentralDB;
 		$this->mDb = wfGetDB( DB_SLAVE, array(), $wgAbuseFilterCentralDB );
 	}

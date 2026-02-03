@@ -6,10 +6,33 @@ class CharInsert {
 		return true;
 	}
 
+	/**
+	 * Things like edittools message are added to output directly,
+	 * instead of using something like OutputPage::addWikiText.
+	 * As a result, modules sometimes aren't transferred over.
+	 */
+	public static function onBeforePageDisplay( $out ) {
+		$addModules = false;
+		$title = $out->getTitle();
+		if ( $title->isSpecial( 'Upload' ) ) {
+			$addModules = true;
+		} else {
+			$action = Action::getActionName( $out );
+			if ( in_array( $action, [ 'edit', 'submit' ] ) ) {
+				$addModules = true;
+			}
+		}
+		if ( $addModules ) {
+			$out->addModules( 'ext.charinsert' );
+			$out->addModuleStyles( 'ext.charinsert.styles' );
+		}
+	}
+
 	public static function charInsertHook( $data, $params, Parser $parser ) {
 		$data = $parser->mStripState->unstripBoth( $data );
 		// For mw.toolbar.insertTags()
-		$parser->getOutput()->addModules( 'mediawiki.toolbar' );
+		$parser->getOutput()->addModules( 'ext.charinsert' );
+		$parser->getOutput()->addModuleStyles( 'ext.charinsert.styles' );
 		return implode( "<br />\n",
 			array_map( 'CharInsert::charInsertLine',
 				explode( "\n", trim( $data ) ) ) );
@@ -46,32 +69,19 @@ class CharInsert {
 	}
 
 	public static function charInsertChar( $start, $end = '' ) {
-		$estart = self::charInsertJsString( $start );
-		$eend = self::charInsertJsString( $end );
-		if ( $eend == '' ) {
-			$inline = self::charInsertDisplay( $start );
-		} else {
-			$inline = self::charInsertDisplay( $start . $end );
-		}
+		$estart = self::charInsertDisplay( $start );
+		$eend = self::charInsertDisplay( $end );
+		$inline = $estart . $eend;
+
+		// Having no href attribute makes the link be more
+		// easily copy and pasteable for non-js users.
 		return Xml::element( 'a',
 			[
-				'onclick' => "mw.toolbar.insertTags('$estart','$eend','');return false",
-				'href'    => 'javascript:void()'
-			],
-			$inline );
-	}
-
-	public static function charInsertJsString( $text ) {
-		return strtr(
-			self::charInsertDisplay( $text ),
-			[
-				"\\"   => "\\\\",
-				"\""   => "\\\"",
-				"'"    => "\\'",
-				"\r\n" => "\\n",
-				"\r"   => "\\n",
-				"\n"   => "\\n",
-			] );
+				'data-mw-charinsert-start' => $estart,
+				'data-mw-charinsert-end' => $eend,
+				'class' => 'mw-charinsert-item'
+			], $inline
+		);
 	}
 
 	public static function charInsertDisplay( $text ) {

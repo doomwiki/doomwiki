@@ -34,7 +34,7 @@
 class ApiExpandTemplates extends ApiBase {
 
 	public function execute() {
-		// Cache may vary on $wgUser because ParserOptions gets data from it
+		// Cache may vary on the user because ParserOptions gets data from it
 		$this->getMain()->setCacheMode( 'anon-public-user-private' );
 
 		// Get parameters
@@ -42,11 +42,9 @@ class ApiExpandTemplates extends ApiBase {
 		$this->requireMaxOneParameter( $params, 'prop', 'generatexml' );
 
 		if ( $params['prop'] === null ) {
-			$this->logFeatureUsage( 'action=expandtemplates&!prop' );
-			$this->setWarning( 'Because no values have been specified for the prop parameter, a ' .
-				'legacy format has been used for the output. This format is deprecated, and in ' .
-				'the future, a default value will be set for the prop parameter, causing the new' .
-				'format to always be used.' );
+			$this->addDeprecation(
+				'apiwarn-deprecation-expandtemplates-prop', 'action=expandtemplates&!prop'
+			);
 			$prop = [];
 		} else {
 			$prop = array_flip( $params['prop'] );
@@ -57,13 +55,13 @@ class ApiExpandTemplates extends ApiBase {
 		if ( $revid !== null ) {
 			$rev = Revision::newFromId( $revid );
 			if ( !$rev ) {
-				$this->dieUsage( "There is no revision ID $revid", 'missingrev' );
+				$this->dieWithError( [ 'apierror-nosuchrevid', $revid ] );
 			}
 			$title_obj = $rev->getTitle();
 		} else {
 			$title_obj = Title::newFromText( $params['title'] );
 			if ( !$title_obj || $title_obj->isExternal() ) {
-				$this->dieUsageMsg( [ 'invalidtitle', $params['title'] ] );
+				$this->dieWithError( [ 'apierror-invalidtitle', wfEscapeWikiText( $params['title'] ) ] );
 			}
 		}
 
@@ -76,6 +74,11 @@ class ApiExpandTemplates extends ApiBase {
 		if ( $params['includecomments'] ) {
 			$options->setRemoveComments( false );
 		}
+
+		$reset = null;
+		$suppressCache = false;
+		Hooks::run( 'ApiMakeParserOptions',
+			[ $options, $title_obj, $params, $this, &$reset, &$suppressCache ] );
 
 		$retval = [];
 
@@ -156,9 +159,7 @@ class ApiExpandTemplates extends ApiBase {
 				}
 				if ( isset( $prop['modules'] ) &&
 					!isset( $prop['jsconfigvars'] ) && !isset( $prop['encodedjsconfigvars'] ) ) {
-					$this->setWarning( "Property 'modules' was set but not 'jsconfigvars' " .
-						"or 'encodedjsconfigvars'. Configuration variables are necessary " .
-						'for proper module usage.' );
+					$this->addWarning( 'apiwarn-moduleswithoutvars' );
 				}
 			}
 		}
@@ -209,6 +210,6 @@ class ApiExpandTemplates extends ApiBase {
 	}
 
 	public function getHelpUrls() {
-		return 'https://www.mediawiki.org/wiki/API:Parsing_wikitext#expandtemplates';
+		return 'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Parsing_wikitext#expandtemplates';
 	}
 }

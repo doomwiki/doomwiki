@@ -5,5 +5,5 @@
 			"Liuxinyu970226"
 		]
 	},
-	"description2-desc": "将description元标记添加到定制页到使用其他扩展名为ParserOutput"
+	"description2-desc": "将description元标记添加到MediaWiki页面，并添加到ParserOutput以便其他扩展使用"
 }

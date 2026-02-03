@@ -29,7 +29,7 @@ trait ButtonElement {
 	 * @param boolean $config['framed'] Render button with a frame (default: true)
 	 */
 	public function initializeButtonElement( array $config = [] ) {
-		// Parent constructor
+		// Properties
 		if ( ! $this instanceof Element ) {
 			throw new Exception( "ButtonElement trait can only be used on Element instances" );
 		}
@@ -40,9 +40,13 @@ trait ButtonElement {
 		$this->addClasses( [ 'oo-ui-buttonElement' ] );
 		$this->button->addClasses( [ 'oo-ui-buttonElement-button' ] );
 		$this->toggleFramed( isset( $config['framed'] ) ? $config['framed'] : true );
-		$this->button->setAttributes( [
-			'role' => 'button',
-		] );
+
+		// Add `role="button"` on `<a>` elements, where it's needed
+		if ( strtolower( $this->button->getTag() ) === 'a' ) {
+			$this->button->setAttributes( [
+				'role' => 'button',
+			] );
+		}
 
 		$this->registerConfigCallback( function( &$config ) {
 			if ( $this->framed !== true ) {

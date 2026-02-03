@@ -66,15 +66,15 @@ class AbuseFilterViewRevert extends AbuseFilterView {
 						$lang->timeanddate( $result['timestamp'], true ),
 						Linker::userLink( $result['userid'], $result['user'] ),
 						$result['action'],
-						Linker::link( $result['title'] ),
+						$this->linkRenderer->makeLink( $result['title'] ),
 						$lang->commaList( $displayActions ),
-						Linker::link(
+						$this->linkRenderer->makeLink(
 							SpecialPage::getTitleFor( 'AbuseLog' ),
-							$this->msg( 'abusefilter-log-detailslink' )->escaped(),
+							$this->msg( 'abusefilter-log-detailslink' )->text(),
 							array(),
 							array( 'details' => $result['id'] )
 						)
-				)->parse();
+					)->params( $result['user'] )->parse();
 				$list[] = Xml::tags( 'li', null, $msg );
 			}
 

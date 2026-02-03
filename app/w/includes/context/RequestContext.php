@@ -25,6 +25,7 @@
 use Liuggio\StatsdClient\Factory\StatsdDataFactory;
 use MediaWiki\Logger\LoggerFactory;
 use MediaWiki\MediaWikiServices;
+use Wikimedia\ScopedCallback;
 
 /**
  * Group all the pieces relevant to the context of a request into one instance
@@ -98,7 +99,7 @@ class RequestContext implements IContextSource, MutableContext {
 		if ( $this->config === null ) {
 			// @todo In the future, we could move this to WebStart.php so
 			// the Config object is ready for when initialization happens
-			$this->config = ConfigFactory::getDefaultInstance()->makeConfig( 'main' );
+			$this->config = MediaWikiServices::getInstance()->getMainConfig();
 		}
 
 		return $this->config;
@@ -160,7 +161,7 @@ class RequestContext implements IContextSource, MutableContext {
 	/**
 	 * Set the Title object
 	 *
-	 * @param Title $title
+	 * @param Title|null $title
 	 */
 	public function setTitle( Title $title = null ) {
 		$this->title = $title;
@@ -427,7 +428,7 @@ class RequestContext implements IContextSource, MutableContext {
 				}
 
 				// Normalize the key in case the user is passing gibberish
-				// or has old preferences (bug 69566).
+				// or has old preferences (T71566).
 				$normalized = Skin::normalizeKey( $userSkin );
 
 				// Skin::normalizeKey will also validate it, so

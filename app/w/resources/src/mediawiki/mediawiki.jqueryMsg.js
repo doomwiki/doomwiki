@@ -15,7 +15,8 @@
 		slice = Array.prototype.slice,
 		parserDefaults = {
 			magic: {
-				SITENAME: mw.config.get( 'wgSiteName' )
+				PAGENAME: mw.config.get( 'wgPageName' ),
+				PAGENAMEE: mw.util.wikiUrlencode( mw.config.get( 'wgPageName' ) )
 			},
 			// Whitelist for allowed HTML elements in wikitext.
 			// Self-closing tags are not currently supported.
@@ -72,7 +73,7 @@
 	function appendWithoutParsing( $parent, children ) {
 		var i, len;
 
-		if ( !$.isArray( children ) ) {
+		if ( !Array.isArray( children ) ) {
 			children = [ children ];
 		}
 
@@ -134,14 +135,19 @@
 	function getFailableParserFn( options ) {
 		return function ( args ) {
 			var fallback,
+				// eslint-disable-next-line new-cap
 				parser = new mw.jqueryMsg.parser( options ),
 				key = args[ 0 ],
-				argsArray = $.isArray( args[ 1 ] ) ? args[ 1 ] : slice.call( args, 1 );
+				argsArray = Array.isArray( args[ 1 ] ) ? args[ 1 ] : slice.call( args, 1 );
 			try {
 				return parser.parse( key, argsArray );
 			} catch ( e ) {
 				fallback = parser.settings.messages.get( key );
 				mw.log.warn( 'mediawiki.jqueryMsg: ' + key + ': ' + e.message );
+				mw.track( 'mediawiki.jqueryMsg.error', {
+					messageKey: key,
+					errorMessage: e.message
+				} );
 				return $( '<span>' ).text( fallback );
 			}
 		};
@@ -157,10 +163,15 @@
 	 * parsers, pass the relevant options to mw.jqueryMsg.parser.
 	 *
 	 * @private
-	 * @param {Object} data
+	 * @param {Object} data New data to extend parser defaults with
+	 * @param {boolean} [deep=false] Whether the extend is done recursively (deep)
 	 */
-	mw.jqueryMsg.setParserDefaults = function ( data ) {
-		$.extend( parserDefaults, data );
+	mw.jqueryMsg.setParserDefaults = function ( data, deep ) {
+		if ( deep ) {
+			$.extend( true, parserDefaults, data );
+		} else {
+			$.extend( parserDefaults, data );
+		}
 	};
 
 	/**
@@ -206,10 +217,11 @@
 		}
 
 		return function () {
+			var failableResult;
 			if ( !failableParserFn ) {
 				failableParserFn = getFailableParserFn( options );
 			}
-			var failableResult = failableParserFn( arguments );
+			failableResult = failableParserFn( arguments );
 			if ( format === 'text' || format === 'escaped' ) {
 				return failableResult.text();
 			} else {
@@ -244,10 +256,11 @@
 		var failableParserFn;
 
 		return function () {
+			var $target;
 			if ( !failableParserFn ) {
 				failableParserFn = getFailableParserFn( options );
 			}
-			var $target = this.empty();
+			$target = this.empty();
 			appendWithoutParsing( $target, failableParserFn( arguments ) );
 			return $target;
 		};
@@ -266,6 +279,7 @@
 		this.settings.onlyCurlyBraceTransform = ( this.settings.format === 'text' || this.settings.format === 'escaped' );
 		this.astCache = {};
 
+		// eslint-disable-next-line new-cap
 		this.emitter = new mw.jqueryMsg.htmlEmitter( this.settings.language, this.settings.magic );
 	};
 
@@ -286,10 +300,10 @@
 
 		/**
 		 * Fetch the message string associated with a key, return parsed structure. Memoized.
-		 * Note that we pass '[' + key + ']' back for a missing message here.
+		 * Note that we pass '⧼' + key + '⧽' back for a missing message here.
 		 *
 		 * @param {string} key
-		 * @return {string|Array} string of '[key]' if message missing, simple string if possible, array of arrays if needs parsing
+		 * @return {string|Array} string of '⧼key⧽' if message missing, simple string if possible, array of arrays if needs parsing
 		 */
 		getAst: function ( key ) {
 			var wikiText;
@@ -297,7 +311,7 @@
 			if ( !this.astCache.hasOwnProperty( key ) ) {
 				wikiText = this.settings.messages.get( key );
 				if ( typeof wikiText !== 'string' ) {
-					wikiText = '\\[' + key + '\\]';
+					wikiText = '⧼' + key + '⧽';
 				}
 				this.astCache[ key ] = this.wikiTextToAst( wikiText );
 			}
@@ -534,7 +548,7 @@
 				return result === null ? null : result.join( '' );
 			}
 
-			asciiAlphabetLiteral = makeRegexParser( /[A-Za-z]+/ );
+			asciiAlphabetLiteral = makeRegexParser( /^[A-Za-z]+/ );
 			htmlDoubleQuoteAttributeValue = makeRegexParser( /^[^"]*/ );
 			htmlSingleQuoteAttributeValue = makeRegexParser( /^[^']*/ );
 
@@ -775,6 +789,25 @@
 				return result;
 			}
 
+			// <nowiki>...</nowiki> tag. The tags are stripped and the contents are returned unparsed.
+			function nowiki() {
+				var parsedResult, plainText,
+					result = null;
+
+				parsedResult = sequence( [
+					makeStringParser( '<nowiki>' ),
+					// We use a greedy non-backtracking parser, so we must ensure here that we don't take too much
+					makeRegexParser( /^.*?(?=<\/nowiki>)/ ),
+					makeStringParser( '</nowiki>' )
+				] );
+				if ( parsedResult !== null ) {
+					plainText = parsedResult[ 1 ];
+					result = [ 'CONCAT' ].concat( plainText );
+				}
+
+				return result;
+			}
+
 			templateName = transform(
 				// see $wgLegalTitleChars
 				// not allowing : due to the need to catch "PLURAL:$1"
@@ -862,6 +895,7 @@
 				wikilink,
 				extlink,
 				replacement,
+				nowiki,
 				html,
 				literal
 			] );
@@ -877,7 +911,8 @@
 			/**
 			 * Starts the parse
 			 *
-			 * @param {Function} rootExpression root parse function
+			 * @param {Function} rootExpression Root parse function
+			 * @return {Array|null}
 			 */
 			function start( rootExpression ) {
 				var result = nOrMore( 0, rootExpression )();
@@ -907,10 +942,13 @@
 
 	/**
 	 * htmlEmitter - object which primarily exists to emit HTML from parser ASTs
+	 *
+	 * @param {Object} language
+	 * @param {Object} magic
 	 */
 	mw.jqueryMsg.htmlEmitter = function ( language, magic ) {
-		this.language = language;
 		var jmsg = this;
+		this.language = language;
 		$.each( magic, function ( key, val ) {
 			jmsg[ key.toLowerCase() ] = function () {
 				return val;
@@ -1020,6 +1058,7 @@
 		 * It may, though, if the wikitext appears in extension-controlled content.
 		 *
 		 * @param {string[]} nodes
+		 * @return {jQuery}
 		 */
 		wikilink: function ( nodes ) {
 			var page, anchor, url, $el;
@@ -1100,11 +1139,18 @@
 			} else {
 				$el = $( '<a>' );
 				if ( typeof arg === 'function' ) {
-					$el.attr( 'href', '#' )
-					.click( function ( e ) {
-						e.preventDefault();
+					$el.attr( {
+						role: 'button',
+						tabindex: 0
 					} )
-					.click( arg );
+					.on( 'click keypress', function ( e ) {
+						if (
+							e.type === 'click' ||
+							e.type === 'keypress' && e.which === 13
+						) {
+							arg.call( this, e );
+						}
+					} );
 				} else {
 					$el.attr( 'href', textify( arg ) );
 				}
@@ -1242,7 +1288,7 @@
 		 * @return {number|string} Formatted number
 		 */
 		formatnum: function ( nodes ) {
-			var isInteger = ( nodes[ 1 ] && nodes[ 1 ] === 'R' ) ? true : false,
+			var isInteger = !!nodes[ 1 ] && nodes[ 1 ] === 'R',
 				number = nodes[ 0 ];
 
 			return this.language.convertNumber( number, isInteger );
@@ -1328,6 +1374,7 @@
 	 *
 	 * This method is only available when jqueryMsg is loaded.
 	 *
+	 * @since 1.27
 	 * @method parseDom
 	 * @member mw.Message
 	 * @return {jQuery}
@@ -1337,6 +1384,6 @@
 		return function () {
 			return reusableParent.msg( this.key, this.parameters ).contents().detach();
 		};
-	} )();
+	}() );
 
 }( mediaWiki, jQuery ) );

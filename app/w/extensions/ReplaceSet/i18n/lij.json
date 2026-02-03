@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Giromin Cangiaxo"
+		]
+	},
+	"replaceset-desc": "A l'azonze 'na fonçion parser <nowiki>{{#replaceset}}</nowiki> doeuviâ pe-a sostituçion de seçioin de testo con dæti formatæ",
+	"replaceset-error-calllimit": "O limmite de ciamæ ReplaceSet ($1) o l'è stæto razonto.",
+	"replaceset-error-regexnoend": "A-o pattern da regex \"$1\" gh'amanca o delimitatô finâ '$2'",
+	"replaceset-error-regexbadmodifier": "O modificatô da regex '$1' o no l'è vallido."
+}

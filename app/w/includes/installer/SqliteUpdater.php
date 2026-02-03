@@ -21,6 +21,8 @@
  * @ingroup Deployment
  */
 
+use Wikimedia\Rdbms\DatabaseSqlite;
+
 /**
  * Class for handling updates to Sqlite databases.
  *
@@ -152,6 +154,17 @@ class SqliteUpdater extends DatabaseUpdater {
 			[ 'addIndex', 'categorylinks', 'cl_collation_ext',
 				'patch-add-cl_collation_ext_index.sql' ],
 			[ 'doCollationUpdate' ],
+
+			// 1.28
+			[ 'addIndex', 'recentchanges', 'rc_name_type_patrolled_timestamp',
+				'patch-add-rc_name_type_patrolled_timestamp_index.sql' ],
+			[ 'addField', 'change_tag', 'ct_id', 'patch-change_tag-ct_id.sql' ],
+			[ 'addField', 'tag_summary', 'ts_id', 'patch-tag_summary-ts_id.sql' ],
+
+			// 1.29
+			[ 'addField', 'externallinks', 'el_index_60', 'patch-externallinks-el_index_60.sql' ],
+			[ 'addField', 'user_groups', 'ug_expiry', 'patch-user_groups-ug_expiry.sql' ],
+			[ 'addIndex', 'image', 'img_user_timestamp', 'patch-image-user-index-2.sql' ],
 		];
 	}
 

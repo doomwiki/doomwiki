@@ -3,7 +3,7 @@
 		PhotoListGateway = M.require( 'mobile.gallery/PhotoListGateway' ),
 		PhotoItem = M.require( 'mobile.gallery/PhotoItem' ),
 		InfiniteScroll = M.require( 'mobile.infiniteScroll/InfiniteScroll' ),
-		View = M.require( 'mobile.view/View' );
+		View = M.require( 'mobile.startup/View' );
 
 	/**
 	 * Creates a list of photo items
@@ -12,6 +12,9 @@
 	 * @uses PhotoItem
 	 * @uses InfiniteScroll
 	 * @extends View
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function PhotoList( options ) {
 		var gatewayOptions = {
@@ -34,7 +37,7 @@
 		template: mw.template.get( 'mobile.gallery', 'PhotoList.hogan' ),
 		/**
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.spinner HTML of the spinner icon.
+		 * @cfg {string} defaults.spinner HTML of the spinner icon.
 		 * @cfg {mw.Api} defaults.api instance of an api
 		 */
 		defaults: {
@@ -56,7 +59,7 @@
 		/**
 		 * Check to see if the current view is an empty list.
 		 * @method
-		 * @return {Boolean} whether no images have been rendered
+		 * @return {boolean} whether no images have been rendered
 		 */
 		isEmpty: function () {
 			return this.$list.find( 'li' ).length === 0;
@@ -118,7 +121,7 @@
 
 			this.gateway.getPhotos().done( function ( photos ) {
 				if ( photos.length ) {
-					$.each( photos, function ( i, photo ) {
+					photos.forEach( function ( photo ) {
 						self.appendPhoto( photo );
 					} );
 					// try loading more when end is near only if we got photos last time

@@ -22,57 +22,68 @@
 /**
  * @ingroup Pager
  */
+use MediaWiki\MediaWikiServices;
+
 class NewFilesPager extends ReverseChronologicalPager {
 
 	/**
-	 * @var ImageGallery
+	 * @var ImageGalleryBase
 	 */
 	protected $gallery;
 
 	/**
-	 * @var bool
+	 * @var FormOptions
 	 */
-	protected $showBots;
+	protected $opts;
 
 	/**
-	 * @var bool
+	 * @param IContextSource $context
+	 * @param FormOptions $opts
 	 */
-	protected $hidePatrolled;
+	function __construct( IContextSource $context, FormOptions $opts ) {
+		$this->opts = $opts;
 
-	function __construct( IContextSource $context, $par = null ) {
-		$this->like = $context->getRequest()->getText( 'like' );
-		$this->showBots = $context->getRequest()->getBool( 'showbots', 0 );
-		$this->hidePatrolled = $context->getRequest()->getBool( 'hidepatrolled', 0 );
-		if ( is_numeric( $par ) ) {
-			$this->setLimit( $par );
-		}
+		$this->setLimit( $opts->getValue( 'limit' ) );
 
 		parent::__construct( $context );
 	}
 
 	function getQueryInfo() {
+		$opts = $this->opts;
 		$conds = $jconds = [];
 		$tables = [ 'image' ];
 		$fields = [ 'img_name', 'img_user', 'img_timestamp' ];
 		$options = [];
 
-		if ( !$this->showBots ) {
+		$user = $opts->getValue( 'user' );
+		if ( $user !== '' ) {
+			$userId = User::idFromName( $user );
+			if ( $userId ) {
+				$conds['img_user'] = $userId;
+			} else {
+				$conds['img_user_text'] = $user;
+			}
+		}
+
+		if ( !$opts->getValue( 'showbots' ) ) {
 			$groupsWithBotPermission = User::getGroupsWithPermission( 'bot' );
 
 			if ( count( $groupsWithBotPermission ) ) {
+				$dbr = wfGetDB( DB_REPLICA );
 				$tables[] = 'user_groups';
 				$conds[] = 'ug_group IS NULL';
 				$jconds['user_groups'] = [
 					'LEFT JOIN',
 					[
 						'ug_group' => $groupsWithBotPermission,
-						'ug_user = img_user'
+						'ug_user = img_user',
+						'ug_expiry IS NULL OR ug_expiry >= ' . $dbr->addQuotes( $dbr->timestamp() )
 					]
 				];
 			}
 		}
 
-		if ( $this->hidePatrolled ) {
+		if ( $opts->getValue( 'hidepatrolled' ) ) {
 			$tables[] = 'recentchanges';
 			$conds['rc_type'] = RC_LOG;
 			$conds['rc_log_type'] = 'upload';
@@ -92,9 +103,10 @@ class NewFilesPager extends ReverseChronologicalPager {
 			$options[] = 'STRAIGHT_JOIN';
 		}
 
-		if ( !$this->getConfig()->get( 'MiserMode' ) && $this->like !== null ) {
-			$dbr = wfGetDB( DB_SLAVE );
-			$likeObj = Title::newFromText( $this->like );
+		$likeVal = $opts->getValue( 'like' );
+		if ( !$this->getConfig()->get( 'MiserMode' ) && $likeVal !== '' ) {
+			$dbr = wfGetDB( DB_REPLICA );
+			$likeObj = Title::newFromText( $likeVal );
 			if ( $likeObj instanceof Title ) {
 				$like = $dbr->buildLike(
 					$dbr->anyString(),
@@ -144,7 +156,10 @@ class NewFilesPager extends ReverseChronologicalPager {
 		$user = User::newFromId( $row->img_user );
 
 		$title = Title::makeTitle( NS_FILE, $name );
-		$ul = Linker::link( $user->getUserPage(), $user->getName() );
+		$ul = MediaWikiServices::getInstance()->getLinkRenderer()->makeLink(
+			$user->getUserPage(),
+			$user->getName()
+		);
 		$time = $this->getLanguage()->userTimeAndDate( $row->img_timestamp, $this->getUser() );
 
 		$this->gallery->add(
@@ -153,55 +168,5 @@ class NewFilesPager extends ReverseChronologicalPager {
 			. htmlspecialchars( $time )
 			. "</i><br />\n"
 		);
-	}
-
-	function getForm() {
-		$fields = [
-			'like' => [
-				'type' => 'text',
-				'label-message' => 'newimages-label',
-				'name' => 'like',
-			],
-			'showbots' => [
-				'type' => 'check',
-				'label-message' => 'newimages-showbots',
-				'name' => 'showbots',
-			],
-			'hidepatrolled' => [
-				'type' => 'check',
-				'label-message' => 'newimages-hidepatrolled',
-				'name' => 'hidepatrolled',
-			],
-			'limit' => [
-				'type' => 'hidden',
-				'default' => $this->mLimit,
-				'name' => 'limit',
-			],
-			'offset' => [
-				'type' => 'hidden',
-				'default' => $this->getRequest()->getText( 'offset' ),
-				'name' => 'offset',
-			],
-		];
-
-		if ( $this->getConfig()->get( 'MiserMode' ) ) {
-			unset( $fields['like'] );
-		}
-
-		if ( !$this->getUser()->useFilePatrol() ) {
-			unset( $fields['hidepatrolled'] );
-		}
-
-		$context = new DerivativeContext( $this->getContext() );
-		$context->setTitle( $this->getTitle() ); // Remove subpage
-		$form = new HTMLForm( $fields, $context );
-
-		$form->setSubmitTextMsg( 'ilsubmit' );
-		$form->setSubmitProgressive();
-
-		$form->setMethod( 'get' );
-		$form->setWrapperLegendMsg( 'newimages-legend' );
-
-		return $form;
 	}
 }

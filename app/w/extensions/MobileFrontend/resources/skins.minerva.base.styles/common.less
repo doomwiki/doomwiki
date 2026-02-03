@@ -1,8 +1,8 @@
-@import "mediawiki.mixins.less";
-@import "minerva.variables.less";
-@import "minerva.mixins.less";
+@import 'mediawiki.mixins.less';
+@import 'minerva.variables.less';
+@import 'minerva.mixins.less';
 
-@imageReplacementColor: #706E6E;
+@imageReplacementColor: #706e6e;
 @inputsBoxBorderColor: #e1e1e1;
 
 // Reusable components
@@ -33,7 +33,7 @@
 
 .view-border-box *,
 .view-border-box {
-	.box-sizing(border-box);
+	.box-sizing( border-box );
 }
 
 .mw-mf-image-replacement {
@@ -51,36 +51,29 @@ textarea {
 	resize: none;
 }
 
-
 // We hide the table of contents unless the user is viewing in tablet resolution or higher
 .toc-mobile,
 // We also need a more specific rule for tablet non-JS users who will load skins.minerva.tablet.styles
 .client-nojs .toc-mobile,
 .client-js .no-js-only,
+.client-js .mw-redirectedfrom,
 // FIXME: Use generic rule for print stylesheets
 .printfooter,
 .jsonly {
 	display: none;
 }
 
+/* TODO: Fix specificity */
+/* stylelint-disable no-descending-specificity */
 .no-js-only,
 .client-js .jsonly {
 	display: inherit;
 }
 
+/* stylelint-enable no-descending-specificity */
 .position-fixed {
 	// use !important to override more specific rules (e.g. in Overlay.less)
 	position: fixed !important;
-}
-
-.no-position-fixed {
-	.drawer {
-		bottom: 0;
-	}
-
-	.position-fixed {
-		position: absolute !important;
-	}
 }
 
 .touch-events {
@@ -92,4 +85,10 @@ textarea {
 // currently used to hide talk button
 .hidden {
 	display: none !important;
+}
+
+// We need to ensure the content has the chrome background - otherwise it will
+// overlap the menu during the main menu reveal/hide animation
+#mw-mf-page-center {
+	background-color: @chromeColor;
 }

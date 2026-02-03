@@ -20,6 +20,12 @@
  * @file
  * @author Aaron Schulz
  */
+use Wikimedia\Rdbms\IDatabase;
+use Wikimedia\Rdbms\DBConnRef;
+use Wikimedia\Rdbms\DBConnectionError;
+use Wikimedia\Rdbms\DBError;
+use MediaWiki\MediaWikiServices;
+use Wikimedia\ScopedCallback;
 
 /**
  * Class to handle job queues stored in the DB
@@ -67,7 +73,7 @@ class JobQueueDB extends JobQueue {
 	 * @return bool
 	 */
 	protected function doIsEmpty() {
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		try {
 			$found = $dbr->selectField( // unclaimed job
 				'job', '1', [ 'job_cmd' => $this->type, 'job_token' => '' ], __METHOD__
@@ -92,7 +98,7 @@ class JobQueueDB extends JobQueue {
 		}
 
 		try {
-			$dbr = $this->getSlaveDB();
+			$dbr = $this->getReplicaDB();
 			$size = (int)$dbr->selectField( 'job', 'COUNT(*)',
 				[ 'job_cmd' => $this->type, 'job_token' => '' ],
 				__METHOD__
@@ -121,7 +127,7 @@ class JobQueueDB extends JobQueue {
 			return $count;
 		}
 
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		try {
 			$count = (int)$dbr->selectField( 'job', 'COUNT(*)',
 				[ 'job_cmd' => $this->type, "job_token != {$dbr->addQuotes( '' )}" ],
@@ -152,7 +158,7 @@ class JobQueueDB extends JobQueue {
 			return $count;
 		}
 
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		try {
 			$count = (int)$dbr->selectField( 'job', 'COUNT(*)',
 				[
@@ -179,13 +185,15 @@ class JobQueueDB extends JobQueue {
 	 * @return void
 	 */
 	protected function doBatchPush( array $jobs, $flags ) {
-		$dbw = $this->getMasterDB();
-
-		$method = __METHOD__;
-		$dbw->onTransactionIdle(
-			function () use ( $dbw, $jobs, $flags, $method ) {
-				$this->doBatchPushInternal( $dbw, $jobs, $flags, $method );
-			}
+		DeferredUpdates::addUpdate(
+			new AutoCommitUpdate(
+				$this->getMasterDB(),
+				__METHOD__,
+				function ( IDatabase $dbw, $fname ) use ( $jobs, $flags ) {
+					$this->doBatchPushInternal( $dbw, $jobs, $flags, $fname );
+				}
+			),
+			DeferredUpdates::PRESEND
 		);
 	}
 
@@ -236,7 +244,7 @@ class JobQueueDB extends JobQueue {
 			}
 			// Build the full list of job rows to insert
 			$rows = array_merge( $rowList, array_values( $rowSet ) );
-			// Insert the job rows in chunks to avoid slave lag...
+			// Insert the job rows in chunks to avoid replica DB lag...
 			foreach ( array_chunk( $rows, 50 ) as $rowBatch ) {
 				$dbw->insert( 'job', $rowBatch, $method );
 			}
@@ -245,10 +253,7 @@ class JobQueueDB extends JobQueue {
 				count( $rowSet ) + count( $rowList ) - count( $rows )
 			);
 		} catch ( DBError $e ) {
-			if ( $flags & self::QOS_ATOMIC ) {
-				$dbw->rollback( $method );
-			}
-			throw $e;
+			$this->throwDBException( $e );
 		}
 		if ( $flags & self::QOS_ATOMIC ) {
 			$dbw->endAtomic( $method );
@@ -264,7 +269,6 @@ class JobQueueDB extends JobQueue {
 	protected function doPop() {
 		$dbw = $this->getMasterDB();
 		try {
-			$dbw->commit( __METHOD__, 'flush' ); // flush existing transaction
 			$autoTrx = $dbw->getFlag( DBO_TRX ); // get current setting
 			$dbw->clearFlag( DBO_TRX ); // make each query its own transaction
 			$scopedReset = new ScopedCallback( function () use ( $dbw, $autoTrx ) {
@@ -325,7 +329,7 @@ class JobQueueDB extends JobQueue {
 		$invertedDirection = false; // whether one job_random direction was already scanned
 		// This uses a replication safe method for acquiring jobs. One could use UPDATE+LIMIT
 		// instead, but that either uses ORDER BY (in which case it deadlocks in MySQL) or is
-		// not replication safe. Due to http://bugs.mysql.com/bug.php?id=6980, subqueries cannot
+		// not replication safe. Due to https://bugs.mysql.com/bug.php?id=6980, subqueries cannot
 		// be used here with MySQL.
 		do {
 			if ( $tinyQueue ) { // queue has <= MAX_OFFSET rows
@@ -347,7 +351,7 @@ class JobQueueDB extends JobQueue {
 					continue; // try the other direction
 				}
 			} else { // table *may* have >= MAX_OFFSET rows
-				// Bug 42614: "ORDER BY job_random" with a job_random inequality causes high CPU
+				// T44614: "ORDER BY job_random" with a job_random inequality causes high CPU
 				// in MySQL if there are many rows for some reason. This uses a small OFFSET
 				// instead of job_random for reducing excess claim retries.
 				$row = $dbw->selectRow( 'job', self::selectFields(), // find a random job
@@ -399,7 +403,7 @@ class JobQueueDB extends JobQueue {
 		$row = false; // the row acquired
 		do {
 			if ( $dbw->getType() === 'mysql' ) {
-				// Per http://bugs.mysql.com/bug.php?id=6980, we can't use subqueries on the
+				// Per https://bugs.mysql.com/bug.php?id=6980, we can't use subqueries on the
 				// same table being changed in an UPDATE query in MySQL (gives Error: 1093).
 				// Oracle and Postgre have no such limitation. However, MySQL offers an
 				// alternative here by supporting ORDER BY + LIMIT for UPDATE queries.
@@ -460,7 +464,6 @@ class JobQueueDB extends JobQueue {
 
 		$dbw = $this->getMasterDB();
 		try {
-			$dbw->commit( __METHOD__, 'flush' ); // flush existing transaction
 			$autoTrx = $dbw->getFlag( DBO_TRX ); // get current setting
 			$dbw->clearFlag( DBO_TRX ); // make each query its own transaction
 			$scopedReset = new ScopedCallback( function () use ( $dbw, $autoTrx ) {
@@ -498,15 +501,18 @@ class JobQueueDB extends JobQueue {
 		// jobs to become no-ops without any actual jobs that made them redundant.
 		$dbw = $this->getMasterDB();
 		$cache = $this->dupCache;
-		$dbw->onTransactionIdle( function () use ( $cache, $params, $key, $dbw ) {
-			$timestamp = $cache->get( $key ); // current last timestamp of this job
-			if ( $timestamp && $timestamp >= $params['rootJobTimestamp'] ) {
-				return true; // a newer version of this root job was enqueued
-			}
+		$dbw->onTransactionIdle(
+			function () use ( $cache, $params, $key, $dbw ) {
+				$timestamp = $cache->get( $key ); // current last timestamp of this job
+				if ( $timestamp && $timestamp >= $params['rootJobTimestamp'] ) {
+					return true; // a newer version of this root job was enqueued
+				}
 
-			// Update the timestamp of the last root job started at the location...
-			return $cache->set( $key, $params['rootJobTimestamp'], JobQueueDB::ROOTJOB_TTL );
-		} );
+				// Update the timestamp of the last root job started at the location...
+				return $cache->set( $key, $params['rootJobTimestamp'], JobQueueDB::ROOTJOB_TTL );
+			},
+			__METHOD__
+		);
 
 		return true;
 	}
@@ -531,7 +537,8 @@ class JobQueueDB extends JobQueue {
 	 * @return void
 	 */
 	protected function doWaitForBackups() {
-		wfWaitForSlaves( false, $this->wiki, $this->cluster ?: false );
+		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+		$lbFactory->waitForReplication( [ 'wiki' => $this->wiki, 'cluster' => $this->cluster ] );
 	}
 
 	/**
@@ -564,7 +571,7 @@ class JobQueueDB extends JobQueue {
 	 * @return Iterator
 	 */
 	protected function getJobIterator( array $conds ) {
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		try {
 			return new MappedIterator(
 				$dbr->select( 'job', self::selectFields(), $conds ),
@@ -592,7 +599,7 @@ class JobQueueDB extends JobQueue {
 	}
 
 	protected function doGetSiblingQueuesWithJobs( array $types ) {
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		// @note: this does not check whether the jobs are claimed or not.
 		// This is useful so JobQueueGroup::pop() also sees queues that only
 		// have stale jobs. This lets recycleAndDeleteStaleJobs() re-enqueue
@@ -609,7 +616,7 @@ class JobQueueDB extends JobQueue {
 	}
 
 	protected function doGetSiblingQueueSizes( array $types ) {
-		$dbr = $this->getSlaveDB();
+		$dbr = $this->getReplicaDB();
 		$res = $dbr->select( 'job', [ 'job_cmd', 'COUNT(*) AS count' ],
 			[ 'job_cmd' => $types ], __METHOD__, [ 'GROUP BY' => 'job_cmd' ] );
 
@@ -735,9 +742,9 @@ class JobQueueDB extends JobQueue {
 	 * @throws JobQueueConnectionError
 	 * @return DBConnRef
 	 */
-	protected function getSlaveDB() {
+	protected function getReplicaDB() {
 		try {
-			return $this->getDB( DB_SLAVE );
+			return $this->getDB( DB_REPLICA );
 		} catch ( DBConnectionError $e ) {
 			throw new JobQueueConnectionError( "DBConnectionError:" . $e->getMessage() );
 		}
@@ -756,13 +763,14 @@ class JobQueueDB extends JobQueue {
 	}
 
 	/**
-	 * @param int $index (DB_SLAVE/DB_MASTER)
+	 * @param int $index (DB_REPLICA/DB_MASTER)
 	 * @return DBConnRef
 	 */
 	protected function getDB( $index ) {
+		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
 		$lb = ( $this->cluster !== false )
-			? wfGetLBFactory()->getExternalLB( $this->cluster, $this->wiki )
-			: wfGetLB( $this->wiki );
+			? $lbFactory->getExternalLB( $this->cluster, $this->wiki )
+			: $lbFactory->getMainLB( $this->wiki );
 
 		return $lb->getConnectionRef( $index, [], $this->wiki );
 	}

@@ -1,7 +1,8 @@
 {
 	"@metadata": {
 		"authors": [
-			"Arystanbek"
+			"Arystanbek",
+			"Vito Genovese"
 		]
 	},
 	"apihelp-flagconfig-example-1": "Bayrak yapılandırma getir",
@@ -14,7 +15,7 @@
 	"apihelp-query+configuredpages-param-limit": "Dönüş için toplamda kaç sayfa.",
 	"apihelp-query+configuredpages-example-1": "Özel inceleme yapılandırmaları ile sayfaların listesini göster",
 	"apihelp-query+configuredpages-example-2": "Bazı özel inceleme yapılandırmaları ile sayfaları hakkında bilgi alın",
-	"apihelp-query+flagged-example-1": "[[Ana Sayfa]] sayfasına bilgi ve bayrak statüsü",
+	"apihelp-query+flagged-example-1": "[[Main Page]] sayfasının sayfa bilgilerini ve işaretleme durumunu al",
 	"apihelp-query+flagged-example-2": "Sayfalar \"K\"ile başlayan bayrak durumları olsun",
 	"apihelp-query+oldreviewedpages-description": "Sıralar sayfaları inceleme bekleyen değişiklikler var.",
 	"apihelp-query+oldreviewedpages-param-start": "Bu tarihler de Listeleme başlayın.",
@@ -47,7 +48,7 @@
 	"apihelp-query+unreviewedpages-example-1": "İncelenmemiş sayfalar listesini göster",
 	"apihelp-query+unreviewedpages-example-2": "Haritayı biraz incelenmemiş sayfaları hakkında bilgi",
 	"apihelp-review-description": "Onaylama veya de-onaylıyor tarafından bir Gözden Geçirme gözden geçirin.",
-	"apihelp-review-param-revid": "Hangi bayraklar set Revizyon NUMARASI.",
+	"apihelp-review-param-revid": "Bayrakların ayarlanacağı revizyon kimliği.",
 	"apihelp-review-param-comment": "Bu değerlendirme için yorum.s",
 	"apihelp-review-param-unapprove": "Set, revizyon yerine onaylanmamış kabul edilecektir.",
 	"apihelp-review-param-flag": "Bu bayrak kümesi \"$1\" için belirtilen değer.",
@@ -59,7 +60,7 @@
 	"apihelp-stabilize-description-general": "Sayfa istikrar ayarlarını değiştirmek.",
 	"apihelp-stabilize-description-protect": "Yapılandırma-koruma inceleme sayfası için ayarlar.",
 	"apihelp-stabilize-param-reason": "Sebep:",
-	"apihelp-stabilize-param-watch": "Bu sayfayı izle",
+	"apihelp-stabilize-param-watch": "Bu sayfayı izle.",
 	"apihelp-stabilize-param-expiry-general": "Bu ayarlar için verilen süre.",
 	"apihelp-stabilize-param-title-general": "Stabilize edilmesi için sayfanın Başlığı."
 }

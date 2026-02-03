@@ -1,16 +1,17 @@
 ( function ( M, $ ) {
 
-	var Overlay = M.require( 'mobile.overlays/Overlay' ),
+	var Overlay = M.require( 'mobile.startup/Overlay' ),
 		CategoryGateway = M.require( 'mobile.categories.overlays/CategoryGateway' ),
 		CategoryLookupInputWidget = M.require( 'mobile.categories.overlays/CategoryLookupInputWidget' ),
 		icons = M.require( 'mobile.startup/icons' ),
-		toast = M.require( 'mobile.toast/toast' );
+		toast = M.require( 'mobile.startup/toast' );
 
 	/**
 	 * Displays the list of categories for a page
 	 * @class CategoryAddOverlay
 	 * @extends Overlay
 	 * @uses CategoryGateway
+	 * @param {Object} options Configuration options
 	 */
 	function CategoryAddOverlay( options ) {
 		options.heading = mw.msg( 'mobile-frontend-categories-add-heading', options.title );
@@ -22,12 +23,12 @@
 		 * @inheritdoc
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {mw.Api} defaults.api to use to construct gateway
-		 * @cfg {String} defaults.waitMsg Text that displays while a page edit is being saved.
-		 * @cfg {String} defaults.waitIcon HTML of the icon that displays while a page edit
+		 * @cfg {string} defaults.waitMsg Text that displays while a page edit is being saved.
+		 * @cfg {string} defaults.waitIcon HTML of the icon that displays while a page edit
 		 * is being saved.
 		 */
 		defaults: $.extend( {}, Overlay.prototype.defaults, {
-			headerButtonsListClassName: 'overlay-action',
+			headerButtonsListClassName: 'header-action',
 			waitMsg: mw.msg( 'mobile-frontend-categories-add-wait' ),
 			waitIcon: icons.spinner().toHtmlString()
 		} ),
@@ -105,12 +106,12 @@
 			this.showHidden( '.saving-header' );
 
 			// add wikitext to add to the page
-			$.each( $( '.suggestion' ), function () {
+			$( '.suggestion' ).each( function () {
 				var data = $( this ).data( 'title' );
 
 				if ( data ) {
 					// add the new categories in wikitext markup
-					newCategories += '[[' + data + ']] ';
+					newCategories += '\n[[' + data + ']] ';
 				}
 			} );
 

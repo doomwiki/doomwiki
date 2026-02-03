@@ -2,7 +2,7 @@
 	var MessageBox = M.require( 'mobile.messageBox/MessageBox' ),
 		NearbyGateway = M.require( 'mobile.nearby/NearbyGateway' ),
 		WatchstarPageList = M.require( 'mobile.pagelist.scripts/WatchstarPageList' ),
-		browser = M.require( 'mobile.browser/browser' ),
+		browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		icons = M.require( 'mobile.startup/icons' );
 
 	/**
@@ -10,6 +10,9 @@
 	 * @class Nearby
 	 * @uses NearbyGateway
 	 * @extends WatchstarPageList
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function Nearby( options ) {
 		var self = this,
@@ -62,7 +65,7 @@
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {mw.Api} defaults.api
 		 * @cfg {Object} defaults.errorOptions options to pass to a messagebox template
-		 * @cfg {String} defaults.spinner HTML of the spinner icon with a tooltip that
+		 * @cfg {string} defaults.spinner HTML of the spinner icon with a tooltip that
 		 * tells the user that their location is being looked up
 		 */
 		defaults: $.extend( {}, WatchstarPageList.prototype.defaults, {
@@ -83,11 +86,11 @@
 			var result = $.Deferred();
 			if ( browser.supportsGeoLocation() ) {
 				navigator.geolocation.getCurrentPosition( function ( geo ) {
-						result.resolve( {
-							latitude: geo.coords.latitude,
-							longitude: geo.coords.longitude
-						} );
-					},
+					result.resolve( {
+						latitude: geo.coords.latitude,
+						longitude: geo.coords.longitude
+					} );
+				},
 					function ( err ) {
 						// see https://developer.mozilla.org/en-US/docs/Web/API/PositionError
 						if ( err.code === 1 ) {
@@ -111,7 +114,7 @@
 		 * When options.longitude and options.latitude set getPages near that location.
 		 * If those are not present use options.title to find pages near that title.
 		 * If no valid options given resolve return object with error message.
-		 * @param {Object} options
+		 * @param {Object} options Configuration options
 		 * @return {jQuery.Deferred}
 		 * @private
 		 */
@@ -136,8 +139,8 @@
 			/**
 			 * Handler for failed query
 			 *
-			 * @param {String} code Error Code
-			 * @param {String} details A html-safe string with ad detailed error description
+			 * @param {string} code Error Code
+			 * @param {string} details A html-safe string with ad detailed error description
 			 * @ignore
 			 */
 			function pagesError( code, details ) {
@@ -148,9 +151,9 @@
 
 			if ( options.latitude && options.longitude ) {
 				this.nearbyApi.getPages( {
-							latitude: options.latitude,
-							longitude: options.longitude
-						},
+					latitude: options.latitude,
+					longitude: options.longitude
+				},
 						this.range, options.exclude
 					)
 					.done( pagesSuccess )
@@ -170,9 +173,9 @@
 		/**
 		 * Generate a list of options that can be passed to a messagebox template.
 		 * @private
-		 * @param {String} key to a defined error message
-		 * @param {String} msg Message to use, instead of a mapped error message from this.errorMessages
-		 * @returns {Object}
+		 * @param {string} key to a defined error message
+		 * @param {string} msg Message to use, instead of a mapped error message from this.errorMessages
+		 * @return {Object}
 		 */
 		_errorOptions: function ( key, msg ) {
 			var message;
@@ -236,7 +239,7 @@
 		 * The current location, latitude/longitude, or page title can be used
 		 * to find the articles.
 		 *
-		 * @param {Object} options
+		 * @param {Object} options Configuration options
 		 */
 		refresh: function ( options ) {
 			var self = this,
@@ -257,7 +260,8 @@
 						_super.call( self, options );
 					} );
 				} ).fail( function ( errorType ) {
-					options.errorType = errorType;
+					options.errorOptions = self._errorOptions( errorType );
+					self._isLoading = false;
 					_super.call( self, options );
 				} );
 			} else if ( ( options.latitude && options.longitude ) || options.pageTitle ) {
@@ -268,7 +272,8 @@
 				this._find( options ).done( function ( options ) {
 					_super.call( self, options );
 				} ).fail( function ( errorType ) {
-					options.errorType = errorType;
+					options.errorOptions = self._errorOptions( errorType );
+					self._isLoading = false;
 					_super.call( self, options );
 				} );
 			}

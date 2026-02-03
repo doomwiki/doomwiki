@@ -26,42 +26,51 @@ class ObjectFactoryTest extends PHPUnit_Framework_TestCase {
 	public function testClosureExpansionDisabled() {
 		$obj = ObjectFactory::getObjectFromSpec( [
 			'class' => 'ObjectFactoryTestFixture',
-			'args' => [ function() {
-				return 'unwrapped';
-			}, ],
+			'args' => [
+				function() {
+					return 'wrapped';
+				},
+				'unwrapped',
+			],
 			'calls' => [
 				'setter' => [ function() {
-					return 'unwrapped';
+					return 'wrapped';
 				}, ],
 			],
 			'closure_expansion' => false,
 		] );
 		$this->assertInstanceOf( 'Closure', $obj->args[0] );
-		$this->assertSame( 'unwrapped', $obj->args[0]() );
+		$this->assertSame( 'wrapped', $obj->args[0]() );
+		$this->assertSame( 'unwrapped', $obj->args[1] );
 		$this->assertInstanceOf( 'Closure', $obj->setterArgs[0] );
-		$this->assertSame( 'unwrapped', $obj->setterArgs[0]() );
+		$this->assertSame( 'wrapped', $obj->setterArgs[0]() );
 	}
 
 	/**
 	 * @covers ObjectFactory::getObjectFromSpec
+	 * @covers ObjectFactory::expandClosures
 	 */
 	public function testClosureExpansionEnabled() {
 		$obj = ObjectFactory::getObjectFromSpec( [
 			'class' => 'ObjectFactoryTestFixture',
-			'args' => [ function() {
-				return 'unwrapped';
-			}, ],
+			'args' => [
+				function() {
+					return 'wrapped';
+				},
+				'unwrapped',
+			],
 			'calls' => [
 				'setter' => [ function() {
-					return 'unwrapped';
+					return 'wrapped';
 				}, ],
 			],
 			'closure_expansion' => true,
 		] );
 		$this->assertInternalType( 'string', $obj->args[0] );
-		$this->assertSame( 'unwrapped', $obj->args[0] );
+		$this->assertSame( 'wrapped', $obj->args[0] );
+		$this->assertSame( 'unwrapped', $obj->args[1] );
 		$this->assertInternalType( 'string', $obj->setterArgs[0] );
-		$this->assertSame( 'unwrapped', $obj->setterArgs[0] );
+		$this->assertSame( 'wrapped', $obj->setterArgs[0] );
 
 		$obj = ObjectFactory::getObjectFromSpec( [
 			'class' => 'ObjectFactoryTestFixture',
@@ -78,6 +87,44 @@ class ObjectFactoryTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame( 'unwrapped', $obj->args[0] );
 		$this->assertInternalType( 'string', $obj->setterArgs[0] );
 		$this->assertSame( 'unwrapped', $obj->setterArgs[0] );
+	}
+
+	/**
+	 * @covers ObjectFactory::getObjectFromSpec
+	 */
+	public function testGetObjectFromFactory() {
+		$args = [ 'a', 'b' ];
+		$obj = ObjectFactory::getObjectFromSpec( [
+			'factory' => function ( $a, $b ) {
+				return new ObjectFactoryTestFixture( $a, $b );
+			},
+			'args' => $args,
+		] );
+		$this->assertSame( $args, $obj->args );
+	}
+
+	/**
+	 * @covers ObjectFactory::getObjectFromSpec
+	 * @expectedException InvalidArgumentException
+	 */
+	public function testGetObjectFromInvalid() {
+		$args = [ 'a', 'b' ];
+		$obj = ObjectFactory::getObjectFromSpec( [
+			// Missing 'class' or 'factory'
+			'args' => $args,
+		] );
+	}
+
+	/**
+	 * @covers ObjectFactory::getObjectFromSpec
+	 * @dataProvider provideConstructClassInstance
+	 */
+	public function testGetObjectFromClass( $args ) {
+		$obj = ObjectFactory::getObjectFromSpec( [
+			'class' => 'ObjectFactoryTestFixture',
+			'args' => $args,
+		] );
+		$this->assertSame( $args, $obj->args );
 	}
 
 	/**
@@ -91,7 +138,7 @@ class ObjectFactoryTest extends PHPUnit_Framework_TestCase {
 		$this->assertSame( $args, $obj->args );
 	}
 
-	public function provideConstructClassInstance() {
+	public static function provideConstructClassInstance() {
 		// These args go to 11. I thought about making 10 one louder, but 11!
 		return [
 			'0 args' => [ [] ],
@@ -110,6 +157,7 @@ class ObjectFactoryTest extends PHPUnit_Framework_TestCase {
 	}
 
 	/**
+	 * @covers ObjectFactory::constructClassInstance
 	 * @expectedException InvalidArgumentException
 	 */
 	public function testNamedArgs() {

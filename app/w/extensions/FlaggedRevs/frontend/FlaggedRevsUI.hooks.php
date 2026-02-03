@@ -24,6 +24,7 @@ class FlaggedRevsUIHooks {
 		# Add review form JS for reviewers
 		if ( $wgUser->isAllowed( 'review' ) ) {
 			$wgOut->addModules( 'ext.flaggedRevs.review' );
+			$wgOut->addModuleStyles( 'ext.flaggedRevs.review.styles' );
 		}
 		return true;
 	}
@@ -52,8 +53,8 @@ class FlaggedRevsUIHooks {
 	 */
 	protected static function injectStyleForSpecial( &$out ) {
 		$title = $out->getTitle();
-		$spPages = array( 'UnreviewedPages', 'PendingChanges', 'ProblemChanges',
-			'Watchlist', 'Recentchanges', 'Contributions', 'Recentchangeslinked' );
+		$spPages = [ 'UnreviewedPages', 'PendingChanges', 'ProblemChanges',
+			'Watchlist', 'Recentchanges', 'Contributions', 'Recentchangeslinked' ];
 		foreach ( $spPages as $key ) {
 			if ( $title->isSpecial( $key ) ) {
 				$out->addModuleStyles( 'ext.flaggedRevs.basic' ); // CSS only
@@ -93,66 +94,50 @@ class FlaggedRevsUIHooks {
 	public static function onGetPreferences( $user, array &$preferences ) {
 		// Box or bar UI
 		$preferences['flaggedrevssimpleui'] =
-			array(
+			[
 				'type' => 'radio',
 				'section' => 'rc/flaggedrevs-ui',
 				'label-message' => 'flaggedrevs-pref-UI',
-				'options' => array(
+				'options' => [
 					wfMessage( 'flaggedrevs-pref-UI-0' )->text() => 0,
 					wfMessage( 'flaggedrevs-pref-UI-1' )->text() => 1,
-				),
-			);
+				],
+			];
 		// Default versions...
 		$preferences['flaggedrevsstable'] =
-			array(
+			[
 				'type' => 'radio',
 				'section' => 'rc/flaggedrevs-ui',
 				'label-message' => 'flaggedrevs-prefs-stable',
-				'options' => array(
+				'options' => [
 					wfMessage( 'flaggedrevs-pref-stable-0' )->text() => FR_SHOW_STABLE_DEFAULT,
 					wfMessage( 'flaggedrevs-pref-stable-1' )->text() => FR_SHOW_STABLE_ALWAYS,
 					wfMessage( 'flaggedrevs-pref-stable-2' )->text() => FR_SHOW_STABLE_NEVER,
-				),
-			);
+				],
+			];
 		// Review-related rights...
 		if ( $user->isAllowed( 'review' ) ) {
 			// Watching reviewed pages
 			$preferences['flaggedrevswatch'] =
-				array(
+				[
 					'type' => 'toggle',
 					'section' => 'watchlist/advancedwatchlist',
 					'label-message' => 'flaggedrevs-prefs-watch',
-				);
+				];
 			// Diff-to-stable on edit
 			$preferences['flaggedrevseditdiffs'] =
-				array(
+				[
 					'type' => 'toggle',
 					'section' => 'editing/advancedediting',
 					'label-message' => 'flaggedrevs-prefs-editdiffs',
-				);
+				];
 			// Diff-to-stable on draft view
 			$preferences['flaggedrevsviewdiffs'] =
-				array(
+				[
 					'type' => 'toggle',
 					'section' => 'rc/flaggedrevs-ui',
 					'label-message' => 'flaggedrevs-prefs-viewdiffs',
-				);
-		}
-		return true;
-	}
-
-	public static function logLineLinks(
-		$type, $action, $title, $params, &$comment, &$rv, $ts
-	) {
-		if ( !$title ) {
-			return true; // sanity check
-		}
-		// Stability log
-		if ( $type == 'stable' && FlaggedRevsLog::isStabilityAction( $action ) ) {
-			$rv .= FlaggedRevsLogView::stabilityLogLinks( $title, $ts, $params );
-		// Review log
-		} elseif ( $type == 'review' && FlaggedRevsLog::isReviewAction( $action ) ) {
-			$rv .= FlaggedRevsLogView::reviewLogLinks( $action, $title, $params );
+				];
 		}
 		return true;
 	}
@@ -218,20 +203,14 @@ class FlaggedRevsUIHooks {
 			if ( is_array( $tuple ) ) { // cache hit
 				list( $ignoreRedirect, $target ) = $tuple;
 			} else { // cache miss; fetch the stable rev text...
-				$text = $srev->getRevText();
-				$redirect = $fa->getRedirectURL(
-					ContentHandler::makeContent(
-						$text,
-						null,
-						CONTENT_MODEL_WIKITEXT
-					)->getUltimateRedirectTarget()
-				);
+				$content = $srev->getRevision()->getContent();
+				$redirect = $fa->getRedirectURL( $content->getUltimateRedirectTarget() );
 				if ( $redirect ) {
 					$target = $redirect; // use stable redirect
 				} else {
 					$ignoreRedirect = true; // make MW skip redirection
 				}
-				$data = FlaggedRevs::makeMemcObj( array( $ignoreRedirect, $target ) );
+				$data = FlaggedRevs::makeMemcObj( [ $ignoreRedirect, $target ] );
 				$wgMemc->set( $key, $data, $wgParserCacheExpireTime ); // cache results
 			}
 			$clearEnvironment = (bool)$target;
@@ -298,11 +277,60 @@ class FlaggedRevsUIHooks {
 		return true;
 	}
 
-	public static function addHideReviewedFilter( $specialPage, &$filters ) {
-		if ( !FlaggedRevs::useOnlyIfProtected() ) {
-			$filters['hideReviewed'] = array(
-				'msg' => 'flaggedrevs-hidereviewed', 'default' => false );
+	/**
+	 * Add per https://gerrit.wikimedia.org/r/c/mediawiki/extensions/FlaggedRevs/+/350664
+	 * Registers a filter on Special:NewPages to hide edits that have been reviewed
+	 * through FlaggedRevs.
+	 *
+	 * @param SpecialPage $specialPage Special page
+	 * @param array $filters Array of filters
+	 */
+	public static function addHideReviewedUnstructuredFilter( $specialPage, &$filters ) {
+		if ( !FlaggedRevs::useSimpleConfig() ) {
+			$filters['hideReviewed'] = [
+				'msg' => 'flaggedrevs-hidereviewed', 'default' => false
+			];
 		}
+		return true;
+	}
+
+	/**
+	 * Registers a filter to hide edits that have been reviewed through
+	 * FlaggedRevs.
+	 *
+	 * @param ChangesListSpecialPage $specialPage Special page, such as
+	 *   Special:RecentChanges or Special:Watchlist
+	 */
+	public static function addHideReviewedFilter( ChangesListSpecialPage $specialPage ) {
+		if ( FlaggedRevs::useSimpleConfig() ) {
+			return true;
+		}
+		// TODO: Use the new structured UI: T162902
+		$flaggedRevsUnstructuredGroup = new ChangesListBooleanFilterGroup(
+			[
+				'name' => 'flaggedRevsUnstructured',
+				'priority' => -1,
+				'filters' => [
+					[
+						'name' => 'hideReviewed',
+						'showHide' => 'flaggedrevs-hidereviewed',
+						'default' => false,
+						'queryCallable' => function ( $specialClassName, $ctx, $dbr, &$tables,
+							&$fields, &$conds, &$query_options, &$join_conds ) {
+
+								return FlaggedRevsUIHooks::modifyChangesListQuery(
+									$conds,
+									$tables,
+									$join_conds,
+									$fields
+								);
+						},
+					],
+				],
+			]
+		);
+
+		$specialPage->registerFilterGroup( $flaggedRevsUnstructuredGroup );
 		return true;
 	}
 
@@ -315,12 +343,12 @@ class FlaggedRevsUIHooks {
 			$queryInfo['fields'][] = 'fr_quality';
 			$queryInfo['fields'][] = 'fr_user';
 			$queryInfo['fields'][] = 'fr_flags';
-			$queryInfo['join_conds']['flaggedrevs'] = array( 'LEFT JOIN', "fr_rev_id = rev_id" );
+			$queryInfo['join_conds']['flaggedrevs'] = [ 'LEFT JOIN', "fr_rev_id = rev_id" ];
 			# Find reviewer name. Sanity check that no extensions added a `user` query.
 			if ( !in_array( 'user', $queryInfo['tables'] ) ) {
 				$queryInfo['tables'][] = 'user';
 				$queryInfo['fields'][] = 'user_name AS reviewer';
-				$queryInfo['join_conds']['user'] = array( 'LEFT JOIN', "user_id = fr_user" );
+				$queryInfo['join_conds']['user'] = [ 'LEFT JOIN', "user_id = fr_user" ];
 			}
 		}
 		return true;
@@ -350,8 +378,8 @@ class FlaggedRevsUIHooks {
 			unset( $groupBy[ array_search( 'oi_timestamp', $groupBy ) ] );
 			$opts['GROUP BY'] = 'oi_name,oi_timestamp,' . implode( ',', $groupBy );
 
-			$join_conds['flaggedrevs'] = array( 'LEFT JOIN',
-				'oi_sha1 = fr_img_sha1 AND oi_timestamp = fr_img_timestamp' );
+			$join_conds['flaggedrevs'] = [ 'LEFT JOIN',
+				'oi_sha1 = fr_img_sha1 AND oi_timestamp = fr_img_timestamp' ];
 		}
 		return true;
 	}
@@ -360,19 +388,13 @@ class FlaggedRevsUIHooks {
 		# Highlight flaggedrevs
 		$queryInfo['tables'][] = 'flaggedrevs';
 		$queryInfo['fields'][] = 'fr_quality';
-		$queryInfo['join_conds']['flaggedrevs'] = array( 'LEFT JOIN', "fr_rev_id = rev_id" );
+		$queryInfo['join_conds']['flaggedrevs'] = [ 'LEFT JOIN', "fr_rev_id = rev_id" ];
 		# Highlight unchecked content
 		$queryInfo['tables'][] = 'flaggedpages';
 		$queryInfo['fields'][] = 'fp_stable';
 		$queryInfo['fields'][] = 'fp_pending_since';
-		$queryInfo['join_conds']['flaggedpages'] = array( 'LEFT JOIN', "fp_page_id = rev_page" );
+		$queryInfo['join_conds']['flaggedpages'] = [ 'LEFT JOIN', "fp_page_id = rev_page" ];
 		return true;
-	}
-
-	public static function modifyRecentChangesQuery(
-		&$conds, &$tables, &$join_conds, $opts, &$query_opts, &$fields
-	) {
-		return self::modifyChangesListQuery( $conds, $tables, $join_conds, $fields );
 	}
 
 	public static function modifyNewPagesQuery(
@@ -388,8 +410,8 @@ class FlaggedRevsUIHooks {
 		$tables[] = 'flaggedpages';
 		$fields[] = 'fp_stable';
 		$fields[] = 'fp_pending_since';
-		$join_conds['flaggedpages'] = array( 'LEFT JOIN', 'fp_page_id = rc_cur_id' );
-		if ( $wgRequest->getBool( 'hideReviewed' ) && !FlaggedRevs::useOnlyIfProtected() ) {
+		$join_conds['flaggedpages'] = [ 'LEFT JOIN', 'fp_page_id = rc_cur_id' ];
+		if ( $wgRequest->getBool( 'hideReviewed' ) && !FlaggedRevs::useSimpleConfig() ) {
 			// Don't filter external changes as FlaggedRevisions doesn't apply to those
 			$conds[] = 'rc_timestamp >= fp_pending_since OR fp_stable IS NULL OR rc_type = ' . RC_EXTERNAL;
 		}
@@ -426,7 +448,7 @@ class FlaggedRevsUIHooks {
 		} elseif ( isset( $row->fr_quality ) ) {
 			if ( !( $row->rev_deleted & Revision::DELETED_TEXT ) ) {
 				# Add link to stable version of *this* rev, if any
-				list( $link, $class ) = self::markHistoryRow( $title, $row );
+				list( $link, $class ) = self::markHistoryRow( $history, $title, $row );
 				# Space out and demark the stable revision
 				if ( $revId == $history->fr_stableRevId && $history->fr_pendingRevs ) {
 					$liClasses[] = 'fr-hist-stable-margin';
@@ -442,13 +464,14 @@ class FlaggedRevsUIHooks {
 
 	/**
 	 * Make stable version link and return the css
+	 * @param IContextSource $ctx
 	 * @param Title $title
-	 * @param Row $row, from history page
+	 * @param stdClass $row, from history page
 	 * @return array (string,string)
 	 */
-	protected static function markHistoryRow( Title $title, $row ) {
+	protected static function markHistoryRow( IContextSource $ctx, Title $title, $row ) {
 		if ( !isset( $row->fr_quality ) ) {
-			return array( "", "" ); // not reviewed
+			return [ "", "" ]; // not reviewed
 		}
 		$liCss = FlaggedRevsXML::getQualityColor( $row->fr_quality );
 		$flags = explode( ',', $row->fr_flags );
@@ -469,9 +492,9 @@ class FlaggedRevsUIHooks {
 		}
 		$name = isset( $row->reviewer ) ?
 			$row->reviewer : User::whoIs( $row->fr_user );
-		$link = wfMessage( $msg, $title->getPrefixedDBkey(), $row->rev_id, $name )->parse();
+		$link = $ctx->msg( $msg, $title->getPrefixedDBkey(), $row->rev_id, $name )->parse();
 		$link = "<span class='$css plainlinks'>[$link]</span>";
-		return array( $link, $liCss );
+		return [ $link, $liCss ];
 	}
 
 	public static function addToFileHistLine( $hist, File $file, &$s, &$rowClass ) {
@@ -483,8 +506,8 @@ class FlaggedRevsUIHooks {
 		if ( !$file->isOld() || !$file->isLocal() ) {
 			$dbr = wfGetDB( DB_SLAVE );
 			$quality = $dbr->selectField( 'flaggedrevs', 'fr_quality',
-				array( 'fr_img_sha1' => $file->getSha1(),
-					'fr_img_timestamp' => $dbr->timestamp( $file->getTimestamp() ) ),
+				[ 'fr_img_sha1' => $file->getSha1(),
+					'fr_img_timestamp' => $dbr->timestamp( $file->getTimestamp() ) ],
 				__METHOD__
 			);
 		} else {
@@ -539,7 +562,7 @@ class FlaggedRevsUIHooks {
 		if ( $rc->mAttribs['fp_stable'] == null ) {
 			// Is this a config were pages start off reviewable?
 			// Hide notice from non-reviewers due to vandalism concerns (bug 24002).
-			if ( !FlaggedRevs::useOnlyIfProtected() && $wgUser->isAllowed( 'review' ) ) {
+			if ( !FlaggedRevs::useSimpleConfig() && $wgUser->isAllowed( 'review' ) ) {
 				$rlink = wfMessage( 'revreview-unreviewedpage' )->escaped();
 				$css = 'flaggedrevs-unreviewed';
 			}
@@ -550,8 +573,8 @@ class FlaggedRevsUIHooks {
 			$rlink = Linker::link(
 				$title,
 				wfMessage( 'revreview-reviewlink' )->escaped(),
-				array( 'title' => wfMessage( 'revreview-reviewlink-title' )->text() ),
-				array( 'oldid' => $rc->mAttribs['fp_stable'], 'diff' => 'cur' ) +
+				[ 'title' => wfMessage( 'revreview-reviewlink-title' )->text() ],
+				[ 'oldid' => $rc->mAttribs['fp_stable'], 'diff' => 'cur' ] +
 					FlaggedRevs::diffOnlyCGI()
 			);
 			$css = 'flaggedrevs-pending';
@@ -596,9 +619,15 @@ class FlaggedRevsUIHooks {
 		return true;
 	}
 
-	public static function addReviewCheck( $editPage, &$checkboxes, &$tabindex ) {
+	public static function onEditPageBeforeEditChecks( $editPage, &$checks, &$tabindex ) {
 		$view = FlaggablePageView::singleton();
-		$view->addReviewCheck( $editPage, $checkboxes, $tabindex );
+		$view->addReviewCheck( $editPage, $checks, $tabindex );
+		return true;
+	}
+
+	public static function onEditPageGetCheckboxesDefinition( $editPage, &$checkboxes ) {
+		$view = FlaggablePageView::singleton();
+		$view->addReviewCheck( $editPage, $checkboxes );
 		return true;
 	}
 
@@ -613,15 +642,15 @@ class FlaggedRevsUIHooks {
 		if ( $out->getTitle()->equals( $watchlist ) && $namespaces ) {
 			$dbr = wfGetDB( DB_SLAVE, 'watchlist' ); // consistency with watchlist
 			$watchedOutdated = (bool)$dbr->selectField(
-				array( 'watchlist', 'page', 'flaggedpages' ),
+				[ 'watchlist', 'page', 'flaggedpages' ],
 				'1', // existence
-				array( 'wl_user' => $wgUser->getId(), // this user
+				[ 'wl_user' => $wgUser->getId(), // this user
 					'wl_namespace' => $namespaces, // reviewable
 					'wl_namespace = page_namespace',
 					'wl_title = page_title',
 					'fp_page_id = page_id',
 					'fp_pending_since IS NOT NULL', // edits pending
-				), __METHOD__
+				], __METHOD__
 			);
 			# Give a notice if pages on the users's wachlist have pending edits
 			if ( $watchedOutdated ) {
@@ -647,10 +676,11 @@ class FlaggedRevsUIHooks {
 		# Can the user actually do anything?
 		$isAllowed = $form->isAllowed();
 		$disabledAttrib = $isAllowed ?
-			array() : array( 'disabled' => 'disabled' );
+			[] : [ 'disabled' => 'disabled' ];
 
 		# Get the current config/expiry
-		$config = FRPageConfig::getStabilitySettings( $article->getTitle(), FR_MASTER );
+		$mode = $wgRequest->wasPosted() ? FR_MASTER : 0;
+		$config = FRPageConfig::getStabilitySettings( $article->getTitle(), $mode );
 		$oldExpirySelect = ( $config['expiry'] == 'infinity' ) ? 'infinite' : 'existing';
 
 		# Load requested restriction level, default to current level...
@@ -672,11 +702,11 @@ class FlaggedRevsUIHooks {
 		$effectiveLevels = FlaggedRevs::getRestrictionLevels();
 		array_unshift( $effectiveLevels, "none" );
 		# Show all restriction levels in a <select>...
-		$attribs = array(
+		$attribs = [
 			'id'    => 'mwStabilityLevel',
 			'name'  => 'mwStabilityLevel',
 			'size'  => count( $effectiveLevels ),
-		) + $disabledAttrib;
+		] + $disabledAttrib;
 		$output .= Xml::openElement( 'select', $attribs );
 		foreach ( $effectiveLevels as $limit ) {
 			if ( $limit == 'none' ) {
@@ -734,18 +764,18 @@ class FlaggedRevsUIHooks {
 					"</td>
 					<td class='mw-input'>" .
 						Xml::tags( 'select',
-							array(
+							[
 								'id'        => 'mwStabilizeExpirySelection',
 								'name'      => 'mwStabilizeExpirySelection',
 								'onchange'  => 'onFRChangeExpiryDropdown()',
-							) + $disabledAttrib,
+							] + $disabledAttrib,
 							$expiryFormOptions ) .
 					"</td>
 				</tr>";
 		}
 		# Add custom expiry field to form
-		$attribs = array( 'id' => 'mwStabilizeExpiryOther',
-			'onkeyup' => 'onFRChangeExpiryField()' ) + $disabledAttrib;
+		$attribs = [ 'id' => 'mwStabilizeExpiryOther',
+			'onkeyup' => 'onFRChangeExpiryField()' ] + $disabledAttrib;
 		$output .= "
 			<tr>
 				<td class='mw-label'>" .

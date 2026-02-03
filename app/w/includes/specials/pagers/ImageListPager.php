@@ -22,6 +22,10 @@
 /**
  * @ingroup Pager
  */
+use MediaWiki\MediaWikiServices;
+use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\FakeResultWrapper;
+
 class ImageListPager extends TablePager {
 
 	protected $mFieldNames = null;
@@ -74,7 +78,7 @@ class ImageListPager extends TablePager {
 			$nt = Title::newFromText( $this->mSearch );
 
 			if ( $nt ) {
-				$dbr = wfGetDB( DB_SLAVE );
+				$dbr = wfGetDB( DB_REPLICA );
 				$this->mQueryConds[] = 'LOWER(img_name)' .
 					$dbr->buildLike( $dbr->anyString(),
 						strtolower( $nt->getDBkey() ), $dbr->anyString() );
@@ -136,7 +140,7 @@ class ImageListPager extends TablePager {
 		if ( $this->mSearch !== '' ) {
 			$nt = Title::newFromText( $this->mSearch );
 			if ( $nt ) {
-				$dbr = wfGetDB( DB_SLAVE );
+				$dbr = wfGetDB( DB_REPLICA );
 				$conds[] = 'LOWER(' . $prefix . '_name)' .
 					$dbr->buildLike( $dbr->anyString(),
 						strtolower( $nt->getDBkey() ), $dbr->anyString() );
@@ -189,7 +193,8 @@ class ImageListPager extends TablePager {
 		}
 		$sortable = [ 'img_timestamp', 'img_name', 'img_size' ];
 		/* For reference, the indicies we can use for sorting are:
-		 * On the image table: img_usertext_timestamp, img_size, img_timestamp
+		 * On the image table: img_user_timestamp, img_usertext_timestamp,
+		 * img_size, img_timestamp
 		 * On oldimage: oi_usertext_timestamp, oi_name_timestamp
 		 *
 		 * In particular that means we cannot sort by timestamp when not filtering
@@ -272,7 +277,7 @@ class ImageListPager extends TablePager {
 			}
 			unset( $field );
 
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			if ( $dbr->implicitGroupby() ) {
 				$options = [ 'GROUP BY' => 'img_name' ];
 			} else {
@@ -422,6 +427,7 @@ class ImageListPager extends TablePager {
 	 * @throws MWException
 	 */
 	function formatValue( $field, $value ) {
+		$linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 		switch ( $field ) {
 			case 'thumb':
 				$opt = [ 'time' => wfTimestamp( TS_MW, $this->mCurrentRow->img_timestamp ) ];
@@ -429,8 +435,11 @@ class ImageListPager extends TablePager {
 				// If statement for paranoia
 				if ( $file ) {
 					$thumb = $file->transform( [ 'width' => 180, 'height' => 360 ] );
-
-					return $thumb->toHtml( [ 'desc-link' => true ] );
+					if ( $thumb ) {
+						return $thumb->toHtml( [ 'desc-link' => true ] );
+					} else {
+						return wfMessage( 'thumbnail_error', '' )->escaped();
+					}
 				} else {
 					return htmlspecialchars( $value );
 				}
@@ -443,12 +452,12 @@ class ImageListPager extends TablePager {
 					$imgfile = $this->msg( 'imgfile' )->text();
 				}
 
-				// Weird files can maybe exist? Bug 22227
+				// Weird files can maybe exist? T24227
 				$filePage = Title::makeTitleSafe( NS_FILE, $value );
 				if ( $filePage ) {
-					$link = Linker::linkKnown(
+					$link = $linkRenderer->makeKnownLink(
 						$filePage,
-						htmlspecialchars( $filePage->getText() )
+						$filePage->getText()
 					);
 					$download = Xml::element( 'a',
 						[ 'href' => wfLocalFile( $filePage )->getUrl() ],
@@ -459,9 +468,9 @@ class ImageListPager extends TablePager {
 					// Add delete links if allowed
 					// From https://github.com/Wikia/app/pull/3859
 					if ( $filePage->userCan( 'delete', $this->getUser() ) ) {
-						$deleteMsg = $this->msg( 'listfiles-delete' )->escaped();
+						$deleteMsg = $this->msg( 'listfiles-delete' )->text();
 
-						$delete = Linker::linkKnown(
+						$delete = $linkRenderer->makeKnownLink(
 							$filePage, $deleteMsg, [], [ 'action' => 'delete' ]
 						);
 						$delete = $this->msg( 'parentheses' )->rawParams( $delete )->escaped();
@@ -476,9 +485,9 @@ class ImageListPager extends TablePager {
 			case 'img_user_text':
 				if ( $this->mCurrentRow->img_user ) {
 					$name = User::whoIs( $this->mCurrentRow->img_user );
-					$link = Linker::link(
+					$link = $linkRenderer->makeLink(
 						Title::makeTitle( NS_USER, $name ),
-						htmlspecialchars( $name )
+						$name
 					);
 				} else {
 					$link = htmlspecialchars( $value );

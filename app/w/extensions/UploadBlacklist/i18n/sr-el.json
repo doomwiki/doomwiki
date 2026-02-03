@@ -1,4 +1,8 @@
 {
-	"@metadata": [],
-	"uploadblacklist-desc": "Dodaje funkcionalnost crne liste za slanje fajlova"
+	"@metadata": {
+		"authors": [
+			"Сербијана"
+		]
+	},
+	"uploadblacklist-desc": "Dodaje funkcionalnost crne liste za otpremanje"
 }

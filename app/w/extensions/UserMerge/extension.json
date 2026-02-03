@@ -1,6 +1,6 @@
 {
 	"name": "UserMerge",
-	"version": "1.10.0",
+	"version": "1.10.1",
 	"author": [
 		"Tim Laqua",
 		"Thomas Gries",
@@ -14,7 +14,7 @@
 		"usermerge"
 	],
 	"SpecialPages": {
-		"UserMerge": "UserMerge"
+		"UserMerge": "SpecialUserMerge"
 	},
 	"LogTypes": [
 		"usermerge"
@@ -39,16 +39,9 @@
 	},
 	"AutoloadClasses": {
 		"SpecialUserMerge": "SpecialUserMerge.php",
-		"UserMerge": "SpecialUserMerge.php",
 		"MergeUser": "MergeUser.php",
 		"IUserMergeLogger": "IUserMergeLogger.php",
-		"UserMergeLogger": "UserMergeLogger.php",
-		"UserMergeHooks": "UserMerge.hooks.php"
-	},
-	"Hooks": {
-		"UnitTestsList": [
-			"UserMergeHooks::onUnitTestsList"
-		]
+		"UserMergeLogger": "UserMergeLogger.php"
 	},
 	"config": {
 		"UserMergeEnableDelete": true,

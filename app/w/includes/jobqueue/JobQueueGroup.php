@@ -120,6 +120,8 @@ class JobQueueGroup {
 	 * @return void
 	 */
 	public function push( $jobs ) {
+		global $wgJobTypesExcludedFromDefaultQueue;
+
 		$jobs = is_array( $jobs ) ? $jobs : [ $jobs ];
 		if ( !count( $jobs ) ) {
 			return;
@@ -149,7 +151,7 @@ class JobQueueGroup {
 			'true',
 			15
 		);
-		if ( array_intersect( array_keys( $jobsByType ), $this->getDefaultQueueTypes() ) ) {
+		if ( array_diff( array_keys( $jobsByType ), $wgJobTypesExcludedFromDefaultQueue ) ) {
 			$cache->set(
 				$cache->makeGlobalKey( 'jobqueue', $this->wiki, 'hasjobs', self::TYPE_DEFAULT ),
 				'true',
@@ -161,14 +163,16 @@ class JobQueueGroup {
 	/**
 	 * Buffer jobs for insertion via push() or call it now if in CLI mode
 	 *
-	 * Note that MediaWiki::restInPeace() calls pushLazyJobs()
+	 * Note that pushLazyJobs() is registered as a deferred update just before
+	 * DeferredUpdates::doUpdates() in MediaWiki and JobRunner classes in order
+	 * to be executed as the very last deferred update (T100085, T154425).
 	 *
 	 * @param IJobSpecification|IJobSpecification[] $jobs A single Job or a list of Jobs
 	 * @return void
 	 * @since 1.26
 	 */
 	public function lazyPush( $jobs ) {
-		if ( PHP_SAPI === 'cli' ) {
+		if ( PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg' ) {
 			$this->push( $jobs );
 			return;
 		}
@@ -269,7 +273,7 @@ class JobQueueGroup {
 	}
 
 	/**
-	 * Wait for any slaves or backup queue servers to catch up.
+	 * Wait for any replica DBs or backup queue servers to catch up.
 	 *
 	 * This does nothing for certain queue classes.
 	 *
@@ -421,7 +425,7 @@ class JobQueueGroup {
 
 					return [ 'v' => $wgConf->getConfig( $wiki, $name ) ];
 				},
-				[ 'pcTTL' => 30 ]
+				[ 'pcTTL' => WANObjectCache::TTL_PROC_LONG ]
 			);
 
 			return $value['v'];

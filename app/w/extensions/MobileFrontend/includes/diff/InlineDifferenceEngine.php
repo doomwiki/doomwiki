@@ -94,7 +94,7 @@ class InlineDifferenceEngine extends DifferenceEngine {
 					$suppressed ? 'rev-suppressed-no-diff' : 'rev-deleted-no-diff'
 				)->parse();
 			} else {
-				# Give explanation and add a link to view the diff...
+				// Give explanation and add a link to view the diff...
 				$query = $this->getRequest()->appendQueryValue( 'unhide', '1', true );
 				$link = $this->getTitle()->getFullURL( $query );
 				$msg = $context->msg(
@@ -116,7 +116,7 @@ class InlineDifferenceEngine extends DifferenceEngine {
 	function generateTextDiffBody( $otext, $ntext ) {
 		global $wgContLang;
 
-		# First try wikidiff2
+		// First try wikidiff2
 		if ( function_exists( 'wikidiff2_inline_diff' ) ) {
 			$text = wikidiff2_inline_diff( $otext, $ntext, 2 );
 			$text .= $this->debug( 'wikidiff2-inline' );
@@ -124,7 +124,7 @@ class InlineDifferenceEngine extends DifferenceEngine {
 			return $text;
 		}
 
-		# Else slow native PHP diff
+		// Else slow native PHP diff
 		$ota = explode( "\n", $wgContLang->segmentForDiff( $otext ) );
 		$nta = explode( "\n", $wgContLang->segmentForDiff( $ntext ) );
 		$diffs = new Diff( $ota, $nta );
@@ -139,7 +139,7 @@ class InlineDifferenceEngine extends DifferenceEngine {
 	 * Returns the cache key for diff body text or content.
 	 *
 	 * @throws Exception when no mOldid and mNewid is set
-	 * @see DifferenceEngine:getDiffBodyCacheKey
+	 * @see DifferenceEngine::getDiffBodyCacheKey
 	 * @return string
 	 */
 	protected function getDiffBodyCacheKey() {
@@ -147,7 +147,7 @@ class InlineDifferenceEngine extends DifferenceEngine {
 			throw new Exception( 'mOldid and mNewid must be set to get diff cache key.' );
 		}
 
-		return wfMemcKey( 'diff', 'inline', MW_DIFF_VERSION,
+		return wfMemcKey( 'diff', 'inline', self::DIFF_VERSION,
 			'oldid', $this->mOldid, 'newid', $this->mNewid );
 	}
 
@@ -160,15 +160,15 @@ class InlineDifferenceEngine extends DifferenceEngine {
 		$linkInfo = $this->getMarkPatrolledLinkInfo();
 		if ( $linkInfo ) {
 			$this->getOutput()->addModules( 'mobile.patrol.ajax' );
+
 			$linkInfo = Html::linkButton(
 				$this->msg( 'markaspatrolleddiff' )->escaped(),
-				array(
-					'href' => $this->mNewPage->getLocalUrl( array(
+				[
+					'href' => $this->mNewPage->getLocalUrl( [
 						'action' => 'markpatrolled',
 						'rcid' => $linkInfo['rcid'],
-						'token' => $linkInfo['token'],
-					) ),
-				)
+					] ),
+				]
 			);
 		}
 		return $linkInfo;

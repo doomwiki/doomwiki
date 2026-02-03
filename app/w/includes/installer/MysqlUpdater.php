@@ -20,6 +20,9 @@
  * @file
  * @ingroup Deployment
  */
+use Wikimedia\Rdbms\Field;
+use Wikimedia\Rdbms\MySQLField;
+use MediaWiki\MediaWikiServices;
 
 /**
  * Mysql update list and mysql-specific update functions.
@@ -155,7 +158,6 @@ class MysqlUpdater extends DatabaseUpdater {
 			[ 'addField', 'ipblocks', 'ipb_allow_usertalk', 'patch-ipb_allow_usertalk.sql' ],
 
 			// 1.15
-			[ 'doUniquePlTlIl' ],
 			[ 'addTable', 'change_tag', 'patch-change_tag.sql' ],
 			[ 'addTable', 'tag_summary', 'patch-tag_summary.sql' ],
 			[ 'addTable', 'valid_tag', 'patch-valid_tag.sql' ],
@@ -283,6 +285,22 @@ class MysqlUpdater extends DatabaseUpdater {
 			[ 'addIndex', 'categorylinks', 'cl_collation_ext',
 				'patch-add-cl_collation_ext_index.sql' ],
 			[ 'doCollationUpdate' ],
+
+			// 1.28
+			[ 'addIndex', 'recentchanges', 'rc_name_type_patrolled_timestamp',
+				'patch-add-rc_name_type_patrolled_timestamp_index.sql' ],
+			[ 'doRevisionPageRevIndexNonUnique' ],
+			[ 'doNonUniquePlTlIl' ],
+			[ 'addField', 'change_tag', 'ct_id', 'patch-change_tag-ct_id.sql' ],
+			[ 'addField', 'tag_summary', 'ts_id', 'patch-tag_summary-ts_id.sql' ],
+			[ 'modifyField', 'recentchanges', 'rc_ip', 'patch-rc_ip_modify.sql' ],
+			[ 'addIndex', 'archive', 'usertext_timestamp', 'patch-rename-ar_usertext_timestamp.sql' ],
+
+			// 1.29
+			[ 'addField', 'externallinks', 'el_index_60', 'patch-externallinks-el_index_60.sql' ],
+			[ 'dropIndex', 'user_groups', 'ug_user_group', 'patch-user_groups-primary-key.sql' ],
+			[ 'addField', 'user_groups', 'ug_expiry', 'patch-user_groups-ug_expiry.sql' ],
+			[ 'addIndex', 'image', 'img_user_timestamp', 'patch-image-user-index-2.sql' ],
 		];
 	}
 
@@ -808,7 +826,7 @@ class MysqlUpdater extends DatabaseUpdater {
 	/**
 	 * Set page_random field to a random value where it is equals to 0.
 	 *
-	 * @see bug 3946
+	 * @see T5946
 	 */
 	protected function doPageRandomUpdate() {
 		$page = $this->db->tableName( 'page' );
@@ -840,7 +858,8 @@ class MysqlUpdater extends DatabaseUpdater {
 			foreach ( $res as $row ) {
 				$count = ( $count + 1 ) % 100;
 				if ( $count == 0 ) {
-					wfGetLBFactory()->waitForReplication( [ 'wiki' => wfWikiID() ] );
+					$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+					$lbFactory->waitForReplication( [ 'wiki' => wfWikiID() ] );
 				}
 				$this->db->insert( 'templatelinks',
 					[
@@ -969,24 +988,24 @@ class MysqlUpdater extends DatabaseUpdater {
 		return true;
 	}
 
-	protected function doUniquePlTlIl() {
+	protected function doNonUniquePlTlIl() {
 		$info = $this->db->indexInfo( 'pagelinks', 'pl_namespace' );
-		if ( is_array( $info ) && !$info[0]->Non_unique ) {
-			$this->output( "...pl_namespace, tl_namespace, il_to indices are already UNIQUE.\n" );
+		if ( is_array( $info ) && $info[0]->Non_unique ) {
+			$this->output( "...pl_namespace, tl_namespace, il_to indices are already non-UNIQUE.\n" );
 
 			return true;
 		}
 		if ( $this->skipSchema ) {
 			$this->output( "...skipping schema change (making pl_namespace, tl_namespace " .
-				"and il_to indices UNIQUE).\n" );
+				"and il_to indices non-UNIQUE).\n" );
 
 			return false;
 		}
 
 		return $this->applyPatch(
-			'patch-pl-tl-il-unique.sql',
+			'patch-pl-tl-il-nonunique.sql',
 			false,
-			'Making pl_namespace, tl_namespace and il_to indices UNIQUE'
+			'Making pl_namespace, tl_namespace and il_to indices non-UNIQUE'
 		);
 	}
 
@@ -1096,5 +1115,39 @@ class MysqlUpdater extends DatabaseUpdater {
 			false,
 			'Making user_id unsigned int'
 		);
+	}
+
+	protected function doRevisionPageRevIndexNonUnique() {
+		if ( !$this->doTable( 'revision' ) ) {
+			return true;
+		} elseif ( !$this->db->indexExists( 'revision', 'rev_page_id' ) ) {
+			$this->output( "...rev_page_id index not found on revision.\n" );
+			return true;
+		}
+
+		if ( !$this->db->indexUnique( 'revision', 'rev_page_id' ) ) {
+			$this->output( "...rev_page_id index already non-unique.\n" );
+			return true;
+		}
+
+		return $this->applyPatch(
+			'patch-revision-page-rev-index-nonunique.sql',
+			false,
+			'Making rev_page_id index non-unique'
+		);
+	}
+
+	public function getSchemaVars() {
+		global $wgDBTableOptions;
+
+		$vars = [];
+		$vars['wgDBTableOptions'] = str_replace( 'TYPE', 'ENGINE', $wgDBTableOptions );
+		$vars['wgDBTableOptions'] = str_replace(
+			'CHARSET=mysql4',
+			'CHARSET=binary',
+			$vars['wgDBTableOptions']
+		);
+
+		return $vars;
 	}
 }

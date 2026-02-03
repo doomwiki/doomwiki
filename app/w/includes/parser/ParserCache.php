@@ -72,12 +72,19 @@ class ParserCache {
 	}
 
 	/**
-	 * @param WikiPage $article
+	 * @param WikiPage $page
 	 * @return mixed|string
 	 */
-	protected function getOptionsKey( $article ) {
-		$pageid = $article->getId();
-		return wfMemcKey( 'pcache', 'idoptions', "{$pageid}" );
+	protected function getOptionsKey( $page ) {
+		return wfMemcKey( 'pcache', 'idoptions', $page->getId() );
+	}
+
+	/**
+	 * @param WikiPage $page
+	 * @since 1.28
+	 */
+	public function deleteOptionsKey( $page ) {
+		$this->mMemc->delete( $this->getOptionsKey( $page ) );
 	}
 
 	/**
@@ -216,7 +223,7 @@ class ParserCache {
 
 		// The edit section preference may not be the appropiate one in
 		// the ParserOutput, as we are not storing it in the parsercache
-		// key. Force it here. See bug 31445.
+		// key. Force it here. See T33445.
 		$value->setEditSectionTokens( $popts->getEditSection() );
 
 		$wikiPage = method_exists( $article, 'getPage' )

@@ -52,7 +52,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 		}
 
 		foreach ( $links as $msg => $title ) {
-			$links[$msg] = Linker::link( $title, $this->msg( $msg )->escaped() );
+			$links[$msg] = $this->linkRenderer->makeLink( $title, $this->msg( $msg )->text() );
 		}
 
 		$backlinks = $this->getLanguage()->pipeList( $links );
@@ -67,22 +67,22 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 				$this->mOldVersion['meta']['history_id']
 			) {
 				// Create a "previous change" link if this isn't the first change of the given filter
-				$links[] = Linker::link(
+				$links[] = $this->linkRenderer->makeLink(
 					$this->getTitle(
 						'history/' . $this->mFilter . '/diff/prev/' . $this->mOldVersion['meta']['history_id']
 					),
 					$this->getLanguage()->getArrow( 'backwards' ) .
-						' ' . $this->msg( 'abusefilter-diff-prev' )->escaped()
+						' ' . $this->msg( 'abusefilter-diff-prev' )->text()
 				);
 			}
 
 			if ( !is_null( $this->mNextHistoryId ) ) {
 				// Create a "next change" link if this isn't the last change of the given filter
-				$links[] = Linker::link(
+				$links[] = $this->linkRenderer->makeLink(
 					$this->getTitle(
 						'history/' . $this->mFilter . '/diff/prev/' . $this->mNextHistoryId
 					),
-					$this->msg( 'abusefilter-diff-next' )->escaped() .
+					$this->msg( 'abusefilter-diff-next' )->text() .
 						' ' . $this->getLanguage()->getArrow( 'forwards' )
 				);
 			}
@@ -99,9 +99,9 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 		$newSpec = $this->mParams[4];
 		$this->mFilter = $this->mParams[1];
 
-		if ( AbuseFilter::filterHidden( $this->mFilter ) &&
-				!$this->getUser()->isAllowed( 'abusefilter-modify' ) &&
-				!$this->getUser()->isAllowed( 'abusefilter-view-private' ) ) {
+		if ( AbuseFilter::filterHidden( $this->mFilter )
+			&& !$this->getUser()->isAllowedAny( 'abusefilter-modify', 'abusefilter-view-private' )
+		) {
 			$this->getOutput()->addWikiMsg( 'abusefilter-history-error-hidden' );
 			return false;
 		}
@@ -115,8 +115,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 		}
 
 		$this->mNextHistoryId = $this->getNextHistoryId(
-			$this->mNewVersion['meta']['history_id'],
-			'next'
+			$this->mNewVersion['meta']['history_id']
 		);
 
 		return true;
@@ -150,8 +149,9 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 		static $dependentSpecs = array( 'prev', 'next' );
 		static $cache = array();
 
-		if ( isset( $cache[$spec] ) )
+		if ( isset( $cache[$spec] ) ) {
 			return $cache[$spec];
+		}
 
 		$dbr = wfGetDB( DB_SLAVE );
 		$row = null;
@@ -251,7 +251,7 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 		$text = $this->getLanguage()->timeanddate( $timestamp, true );
 		$title = $this->getTitle( "history/$filter/item/$history_id" );
 
-		$link = Linker::link( $title, $text );
+		$link = $this->linkRenderer->makeLink( $title, $text );
 
 		return $link;
 	}
@@ -410,7 +410,6 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 
 		$diffEngine->showDiffStyle();
 
-		// We can't use $diffEngine->generateDiffBody since it doesn't allow custom formatters
 		$diff = new Diff( $old, $new );
 		$formatter = new TableDiffFormatterFullContext();
 		$formattedDiff = $diffEngine->addHeader( $formatter->format( $diff ), '', '' );

@@ -8,7 +8,8 @@
 			"Remux",
 			"Yekrats",
 			"Robin van der Vliet",
-			"Lucas"
+			"Lucas",
+			"Renardo"
 		]
 	},
 	"mobile-frontend-account-create-captcha-placeholder": "Entajpu konfirman kodon",
@@ -38,12 +39,6 @@
 	"mobile-frontend-editor-save": "Konservi",
 	"mobile-frontend-editor-summary": "Resumo:",
 	"mobile-frontend-editor-tutorial-cancel": "Ne, dankon",
-	"mobile-frontend-editor-bold": "Grasa",
-	"mobile-frontend-editor-italic": "Kursiva",
-	"mobile-frontend-editor-bold-text": "Grasa teksto",
-	"mobile-frontend-editor-italic-text": "Kursiva teksto",
-	"mobile-frontend-editor-reference": "Referenco",
-	"mobile-frontend-editor-add-reference": "Aldoni",
 	"mobile-frontend-enable-images": "Ŝalti bildojn en poŝtelefona retejo",
 	"mobile-frontend-fontchanger-link": "Grandeco de tiparo",
 	"mobile-frontend-featured-article": "Enhavo prezentita hodiaŭ",
@@ -53,6 +48,7 @@
 	"mobile-frontend-footer-sitename": "{{SITENAME}}",
 	"mobile-frontend-home-button": "Ĉefpaĝo",
 	"mobile-frontend-images-status": "Bildoj",
+	"mobile-frontend-language-change": "Ŝanĝi lingvon",
 	"mobile-frontend-language-article-heading": "Legi en alia lingvo",
 	"mobile-frontend-languages-header": "Lingvoj",
 	"mobile-frontend-languages-header-page": "$1 - Lingvoj",
@@ -65,9 +61,9 @@
 	"mobile-frontend-last-modified-months": "Laste redaktita antaŭ {{PLURAL:$1|$1 monato|$1 monatoj}}",
 	"mobile-frontend-last-modified-seconds": "Laste redaktita antaŭ {{PLURAL:$1|$1 sekundo|$1 sekundoj}}",
 	"mobile-frontend-last-modified-years": "Laste redaktita antaŭ {{PLURAL:$1|$1 jaro|$1 jaroj}}",
-	"mobile-frontend-logged-in-homepage-notification": "Bonvenon, $1!",
+	"mobile-frontend-logged-in-homepage-notification": "{{GENDER:$1|Bonvenon}}, $1!",
 	"mobile-frontend-logged-in-toast-notification": "Elsalutita kiel $1",
-	"mobile-frontend-main-menu": "Ĉefa Menuo",
+	"mobile-frontend-main-menu": "Ĉefa menuo",
 	"mobile-frontend-main-menu-account-create": "Krei konton",
 	"mobile-frontend-main-menu-button-tooltip": "Malfermi ĉefmenuon",
 	"mobile-frontend-main-menu-featured": "Elstara",
@@ -78,6 +74,7 @@
 	"mobile-frontend-main-menu-settings": "Agordoj",
 	"mobile-frontend-main-menu-settings-heading": "Agordoj",
 	"mobile-frontend-main-menu-watchlist": "Atentaro",
+	"mobile-frontend-main-menu-contributions": "Kontribuoj",
 	"mobile-frontend-media-details": "Detaloj",
 	"mobile-frontend-meta-data-issues": "Problemoj pri paĝo",
 	"mobile-frontend-meta-data-issues-header": "Problemoj",
@@ -138,5 +135,5 @@
 	"tag-mobile_edit": "Poŝaparata redakto",
 	"tag-mobile_edit-description": "Redakto farita en retejo por poŝaparatoj",
 	"tag-mobile_web_edit": "Redakto de poŝaparata retejo",
-	"mobile-frontend-pageaction-edit-tooltip": "Redakti la unuan sekcion de tiu ĉi paĝo."
+	"mobile-frontend-pageaction-edit-tooltip": "Redakti la unuan sekcion de ĉi tiu paĝo."
 }

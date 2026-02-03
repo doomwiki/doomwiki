@@ -31,46 +31,9 @@
  * @ingroup Language
  */
 class LanguageRu extends Language {
-
-	/**
-	 * Convert from the nominative form of a noun to some other case
-	 * Invoked with {{grammar:case|word}}
-	 *
-	 * @param string $word
-	 * @param string $case
-	 * @return string
-	 */
-	function convertGrammar( $word, $case ) {
-		global $wgGrammarForms;
-		if ( isset( $wgGrammarForms['ru'][$case][$word] ) ) {
-			return $wgGrammarForms['ru'][$case][$word];
-		}
-
-		$grammarDataFile = __DIR__ . '/data/grammar.ru.json';
-		$grammarData = FormatJson::decode( file_get_contents( $grammarDataFile ), true );
-
-		if ( array_key_exists( $case, $grammarData ) ) {
-			foreach ( array_keys( $grammarData[$case] ) as $form ) {
-				if ( $form === '@metadata' ) {
-					continue;
-				}
-
-				$regex = "/$form/";
-
-				if ( preg_match( $regex, $word ) ) {
-					$word = preg_replace( $regex, $grammarData[$case][$form], $word );
-
-					break;
-				}
-			}
-		}
-
-		return $word;
-	}
-
 	/**
 	 * Four-digit number should be without group commas (spaces)
-	 * See manual of style at http://ru.wikipedia.org/wiki/Википедия:Оформление_статей
+	 * See manual of style at https://ru.wikipedia.org/wiki/Википедия:Оформление_статей
 	 * So "1 234 567", "12 345" but "1234"
 	 *
 	 * @param string $_

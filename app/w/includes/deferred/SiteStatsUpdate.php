@@ -17,25 +17,26 @@
  *
  * @file
  */
+use MediaWiki\MediaWikiServices;
+use Wikimedia\Assert\Assert;
+use Wikimedia\Rdbms\IDatabase;
 
 /**
  * Class for handling updates to the site_stats table
  */
-class SiteStatsUpdate implements DeferrableUpdate {
+class SiteStatsUpdate implements DeferrableUpdate, MergeableUpdate {
 	/** @var int */
 	protected $edits = 0;
-
 	/** @var int */
 	protected $pages = 0;
-
 	/** @var int */
 	protected $articles = 0;
-
 	/** @var int */
 	protected $users = 0;
-
 	/** @var int */
 	protected $images = 0;
+
+	private static $counters = [ 'edits', 'pages', 'articles', 'users', 'images' ];
 
 	// @todo deprecate this constructor
 	function __construct( $views, $edits, $good, $pages = 0, $users = 0 ) {
@@ -45,6 +46,15 @@ class SiteStatsUpdate implements DeferrableUpdate {
 		$this->users = $users;
 	}
 
+	public function merge( MergeableUpdate $update ) {
+		/** @var SiteStatsUpdate $update */
+		Assert::parameterType( __CLASS__, $update, '$update' );
+
+		foreach ( self::$counters as $field ) {
+			$this->$field += $update->$field;
+		}
+	}
+
 	/**
 	 * @param array $deltas
 	 * @return SiteStatsUpdate
@@ -52,8 +62,7 @@ class SiteStatsUpdate implements DeferrableUpdate {
 	public static function factory( array $deltas ) {
 		$update = new self( 0, 0, 0 );
 
-		$fields = [ 'views', 'edits', 'pages', 'articles', 'users', 'images' ];
-		foreach ( $fields as $field ) {
+		foreach ( self::$counters as $field ) {
 			if ( isset( $deltas[$field] ) && $deltas[$field] ) {
 				$update->$field = $deltas[$field];
 			}
@@ -74,7 +83,7 @@ class SiteStatsUpdate implements DeferrableUpdate {
 			$this->doUpdatePendingDeltas();
 		} else {
 			// Need a separate transaction because this a global lock
-			wfGetDB( DB_MASTER )->onTransactionIdle( [ $this, 'tryDBUpdateInternal' ] );
+			DeferredUpdates::addCallableUpdate( [ $this, 'tryDBUpdateInternal' ] );
 		}
 	}
 
@@ -122,6 +131,9 @@ class SiteStatsUpdate implements DeferrableUpdate {
 			// Commit the updates and unlock the table
 			$dbw->unlock( $lockKey, __METHOD__ );
 		}
+
+		// Invalid cache used by parser functions
+		SiteStats::unload();
 	}
 
 	/**
@@ -130,7 +142,7 @@ class SiteStatsUpdate implements DeferrableUpdate {
 	 */
 	public static function cacheUpdate( $dbw ) {
 		global $wgActiveUserDays;
-		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
+		$dbr = wfGetDB( DB_REPLICA, 'vslow' );
 		# Get non-bot users than did some recent action other than making accounts.
 		# If account creation is included, the number gets inflated ~20+ fold on enwiki.
 		$activeUsers = $dbr->selectField(
@@ -152,11 +164,14 @@ class SiteStatsUpdate implements DeferrableUpdate {
 			__METHOD__
 		);
 
+		// Invalid cache used by parser functions
+		SiteStats::unload();
+
 		return $activeUsers;
 	}
 
 	protected function doUpdateContextStats() {
-		$stats = RequestContext::getMain()->getStats();
+		$stats = MediaWikiServices::getInstance()->getStatsdDataFactory();
 		foreach ( [ 'edits', 'articles', 'pages', 'users', 'images' ] as $type ) {
 			$delta = $this->$type;
 			if ( $delta !== 0 ) {

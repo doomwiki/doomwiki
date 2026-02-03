@@ -51,6 +51,11 @@
 		this.$label.attr( 'href', config.url );
 		this.$element.addClass( 'mw-widget-titleOptionWidget' );
 
+		// OOUI OptionWidgets make an effort to not be tab accessible, but
+		// adding a link inside them would undo that. So, explicitly make it
+		// not tabbable.
+		this.$label.attr( 'tabindex', '-1' );
+
 		// Allow opening the link in new tab, but not regular navigation.
 		this.$label.on( 'click', function ( e ) {
 			// Don't interfere with special clicks (e.g. to open in new tab)
@@ -60,10 +65,16 @@
 		} );
 
 		// Highlight matching parts of link suggestion
-		this.$label.autoEllipsis( { hasSpan: false, tooltip: true, matchText: config.query } );
+		this.$label
+			.highlightText( config.query )
+			.attr( 'title', config.data );
 
 		if ( config.missing ) {
 			this.$label.addClass( 'new' );
+		} else if ( config.redirect ) {
+			this.$label.addClass( 'mw-redirect' );
+		} else if ( config.disambiguation ) {
+			this.$label.addClass( 'mw-disambig' );
 		}
 
 		if ( config.imageUrl ) {

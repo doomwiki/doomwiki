@@ -39,7 +39,11 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 		$errors = $this->getTitle()->getUserPermissionsErrors(
 			'abusefilter-log', $user, true, array( 'ns-specialprotected' ) );
 		if ( count( $errors ) ) {
-			$this->dieUsageMsg( $errors[0] );
+			if ( is_callable( [ $this, 'errorArrayToStatus' ] ) ) {
+				$this->dieStatus( $this->errorArrayToStatus( $errors ) );
+			} else {
+				$this->dieUsageMsg( $errors[0] );
+			}
 			return;
 		}
 
@@ -58,14 +62,23 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 		$fld_hidden = isset( $prop['hidden'] );
 		$fld_revid = isset( $prop['revid'] );
 
-		if ( $fld_ip && !$user->isAllowed( 'abusefilter-private' ) ) {
-			$this->dieUsage( 'You don\'t have permission to view IP addresses', 'permissiondenied' );
-		}
-		if ( $fld_details && !$user->isAllowed( 'abusefilter-log-detail' ) ) {
-			$this->dieUsage(
-				'You don\'t have permission to view detailed abuse log entries',
-				'permissiondenied'
-			);
+		if ( is_callable( [ $this, 'checkUserRightsAny' ] ) ) {
+			if ( $fld_ip ) {
+				$this->checkUserRightsAny( 'abusefilter-private' );
+			}
+			if ( $fld_details ) {
+				$this->checkUserRightsAny( 'abusefilter-log-detail' );
+			}
+		} else {
+			if ( $fld_ip && !$user->isAllowed( 'abusefilter-private' ) ) {
+				$this->dieUsage( 'You don\'t have permission to view IP addresses', 'permissiondenied' );
+			}
+			if ( $fld_details && !$user->isAllowed( 'abusefilter-log-detail' ) ) {
+				$this->dieUsage(
+					'You don\'t have permission to view detailed abuse log entries',
+					'permissiondenied'
+				);
+			}
 		}
 		// Match permissions for viewing events on private filters to SpecialAbuseLog (bug 42814)
 		if ( $params['filter'] &&
@@ -77,10 +90,16 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 			}
 			foreach ( $params['filter'] as $filter ) {
 				if ( AbuseFilter::filterHidden( $filter ) ) {
-					$this->dieUsage(
-						'You don\'t have permission to view log entries for private filters',
-						'permissiondenied'
-					);
+					if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+						$this->dieWithError(
+							[ 'apierror-permissiondenied', $this->msg( 'action-abusefilter-log-private' ) ]
+						);
+					} else {
+						$this->dieUsage(
+							'You don\'t have permission to view log entries for private filters',
+							'permissiondenied'
+						);
+					}
 				}
 			}
 		}
@@ -145,7 +164,11 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 		if ( !is_null( $title ) ) {
 			$titleObj = Title::newFromText( $title );
 			if ( is_null( $titleObj ) ) {
-				$this->dieUsageMsg( array( 'invalidtitle', $title ) );
+				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+					$this->dieWithError( array( 'apierror-invalidtitle', wfEscapeWikiText( $title ) ) );
+				} else {
+					$this->dieUsageMsg( array( 'invalidtitle', $title ) );
+				}
 			}
 			$this->addWhereFld( 'afl_namespace', $titleObj->getNamespace() );
 			$this->addWhereFld( 'afl_title', $titleObj->getDBkey() );
@@ -176,7 +199,12 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 				}
 			}
 			if ( $fld_filter ) {
-				$entry['filter'] = $row->af_public_comments;
+				$globalIndex = AbuseFilter::decodeGlobalName( $row->afl_filter );
+				if ( $globalIndex ) {
+					$entry['filter'] = AbuseFilter::getGlobalFilterDescription( $globalIndex );
+				} else {
+					$entry['filter'] = $row->af_public_comments;
+				}
 			}
 			if ( $fld_user ) {
 				$entry['user'] = $row->afl_user_text;
@@ -232,11 +260,7 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 				}
 			}
 		}
-		if ( defined( 'ApiResult::META_CONTENT' ) ) {
-			$result->addIndexedTagName( array( 'query', $this->getModuleName() ), 'item' );
-		} else {
-			$result->setIndexedTagName_internal( array( 'query', $this->getModuleName() ), 'item' );
-		}
+		$result->addIndexedTagName( array( 'query', $this->getModuleName() ), 'item' );
 	}
 
 	public function getAllowedParams() {
@@ -253,10 +277,7 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 					'older'
 				),
 				ApiBase::PARAM_DFLT => 'older',
-				/** @todo Once support for MediaWiki < 1.25 is dropped,
-				 *  just use ApiBase::PARAM_HELP_MSG directly
-				 */
-				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'api-help-param-direction',
+				ApiBase::PARAM_HELP_MSG => 'api-help-param-direction',
 			),
 			'user' => null,
 			'title' => null,
@@ -287,39 +308,6 @@ class ApiQueryAbuseLog extends ApiQueryBase {
 				),
 				ApiBase::PARAM_ISMULTI => true
 			)
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getParamDescription() {
-		return array(
-			'start' => 'The timestamp to start enumerating from',
-			'end' => 'The timestamp to stop enumerating at',
-			'dir' => 'The direction in which to enumerate',
-			'title' => 'Show only entries occurring on a given page.',
-			'user' => 'Show only entries done by a given user or IP address.',
-			'filter' => 'Show only entries that were caught by a given filter ID',
-			'limit' => 'The maximum amount of entries to list',
-			'prop' => 'Which properties to get',
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getDescription() {
-		return 'Show events that were caught by one of the abuse filters.';
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getExamples() {
-		return array(
-			'api.php?action=query&list=abuselog',
-			'api.php?action=query&list=abuselog&afltitle=API'
 		);
 	}
 

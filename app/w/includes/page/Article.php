@@ -19,6 +19,7 @@
  *
  * @file
  */
+use MediaWiki\MediaWikiServices;
 
 /**
  * Class for viewing MediaWiki article and history.
@@ -99,9 +100,7 @@ class Article implements Page {
 	 */
 	public static function newFromID( $id ) {
 		$t = Title::newFromID( $id );
-		# @todo FIXME: Doesn't inherit right
-		return $t == null ? null : new self( $t );
-		# return $t == null ? null : new static( $t ); // PHP 5.3
+		return $t == null ? null : new static( $t );
 	}
 
 	/**
@@ -150,6 +149,15 @@ class Article implements Page {
 	}
 
 	/**
+	 * Get the page this view was redirected from
+	 * @return Title|null
+	 * @since 1.28
+	 */
+	public function getRedirectedFrom() {
+		return $this->mRedirectedFrom;
+	}
+
+	/**
 	 * Tell the page view functions that this view was redirected
 	 * from another page on the wiki.
 	 * @param Title $from
@@ -188,24 +196,6 @@ class Article implements Page {
 		$this->mRedirectUrl = false;
 
 		$this->mPage->clear();
-	}
-
-	/**
-	 * Note that getContent does not follow redirects anymore.
-	 * If you need to fetch redirectable content easily, try
-	 * the shortcut in WikiPage::getRedirectTarget()
-	 *
-	 * This function has side effects! Do not use this function if you
-	 * only want the real revision text if any.
-	 *
-	 * @deprecated since 1.21; use WikiPage::getContent() instead
-	 *
-	 * @return string Return the text of this revision
-	 */
-	public function getContent() {
-		ContentHandler::deprecated( __METHOD__, '1.21' );
-		$content = $this->getContentObject();
-		return ContentHandler::getContentText( $content );
 	}
 
 	/**
@@ -310,45 +300,6 @@ class Article implements Page {
 	}
 
 	/**
-	 * Get text of an article from database
-	 * Does *NOT* follow redirects.
-	 *
-	 * @protected
-	 * @note This is really internal functionality that should really NOT be
-	 * used by other functions. For accessing article content, use the WikiPage
-	 * class, especially WikiBase::getContent(). However, a lot of legacy code
-	 * uses this method to retrieve page text from the database, so the function
-	 * has to remain public for now.
-	 *
-	 * @return string|bool String containing article contents, or false if null
-	 * @deprecated since 1.21, use WikiPage::getContent() instead
-	 */
-	function fetchContent() {
-		// BC cruft!
-
-		ContentHandler::deprecated( __METHOD__, '1.21' );
-
-		if ( $this->mContentLoaded && $this->mContent ) {
-			return $this->mContent;
-		}
-
-		$content = $this->fetchContentObject();
-
-		if ( !$content ) {
-			return false;
-		}
-
-		// @todo Get rid of mContent everywhere!
-		$this->mContent = ContentHandler::getContentText( $content );
-
-		// Avoid PHP 7.1 warning of passing $this by reference
-		$articlePage = $this;
-		ContentHandler::runLegacyHooks( 'ArticleAfterFetchContent', [ &$articlePage, &$this->mContent ] );
-
-		return $this->mContent;
-	}
-
-	/**
 	 * Get text content object
 	 * Does *NOT* follow redirects.
 	 * @todo When is this null?
@@ -422,7 +373,11 @@ class Article implements Page {
 
 		// Avoid PHP 7.1 warning of passing $this by reference
 		$articlePage = $this;
-		Hooks::run( 'ArticleAfterFetchContentObject', [ &$articlePage, &$this->mContentObject ] );
+
+		Hooks::run(
+			'ArticleAfterFetchContentObject',
+			[ &$articlePage, &$this->mContentObject ]
+		);
 
 		return $this->mContentObject;
 	}
@@ -472,7 +427,7 @@ class Article implements Page {
 	 * page of the given title.
 	 */
 	public function view() {
-		global $wgUseFileCache, $wgUseETag, $wgDebugToolbar, $wgMaxRedirects;
+		global $wgUseFileCache, $wgDebugToolbar;
 
 		# Get variables from query string
 		# As side effect this will load the revision and update the title
@@ -525,40 +480,8 @@ class Article implements Page {
 
 		# Try client and file cache
 		if ( !$wgDebugToolbar && $oldid === 0 && $this->mPage->checkTouched() ) {
-			if ( $wgUseETag ) {
-				$outputPage->setETag( $parserCache->getETag( $this->mPage, $parserOptions ) );
-			}
-
-			# Use the greatest of the page's timestamp or the timestamp of any
-			# redirect in the chain (bug 67849)
-			$timestamp = $this->mPage->getTouched();
-			if ( isset( $this->mRedirectedFrom ) ) {
-				$timestamp = max( $timestamp, $this->mRedirectedFrom->getTouched() );
-
-				# If there can be more than one redirect in the chain, we have
-				# to go through the whole chain too in case an intermediate
-				# redirect was changed.
-				if ( $wgMaxRedirects > 1 ) {
-					$titles = Revision::newFromTitle( $this->mRedirectedFrom )
-						->getContent( Revision::FOR_THIS_USER, $user )
-						->getRedirectChain();
-					$thisTitle = $this->getTitle();
-					foreach ( $titles as $title ) {
-						if ( Title::compare( $title, $thisTitle ) === 0 ) {
-							break;
-						}
-						$timestamp = max( $timestamp, $title->getTouched() );
-					}
-				}
-			}
-
-			# Is it client cached?
-			if ( $outputPage->checkLastModified( $timestamp ) ) {
-				wfDebug( __METHOD__ . ": done 304\n" );
-
-				return;
-			# Try file cache
-			} elseif ( $wgUseFileCache && $this->tryFileCache() ) {
+			# Try to stream the output from file cache
+			if ( $wgUseFileCache && $this->tryFileCache() ) {
 				wfDebug( __METHOD__ . ": done file cache\n" );
 				# tell wgOut that output is taken care of
 				$outputPage->disable();
@@ -572,7 +495,7 @@ class Article implements Page {
 		$useParserCache = $this->mPage->shouldCheckParserCache( $parserOptions, $oldid );
 		wfDebug( 'Article::view using parser cache: ' . ( $useParserCache ? 'yes' : 'no' ) . "\n" );
 		if ( $user->getStubThreshold() ) {
-			$this->getContext()->getStats()->increment( 'pcache_miss_stub' );
+			MediaWikiServices::getInstance()->getStatsdDataFactory()->increment( 'pcache_miss_stub' );
 		}
 
 		$this->showRedirectedFromHeader();
@@ -645,17 +568,7 @@ class Article implements Page {
 					# Preload timestamp to avoid a DB hit
 					$outputPage->setRevisionTimestamp( $this->mPage->getTimestamp() );
 
-					# Pages containing custom CSS or JavaScript get special treatment
-					if ( $this->getTitle()->isCssOrJsPage() || $this->getTitle()->isCssJsSubpage() ) {
-						wfDebug( __METHOD__ . ": showing CSS/JS source\n" );
-						$this->showCssOrJsPage();
-						$outputDone = true;
-					} elseif ( !Hooks::run( 'ArticleContentViewCustom',
-							[ $this->fetchContentObject(), $this->getTitle(), $outputPage ] ) ) {
-
-						# Allow extensions do their own custom view for certain pages
-						$outputDone = true;
-					} elseif ( !ContentHandler::runLegacyHooks( 'ArticleViewCustom',
+					if ( !Hooks::run( 'ArticleContentViewCustom',
 							[ $this->fetchContentObject(), $this->getTitle(), $outputPage ] ) ) {
 
 						# Allow extensions do their own custom view for certain pages
@@ -728,6 +641,10 @@ class Article implements Page {
 			}
 		}
 
+		# Use adaptive TTLs for CDN so delayed/failed purges are noticed less often.
+		# This could use getTouched(), but that could be scary for major template edits.
+		$outputPage->adaptCdnTTL( $this->mPage->getTimestamp(), IExpiringStore::TTL_DAY );
+
 		# Check for any __NOINDEX__ tags on the page using $pOutput
 		$policy = $this->getRobotPolicy( 'view', $pOutput );
 		$outputPage->setIndexPolicy( $policy['index'] );
@@ -737,7 +654,6 @@ class Article implements Page {
 		$this->mPage->doViewUpdates( $user, $oldid );
 
 		$outputPage->addModules( 'mediawiki.action.view.postEdit' );
-
 	}
 
 	/**
@@ -755,7 +671,6 @@ class Article implements Page {
 	/**
 	 * Show a diff page according to current request variables. For use within
 	 * Article::view() only, other callers should use the DifferenceEngine class.
-	 *
 	 */
 	protected function showDiffPage() {
 		$request = $this->getContext()->getRequest();
@@ -801,46 +716,6 @@ class Article implements Page {
 	}
 
 	/**
-	 * Show a page view for a page formatted as CSS or JavaScript. To be called by
-	 * Article::view() only.
-	 *
-	 * This exists mostly to serve the deprecated ShowRawCssJs hook (used to customize these views).
-	 * It has been replaced by the ContentGetParserOutput hook, which lets you do the same but with
-	 * more flexibility.
-	 *
-	 * @param bool $showCacheHint Whether to show a message telling the user
-	 *   to clear the browser cache (default: true).
-	 */
-	protected function showCssOrJsPage( $showCacheHint = true ) {
-		$outputPage = $this->getContext()->getOutput();
-
-		if ( $showCacheHint ) {
-			$dir = $this->getContext()->getLanguage()->getDir();
-			$lang = $this->getContext()->getLanguage()->getHtmlCode();
-
-			$outputPage->wrapWikiMsg(
-				"<div id='mw-clearyourcache' lang='$lang' dir='$dir' class='mw-content-$dir'>\n$1\n</div>",
-				'clearyourcache'
-			);
-		}
-
-		$this->fetchContentObject();
-
-		if ( $this->mContentObject ) {
-			// Give hooks a chance to customise the output
-			if ( ContentHandler::runLegacyHooks(
-				'ShowRawCssJs',
-				[ $this->mContentObject, $this->getTitle(), $outputPage ] )
-			) {
-				// If no legacy hooks ran, display the content of the parser output, including RL modules,
-				// but excluding metadata like categories and language links
-				$po = $this->mContentObject->getParserOutput( $this->getTitle() );
-				$outputPage->addParserOutputContent( $po );
-			}
-		}
-	}
-
-	/**
 	 * Get the robot policy to be used for the current view
 	 * @param string $action The action= GET parameter
 	 * @param ParserOutput|null $pOutput
@@ -852,7 +727,7 @@ class Article implements Page {
 
 		$ns = $this->getTitle()->getNamespace();
 
-		# Don't index user and user talk pages for blocked users (bug 11443)
+		# Don't index user and user talk pages for blocked users (T13443)
 		if ( ( $ns == NS_USER || $ns == NS_USER_TALK ) && !$this->getTitle()->isSubpage() ) {
 			$specificTarget = null;
 			$vagueTarget = null;
@@ -910,7 +785,7 @@ class Article implements Page {
 		}
 
 		if ( isset( $wgArticleRobotPolicies[$this->getTitle()->getPrefixedText()] ) ) {
-			# (bug 14900) site config can override user-defined __INDEX__ or __NOINDEX__
+			# (T16900) site config can override user-defined __INDEX__ or __NOINDEX__
 			$policy = array_merge(
 				$policy,
 				self::formatRobotPolicy( $wgArticleRobotPolicies[$this->getTitle()->getPrefixedText()] )
@@ -1101,7 +976,7 @@ class Article implements Page {
 			return false;
 		}
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$oldestRevisionTimestamp = $dbr->selectField(
 			'revision',
 			'MIN( rev_timestamp )',
@@ -1183,7 +1058,7 @@ class Article implements Page {
 
 		if ( !$rc ) {
 			// Don't cache: This can be hit if the page gets accessed very fast after
-			// its creation / latest upload or in case we have high slave lag. In case
+			// its creation / latest upload or in case we have high replica DB lag. In case
 			// the revision is too old, we will already return above.
 			return false;
 		}
@@ -1204,10 +1079,6 @@ class Article implements Page {
 			return false;
 		}
 
-		$rcid = $rc->getAttribute( 'rc_id' );
-
-		$token = $user->getEditToken( $rcid );
-
 		$outputPage->preventClickjacking();
 		if ( $wgEnableAPI && $wgEnableWriteAPI && $user->isAllowed( 'writeapi' ) ) {
 			$outputPage->addModules( 'mediawiki.page.patrol.ajax' );
@@ -1219,8 +1090,7 @@ class Article implements Page {
 			[],
 			[
 				'action' => 'markpatrolled',
-				'rcid' => $rcid,
-				'token' => $token,
+				'rcid' => $rc->getAttribute( 'rc_id' ),
 			]
 		);
 
@@ -1262,7 +1132,7 @@ class Article implements Page {
 			|| $title->getNamespace() == NS_USER_TALK
 		) {
 			$rootPart = explode( '/', $title->getText() )[0];
-			$user = User::newFromName( $rootPart, false /* allow IP users*/ );
+			$user = User::newFromName( $rootPart, false /* allow IP users */ );
 			$ip = User::isIP( $rootPart );
 			$block = Block::newFromTarget( $user, $user );
 
@@ -1301,7 +1171,10 @@ class Article implements Page {
 		$loggedIn = $this->getContext()->getUser()->isLoggedIn();
 		if ( $loggedIn || $cache->get( $key ) ) {
 			$logTypes = [ 'delete', 'move' ];
-			$conds = [ "log_action != 'revision'" ];
+
+			$dbr = wfGetDB( DB_REPLICA );
+
+			$conds = [ 'log_action != ' . $dbr->addQuotes( 'revision' ) ];
 			// Give extensions a chance to hide their (unrelated) log entries
 			Hooks::run( 'Article::MissingArticleConditions', [ &$conds, $logTypes ] );
 			LogEventsList::showLogExtract(
@@ -1454,14 +1327,13 @@ class Article implements Page {
 			: 'revision-info';
 
 		$outputPage = $context->getOutput();
-		$outputPage->addSubtitle( "<div id=\"mw-{$infomsg}\">" .
+		$revisionInfo = "<div id=\"mw-{$infomsg}\">" .
 			$context->msg( $infomsg, $td )
 				->rawParams( $userlinks )
 				->params( $revision->getId(), $tddate, $tdtime, $revision->getUserText() )
 				->rawParams( Linker::revComment( $revision, true, true ) )
 				->parse() .
-			"</div>"
-		);
+			"</div>";
 
 		$lnk = $current
 			? $context->msg( 'currentrevisionlink' )->escaped()
@@ -1533,10 +1405,12 @@ class Article implements Page {
 			$cdel .= ' ';
 		}
 
-		$outputPage->addSubtitle( "<div id=\"mw-revision-nav\">" . $cdel .
+		// the outer div is need for styling the revision info and nav in MobileFrontend
+		$outputPage->addSubtitle( "<div class=\"mw-revision\">" . $revisionInfo .
+			"<div id=\"mw-revision-nav\">" . $cdel .
 			$context->msg( 'revision-nav' )->rawParams(
 				$prevdiff, $prevlink, $lnk, $curdiff, $nextlink, $nextdiff
-			)->escaped() . "</div>" );
+			)->escaped() . "</div></div>" );
 	}
 
 	/**
@@ -1739,7 +1613,7 @@ class Article implements Page {
 			// This, as a side-effect, also makes sure that the following query isn't being run for
 			// pages with a larger history, unless the user has the 'bigdelete' right
 			// (and is about to delete this page).
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			$revisions = $edits = (int)$dbr->selectField(
 				'revision',
 				'COUNT(rev_page)',
@@ -1797,7 +1671,6 @@ class Article implements Page {
 		Hooks::run( 'ArticleConfirmDelete', [ $this, $outputPage, &$reason ] );
 
 		$user = $this->getContext()->getUser();
-
 		if ( $user->isAllowed( 'suppressrevision' ) ) {
 			$suppress = Html::openElement( 'div', [ 'id' => 'wpDeleteSuppressRow' ] ) .
 				Xml::checkLabel( wfMessage( 'revdelete-suppress' )->text(),
@@ -1807,7 +1680,6 @@ class Article implements Page {
 			$suppress = '';
 		}
 		$checkWatch = $user->getBoolOption( 'watchdeletion' ) || $user->isWatched( $title );
-
 		$form = Html::openElement( 'form', [ 'method' => 'post',
 			'action' => $title->getLocalURL( 'action=delete' ), 'id' => 'deleteconfirm' ] ) .
 			Html::openElement( 'fieldset', [ 'id' => 'mw-delete-table' ] ) .
@@ -1968,12 +1840,13 @@ class Article implements Page {
 
 	/**
 	 * Check if the page can be cached
+	 * @param integer $mode One of the HTMLFileCache::MODE_* constants (since 1.28)
 	 * @return bool
 	 */
-	public function isFileCacheable() {
+	public function isFileCacheable( $mode = HTMLFileCache::MODE_NORMAL ) {
 		$cacheable = false;
 
-		if ( HTMLFileCache::useFileCache( $this->getContext() ) ) {
+		if ( HTMLFileCache::useFileCache( $this->getContext(), $mode ) ) {
 			$cacheable = $this->mPage->getId()
 				&& !$this->mRedirectedFrom && !$this->getTitle()->isRedirect();
 			// Extension may have reason to disable file caching on some pages.
@@ -2128,10 +2001,11 @@ class Article implements Page {
 	 * @see WikiPage::doDeleteArticleReal
 	 */
 	public function doDeleteArticleReal(
-		$reason, $suppress = false, $u1 = null, $u2 = null, &$error = '', User $user = null
+		$reason, $suppress = false, $u1 = null, $u2 = null, &$error = '', User $user = null,
+		$tags = []
 	) {
 		return $this->mPage->doDeleteArticleReal(
-			$reason, $suppress, $u1, $u2, $error, $user
+			$reason, $suppress, $u1, $u2, $error, $user, $tags
 		);
 	}
 
@@ -2145,20 +2019,13 @@ class Article implements Page {
 
 	/**
 	 * Call to WikiPage function for backwards compatibility.
-	 * @see WikiPage::doEdit
-	 */
-	public function doEdit( $text, $summary, $flags = 0, $baseRevId = false, $user = null ) {
-		ContentHandler::deprecated( __METHOD__, '1.21' );
-		return $this->mPage->doEdit( $text, $summary, $flags, $baseRevId, $user );
-	}
-
-	/**
-	 * Call to WikiPage function for backwards compatibility.
+	 * @deprecated since 1.29. Use WikiPage::doEditContent() directly instead
 	 * @see WikiPage::doEditContent
 	 */
 	public function doEditContent( Content $content, $summary, $flags = 0, $baseRevId = false,
 		User $user = null, $serialFormat = null
 	) {
+		wfDeprecated( __METHOD__, '1.29' );
 		return $this->mPage->doEditContent( $content, $summary, $flags, $baseRevId,
 			$user, $serialFormat
 		);
@@ -2175,6 +2042,8 @@ class Article implements Page {
 	/**
 	 * Call to WikiPage function for backwards compatibility.
 	 * @see WikiPage::doPurge
+	 * @note In 1.28 (and only 1.28), this took a $flags parameter that
+	 *  controlled how much purging was done.
 	 */
 	public function doPurge() {
 		return $this->mPage->doPurge();
@@ -2182,14 +2051,12 @@ class Article implements Page {
 
 	/**
 	 * Call to WikiPage function for backwards compatibility.
-	 * @see WikiPage::doQuickEditContent
+	 * @see WikiPage::getLastPurgeTimestamp
+	 * @deprecated since 1.29
 	 */
-	public function doQuickEditContent(
-		Content $content, User $user, $comment = '', $minor = false, $serialFormat = null
-	) {
-		return $this->mPage->doQuickEditContent(
-			$content, $user, $comment, $minor, $serialFormat
-		);
+	public function getLastPurgeTimestamp() {
+		wfDeprecated( __METHOD__, '1.29' );
+		return $this->mPage->getLastPurgeTimestamp();
 	}
 
 	/**
@@ -2218,7 +2085,7 @@ class Article implements Page {
 
 	/**
 	 * Call to WikiPage function for backwards compatibility.
-	 * @see WikiPage::getActionOverrides
+	 * @see ContentHandler::getActionOverrides
 	 */
 	public function getActionOverrides() {
 		return $this->mPage->getActionOverrides();
@@ -2358,15 +2225,6 @@ class Article implements Page {
 	 */
 	public function getRevision() {
 		return $this->mPage->getRevision();
-	}
-
-	/**
-	 * Call to WikiPage function for backwards compatibility.
-	 * @see WikiPage::getText
-	 */
-	public function getText( $audience = Revision::FOR_PUBLIC, User $user = null ) {
-		ContentHandler::deprecated( __METHOD__, '1.21' );
-		return $this->mPage->getText( $audience, $user );
 	}
 
 	/**
@@ -2533,14 +2391,6 @@ class Article implements Page {
 
 	/**
 	 * Call to WikiPage function for backwards compatibility.
-	 * @see WikiPage::prepareTextForEdit
-	 */
-	public function prepareTextForEdit( $text, $revid = null, User $user = null ) {
-		return $this->mPage->prepareTextForEdit( $text, $revid, $user );
-	}
-
-	/**
-	 * Call to WikiPage function for backwards compatibility.
 	 * @see WikiPage::protectDescription
 	 */
 	public function protectDescription( array $limit, array $expiry ) {
@@ -2615,8 +2465,8 @@ class Article implements Page {
 	 * Call to WikiPage function for backwards compatibility.
 	 * @see WikiPage::updateCategoryCounts
 	 */
-	public function updateCategoryCounts( array $added, array $deleted ) {
-		return $this->mPage->updateCategoryCounts( $added, $deleted );
+	public function updateCategoryCounts( array $added, array $deleted, $id = 0 ) {
+		return $this->mPage->updateCategoryCounts( $added, $deleted, $id );
 	}
 
 	/**
@@ -2771,15 +2621,5 @@ class Article implements Page {
 		WikiPage::onArticleEdit( $title );
 	}
 
-	/**
-	 * @param string $oldtext
-	 * @param string $newtext
-	 * @param int $flags
-	 * @return string
-	 * @deprecated since 1.21, use ContentHandler::getAutosummary() instead
-	 */
-	public static function getAutosummary( $oldtext, $newtext, $flags ) {
-		return WikiPage::getAutosummary( $oldtext, $newtext, $flags );
-	}
 	// ******
 }

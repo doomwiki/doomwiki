@@ -41,6 +41,9 @@
 		],
 		"LinksUpdateComplete": [
 			"CiteHooks::onLinksUpdateComplete"
+		],
+		"ResourceLoaderGetConfigVars": [
+			"CiteHooks::onResourceLoaderGetConfigVars"
 		]
 	},
 	"ResourceModules": {
@@ -51,7 +54,11 @@
 					"media": "print"
 				}
 			},
-			"position": "bottom"
+			"position": "bottom",
+			"targets": [
+				"desktop",
+				"mobile"
+			]
 		},
 		"ext.cite.a11y": {
 			"scripts": "ext.cite.a11y.js",
@@ -83,20 +90,21 @@
 		"cite": "GlobalVarConfig::newInstance"
 	},
 	"config": {
-		"AllowCiteGroups": true,
 		"CiteCacheReferences": false,
 		"CiteStoreReferencesData": false,
-		"CiteCacheReferencesDataOnParse": false
+		"CiteCacheReferencesDataOnParse": false,
+		"CiteVisualEditorOtherGroup": false,
+		"CiteResponsiveReferences": true
 	},
 	"AutoloadClasses": {
-		"ApiQueryReferences": "ApiQueryReferences.php",
-		"Cite": "Cite_body.php",
-		"CiteHooks": "CiteHooks.php",
-		"CiteDataModule": "CiteDataModule.php",
-		"CiteCSSFileModule": "CiteCSSFileModule.php"
+		"ApiQueryReferences": "includes/ApiQueryReferences.php",
+		"Cite": "includes/Cite.php",
+		"CiteHooks": "includes/CiteHooks.php",
+		"CiteDataModule": "includes/CiteDataModule.php",
+		"CiteCSSFileModule": "includes/CiteCSSFileModule.php"
 	},
 	"ParserTestFiles": [
-		"citeParserTests.txt"
+		"tests/parser/citeParserTests.txt"
 	],
 	"TrackingCategories": [
 		"cite-tracking-category-cite-error"

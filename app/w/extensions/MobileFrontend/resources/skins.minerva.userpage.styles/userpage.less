@@ -1,9 +1,5 @@
-@import "minerva.variables";
-@import "minerva.mixins";
-
-.heading-holder {
-	padding-bottom: 20px;
-}
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 .tagline {
 	color: @colorGray5;
@@ -12,12 +8,13 @@
 }
 
 .user-links {
+	margin: 15px 0 0 0;
 	li {
 		display: inline-block;
 		& + li {
 			margin-left: 4px;
 			&:before {
-				content: "·";
+				content: '·';
 				right: 2px;
 				position: relative;
 			}
@@ -25,24 +22,24 @@
 	}
 	.mw-ui-icon-talk {
 		&:before {
+			// FIXME: this shouldn't be necessary
 			margin-right: 0.5em;
-			.background-image-svg-quick( 'talk' );
 		}
 	}
 }
 
 .cta-holder {
-	background: #f1f1f1;
+	background-color: @colorGray14;
 	padding: 30px 20px;
 	text-align: center;
 	box-sizing: border-box;
-	border-radius: 3px;
+	border-radius: @borderRadius;
 
 	.icon {
 		.background-image-svg-quick( 'userpage' );
-		background-repeat: no-repeat;
-		background-size: 50px 60px;
 		background-position: center top;
+		background-repeat: no-repeat;
+		.background-size( 50px, 60px );
 		height: 60px;
 		margin-bottom: 20px;
 		opacity: 0.2;
@@ -56,7 +53,11 @@
 	}
 
 	.desc {
-		color: @colorGray9;
+		color: @colorGray7;
 		margin-bottom: 20px;
+	}
+
+	.disabled {
+		visibility: hidden;
 	}
 }

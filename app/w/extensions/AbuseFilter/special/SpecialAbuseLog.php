@@ -19,6 +19,10 @@ class SpecialAbuseLog extends SpecialPage {
 		parent::__construct( 'AbuseLog', 'abusefilter-log' );
 	}
 
+	public function doesWrites() {
+		return true;
+	}
+
 	public function execute( $parameter ) {
 		$out = $this->getOutput();
 		$request = $this->getRequest();
@@ -303,6 +307,8 @@ class SpecialAbuseLog extends SpecialPage {
 		);
 
 		if ( !$row ) {
+			$out->addWikiMsg( 'abusefilter-log-nonexistent' );
+
 			return;
 		}
 
@@ -360,7 +366,7 @@ class SpecialAbuseLog extends SpecialPage {
 		$output .= Xml::element( 'h3', null, $this->msg( 'abusefilter-log-details-vars' )->text() );
 
 		// Build a table.
-		$output .= AbuseFilter::buildVarDumpTable( $vars );
+		$output .= AbuseFilter::buildVarDumpTable( $vars, $this->getContext() );
 
 		if ( self::canSeePrivate() ) {
 			// Private stuff, like IPs.
@@ -450,16 +456,21 @@ class SpecialAbuseLog extends SpecialPage {
 		$title = Title::makeTitle( $row->afl_namespace, $row->afl_title );
 
 		$diffLink = false;
+		$isHidden = self::isHidden( $row );
 
-		if ( self::isHidden( $row ) && !$this->canSeeHidden() ) {
+		if ( !self::canSeeHidden() && $isHidden ) {
 			return '';
 		}
 
+		$linkRenderer = $this->getLinkRenderer();
+
 		if ( !$row->afl_wiki ) {
-			$pageLink = Linker::link( $title );
-			if ( $row->afl_rev_id ) {
-				$diffLink = Linker::link( $title,
-					wfMessage( 'abusefilter-log-diff' )->parse(), array(),
+			$pageLink = $linkRenderer->makeLink( $title );
+			if ( $row->afl_rev_id && $title->exists() ) {
+				$diffLink = $linkRenderer->makeKnownLink(
+					$title,
+					new HtmlArmor( $this->msg( 'abusefilter-log-diff' )->parse() ),
+					array(),
 					array( 'diff' => 'prev', 'oldid' => $row->afl_rev_id ) );
 			}
 		} else {
@@ -471,14 +482,13 @@ class SpecialAbuseLog extends SpecialPage {
 					array( 'diff' => 'prev', 'oldid' => $row->afl_rev_id ) );
 
 				$diffLink = Linker::makeExternalLink( $diffUrl,
-					wfMessage( 'abusefilter-log-diff' )->parse() );
+					$this->msg( 'abusefilter-log-diff' )->parse() );
 			}
 		}
 
 		if ( !$row->afl_wiki ) {
 			// Local user
-			$userLink = Linker::userLink( $row->afl_user, $row->afl_user_text ) .
-				Linker::userToolLinks( $row->afl_user, $row->afl_user_text, true );
+			$userLink = self::getUserLinks( $row->afl_user, $row->afl_user_text );
 		} else {
 			$userLink = WikiMap::foreignUserLink( $row->afl_wiki, $row->afl_user_text );
 			$userLink .= ' (' . WikiMap::getWikiName( $row->afl_wiki ) . ')';
@@ -513,26 +523,26 @@ class SpecialAbuseLog extends SpecialPage {
 
 		if ( self::canSeeDetails( $row->afl_filter, $filter_hidden ) ) {
 			if ( $isListItem ) {
-				$detailsLink = Linker::linkKnown(
+				$detailsLink = $linkRenderer->makeKnownLink(
 					$this->getPageTitle( $row->afl_id ),
-					$this->msg( 'abusefilter-log-detailslink' )->escaped()
+					$this->msg( 'abusefilter-log-detailslink' )->text()
 				);
 				$actionLinks[] = $detailsLink;
 			}
 
 			$examineTitle = SpecialPage::getTitleFor( 'AbuseFilter', 'examine/log/' . $row->afl_id );
-			$examineLink = Linker::link(
+			$examineLink = $linkRenderer->makeKnownLink(
 				$examineTitle,
-				$this->msg( 'abusefilter-changeslist-examine' )->parse(),
-				array()
+				new HtmlArmor( $this->msg( 'abusefilter-changeslist-examine' )->parse() )
 			);
 			$actionLinks[] = $examineLink;
 
-			if ( $diffLink )
+			if ( $diffLink ) {
 				$actionLinks[] = $diffLink;
+			}
 
 			if ( $user->isAllowed( 'abusefilter-hide-log' ) ) {
-				$hideLink = Linker::link(
+				$hideLink = $linkRenderer->makeKnownLink(
 					$this->getPageTitle(),
 					$this->msg( 'abusefilter-log-hidelink' )->text(),
 					array(),
@@ -548,14 +558,14 @@ class SpecialAbuseLog extends SpecialPage {
 					WikiMap::getForeignURL( $wgAbuseFilterCentralDB,
 						'Special:AbuseFilter/' . $globalIndex );
 
-				$linkText = wfMessage( 'abusefilter-log-detailedentry-global' )
+				$linkText = $this->msg( 'abusefilter-log-detailedentry-global' )
 					->numParams( $globalIndex )->escaped();
 				$filterLink = Linker::makeExternalLink( $globalURL, $linkText );
 			} else {
 				$title = SpecialPage::getTitleFor( 'AbuseFilter', $row->afl_filter );
-				$linkText = wfMessage( 'abusefilter-log-detailedentry-local' )
-					->numParams( $row->afl_filter )->escaped();
-				$filterLink = Linker::link( $title, $linkText );
+				$linkText = $this->msg( 'abusefilter-log-detailedentry-local' )
+					->numParams( $row->afl_filter )->text();
+				$filterLink = $linkRenderer->makeKnownLink( $title, $linkText );
 			}
 			$description = $this->msg( 'abusefilter-log-detailedentry-meta' )->rawParams(
 				$timestamp,
@@ -565,9 +575,8 @@ class SpecialAbuseLog extends SpecialPage {
 				$pageLink,
 				$actions_taken,
 				$parsed_comments,
-				$lang->pipeList( $actionLinks ),
-				$row->afl_user_text
-			)->parse();
+				$lang->pipeList( $actionLinks )
+			)->params( $row->afl_user_text )->parse();
 		} else {
 			if ( $diffLink ) {
 				$msg = 'abusefilter-log-entry-withdiff';
@@ -582,14 +591,14 @@ class SpecialAbuseLog extends SpecialPage {
 				$actions_taken,
 				$parsed_comments,
 				$diffLink // Passing $7 to 'abusefilter-log-entry' will do nothing, as it's not used.
-			)->parse();
+			)->params( $row->afl_user_text )->parse();
 		}
 
-		if ( self::isHidden( $row ) === true ) {
+		if ( $isHidden === true ) {
 			$description .= ' ' .
 				$this->msg( 'abusefilter-log-hidden' )->parse();
 			$class = 'afl-hidden';
-		} elseif ( self::isHidden( $row ) === 'implicit' ) {
+		} elseif ( $isHidden === 'implicit' ) {
 			$description .= ' ' .
 				$this->msg( 'abusefilter-log-hidden-implicit' )->parse();
 		}
@@ -599,6 +608,17 @@ class SpecialAbuseLog extends SpecialPage {
 		} else {
 			return Xml::tags( 'span', isset( $class ) ? array( 'class' => $class ) : null, $description );
 		}
+	}
+
+	protected static function getUserLinks( $userId, $userName ) {
+		static $cache = array();
+
+		if ( !isset( $cache[$userName][$userId] ) ) {
+			$cache[$userName][$userId] = Linker::userLink( $userId, $userName ) .
+				Linker::userToolLinks( $userId, $userName, true );
+		}
+
+		return $cache[$userName][$userId];
 	}
 
 	/**
@@ -642,7 +662,7 @@ class SpecialAbuseLog extends SpecialPage {
 
 class AbuseLogPager extends ReverseChronologicalPager {
 	/**
-	 * @var HtmlForm
+	 * @var SpecialAbuseLog
 	 */
 	public $mForm;
 
@@ -688,6 +708,28 @@ class AbuseLogPager extends ReverseChronologicalPager {
 		}
 
 		return $info;
+	}
+
+	/**
+	 * @param ResultWrapper $result
+	 */
+	protected function preprocessResults( $result ) {
+		if ( $this->getNumRows() === 0 ) {
+			return;
+		}
+
+		$lb = new LinkBatch();
+		$lb->setCaller( __METHOD__ );
+		foreach ( $result as $row ) {
+			// Only for local wiki results
+			if ( !$row->afl_wiki ) {
+				$lb->add( $row->afl_namespace, $row->afl_title );
+				$lb->add( NS_USER,  $row->afl_user );
+				$lb->add( NS_USER_TALK, $row->afl_user_text );
+			}
+		}
+		$lb->execute();
+		$result->seek( 0 );
 	}
 
 	function getIndexField() {

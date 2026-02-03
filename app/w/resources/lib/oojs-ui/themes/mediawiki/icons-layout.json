@@ -4,23 +4,25 @@
 	"intro": "@import '../../../../src/styles/common';",
 	"variants": {
 		"invert": {
-			"color": "#ffffff",
+			"color": "#fff",
 			"global": true
 		},
 		"progressive": {
-			"color": "#347bff"
+			"color": "#36c",
+			"global": true
 		},
 		"constructive": {
-			"color": "#347bff"
+			"color": "#36c"
 		},
 		"destructive": {
-			"color": "#d11d13"
+			"color": "#d33"
 		},
 		"warning": {
 			"color": "#ff5d00"
 		}
 	},
 	"images": {
+		"menu": { "file": "images/icons/menu.svg" },
 		"stripeFlow": { "file": {
 			"ltr": "images/icons/stripeFlow-ltr.svg",
 			"rtl": "images/icons/stripeFlow-rtl.svg"

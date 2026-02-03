@@ -3,10 +3,9 @@
  */
 ( function ( mw, $ ) {
 	$( function () {
-		var $preftoc, $preferences, $fieldsets,
-			labelFunc,
-			$tzSelect, $tzTextbox, $localtimeHolder, servertime,
-			allowCloseWindow, notif;
+		var $preftoc, $preferences, $fieldsets, labelFunc, previousTab,
+			$tzSelect, $tzTextbox, $localtimeHolder, servertime, allowCloseWindow,
+			convertmessagebox = require( 'mediawiki.notification.convertmessagebox' );
 
 		labelFunc = function () {
 			return this.id.replace( /^mw-prefsection/g, 'preftab' );
@@ -82,20 +81,8 @@
 			}
 		}
 
-		// Check for messageboxes (.successbox, .warningbox, .errorbox) to replace with notifications
-		if ( $( '.mw-preferences-messagebox' ).length ) {
-			// If there is a #mw-preferences-success box and javascript is enabled, use a slick notification instead!
-			if ( $( '#mw-preferences-success' ).length ) {
-				notif = mw.notification.notify( mw.message( 'savedprefs' ), { autoHide: false } );
-				// 'change' event not reliable!
-				$( '#preftoc, .prefsection' ).one( 'change keydown mousedown', function () {
-					if ( notif ) {
-						notif.close();
-						notif = null;
-					}
-				} );
-			}
-		}
+		// Check for successbox to replace with notifications
+		convertmessagebox();
 
 		// Enable keyboard users to use left and right keys to switch tabs
 		$preftoc.on( 'keydown', function ( event ) {
@@ -121,11 +108,13 @@
 			var hash = location.hash,
 				matchedElement, parentSection;
 			if ( hash.match( /^#mw-prefsection-[\w\-]+/ ) ) {
+				mw.storage.session.remove( 'mwpreferences-prevTab' );
 				switchPrefTab( hash.replace( '#mw-prefsection-', '' ) );
 			} else if ( hash.match( /^#mw-[\w\-]+/ ) ) {
 				matchedElement = document.getElementById( hash.slice( 1 ) );
 				parentSection = $( matchedElement ).closest( '.prefsection' );
 				if ( parentSection.length ) {
+					mw.storage.session.remove( 'mwpreferences-prevTab' );
 					// Switch to proper tab and scroll to selected item.
 					switchPrefTab( parentSection.attr( 'id' ).replace( 'mw-prefsection-', '' ), 'noHash' );
 					matchedElement.scrollIntoView();
@@ -248,21 +237,18 @@
 			updateTimezoneSelection();
 		}
 
-		// Preserve the tab after saving the preferences
-		// Not using cookies, because their deletion results are inconsistent.
-		// Not using jStorage due to its enormous size (for this feature)
-		if ( window.sessionStorage ) {
-			if ( sessionStorage.getItem( 'mediawikiPreferencesTab' ) !== null ) {
-				switchPrefTab( sessionStorage.getItem( 'mediawikiPreferencesTab' ), 'noHash' );
-			}
+		// Restore the active tab after saving the preferences
+		previousTab = mw.storage.session.get( 'mwpreferences-prevTab' );
+		if ( previousTab ) {
+			switchPrefTab( previousTab, 'noHash' );
 			// Deleting the key, the tab states should be reset until we press Save
-			sessionStorage.removeItem( 'mediawikiPreferencesTab' );
-
-			$( '#mw-prefs-form' ).submit( function () {
-				var storageData = $( $preftoc ).find( 'li.selected a' ).attr( 'id' ).replace( 'preftab-', '' );
-				sessionStorage.setItem( 'mediawikiPreferencesTab', storageData );
-			} );
+			mw.storage.session.remove( 'mwpreferences-prevTab' );
 		}
+
+		$( '#mw-prefs-form' ).on( 'submit', function () {
+			var value = $( $preftoc ).find( 'li.selected a' ).attr( 'id' ).replace( 'preftab-', '' );
+			mw.storage.session.set( 'mwpreferences-prevTab', value );
+		} );
 
 		// Check if all of the form values are unchanged
 		function isPrefsChanged() {

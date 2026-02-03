@@ -25,13 +25,16 @@
 			"Nirovulf",
 			"Striking Blue",
 			"Дмитрий",
-			"Краснорядцева Елена"
+			"Краснорядцева Елена",
+			"Mailman"
 		]
 	},
+	"visualeditor-cite-tool-definition.json": "null",
 	"visualeditor-cite-tool-name-book": "Книга",
 	"visualeditor-cite-tool-name-journal": "Статья",
 	"visualeditor-cite-tool-name-news": "Новости",
 	"visualeditor-cite-tool-name-web": "Веб-сайт",
+	"cite-tool-definition.json": "null",
 	"cite-ve-dialog-reference-editing-reused": "Эта ссылка используется на странице $1 раз{{PLURAL:$1|||а}}.",
 	"cite-ve-dialog-reference-options-group-label": "Использовать эту группу",
 	"cite-ve-dialog-reference-options-group-placeholder": "Общие ссылки",
@@ -44,7 +47,7 @@
 	"cite-ve-dialog-referenceslist-contextitem-description-general": "Список общих ссылок",
 	"cite-ve-dialog-referenceslist-contextitem-description-named": "Список примечаний для группы \"$1\"",
 	"cite-ve-dialog-referenceslist-title": "Список примечаний",
-	"cite-ve-dialogbutton-citation-educationpopup-text": "Улучшайте свой контент, добавляя туда список источников информации. Вы можете цитировать книги, газеты и веб-сайты.",
+	"cite-ve-dialogbutton-citation-educationpopup-text": "Улучшайте контент, добавляя туда источники информации. Вы можете цитировать книги, газеты и веб-сайты.",
 	"cite-ve-dialogbutton-citation-educationpopup-title": "Цитаты",
 	"cite-ve-dialogbutton-reference-full-label": "Простая форма",
 	"cite-ve-dialogbutton-reference-title": "Примечание",
@@ -54,5 +57,6 @@
 	"cite-ve-referenceslist-isempty": "На этой странице нет ссылок с группой «$1» для включения в этот список.",
 	"cite-ve-referenceslist-isempty-default": "На этой странице нет ссылок для включения в этот список.",
 	"cite-ve-referenceslist-missingref": "Эта сноска определена в шаблоне или другом генерируемом блоке и на данный момент может быть отредактирована только в режиме правки исходного текста.",
-	"cite-ve-toolbar-group-label": "Источники"
+	"cite-ve-toolbar-group-label": "Источники",
+	"cite-ve-othergroup-item": "$1 примечание"
 }

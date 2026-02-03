@@ -1,30 +1,62 @@
-@import "minerva.variables";
-@import "minerva.mixins";
-@import "mediawiki.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
+@import 'mediawiki.mixins';
 
-@topBarBackgroundColor: #F3F3F3;
-
+/* stylelint-disable no-descending-specificity */
 html,
 body {
 	// Ensure overlays take up full screen
 	height: 100%;
 }
 
+body {
+	background-color: @chromeColor;
+}
+
+// FIXME: should we use .mw-body here instead?
 #content {
-	border-top: 1px solid @grayLight;
+	// avoid margin collapsing (see T147956)
+	border-top: solid 1px transparent;
+	background-color: @skinContentBgColor;
+	padding-bottom: 32px;
+}
+
+.header-container {
+	border-bottom: solid 1px @chromeContentSeparator;
+
+	&.header-chrome {
+		background-color: @chromeColor;
+		border: 0;
+		box-shadow: inset 0 -1px 3px rgba( 0, 0, 0, 0.08 );
+	}
+}
+
+#searchIcon {
+	input {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		color: transparent;
+
+		&:focus {
+			outline: none;
+		}
+	}
 }
 
 .last-modified-bar {
 	background-color: transparent;
 	display: block;
-	color: @colorGray6;
+	color: @colorGray5;
 	transition: background-color 0.2s ease, color 0.2s ease;
 
 	a,
 	a:visited {
 		color: @colorGray6;
 		// If browser supports
-		&:nth-child(2) {
+		&:nth-child( 2 ) {
 			font-weight: bold;
 		}
 	}
@@ -50,22 +82,17 @@ body {
 .header {
 	display: table;
 	width: 100%;
+	border-spacing: 0;
+	border-collapse: collapse;
 	height: @headerHeight;
 	white-space: nowrap;
 	// When banners are present we want to easily distinguish between them and the header so add border
-	border-top: 1px solid @colorGrayLight;
-	margin-top: -1px;
+	border-top: 1px solid @colorGray12;
+	margin-top: @headerMarginTop;
 
-	// button
 	> div {
 		width: @headerHeight;
 		position: relative;
-	}
-
-	// Search field
-	> form,
-	// Spinner
-	> div {
 		vertical-align: middle;
 		display: table-cell;
 	}
@@ -75,72 +102,117 @@ body {
 		display: block;
 	}
 
-	// Search
-	> form {
-		padding: .15em @headerTitlePaddingH 0;
+	.branding-box {
 		width: auto;
-		vertical-align: middle;
+
+		h1 {
+			margin-left: 5px;
+			font-size: 1em;
+
+			span {
+				line-height: 1;
+				font-size: inherit;
+			}
+
+			img {
+				vertical-align: middle;
+			}
+
+			> * {
+				float: left;
+			}
+
+			sup {
+				color: @colorGray5;
+				display: none;
+
+				.beta & {
+					display: initial;
+				}
+			}
+		}
 	}
 
 	> .header-title {
 		vertical-align: middle;
 	}
 
+	.header-action > * {
+		min-height: @headerHeight;
+	}
+}
+
+.header > form,
+.overlay-header .overlay-title {
+	padding: 0.15em 0;
+
+	&:last-child {
+		// Reserve space to the right in case the search form in the header or
+		// overlay title in the overlay header is the last element. Use @iconGutterWidth
+		// because there is a hamburger or close/back icon next to this element and
+		// the space between them is exactly that.
+		padding-right: @iconGutterWidth;
+	}
 }
 
 // Make search input more visible for users on small screens.
 // Opera Mini doesn't support placeholders.
-@media all and (max-width: @wgMFDeviceWidthMobileSmall) {
+// FIXME: As soon as HeaderV2 feature flag is removed this entire block can disappear as a search icon
+// will now be shown on Opera Mini instead.
+@media all and ( max-width: @wgMFDeviceWidthMobileSmall ) {
 	.header {
 		.search {
 			border: 1px solid @grayLight;
-			padding: .3em .1em;
+			// Remove the space for the search icon inside the search bar and increase height to size of button
+			padding: 0.5em 0.1em;
+			background: none;  // so that the icon doesn't overlap with the placeholder
 		}
+	}
+}
+
+.search-box,
+// Selector is needed to override table-cell rules
+.header .search-box {
+	display: none;
+	width: auto;
+}
+
+.search-box {
+	// FIXME: remove when micro.tap in stable and rule from common-js.less too
+	-webkit-tap-highlight-color: rgba( 255, 255, 255, 0 );
+
+	.search {
+		@searchIconSize: 20px;
+		@searchIconGutter: 6px;
+		// FIXME: input's cannot have child elements so not possible to use mw-ui-icon-before here
+		// How can we avoid multiple use of magnifying glass icon?
+		.background-image-svg( 'magnifying-glass.svg', 'magnifying-glass.png' );
+		outline: 0;
+		width: 100%;
+		// FIXME: unable to check but the important may not be needed for Nokia S60;
+		background-color: #fff !important; /* remove fennec default background also see bug 36490 */
+		// get rid of rounded corners in Safari
+		-webkit-appearance: none;
+
+		padding: 0.5em 0 0.5em @searchIconSize + (2 * @searchIconGutter);
+		background-position: left @searchIconGutter center;
+		background-repeat: no-repeat;
+		.background-size( @searchIconSize, @searchIconSize );
+		border-radius: @borderRadius;
+		box-shadow: 0 1px 1px rgba( 0, 0, 0, 0.05 );
+		margin-top: 0;
 	}
 }
 
 /* Search */
-
-.client-use-basic-search,
-.client-nojs {
-	.header {
-		.search,
-		.fulltext-search {
-			float: left;
-		}
-
-		.search {
-			// Assume the smallest possible screen size.
-			// We want people to be able to search we don't care if it looks pretty.
-			width: 80px;
-			margin-right: 8px;
-			border: 1px solid @grayLight;
-			padding: .5em .1em;
-		}
-	}
-
-	.content h2 {
-		border-bottom: solid 1px @sectionBorderColor;
-	}
-
-}
-
 input.search {
-	outline: 0;
-	width: 100%;
-	// FIXME: unable to check but the important may not be needed for Nokia S60;
-	background-color: #fff !important; /* remove fennec default background also see bug 36490 */
-	// get rid of rounded corners in Safari
-	-webkit-appearance: none;
-	// get rid of X in Chrome
-	&::-webkit-search-cancel-button {
-		-webkit-appearance: none;
+	// [T139928] Hide all pseudo-elements added to search inputs in WebKit.
+	&::-webkit-search-decoration,
+	&::-webkit-search-cancel-button,
+	&::-webkit-search-results-button,
+	&::-webkit-search-results-decoration {
+		display: none;
 	}
-}
-
-// FIXME: remove when micro.tap in stable and rule from common-js.less too
-.search-box {
-	-webkit-tap-highlight-color: rgba(255, 255, 255, 0);
 }
 
 .content {
@@ -180,7 +252,7 @@ input.search {
 
 	.section-heading {
 		width: 100%;
-		border-bottom: solid 1px @sectionBorderColor;
+		border-bottom: solid 1px @colorGray14;
 		margin-bottom: @headingMargin;
 
 		.indicator {
@@ -209,15 +281,6 @@ input.search {
 	}
 }
 
-.stable {
-	// Remove when/if page-secondary-actions are promoted to stable
-	#language-switcher,
-	// FIXME: remove .languageSelector when cache clears
-	.languageSelector {
-		margin-top: 1em;
-	}
-}
-
 #page-secondary-actions {
 	// Clears floating on table of contents on stub pages.
 	clear: both;
@@ -225,7 +288,11 @@ input.search {
 	a {
 		margin: 10px 2px 2px 0;
 	}
+	.language-selector {
+		margin-top: 1em;
+	}
 }
+
 .truncated-text {
 	white-space: nowrap;
 	overflow: hidden;
@@ -269,21 +336,48 @@ input.search {
 }
 
 .notification-count {
-	text-indent: 0;
-	display: inline-block;
-	font-weight: bold;
-	color: #fff;
-	background: #c91f2c;
-	border-radius: 2px;
-	height: 1.2em;
-	line-height: 1.2em;
-	min-width: 1em;
-	margin: .6em .6em 0 0;
-	padding: 0 0.1em;
-	text-align: center;
-	position: absolute;
-	right: 0;
-	top: -.1em;
+	@circleSize: 24px;
+	@borderSize: 2px;
+	margin: auto;
+	height: @circleSize;
+	background: @notificationBackgroundRead;
+	color: @notificationColorRead;
+	cursor: pointer;
+
+	.circle {
+		border-radius: 50%;
+		border: @borderSize solid @notificationColorRead;
+		margin: auto;
+		height: @circleSize - @borderSize;
+		width: @circleSize - @borderSize;
+
+		/* stylelint-disable declaration-block-no-duplicate-properties */
+		// Center the text number inside the circle
+		display: block; // Fallback for old iOS
+		text-align: center; // Fallback for old iOS
+		display: -webkit-box;
+		display: flex;
+		-webkit-box-align: center;
+		align-items: center;
+		-webkit-box-pack: center;
+		justify-content: center;
+
+		span {
+			font-weight: bold;
+			font-size: 13px;
+			line-height: 1;
+			letter-spacing: -0.5px;
+		}
+	}
+
+	&.notification-unseen {
+		color: @notificationColorUnread;
+
+		.circle {
+			background: @notificationBackgroundUnread;
+			border-color: @notificationBackgroundUnread;
+		}
+	}
 
 	&.zero {
 		display: none;
@@ -291,11 +385,15 @@ input.search {
 
 	// FIXME: There must be a better way of doing this
 	&.max {
-		right: .2em;
+		right: 0.2em;
 		width: 2em;
 		height: 2em;
 		line-height: 2em;
 		font-size: 0.7em;
+	}
+
+	&:hover {
+		text-decoration: none;
 	}
 }
 
@@ -324,6 +422,7 @@ input.search {
 }
 
 .content .nojs-edit {
-	display: inline-block;
+	display: inline-block !important;
+	visibility: visible;
 	float: right;
 }

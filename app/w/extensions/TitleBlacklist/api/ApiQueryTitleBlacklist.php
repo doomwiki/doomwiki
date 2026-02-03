@@ -36,10 +36,7 @@ class ApiQueryTitleBlacklist extends ApiBase {
 	public function execute() {
 		$params = $this->extractRequestParams();
 		$action = $params['action'];
-		$override = true;
-		if( isset( $params['nooverride'] ) ) {
-			$override = false;
-		}
+		$override = !$params['nooverride'];
 
 		// createtalk and createpage are useless as they're treated exactly like create
 		if ( $action === 'createpage' || $action === 'createtalk' ) {
@@ -48,7 +45,11 @@ class ApiQueryTitleBlacklist extends ApiBase {
 
 		$title = Title::newFromText( $params['title'] );
 		if ( !$title ) {
-			$this->dieUsageMsg( array( 'invalidtitle', $params['title'] ) );
+			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+				$this->dieWithError( array( 'apierror-invalidtitle', wfEscapeWikiText( $params['title'] ) ) );
+			} else {
+				$this->dieUsageMsg( array( 'invalidtitle', $params['title'] ) );
+			}
 		}
 
 		$blacklisted = TitleBlacklist::singleton()->userCannot( $title, $this->getUser(), $action, $override );
@@ -86,35 +87,8 @@ class ApiQueryTitleBlacklist extends ApiBase {
 				),
 			),
 			'nooverride' => array(
+				ApiBase::PARAM_DFLT => false,
 			)
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getParamDescription() {
-		return array(
-			'title' => 'The string to validate against the blacklist',
-			'nooverride' => 'Don\'t try to override the titleblacklist',
-			'action' => 'The thing you\'re trying to do',
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getDescription() {
-		return 'Validate an article title, filename, or username against the TitleBlacklist.';
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getExamples() {
-		return array(
-			'api.php?action=titleblacklist&tbtitle=Foo',
-			'api.php?action=titleblacklist&tbtitle=Bar&tbaction=edit',
 		);
 	}
 

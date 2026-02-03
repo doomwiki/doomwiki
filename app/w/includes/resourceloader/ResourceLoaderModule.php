@@ -22,9 +22,11 @@
  * @author Roan Kattouw
  */
 
+use MediaWiki\MediaWikiServices;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
+use Wikimedia\ScopedCallback;
 
 /**
  * Abstraction for ResourceLoader modules, with name registration and maxage functionality.
@@ -34,6 +36,12 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	const TYPE_SCRIPTS = 'scripts';
 	const TYPE_STYLES = 'styles';
 	const TYPE_COMBINED = 'combined';
+
+	# Desired load type
+	// Module only has styles (loaded via <style> or <link rel=stylesheet>)
+	const LOAD_STYLES = 'styles';
+	// Module may have other resources (loaded via mw.loader from a script)
+	const LOAD_GENERAL = 'general';
 
 	# sitewide core module like a skin file or jQuery component
 	const ORIGIN_CORE_SITEWIDE = 1;
@@ -77,6 +85,11 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	protected $config;
 
 	/**
+	 * @var array|bool
+	 */
+	protected $deprecated = false;
+
+	/**
 	 * @var LoggerInterface
 	 */
 	protected $logger;
@@ -115,16 +128,6 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Set this module's origin. This is called by ResourceLoader::register()
-	 * when registering the module. Other code should not call this.
-	 *
-	 * @param int $origin Origin
-	 */
-	public function setOrigin( $origin ) {
-		$this->origin = $origin;
-	}
-
-	/**
 	 * @param ResourceLoaderContext $context
 	 * @return bool
 	 */
@@ -132,6 +135,28 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 		global $wgContLang;
 
 		return $wgContLang->getDir() !== $context->getDirection();
+	}
+
+	/**
+	 * Get JS representing deprecation information for the current module if available
+	 *
+	 * @return string JavaScript code
+	 */
+	protected function getDeprecationInformation() {
+		$deprecationInfo = $this->deprecated;
+		if ( $deprecationInfo ) {
+			$name = $this->getName();
+			$warning = 'This page is using the deprecated ResourceLoader module "' . $name . '".';
+			if ( is_string( $deprecationInfo ) ) {
+				$warning .= "\n" . $deprecationInfo;
+			}
+			return Xml::encodeJsCall(
+				'mw.log.warn',
+				[ $warning ]
+			);
+		} else {
+			return '';
+		}
 	}
 
 	/**
@@ -163,7 +188,7 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	public function getConfig() {
 		if ( $this->config === null ) {
 			// Ugh, fall back to default
-			$this->config = ConfigFactory::getDefaultInstance()->makeConfig( 'main' );
+			$this->config = MediaWikiServices::getInstance()->getMainConfig();
 		}
 
 		return $this->config;
@@ -241,8 +266,8 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	 *
 	 * @param ResourceLoaderContext $context
 	 * @return array List of CSS strings or array of CSS strings keyed by media type.
-	 *  like array( 'screen' => '.foo { width: 0 }' );
-	 *  or array( 'screen' => array( '.foo { width: 0 }' ) );
+	 *  like [ 'screen' => '.foo { width: 0 }' ];
+	 *  or [ 'screen' => [ '.foo { width: 0 }' ] ];
 	 */
 	public function getStyles( ResourceLoaderContext $context ) {
 		// Stub, override expected
@@ -256,7 +281,7 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	 * load the files directly. See also getScriptURLsForDebug()
 	 *
 	 * @param ResourceLoaderContext $context
-	 * @return array Array( mediaType => array( URL1, URL2, ... ), ... )
+	 * @return array [ mediaType => [ URL1, URL2, ... ], ... ]
 	 */
 	public function getStyleURLsForDebug( ResourceLoaderContext $context ) {
 		$resourceLoader = $context->getResourceLoader();
@@ -306,14 +331,13 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	}
 
 	/**
-	 * Where on the HTML page should this module's JS be loaded?
-	 *  - 'top': in the "<head>"
-	 *  - 'bottom': at the bottom of the "<body>"
+	 * From where in the page HTML should this module be loaded?
 	 *
+	 * @deprecated since 1.29 Obsolete. All modules load async from `<head>`.
 	 * @return string
 	 */
 	public function getPosition() {
-		return 'bottom';
+		return 'top';
 	}
 
 	/**
@@ -354,6 +378,16 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	}
 
 	/**
+	 * Get the module's load type.
+	 *
+	 * @since 1.28
+	 * @return string ResourceLoaderModule LOAD_* constant
+	 */
+	public function getType() {
+		return self::LOAD_GENERAL;
+	}
+
+	/**
 	 * Get the skip function.
 	 *
 	 * Modules that provide fallback functionality can provide a "skip function". This
@@ -384,7 +418,7 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 
 		// Try in-object cache first
 		if ( !isset( $this->fileDeps[$vary] ) ) {
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			$deps = $dbr->selectField( 'module_deps',
 				'md_deps',
 				[
@@ -427,35 +461,58 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	 * @param array $localFileRefs List of files
 	 */
 	protected function saveFileDependencies( ResourceLoaderContext $context, $localFileRefs ) {
-		// Normalise array
-		$localFileRefs = array_values( array_unique( $localFileRefs ) );
-		sort( $localFileRefs );
 
 		try {
+			// Related bugs and performance considerations:
+			// 1. Don't needlessly change the database value with the same list in a
+			//    different order or with duplicates.
+			// 2. Use relative paths to avoid ghost entries when $IP changes. (T111481)
+			// 3. Don't needlessly replace the database with the same value
+			//    just because $IP changed (e.g. when upgrading a wiki).
+			// 4. Don't create an endless replace loop on every request for this
+			//    module when '../' is used anywhere. Even though both are expanded
+			//    (one expanded by getFileDependencies from the DB, the other is
+			//    still raw as originally read by RL), the latter has not
+			//    been normalized yet.
+
+			// Normalise
+			$localFileRefs = array_values( array_unique( $localFileRefs ) );
+			sort( $localFileRefs );
+			$localPaths = self::getRelativePaths( $localFileRefs );
+
+			$storedPaths = self::getRelativePaths( $this->getFileDependencies( $context ) );
 			// If the list has been modified since last time we cached it, update the cache
-			if ( $localFileRefs !== $this->getFileDependencies( $context ) ) {
+			if ( $localPaths !== $storedPaths ) {
+				$vary = $context->getSkin() . '|' . $context->getLanguage();
 				$cache = ObjectCache::getLocalClusterInstance();
-				$key = $cache->makeKey( __METHOD__, $this->getName() );
+				$key = $cache->makeKey( __METHOD__, $this->getName(), $vary );
 				$scopeLock = $cache->getScopedLock( $key, 0 );
 				if ( !$scopeLock ) {
 					return; // T124649; avoid write slams
 				}
 
-				$vary = $context->getSkin() . '|' . $context->getLanguage();
+				$deps = FormatJson::encode( $localPaths );
 				$dbw = wfGetDB( DB_MASTER );
-				$dbw->replace( 'module_deps',
-					[ [ 'md_module', 'md_skin' ] ],
+				$dbw->upsert( 'module_deps',
 					[
 						'md_module' => $this->getName(),
 						'md_skin' => $vary,
-						// Use relative paths to avoid ghost entries when $IP changes (T111481)
-						'md_deps' => FormatJson::encode( self::getRelativePaths( $localFileRefs ) ),
+						'md_deps' => $deps,
+					],
+					[ 'md_module', 'md_skin' ],
+					[
+						'md_deps' => $deps,
 					]
 				);
 
-				$dbw->onTransactionIdle( function () use ( &$scopeLock ) {
-					ScopedCallback::consume( $scopeLock ); // release after commit
-				} );
+				if ( $dbw->trxLevel() ) {
+					$dbw->onTransactionResolution(
+						function () use ( &$scopeLock ) {
+							ScopedCallback::consume( $scopeLock ); // release after commit
+						},
+						__METHOD__
+					);
+				}
 			}
 		} catch ( Exception $e ) {
 			wfDebugLog( 'resourceloader', __METHOD__ . ": failed to update DB: $e" );
@@ -567,7 +624,7 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	 */
 	final protected function buildContent( ResourceLoaderContext $context ) {
 		$rl = $context->getResourceLoader();
-		$stats = RequestContext::getMain()->getStats();
+		$stats = MediaWikiServices::getInstance()->getStatsdDataFactory();
 		$statStart = microtime( true );
 
 		// Only include properties that are relevant to this context (e.g. only=scripts)
@@ -594,7 +651,7 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 					&& substr( rtrim( $scripts ), -1 ) !== ';'
 				) {
 					// Append semicolon to prevent weird bugs caused by files not
-					// terminating their statements right (bug 27054)
+					// terminating their statements right (T29054)
 					$scripts .= ";\n";
 				}
 			}
@@ -604,8 +661,8 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 		// Styles
 		if ( $context->shouldIncludeStyles() ) {
 			$styles = [];
-			// Don't create empty stylesheets like array( '' => '' ) for modules
-			// that don't *have* any stylesheets (bug 38024).
+			// Don't create empty stylesheets like [ '' => '' ] for modules
+			// that don't *have* any stylesheets (T40024).
 			$stylePairs = $this->getStyles( $context );
 			if ( count( $stylePairs ) ) {
 				// If we are in debug mode without &only= set, we'll want to return an array of URLs
@@ -754,10 +811,10 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	 *
 	 * @code
 	 *     $summary = parent::getDefinitionSummary( $context );
-	 *     $summary[] = array(
+	 *     $summary[] = [
 	 *         'foo' => 123,
 	 *         'bar' => 'quux',
-	 *     );
+	 *     ];
 	 *     return $summary;
 	 * @endcode
 	 *
@@ -786,7 +843,7 @@ abstract class ResourceLoaderModule implements LoggerAwareInterface {
 	 */
 	public function getDefinitionSummary( ResourceLoaderContext $context ) {
 		return [
-			'_class' => get_class( $this ),
+			'_class' => static::class,
 			'_cacheEpoch' => $this->getConfig()->get( 'CacheEpoch' ),
 		];
 	}

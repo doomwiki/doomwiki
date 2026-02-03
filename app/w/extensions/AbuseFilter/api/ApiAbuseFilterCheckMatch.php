@@ -7,7 +7,11 @@ class ApiAbuseFilterCheckMatch extends ApiBase {
 
 		// "Anti-DoS"
 		if ( !$this->getUser()->isAllowed( 'abusefilter-modify' ) ) {
-			$this->dieUsage( 'You don\'t have permission to test abuse filters', 'permissiondenied' );
+			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+				$this->dieWithError( 'apierror-abusefilter-canttest', 'permissiondenied' );
+			} else {
+				$this->dieUsage( 'You don\'t have permission to test abuse filters', 'permissiondenied' );
+			}
 		}
 
 		$vars = null;
@@ -27,7 +31,11 @@ class ApiAbuseFilterCheckMatch extends ApiBase {
 			);
 
 			if ( !$row ) {
-				$this->dieUsageMsg( array( 'nosuchrcid', $params['rcid'] ) );
+				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+					$this->dieWithError( [ 'apierror-nosuchrcid', $params['rcid'] ] );
+				} else {
+					$this->dieUsageMsg( [ 'nosuchrcid', $params['rcid'] ] );
+				}
 			}
 
 			$vars = AbuseFilter::getVarsFromRCRow( $row );
@@ -41,25 +49,31 @@ class ApiAbuseFilterCheckMatch extends ApiBase {
 			);
 
 			if ( !$row ) {
-				$this->dieUsage(
-					"There is no abuselog entry with the id ``{$params['logid']}''",
-					'nosuchlogid'
-				);
+				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+					$this->dieWithError( [ 'apierror-abusefilter-nosuchlogid', $params['logid'] ], 'nosuchlogid' );
+				} else {
+					$this->dieUsage(
+						"There is no abuselog entry with the id ``{$params['logid']}''",
+						'nosuchlogid'
+					);
+				}
 			}
 
 			$vars = AbuseFilter::loadVarDump( $row->afl_var_dump );
 		}
 
 		if ( AbuseFilter::checkSyntax( $params[ 'filter' ] ) !== true ) {
-			$this->dieUsage( 'The filter has invalid syntax', 'badsyntax' );
+			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+				$this->dieWithError( 'apierror-abusefilter-badsyntax', 'badsyntax' );
+			} else {
+				$this->dieUsage( 'The filter has invalid syntax', 'badsyntax' );
+			}
 		}
 
 		$result = array(
+			ApiResult::META_BC_BOOLS => [ 'result' ],
 			'result' => AbuseFilter::checkConditions( $params['filter'], $vars ),
 		);
-		if ( defined( 'ApiResult::META_CONTENT' ) ) {
-			$result[ApiResult::META_BC_BOOLS][] = 'result';
-		}
 
 		$this->getResult()->addValue(
 			null,
@@ -80,35 +94,6 @@ class ApiAbuseFilterCheckMatch extends ApiBase {
 			'logid' => array(
 				ApiBase::PARAM_TYPE => 'integer'
 			),
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getParamDescription() {
-		return array(
-			'filter' => 'The full filter text to check for a match',
-			'vars' => 'JSON encoded array of variables to test against',
-			'rcid' => 'Recent change ID to check against',
-			'logid' => 'Abuse filter log ID to check against',
-		);
-	}
-
-	/**
-	 * @deprecated since MediaWiki core 1.25
-	 */
-	public function getDescription() {
-		return array(
-			'Check to see if an AbuseFilter matches a set of variables, edit'
-			. 'or logged AbuseFilter event.',
-			'vars, rcid or logid is required however only one may be used',
-		);
-	}
-
-	public function getExamples() {
-		return array(
-			'api.php?action=abusefiltercheckmatch&filter=!("autoconfirmed"%20in%20user_groups)&rcid=15'
 		);
 	}
 

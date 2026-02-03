@@ -60,7 +60,7 @@ class SpecialUploadStash extends UnlistedSpecialPage {
 	 * Execute page -- can output a file directly or show a listing of them.
 	 *
 	 * @param string $subPage Subpage, e.g. in
-	 *   http://example.com/wiki/Special:UploadStash/foo.jpg, the "foo.jpg" part
+	 *   https://example.com/wiki/Special:UploadStash/foo.jpg, the "foo.jpg" part
 	 * @return bool Success
 	 */
 	public function execute( $subPage ) {
@@ -181,7 +181,7 @@ class SpecialUploadStash extends UnlistedSpecialPage {
 	 * Scale a file (probably with a locally installed imagemagick, or similar)
 	 * and output it to STDOUT.
 	 * @param File $file
-	 * @param array $params Scaling parameters ( e.g. array( width => '50' ) );
+	 * @param array $params Scaling parameters ( e.g. [ width => '50' ] );
 	 * @param int $flags Scaling flags ( see File:: constants )
 	 * @throws MWException|UploadStashFileNotFoundException
 	 * @return bool Success
@@ -227,7 +227,7 @@ class SpecialUploadStash extends UnlistedSpecialPage {
 	 * client to cache it forever.
 	 *
 	 * @param File $file
-	 * @param array $params Scaling parameters ( e.g. array( width => '50' ) );
+	 * @param array $params Scaling parameters ( e.g. [ width => '50' ] );
 	 * @param int $flags Scaling flags ( see File:: constants )
 	 * @throws MWException
 	 * @return bool Success
@@ -327,7 +327,7 @@ class SpecialUploadStash extends UnlistedSpecialPage {
 		header( "Content-Type: $contentType", true );
 		header( 'Content-Transfer-Encoding: binary', true );
 		header( 'Expires: Sun, 17-Jan-2038 19:14:07 GMT', true );
-		// Bug 53032 - It shouldn't be a problem here, but let's be safe and not cache
+		// T55032 - It shouldn't be a problem here, but let's be safe and not cache
 		header( 'Cache-Control: private' );
 		header( "Content-Length: $size", true );
 	}
@@ -391,17 +391,21 @@ class SpecialUploadStash extends UnlistedSpecialPage {
 		if ( $files && count( $files ) ) {
 			sort( $files );
 			$fileListItemsHtml = '';
+			$linkRenderer = $this->getLinkRenderer();
 			foreach ( $files as $file ) {
-				$itemHtml = Linker::linkKnown( $this->getPageTitle( "file/$file" ), htmlspecialchars( $file ) );
+				$itemHtml = $linkRenderer->makeKnownLink(
+					$this->getPageTitle( "file/$file" ),
+					$file
+				);
 				try {
 					$fileObj = $this->stash->getFile( $file );
 					$thumb = $fileObj->generateThumbName( $file, [ 'width' => 220 ] );
 					$itemHtml .=
 						$this->msg( 'word-separator' )->escaped() .
 						$this->msg( 'parentheses' )->rawParams(
-							Linker::linkKnown(
+							$linkRenderer->makeKnownLink(
 								$this->getPageTitle( "thumb/$file/$thumb" ),
-								$this->msg( 'uploadstash-thumbnail' )->escaped()
+								$this->msg( 'uploadstash-thumbnail' )->text()
 							)
 						)->escaped();
 				} catch ( Exception $e ) {

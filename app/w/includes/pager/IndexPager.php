@@ -21,6 +21,9 @@
  * @ingroup Pager
  */
 
+use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * IndexPager is an efficient pager which uses a (roughly unique) index in the
  * data set to implement paging, rather than a "LIMIT offset,limit" clause.
@@ -145,8 +148,8 @@ abstract class IndexPager extends ContextSource implements Pager {
 		}
 
 		$this->mIsBackwards = ( $this->mRequest->getVal( 'dir' ) == 'prev' );
-		# Let the subclass set the DB here; otherwise use a slave DB for the current wiki
-		$this->mDb = $this->mDb ?: wfGetDB( DB_SLAVE );
+		# Let the subclass set the DB here; otherwise use a replica DB for the current wiki
+		$this->mDb = $this->mDb ?: wfGetDB( DB_REPLICA );
 
 		$index = $this->getIndexField(); // column to sort on
 		$extraSort = $this->getExtraSortFields(); // extra columns to sort on for query planning
@@ -195,7 +198,7 @@ abstract class IndexPager extends ContextSource implements Pager {
 	 */
 	public function doQuery() {
 		# Use the child class name for profiling
-		$fname = __METHOD__ . ' (' . get_class( $this ) . ')';
+		$fname = __METHOD__ . ' (' . static::class . ')';
 		$section = Profiler::instance()->scopedProfileIn( $fname );
 
 		// @todo This should probably compare to DIR_DESCENDING and DIR_ASCENDING constants
@@ -346,7 +349,7 @@ abstract class IndexPager extends ContextSource implements Pager {
 	 * @return string
 	 */
 	function getSqlComment() {
-		return get_class( $this );
+		return static::class;
 	}
 
 	/**
@@ -700,8 +703,8 @@ abstract class IndexPager extends ContextSource implements Pager {
 	 * not be used in the pager offset or in any links for users.
 	 *
 	 * If getIndexField() returns an array of 'querykey' => 'indexfield' pairs then
-	 * this must return a corresponding array of 'querykey' => array( fields...) pairs
-	 * in order for a request with &count=querykey to use array( fields...) to sort.
+	 * this must return a corresponding array of 'querykey' => [ fields... ] pairs
+	 * in order for a request with &count=querykey to use [ fields... ] to sort.
 	 *
 	 * This is useful for pagers that GROUP BY a unique column (say page_id)
 	 * and ORDER BY another (say page_len). Using GROUP BY and ORDER BY both on

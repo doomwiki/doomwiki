@@ -20,6 +20,7 @@
  * @file
  * @ingroup Upload
  */
+use MediaWiki\MediaWikiServices;
 
 /**
  * @defgroup Upload Upload related
@@ -44,7 +45,7 @@ abstract class UploadBase {
 	protected $mDesiredDestName, $mDestName, $mRemoveTempFile, $mSourceType;
 	protected $mTitle = false, $mTitleError = 0;
 	protected $mFilteredName, $mFinalExtension;
-	protected $mLocalFile, $mFileSize, $mFileProps;
+	protected $mLocalFile, $mStashFile, $mFileSize, $mFileProps;
 	protected $mBlackListedExtensions;
 	protected $mJavaDetected, $mSVGNSError;
 
@@ -53,7 +54,16 @@ abstract class UploadBase {
 		'ISO-8859-1',
 		'ISO-8859-2',
 		'UTF-16',
-		'UTF-32'
+		'UTF-32',
+		'WINDOWS-1250',
+		'WINDOWS-1251',
+		'WINDOWS-1252',
+		'WINDOWS-1253',
+		'WINDOWS-1254',
+		'WINDOWS-1255',
+		'WINDOWS-1256',
+		'WINDOWS-1257',
+		'WINDOWS-1258',
 	];
 
 	const SUCCESS = 0;
@@ -288,7 +298,7 @@ abstract class UploadBase {
 	 * @param string $srcPath The source path
 	 * @return string|bool The real path if it was a virtual URL Returns false on failure
 	 */
-	function getRealPath( $srcPath ) {
+	public function getRealPath( $srcPath ) {
 		$repo = RepoGroup::singleton()->getLocalRepo();
 		if ( $repo->isVirtualUrl( $srcPath ) ) {
 			/** @todo Just make uploads work with storage paths UploadFromStash
@@ -353,7 +363,7 @@ abstract class UploadBase {
 
 		$error = '';
 		if ( !Hooks::run( 'UploadVerification',
-			[ $this->mDestName, $this->mTempPath, &$error ] )
+			[ $this->mDestName, $this->mTempPath, &$error ], '1.28' )
 		) {
 			return [ 'status' => self::HOOK_ABORTED, 'error' => $error ];
 		}
@@ -437,7 +447,8 @@ abstract class UploadBase {
 			return $status;
 		}
 
-		$this->mFileProps = FSFile::getPropsFromPath( $this->mTempPath, $this->mFinalExtension );
+		$mwProps = new MWFileProps( MimeMagic::singleton() );
+		$this->mFileProps = $mwProps->getPropsFromPath( $this->mTempPath, $this->mFinalExtension );
 		$mime = $this->mFileProps['mime'];
 
 		if ( $wgVerifyMimeType ) {
@@ -467,9 +478,13 @@ abstract class UploadBase {
 			}
 		}
 
-		Hooks::run( 'UploadVerifyFile', [ $this, $mime, &$status ] );
-		if ( $status !== true ) {
-			return $status;
+		$error = true;
+		Hooks::run( 'UploadVerifyFile', [ $this, $mime, &$error ] );
+		if ( $error !== true ) {
+			if ( !is_array( $error ) ) {
+				$error = [ $error ];
+			}
+			return $error;
 		}
 
 		wfDebug( __METHOD__ . ": all clear; passing.\n" );
@@ -491,7 +506,8 @@ abstract class UploadBase {
 		# getTitle() sets some internal parameters like $this->mFinalExtension
 		$this->getTitle();
 
-		$this->mFileProps = FSFile::getPropsFromPath( $this->mTempPath, $this->mFinalExtension );
+		$mwProps = new MWFileProps( MimeMagic::singleton() );
+		$this->mFileProps = $mwProps->getPropsFromPath( $this->mTempPath, $this->mFinalExtension );
 
 		# check MIME type, if desired
 		$mime = $this->mFileProps['file-mime'];
@@ -545,7 +561,7 @@ abstract class UploadBase {
 	 *
 	 * @param array $entry
 	 */
-	function zipEntryCallback( $entry ) {
+	public function zipEntryCallback( $entry ) {
 		$names = [ $entry['name'] ];
 
 		// If there is a null character, cut off the name at it, because JDK's
@@ -666,9 +682,23 @@ abstract class UploadBase {
 			$warnings['empty-file'] = true;
 		}
 
+		$hash = $this->getTempFileSha1Base36();
 		$exists = self::getExistsWarning( $localFile );
 		if ( $exists !== false ) {
 			$warnings['exists'] = $exists;
+
+			// check if file is an exact duplicate of current file version
+			if ( $hash === $localFile->getSha1() ) {
+				$warnings['no-change'] = $localFile;
+			}
+
+			// check if file is an exact duplicate of older versions of this file
+			$history = $localFile->getHistory();
+			foreach ( $history as $oldFile ) {
+				if ( $hash === $oldFile->getSha1() ) {
+					$warnings['duplicate-version'][] = $oldFile;
+				}
+			}
 		}
 
 		if ( $localFile->wasDeleted() && !$localFile->exists() ) {
@@ -676,7 +706,6 @@ abstract class UploadBase {
 		}
 
 		// Check dupes against existing files
-		$hash = $this->getTempFileSha1Base36();
 		$dupes = RepoGroup::singleton()->findBySha1( $hash );
 		$title = $this->getTitle();
 		// Remove all matches against self
@@ -717,13 +746,23 @@ abstract class UploadBase {
 	 */
 	public function performUpload( $comment, $pageText, $watch, $user, $tags = [] ) {
 		$this->getLocalFile()->load( File::READ_LATEST );
+		$props = $this->mFileProps;
+
+		$error = null;
+		Hooks::run( 'UploadVerifyUpload', [ $this, $user, $props, $comment, $pageText, &$error ] );
+		if ( $error ) {
+			if ( !is_array( $error ) ) {
+				$error = [ $error ];
+			}
+			return call_user_func_array( 'Status::newFatal', $error );
+		}
 
 		$status = $this->getLocalFile()->upload(
 			$this->mTempPath,
 			$comment,
 			$pageText,
 			File::DELETE_SOURCE,
-			$this->mFileProps,
+			$props,
 			false,
 			$user,
 			$tags
@@ -753,34 +792,13 @@ abstract class UploadBase {
 	 * @since  1.25
 	 */
 	public function postProcessUpload() {
-		global $wgUploadThumbnailRenderMap;
-
-		$jobs = [];
-
-		$sizes = $wgUploadThumbnailRenderMap;
-		rsort( $sizes );
-
-		$file = $this->getLocalFile();
-
-		foreach ( $sizes as $size ) {
-			if ( $file->isVectorized() || $file->getWidth() > $size ) {
-				$jobs[] = new ThumbnailRenderJob(
-					$file->getTitle(),
-					[ 'transformParams' => [ 'width' => $size ] ]
-				);
-			}
-		}
-
-		if ( $jobs ) {
-			JobQueueGroup::singleton()->push( $jobs );
-		}
 	}
 
 	/**
 	 * Returns the title of the file to be uploaded. Sets mTitleError in case
 	 * the name was illegal.
 	 *
-	 * @return Title The title of the file or null in case the name was illegal
+	 * @return Title|null The title of the file or null in case the name was illegal
 	 */
 	public function getTitle() {
 		if ( $this->mTitle !== false ) {
@@ -878,7 +896,7 @@ abstract class UploadBase {
 			return $this->mTitle;
 		}
 
-		// Windows may be broken with special characters, see bug 1780
+		// Windows may be broken with special characters, see T3780
 		if ( !preg_match( '/^[\x0-\x7f]*$/', $nt->getText() )
 			&& !RepoGroup::singleton()->getLocalRepo()->backendSupportsUnicodePaths()
 		) {
@@ -912,7 +930,7 @@ abstract class UploadBase {
 	/**
 	 * Return the local file and initializes if necessary.
 	 *
-	 * @return LocalFile|UploadStashFile|null
+	 * @return LocalFile|null
 	 */
 	public function getLocalFile() {
 		if ( is_null( $this->mLocalFile ) ) {
@@ -921,6 +939,55 @@ abstract class UploadBase {
 		}
 
 		return $this->mLocalFile;
+	}
+
+	/**
+	 * @return UploadStashFile|null
+	 */
+	public function getStashFile() {
+		return $this->mStashFile;
+	}
+
+	/**
+	 * Like stashFile(), but respects extensions' wishes to prevent the stashing. verifyUpload() must
+	 * be called before calling this method (unless $isPartial is true).
+	 *
+	 * Upload stash exceptions are also caught and converted to an error status.
+	 *
+	 * @since 1.28
+	 * @param User $user
+	 * @param bool $isPartial Pass `true` if this is a part of a chunked upload (not a complete file).
+	 * @return Status If successful, value is an UploadStashFile instance
+	 */
+	public function tryStashFile( User $user, $isPartial = false ) {
+		if ( !$isPartial ) {
+			$error = $this->runUploadStashFileHook( $user );
+			if ( $error ) {
+				return call_user_func_array( 'Status::newFatal', $error );
+			}
+		}
+		try {
+			$file = $this->doStashFile( $user );
+			return Status::newGood( $file );
+		} catch ( UploadStashException $e ) {
+			return Status::newFatal( 'uploadstash-exception', get_class( $e ), $e->getMessage() );
+		}
+	}
+
+	/**
+	 * @param User $user
+	 * @return array|null Error message and parameters, null if there's no error
+	 */
+	protected function runUploadStashFileHook( User $user ) {
+		$props = $this->mFileProps;
+		$error = null;
+		Hooks::run( 'UploadStashFile', [ $this, $user, $props, &$error ] );
+		if ( $error ) {
+			if ( !is_array( $error ) ) {
+				$error = [ $error ];
+			}
+		}
+		return $error;
 	}
 
 	/**
@@ -935,15 +1002,27 @@ abstract class UploadBase {
 	 * which can be passed through a form or API request to find this stashed
 	 * file again.
 	 *
+	 * @deprecated since 1.28 Use tryStashFile() instead
+	 * @param User $user
+	 * @return UploadStashFile Stashed file
+	 * @throws UploadStashBadPathException
+	 * @throws UploadStashFileException
+	 * @throws UploadStashNotLoggedInException
+	 */
+	public function stashFile( User $user = null ) {
+		return $this->doStashFile( $user );
+	}
+
+	/**
+	 * Implementation for stashFile() and tryStashFile().
+	 *
 	 * @param User $user
 	 * @return UploadStashFile Stashed file
 	 */
-	public function stashFile( User $user = null ) {
-		// was stashSessionFile
-
+	protected function doStashFile( User $user = null ) {
 		$stash = RepoGroup::singleton()->getLocalRepo()->getUploadStash( $user );
 		$file = $stash->stashFile( $this->mTempPath, $this->getSourceType() );
-		$this->mLocalFile = $file;
+		$this->mStashFile = $file;
 
 		return $file;
 	}
@@ -952,19 +1031,23 @@ abstract class UploadBase {
 	 * Stash a file in a temporary directory, returning a key which can be used
 	 * to find the file again. See stashFile().
 	 *
+	 * @deprecated since 1.28
 	 * @return string File key
 	 */
 	public function stashFileGetKey() {
-		return $this->stashFile()->getFileKey();
+		wfDeprecated( __METHOD__, '1.28' );
+		return $this->doStashFile()->getFileKey();
 	}
 
 	/**
 	 * alias for stashFileGetKey, for backwards compatibility
 	 *
+	 * @deprecated since 1.28
 	 * @return string File key
 	 */
 	public function stashSession() {
-		return $this->stashFileGetKey();
+		wfDeprecated( __METHOD__, '1.28' );
+		return $this->doStashFile()->getFileKey();
 	}
 
 	/**
@@ -1127,7 +1210,7 @@ abstract class UploadBase {
 		}
 
 		// Some browsers will interpret obscure xml encodings as UTF-8, while
-		// PHP/expat will interpret the given encoding in the xml declaration (bug 47304)
+		// PHP/expat will interpret the given encoding in the xml declaration (T49304)
 		if ( $extension == 'svg' || strpos( $mime, 'image/svg' ) === 0 ) {
 			if ( self::checkXMLEncodingMissmatch( $file ) ) {
 				return true;
@@ -1282,8 +1365,8 @@ abstract class UploadBase {
 			]
 		);
 		if ( $check->wellFormed !== true ) {
-			// Invalid xml (bug 58553)
-			// But only when non-partial (bug 65724)
+			// Invalid xml (T60553)
+			// But only when non-partial (T67724)
 			return $partial ? false : [ 'uploadinvalidxml' ];
 		} elseif ( $check->filterMatch ) {
 			if ( $this->mSVGNSError ) {
@@ -1303,7 +1386,7 @@ abstract class UploadBase {
 	 * @return bool (true if the filter identified something bad)
 	 */
 	public static function checkSvgPICallback( $target, $data ) {
-		// Don't allow external stylesheets (bug 57550)
+		// Don't allow external stylesheets (T59550)
 		if ( preg_match( '/xml-stylesheet/i', $target ) ) {
 			return [ 'upload-scripted-pi-callback' ];
 		}
@@ -1352,7 +1435,7 @@ abstract class UploadBase {
 		list( $namespace, $strippedElement ) = $this->splitXmlNamespace( $element );
 
 		// We specifically don't include:
-		// http://www.w3.org/1999/xhtml (bug 60771)
+		// http://www.w3.org/1999/xhtml (T62771)
 		static $validNamespaces = [
 			'',
 			'adobe:ns:meta/',
@@ -1391,9 +1474,14 @@ abstract class UploadBase {
 			'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
 			'http://www.w3.org/2000/svg',
 			'http://www.w3.org/tr/rec-rdf-syntax/',
+			'http://www.w3.org/2000/01/rdf-schema#',
 		];
 
-		if ( !in_array( $namespace, $validNamespaces ) ) {
+		// Inkscape mangles namespace definitions created by Adobe Illustrator.
+		// This is nasty but harmless. (T144827)
+		$isBuggyInkscape = preg_match( '/^&(#38;)*ns_[a-z_]+;$/', $namespace );
+
+		if ( !( $isBuggyInkscape || in_array( $namespace, $validNamespaces ) ) ) {
 			wfDebug( __METHOD__ . ": Non-svg namespace '$namespace' in uploaded file.\n" );
 			/** @todo Return a status object to a closure in XmlTypeCheck, for MW1.21+ */
 			$this->mSVGNSError = $namespace;
@@ -1451,8 +1539,12 @@ abstract class UploadBase {
 				return [ 'uploaded-event-handler-on-svg', $attrib, $value ];
 			}
 
-			# href with non-local target (don't allow http://, javascript:, etc)
+			# Do not allow relative links, or unsafe url schemas.
+			# For <a> tags, only data:, http: and https: and same-document
+			# fragment links are allowed. For all other tags, only data:
+			# and fragment are allowed.
 			if ( $stripped == 'href'
+				&& $value !== ''
 				&& strpos( $value, 'data:' ) !== 0
 				&& strpos( $value, '#' ) !== 0
 			) {
@@ -1624,7 +1716,7 @@ abstract class UploadBase {
 	 * @return array Containing the namespace URI and prefix
 	 */
 	private static function splitXmlNamespace( $element ) {
-		// 'http://www.w3.org/2000/svg:script' -> array( 'http://www.w3.org/2000/svg', 'script' )
+		// 'http://www.w3.org/2000/svg:script' -> [ 'http://www.w3.org/2000/svg', 'script' ]
 		$parts = explode( ':', strtolower( $element ) );
 		$name = array_pop( $parts );
 		$ns = implode( ':', $parts );
@@ -1947,18 +2039,16 @@ abstract class UploadBase {
 	 * @return array Image info
 	 */
 	public function getImageInfo( $result ) {
-		$file = $this->getLocalFile();
-		/** @todo This cries out for refactoring.
-		 *  We really want to say $file->getAllInfo(); here.
-		 * Perhaps "info" methods should be moved into files, and the API should
-		 * just wrap them in queries.
-		 */
-		if ( $file instanceof UploadStashFile ) {
+		$localFile = $this->getLocalFile();
+		$stashFile = $this->getStashFile();
+		// Calling a different API module depending on whether the file was stashed is less than optimal.
+		// In fact, calling API modules here at all is less than optimal. Maybe it should be refactored.
+		if ( $stashFile ) {
 			$imParam = ApiQueryStashImageInfo::getPropertyNames();
-			$info = ApiQueryStashImageInfo::getInfo( $file, array_flip( $imParam ), $result );
+			$info = ApiQueryStashImageInfo::getInfo( $stashFile, array_flip( $imParam ), $result );
 		} else {
 			$imParam = ApiQueryImageInfo::getPropertyNames();
-			$info = ApiQueryImageInfo::getInfo( $file, array_flip( $imParam ), $result );
+			$info = ApiQueryImageInfo::getInfo( $localFile, array_flip( $imParam ), $result );
 		}
 
 		return $info;
@@ -2027,7 +2117,7 @@ abstract class UploadBase {
 	public static function getSessionStatus( User $user, $statusKey ) {
 		$key = wfMemcKey( 'uploadstatus', $user->getId() ?: md5( $user->getName() ), $statusKey );
 
-		return ObjectCache::getMainStashInstance()->get( $key );
+		return MediaWikiServices::getInstance()->getMainObjectStash()->get( $key );
 	}
 
 	/**
@@ -2043,7 +2133,7 @@ abstract class UploadBase {
 	public static function setSessionStatus( User $user, $statusKey, $value ) {
 		$key = wfMemcKey( 'uploadstatus', $user->getId() ?: md5( $user->getName() ), $statusKey );
 
-		$cache = ObjectCache::getMainStashInstance();
+		$cache = MediaWikiServices::getInstance()->getMainObjectStash();
 		if ( $value === false ) {
 			$cache->delete( $key );
 		} else {

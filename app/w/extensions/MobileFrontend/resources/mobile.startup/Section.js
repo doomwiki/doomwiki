@@ -1,12 +1,15 @@
-( function ( M, $ ) {
+( function ( M ) {
 
-	var View = M.require( 'mobile.view/View' ),
+	var View = M.require( 'mobile.startup/View' ),
 		icons = M.require( 'mobile.startup/icons' );
 
 	/**
 	 * Builds a section of a page
 	 * @class Section
 	 * @extends View
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function Section( options ) {
 		var self = this;
@@ -17,8 +20,8 @@
 		this.id = options.id || null;
 		this.anchor = options.anchor;
 		this.children = [];
-		$.each( options.children || [], function () {
-			self.children.push( new Section( this ) );
+		( options.children || [] ).forEach( function ( section ) {
+			self.children.push( new Section( section ) );
 		} );
 		View.call( this, options );
 	}
@@ -27,8 +30,8 @@
 		template: mw.template.get( 'mobile.startup', 'Section.hogan' ),
 		/**
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.text Section text.
-		 * @cfg {String} defaults.spinner HTML of the spinner icon.
+		 * @cfg {string} defaults.text Section text.
+		 * @cfg {string} defaults.spinner HTML of the spinner icon.
 		 */
 		defaults: {
 			line: undefined,
@@ -38,4 +41,4 @@
 	} );
 	M.define( 'mobile.startup/Section', Section );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

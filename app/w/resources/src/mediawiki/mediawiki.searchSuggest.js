@@ -4,12 +4,12 @@
 ( function ( mw, $ ) {
 	mw.searchSuggest = {
 		// queries the wiki and calls response with the result
-		request: function ( api, query, response, maxRows ) {
+		request: function ( api, query, response, maxRows, namespace ) {
 			return api.get( {
 				formatversion: 2,
 				action: 'opensearch',
 				search: query,
-				namespace: 0,
+				namespace: namespace || 0,
 				limit: maxRows,
 				suggest: true
 			} ).done( function ( data, jqXHR ) {
@@ -22,7 +22,7 @@
 	};
 
 	$( function () {
-		var api, map, searchboxesSelectors,
+		var api, searchboxesSelectors,
 			// Region where the suggestions box will appear directly below
 			// (using the same width). Can be a container element or the input
 			// itself, depending on what suits best in the environment.
@@ -33,23 +33,6 @@
 			$searchRegion = $( '#simpleSearch, #searchInput' ).first(),
 			$searchInput = $( '#searchInput' ),
 			previousSearchText = $searchInput.val();
-
-		// Compatibility map
-		map = {
-			// SimpleSearch is broken in Opera < 9.6
-			opera: [ [ '>=', 9.6 ] ],
-			// Older Konquerors are unable to position the suggestions correctly (bug 50805)
-			konqueror: [ [ '>=', '4.11' ] ],
-			docomo: false,
-			blackberry: false,
-			// Support for iOS 6 or higher. It has not been tested on iOS 5 or lower
-			ipod: [ [ '>=', 6 ] ],
-			iphone: [ [ '>=', 6 ] ]
-		};
-
-		if ( !$.client.test( map ) ) {
-			return;
-		}
 
 		// Compute form data for search suggestions functionality.
 		function getFormData( context ) {
@@ -92,13 +75,15 @@
 		}
 
 		/**
-		 * defines the location of autocomplete. Typically either
+		 * Defines the location of autocomplete. Typically either
 		 * header, which is in the top right of vector (for example)
 		 * and content which identifies the main search bar on
-		 * Special:Search.  Defaults to header for skins that don't set
+		 * Special:Search. Defaults to header for skins that don't set
 		 * explicitly.
 		 *
 		 * @ignore
+		 * @param {Object} context
+		 * @return {string}
 		 */
 		function getInputLocation( context ) {
 			return context.config.$region
@@ -112,6 +97,7 @@
 		 * 'this' is the search input box (jQuery object)
 		 *
 		 * @ignore
+		 * @param {Object} metadata
 		 */
 		function onAfterUpdate( metadata ) {
 			var context = this.data( 'suggestionsContext' );
@@ -138,7 +124,7 @@
 			mw.track( 'mediawiki.searchSuggest', {
 				action: 'render-one',
 				formData: formData,
-				index: context.config.suggestions.indexOf( text ) + 1
+				index: context.config.suggestions.indexOf( text )
 			} );
 
 			// this is the container <div>, jQueryfied
@@ -156,15 +142,19 @@
 		}
 
 		// The function used when the user makes a selection
-		function selectFunction( $input ) {
+		function selectFunction( $input, source ) {
 			var context = $input.data( 'suggestionsContext' ),
 				text = $input.val();
 
-			mw.track( 'mediawiki.searchSuggest', {
-				action: 'click-result',
-				numberOfResults: context.config.suggestions.length,
-				clickIndex: context.config.suggestions.indexOf( text ) + 1
-			} );
+			// Selecting via keyboard triggers a form submission. That will fire
+			// the submit-form event in addition to this click-result event.
+			if ( source !== 'keyboard' ) {
+				mw.track( 'mediawiki.searchSuggest', {
+					action: 'click-result',
+					numberOfResults: context.config.suggestions.length,
+					index: context.config.suggestions.indexOf( text )
+				} );
+			}
 
 			// allow the form to be submitted
 			return true;
@@ -176,6 +166,12 @@
 
 			// linkParams object is modified and reused
 			formData.linkParams[ formData.textParam ] = query;
+
+			mw.track( 'mediawiki.searchSuggest', {
+				action: 'render-one',
+				formData: formData,
+				index: context.config.suggestions.indexOf( query )
+			} );
 
 			if ( $el.children().length === 0 ) {
 				$el
@@ -244,7 +240,7 @@
 				cache: true,
 				highlightInput: true
 			} )
-			.bind( 'paste cut drop', function () {
+			.on( 'paste cut drop', function () {
 				// make sure paste and cut events from the mouse and drag&drop events
 				// trigger the keypress handler and cause the suggestions to update
 				$( this ).trigger( 'keypress' );
@@ -280,9 +276,20 @@
 			},
 			special: {
 				render: specialRenderFunction,
-				select: function ( $input ) {
-					$input.closest( 'form' )
-						.append( $( '<input type="hidden" name="fulltext" value="1"/>' ) );
+				select: function ( $input, source ) {
+					var context = $input.data( 'suggestionsContext' ),
+						text = $input.val();
+					if ( source === 'mouse' ) {
+						// mouse click won't trigger form submission, so we need to send a click event
+						mw.track( 'mediawiki.searchSuggest', {
+							action: 'click-result',
+							numberOfResults: context.config.suggestions.length,
+							index: context.config.suggestions.indexOf( text )
+						} );
+					} else {
+						$input.closest( 'form' )
+							.append( $( '<input type="hidden" name="fulltext" value="1"/>' ) );
+					}
 					return true; // allow the form to be submitted
 				}
 			},
@@ -297,7 +304,10 @@
 					action: 'submit-form',
 					numberOfResults: context.config.suggestions.length,
 					$form: context.config.$region.closest( 'form' ),
-					inputLocation: getInputLocation( context )
+					inputLocation: getInputLocation( context ),
+					index: context.config.suggestions.indexOf(
+						context.data.$textbox.val()
+					)
 				} );
 			} )
 			// If the form includes any fallback fulltext search buttons, remove them

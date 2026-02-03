@@ -81,7 +81,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 	 */
 	public function testReaderGetPrimaryKey( $message, array $expected, array $row ) {
 		$reader = new BatchRowIterator( $this->mockDb(), 'some_table', array_keys( $expected ), 8675309 );
-		$this->assertEquals( $expected, $reader->extractPrimaryKeys( (object) $row ), $message );
+		$this->assertEquals( $expected, $reader->extractPrimaryKeys( (object)$row ), $message );
 	}
 
 	public static function provider_readerSetFetchColumns() {
@@ -129,7 +129,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 		$db = $this->mockDb();
 		$db->expects( $this->once() )
 			->method( 'select' )
-			// only testing second parameter of DatabaseBase::select
+			// only testing second parameter of Database::select
 			->with( 'some_table', $columns )
 			->will( $this->returnValue( new ArrayIterator( [] ) ) );
 
@@ -164,7 +164,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 
 	/**
 	 * Slightly hackish to use reflection, but asserting different parameters
-	 * to consecutive calls of DatabaseBase::select in phpunit is error prone
+	 * to consecutive calls of Database::select in phpunit is error prone
 	 *
 	 * @dataProvider provider_readerSelectConditions
 	 */
@@ -214,7 +214,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 	protected function consecutivelyReturnFromSelect( array $results ) {
 		$retvals = [];
 		foreach ( $results as $rows ) {
-			// The DatabaseBase::select method returns iterators, so we do too.
+			// The Database::select method returns iterators, so we do too.
 			$retvals[] = $this->returnValue( new ArrayIterator( $rows ) );
 		}
 
@@ -226,7 +226,7 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 		for ( $i = 0; $i < $numRows; $i += $batchSize ) {
 			$rows = [];
 			for ( $j = 0; $j < $batchSize && $i + $j < $numRows; $j++ ) {
-				$rows [] = (object) call_user_func( $rowGenerator );
+				$rows [] = (object)call_user_func( $rowGenerator );
 			}
 			$res[] = $rows;
 		}
@@ -235,10 +235,9 @@ class BatchRowUpdateTest extends MediaWikiTestCase {
 	}
 
 	protected function mockDb() {
-		// Cant mock from DatabaseType or DatabaseBase, they dont
-		// have the full gamut of methods
+		// @TODO: mock from Database
 		// FIXME: the constructor normally sets mAtomicLevels and mSrvCache
-		$databaseMysql = $this->getMockBuilder( 'DatabaseMysql' )
+		$databaseMysql = $this->getMockBuilder( 'DatabaseMysqli' )
 			->disableOriginalConstructor()
 			->getMock();
 		$databaseMysql->expects( $this->any() )

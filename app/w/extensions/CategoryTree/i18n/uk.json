@@ -5,14 +5,15 @@
 			"Ahonc",
 			"Base",
 			"Sodmy",
-			"Piramidion"
+			"Piramidion",
+			"Ата"
 		]
 	},
 	"categorytree": "Дерево категорій",
 	"categorytree-portlet": "Категорії",
 	"categorytree-legend": "Показати дерево категорій",
 	"categorytree-desc": "AJAX-компонент для відображення [[Special:CategoryTree|структури категорій]] вікі",
-	"categorytree-header": "Уведіть назву категорії, і вона буде показана у вигляді дерева.\nЦя можливість доступна, тільки якщо Ваш браузер підтримує AJAX.\nЯкщо у Вас стара версія браузера або відключений JavaScript, відображення підкатегорій у вигляді дерева не працюватиме.",
+	"categorytree-header": "Уведіть назву категорії, і вона буде показана у вигляді дерева. (Вимагає JavaScript).",
 	"categorytree-category": "Категорія:",
 	"categorytree-go": "Показати дерево",
 	"categorytree-parents": "Батьківські категорії",
@@ -38,5 +39,6 @@
 	"categorytree-retry": "Будь ласка, зачекайте і спробуйте ще раз.",
 	"apihelp-categorytree-description": "Внутрішній модуль для розширення CategoryTree.",
 	"apihelp-categorytree-param-category": "Назва в просторі назв категорій. Якщо буде вказаний префікс, він буде проігнорований.",
-	"apihelp-categorytree-param-options": "Опції для конструктора CategoryTree як об'єкта JSON. Параметр глибини (depth) за замовчуванням встановлений як 1."
+	"apihelp-categorytree-param-options": "Опції для конструктора CategoryTree як об'єкта JSON. Параметр глибини (<var>depth</var>) за замовчуванням встановлений як <kbd>1</kbd>.",
+	"apierror-categorytree-invalidjson": "Опції мають бути коректним JSON-об'єктом."
 }

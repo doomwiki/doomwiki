@@ -6,7 +6,8 @@
 			"Papuass",
 			"Nemo bis",
 			"Edgars2007",
-			"Matma Rex"
+			"Matma Rex",
+			"Silraks"
 		]
 	},
 	"abusefilter-desc": "Pielieto automātiskas heiristikas labojumiem",
@@ -44,7 +45,7 @@
 	"abusefilter-log": "Ļaunprātīgās izmantošanas filtru reģistrs",
 	"abusefilter-log-summary": "Šis reģistrs satur sarakstu ar visām filtru konstatētajām darbībām.",
 	"abusefilter-log-search": "Meklēt ļaunprātīgo izmantošanu reģistrā",
-	"abusefilter-log-search-user": "Lietotājs:",
+	"abusefilter-log-search-user": "Dalībnieks:",
 	"abusefilter-log-search-filter": "Filtru ID (jāatdala ar vertikālu svītru):",
 	"abusefilter-log-search-title": "Nosaukums:",
 	"abusefilter-log-search-submit": "Meklēt",
@@ -140,7 +141,7 @@
 	"abusefilter-edit-lastmod": "Pēdējoreiz filtrs izmainīts:",
 	"abusefilter-edit-lastmod-text": "$1 — $2",
 	"abusefilter-edit-hitcount": "Filtra trāpījumu skaits:",
-	"abusefilter-edit-consequences": "Atbilstības gadījumā veiktās darbības",
+	"abusefilter-edit-consequences": "Atbilstības gadījumā veicamās darbības",
 	"abusefilter-edit-action-warn": "Veikt šīs darbības pēc lietotāja brīdināšanas",
 	"abusefilter-edit-action-disallow": "Liegt lietotājam veikt attiecīgās darbības",
 	"abusefilter-edit-action-flag": "Atzīmēt labojumu ļaunprātīgo izmaiņu reģistrā",
@@ -276,7 +277,7 @@
 	"abusefilter-history-enabled": "Atļauts",
 	"abusefilter-history-global": "Globāls",
 	"abusefilter-history-timestamp": "Laiks",
-	"abusefilter-history-user": "Lietotājs",
+	"abusefilter-history-user": "Dalībnieks",
 	"abusefilter-history-public": "Publisks filtra apraksts",
 	"abusefilter-history-flags": "Iezīmes",
 	"abusefilter-history-filter": "Filtra nosacījumi",
@@ -338,7 +339,7 @@
 	"abusefilter-examine": "Izmeklēt personiskās izmaiņas",
 	"abusefilter-examine-legend": "Izvēlēties izmaiņas",
 	"abusefilter-examine-diff": "Atšķirību URL:",
-	"abusefilter-examine-user": "Lietotājs:",
+	"abusefilter-examine-user": "Dalībnieks:",
 	"abusefilter-examine-title": "Lapas nosaukums:",
 	"abusefilter-examine-submit": "Meklēt",
 	"abusefilter-examine-test": "Pārbaudīt šo izmaiņu pret filtru",
@@ -358,5 +359,6 @@
 	"abusefilter-diff-backhistory": "Atpakaļ uz filtra vēsturi",
 	"abusefilter-diff-prev": "Vecāka izmaiņa",
 	"abusefilter-diff-next": "Jaunāka izmaiņa",
-	"abusefilter-import-submit": "Importēt datus"
+	"abusefilter-import-submit": "Importēt datus",
+	"abusefilter-group-default": "Noklusējuma"
 }

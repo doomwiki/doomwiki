@@ -10,23 +10,14 @@
  * @license GNU General Public Licence 2.0 or later
  */
 
-if ( !defined( 'MEDIAWIKI' ) ) {
-	echo( "This file is part of an extension to the MediaWiki software and cannot be used standalone.\n" );
-	die( 1 );
-}
-
 class CategoryTree {
-	public $mIsAjaxRequest = false;
-	public $mOptions = array();
+	public $mOptions = [];
 
 	/**
 	 * @param $options array
-	 * @param $ajax bool
 	 */
-	function __construct( $options, $ajax = false ) {
+	function __construct( $options ) {
 		global $wgCategoryTreeDefaultOptions;
-
-		$this->mIsAjaxRequest = $ajax;
 
 		# ensure default values and order of options. Order may become important, it may influence the cache key!
 		foreach ( $wgCategoryTreeDefaultOptions as $option => $default ) {
@@ -39,23 +30,23 @@ class CategoryTree {
 
 		$this->mOptions['mode'] = self::decodeMode( $this->mOptions['mode'] );
 
-		if ( $this->mOptions['mode'] == CT_MODE_PARENTS ) {
-			 $this->mOptions['namespaces'] = false; # namespace filter makes no sense with CT_MODE_PARENTS
+		if ( $this->mOptions['mode'] == CategoryTreeMode::PARENTS ) {
+			$this->mOptions['namespaces'] = false; # namespace filter makes no sense with CategoryTreeMode::PARENTS
 		}
 
 		$this->mOptions['hideprefix'] = self::decodeHidePrefix( $this->mOptions['hideprefix'] );
-		$this->mOptions['showcount']  = self::decodeBoolean( $this->mOptions['showcount'] );
-		$this->mOptions['namespaces']  = self::decodeNamespaces( $this->mOptions['namespaces'] );
+		$this->mOptions['showcount'] = self::decodeBoolean( $this->mOptions['showcount'] );
+		$this->mOptions['namespaces'] = self::decodeNamespaces( $this->mOptions['namespaces'] );
 
 		if ( $this->mOptions['namespaces'] ) {
 			# automatically adjust mode to match namespace filter
 			if ( sizeof( $this->mOptions['namespaces'] ) === 1
 				&& $this->mOptions['namespaces'][0] == NS_CATEGORY ) {
-				$this->mOptions['mode'] = CT_MODE_CATEGORIES;
-			} elseif ( !in_array( NS_IMAGE, $this->mOptions['namespaces'] ) ) {
-				$this->mOptions['mode'] = CT_MODE_PAGES;
+				$this->mOptions['mode'] = CategoryTreeMode::CATEGORIES;
+			} elseif ( !in_array( NS_FILE, $this->mOptions['namespaces'] ) ) {
+				$this->mOptions['mode'] = CategoryTreeMode::PAGES;
 			} else {
-				$this->mOptions['mode'] = CT_MODE_ALL;
+				$this->mOptions['mode'] = CategoryTreeMode::ALL;
 			}
 		}
 	}
@@ -72,7 +63,7 @@ class CategoryTree {
 	 * @return bool
 	 */
 	function isInverse( ) {
-		return $this->getOption( 'mode' ) == CT_MODE_PARENTS;
+		return $this->getOption( 'mode' ) == CategoryTreeMode::PARENTS;
 	}
 
 	/**
@@ -90,7 +81,7 @@ class CategoryTree {
 			$nn = preg_split( '![\s#:|]+!', $nn );
 		}
 
-		$namespaces = array();
+		$namespaces = [];
 
 		foreach ( $nn as $n ) {
 			if ( is_int( $n ) ) {
@@ -142,13 +133,13 @@ class CategoryTree {
 		}
 
 		if ( $mode == 'all' ) {
-			$mode = CT_MODE_ALL;
+			$mode = CategoryTreeMode::ALL;
 		} elseif ( $mode == 'pages' ) {
-			$mode = CT_MODE_PAGES;
+			$mode = CategoryTreeMode::PAGES;
 		} elseif ( $mode == 'categories' || $mode == 'sub' ) {
-			$mode = CT_MODE_CATEGORIES;
+			$mode = CategoryTreeMode::CATEGORIES;
 		} elseif ( $mode == 'parents' || $mode == 'super' || $mode == 'inverse' ) {
-			$mode = CT_MODE_PARENTS;
+			$mode = CategoryTreeMode::PARENTS;
 		} elseif ( $mode == 'default' ) {
 			$mode = $wgCategoryTreeDefaultOptions['mode'];
 		}
@@ -203,26 +194,26 @@ class CategoryTree {
 			return $value;
 		}
 		if ( $value === true ) {
-			return CT_HIDEPREFIX_ALWAYS;
+			return CategoryTreeHidePrefix::ALWAYS;
 		}
 		if ( $value === false ) {
-			return CT_HIDEPREFIX_NEVER;
+			return CategoryTreeHidePrefix::NEVER;
 		}
 
 		$value = trim( strtolower( $value ) );
 
 		if ( $value == 'yes' || $value == 'y' || $value == 'true' || $value == 't' || $value == 'on' ) {
-			return CT_HIDEPREFIX_ALWAYS;
+			return CategoryTreeHidePrefix::ALWAYS;
 		} elseif ( $value == 'no' || $value == 'n' || $value == 'false' || $value == 'f' || $value == 'off' ) {
-			return CT_HIDEPREFIX_NEVER;
+			return CategoryTreeHidePrefix::NEVER;
 		} elseif ( $value == 'always' ) {
-			return CT_HIDEPREFIX_ALWAYS;
+			return CategoryTreeHidePrefix::ALWAYS;
 		} elseif ( $value == 'never' ) {
-			return CT_HIDEPREFIX_NEVER;
+			return CategoryTreeHidePrefix::NEVER;
 		} elseif ( $value == 'auto' ) {
-			return CT_HIDEPREFIX_AUTO;
+			return CategoryTreeHidePrefix::AUTO;
 		} elseif ( $value == 'categories' || $value == 'category' || $value == 'smart' ) {
-			return CT_HIDEPREFIX_CATEGORIES;
+			return CategoryTreeHidePrefix::CATEGORIES;
 		} else {
 			return $wgCategoryTreeDefaultOptions['hideprefix'];
 		}
@@ -298,7 +289,7 @@ class CategoryTree {
 	}
 
 	/**
-	 * Custom tag implementation. This is called by efCategoryTreeParserHook, which is used to
+	 * Custom tag implementation. This is called by CategoryTreeHooks::parserHook, which is used to
 	 * load CategoryTreeFunctions.php on demand.
 	 * @param $parser Parser
 	 * @param $category
@@ -343,7 +334,7 @@ class CategoryTree {
 		$html .= Html::openElement( 'div', $attr );
 
 		if ( !$allowMissing && !$title->getArticleID() ) {
-			$html .= Html::openElement( 'span', array( 'class' => 'CategoryTreeNotice' ) );
+			$html .= Html::openElement( 'span', [ 'class' => 'CategoryTreeNotice' ] );
 			if ( $parser ) {
 				$html .= $parser->recursiveTagParse( wfMessage( 'categorytree-not-found', $category )->plain() );
 			} else {
@@ -385,19 +376,19 @@ class CategoryTree {
 		$mode = $this->getOption( 'mode' );
 		$namespaces = $this->getOption( 'namespaces' );
 
-		$tables = array( 'page', 'categorylinks' );
-		$fields = array( 'page_id', 'page_namespace', 'page_title',
+		$tables = [ 'page', 'categorylinks' ];
+		$fields = [ 'page_id', 'page_namespace', 'page_title',
 			'page_is_redirect', 'page_len', 'page_latest', 'cl_to',
-			'cl_from' );
-		$where = array();
-		$joins = array();
-		$options = array( 'ORDER BY' => 'cl_type, cl_sortkey', 'LIMIT' => $wgCategoryTreeMaxChildren );
+			'cl_from' ];
+		$where = [];
+		$joins = [];
+		$options = [ 'ORDER BY' => 'cl_type, cl_sortkey', 'LIMIT' => $wgCategoryTreeMaxChildren ];
 
 		if ( $inverse ) {
-			$joins['categorylinks'] = array( 'RIGHT JOIN', array( 'cl_to = page_title', 'page_namespace' => NS_CATEGORY ) );
+			$joins['categorylinks'] = [ 'RIGHT JOIN', [ 'cl_to = page_title', 'page_namespace' => NS_CATEGORY ] ];
 			$where['cl_from'] = $title->getArticleID();
 		} else {
-			$joins['categorylinks'] = array( 'JOIN', 'cl_from = page_id' );
+			$joins['categorylinks'] = [ 'JOIN', 'cl_from = page_id' ];
 			$where['cl_to'] = $title->getDBkey();
 			$options['USE INDEX']['categorylinks'] = 'cl_sortkey';
 
@@ -405,9 +396,9 @@ class CategoryTree {
 			if ( $namespaces ) {
 				# NOTE: we assume that the $namespaces array contains only integers! decodeNamepsaces makes it so.
 				$where['page_namespace'] = $namespaces;
-			} elseif ( $mode != CT_MODE_ALL ) {
-				if ( $mode == CT_MODE_PAGES ) {
-					$where['cl_type'] = array( 'page', 'subcat' );
+			} elseif ( $mode != CategoryTreeMode::ALL ) {
+				if ( $mode == CategoryTreeMode::PAGES ) {
+					$where['cl_type'] = [ 'page', 'subcat' ];
 				} else {
 					$where['cl_type'] = 'subcat';
 				}
@@ -418,9 +409,9 @@ class CategoryTree {
 		$doCount = !$inverse && $wgCategoryTreeUseCategoryTable;
 
 		if ( $doCount ) {
-			$tables = array_merge( $tables, array( 'category' ) );
-			$fields = array_merge( $fields, array( 'cat_id', 'cat_title', 'cat_subcats', 'cat_pages', 'cat_files' ) );
-			$joins['category'] = array( 'LEFT JOIN', array( 'cat_title = page_title', 'page_namespace' => NS_CATEGORY ) );
+			$tables = array_merge( $tables, [ 'category' ] );
+			$fields = array_merge( $fields, [ 'cat_id', 'cat_title', 'cat_subcats', 'cat_pages', 'cat_files' ] );
+			$joins['category'] = [ 'LEFT JOIN', [ 'cat_title = page_title', 'page_namespace' => NS_CATEGORY ] ];
 		}
 
 		$res = $dbr->select( $tables, $fields, $where, __METHOD__, $options, $joins );
@@ -470,16 +461,16 @@ class CategoryTree {
 
 		$res = $dbr->select(
 			'categorylinks',
-			array(
+			[
 				'page_namespace' => NS_CATEGORY,
 				'page_title' => 'cl_to',
-			),
-			array( 'cl_from' => $title->getArticleID() ),
+			],
+			[ 'cl_from' => $title->getArticleID() ],
 			__METHOD__,
-			array(
+			[
 				'LIMIT' => $wgCategoryTreeMaxChildren,
 				'ORDER BY' => 'cl_to'
-			)
+			]
 		);
 
 		$special = SpecialPage::getTitleFor( 'CategoryTree' );
@@ -487,16 +478,9 @@ class CategoryTree {
 		$s = '';
 
 		foreach ( $res as $row ) {
-			# TODO: translation support; ideally added to Title object
 			$t = Title::newFromRow( $row );
 
-			# $trans = $title->getLocalizedText();
-			$trans = ''; # place holder for when translated titles are available
-
 			$label = htmlspecialchars( $t->getText() );
-			if ( $trans && $trans != $label ) {
-				$label .= ' ' . Xml::element( 'i', array( 'class' => 'translation' ), $trans );
-			}
 
 			$wikiLink = $special->getLocalURL( 'target=' . $t->getPartialURL() .
 				'&' . $this->getOptionsAsUrlParameters() );
@@ -505,8 +489,8 @@ class CategoryTree {
 				$s .= wfMessage( 'pipe-separator' )->escaped();
 			}
 
-			$s .= Xml::openElement( 'span', array( 'class' => 'CategoryTreeItem' ) );
-			$s .= Xml::openElement( 'a', array( 'class' => 'CategoryTreeLabel', 'href' => $wikiLink ) )
+			$s .= Xml::openElement( 'span', [ 'class' => 'CategoryTreeItem' ] );
+			$s .= Xml::openElement( 'a', [ 'class' => 'CategoryTreeLabel', 'href' => $wikiLink ] )
 				. $label . Xml::closeElement( 'a' );
 			$s .= Xml::closeElement( 'span' );
 
@@ -548,16 +532,13 @@ class CategoryTree {
 		$ns = $title->getNamespace();
 		$key = $title->getDBkey();
 
-		# $trans = $title->getLocalizedText();
-		$trans = ''; # place holder for when translated titles are available
-
 		$hideprefix = $this->getOption( 'hideprefix' );
 
-		if ( $hideprefix == CT_HIDEPREFIX_ALWAYS ) {
+		if ( $hideprefix == CategoryTreeHidePrefix::ALWAYS ) {
 			$hideprefix = true;
-		} elseif ( $hideprefix == CT_HIDEPREFIX_AUTO ) {
-			$hideprefix = ( $mode == CT_MODE_CATEGORIES );
-		} elseif ( $hideprefix == CT_HIDEPREFIX_CATEGORIES ) {
+		} elseif ( $hideprefix == CategoryTreeHidePrefix::AUTO ) {
+			$hideprefix = ( $mode == CategoryTreeMode::CATEGORIES );
+		} elseif ( $hideprefix == CategoryTreeHidePrefix::CATEGORIES ) {
 			$hideprefix = ( $ns == NS_CATEGORY );
 		} else {
 			$hideprefix = true;
@@ -569,10 +550,6 @@ class CategoryTree {
 			$label = htmlspecialchars( $title->getText() );
 		} else {
 			$label = htmlspecialchars( $title->getPrefixedText() );
-		}
-
-		if ( $trans && $trans != $label ) {
-			$label .= ' ' . Xml::element( 'i', array( 'class' => 'translation' ), $trans );
 		}
 
 		$labelClass = 'CategoryTreeLabel ' . ' CategoryTreeLabelNs' . $ns;
@@ -601,34 +578,26 @@ class CategoryTree {
 		#      Specifically, the CategoryTreeChildren div must be the first
 		#      sibling with nodeName = DIV of the grandparent of the expland link.
 
-		$s .= Xml::openElement( 'div', array( 'class' => 'CategoryTreeSection' ) );
-		$s .= Xml::openElement( 'div', array( 'class' => 'CategoryTreeItem' ) );
+		$s .= Xml::openElement( 'div', [ 'class' => 'CategoryTreeSection' ] );
+		$s .= Xml::openElement( 'div', [ 'class' => 'CategoryTreeItem' ] );
 
-		$attr = array( 'class' => 'CategoryTreeBullet' );
-
-		# Get counts, with conversion to integer so === works
-		# Note: $allCount is the total number of cat members,
-		# not the count of how many members are normal pages.
-		$allCount = $cat ? intval( $cat->getPageCount() ) : 0;
-		$subcatCount = $cat ? intval( $cat->getSubcatCount() ) : 0;
-		$fileCount = $cat ? intval( $cat->getFileCount() ) : 0;
+		$attr = [ 'class' => 'CategoryTreeBullet' ];
 
 		if ( $ns == NS_CATEGORY ) {
-
 			if ( $cat ) {
-				if ( $mode == CT_MODE_CATEGORIES ) {
-					$count = $subcatCount;
-				} elseif ( $mode == CT_MODE_PAGES ) {
-					$count = $allCount - $fileCount;
+				if ( $mode == CategoryTreeMode::CATEGORIES ) {
+					$count = intval( $cat->getSubcatCount() );
+				} elseif ( $mode == CategoryTreeMode::PAGES ) {
+					$count = intval( $cat->getPageCount() ) - intval( $cat->getFileCount() );
 				} else {
-					$count = $allCount;
+					$count = intval( $cat->getPageCount() );
 				}
 			}
 			if ( $count === 0 ) {
 				$bullet = wfMessage( 'categorytree-empty-bullet' )->plain() . ' ';
 				$attr['class'] = 'CategoryTreeEmptyBullet';
 			} else {
-				$linkattr = array( );
+				$linkattr = [];
 
 				$linkattr[ 'class' ] = "CategoryTreeToggle";
 				$linkattr['style'] = 'display: none;'; // Unhidden by JS
@@ -653,69 +622,32 @@ class CategoryTree {
 		}
 		$s .= Xml::tags( 'span', $attr, $bullet ) . ' ';
 
-		$s .= Xml::openElement( 'a', array( 'class' => $labelClass, 'href' => $wikiLink ) )
+		$s .= Xml::openElement( 'a', [ 'class' => $labelClass, 'href' => $wikiLink ] )
 			. $label . Xml::closeElement( 'a' );
 
 		if ( $count !== false && $this->getOption( 'showcount' ) ) {
-			$pages = $allCount - $subcatCount - $fileCount;
-
-			global $wgContLang, $wgLang;
-			$attr = array(
-				'title' => wfMessage( 'categorytree-member-counts' )
-					->numParams( $subcatCount, $pages , $fileCount, $allCount, $count )->text(),
-				'dir' => $wgLang->getDir() # numbers and commas get messed up in a mixed dir env
-			);
-
-			$s .= $wgContLang->getDirMark() . ' ';
-
-			# Create a list of category members with only non-zero member counts
-			$memberNums = array();
-			if ( $subcatCount ) {
-				$memberNums[] = wfMessage( 'categorytree-num-categories' )
-					->numParams( $subcatCount )->text();
-			}
-			if ( $pages ) {
-				$memberNums[] = wfMessage( 'categorytree-num-pages' )->numParams( $pages )->text();
-			}
-			if ( $fileCount ) {
-				$memberNums[] = wfMessage( 'categorytree-num-files' )
-					->numParams( $fileCount )->text();
-			}
-			$memberNumsShort = $memberNums
-				? $wgLang->commaList( $memberNums )
-				: wfMessage( 'categorytree-num-empty' )->text();
-
-			# Only $5 is actually used in the default message.
-			# Other arguments can be used in a customized message.
-			$s .= Xml::tags(
-				'span',
-				$attr,
-				wfMessage( 'categorytree-member-num' )
-					// Do not use numParams on params 1-4, as they are only used for customisation.
-					->params( $subcatCount, $pages, $fileCount, $allCount, $memberNumsShort )
-					->escaped()
-			);
+			$s .= CategoryTree::createCountString( RequestContext::getMain(), $cat, $count );
 		}
 
 		$s .= Xml::closeElement( 'div' );
 		$s .= "\n\t\t";
 		$s .= Xml::openElement(
 			'div',
-			array(
+			[
 				'class' => 'CategoryTreeChildren',
 				'style' => $children > 0 ? "display:block" : "display:none"
-			)
+			]
 		);
 
 		if ( $ns == NS_CATEGORY && $children > 0 ) {
 			$children = $this->renderChildren( $title, $children );
 			if ( $children == '' ) {
-				$s .= Xml::openElement( 'i', array( 'class' => 'CategoryTreeNotice' ) );
-				if ( $mode == CT_MODE_CATEGORIES ) {
+				$s .= Xml::openElement( 'i', [ 'class' => 'CategoryTreeNotice' ] );
+				if ( $mode == CategoryTreeMode::CATEGORIES ) {
 					$s .= wfMessage( 'categorytree-no-subcategories' )->text();
-				} elseif ( $mode == CT_MODE_PAGES ) {
+				} elseif ( $mode == CategoryTreeMode::PAGES ) {
 					$s .= wfMessage( 'categorytree-no-pages' )->text();
-				} elseif ( $mode == CT_MODE_PARENTS ) {
+				} elseif ( $mode == CategoryTreeMode::PARENTS ) {
 					$s .= wfMessage( 'categorytree-no-parent-categories' )->text();
 				} else {
 					$s .= wfMessage( 'categorytree-nothing-found' )->text();
@@ -730,6 +662,63 @@ class CategoryTree {
 		$s .= Xml::closeElement( 'div' );
 
 		$s .= "\n\t\t";
+
+		return $s;
+	}
+
+	/**
+	 * Create a string which format the page, subcat and file counts of a category
+	 * @param IContextSource $context
+	 * @param Category|null $cat
+	 * @param int $countMode
+	 * @return string
+	 */
+	public static function createCountString( IContextSource $context, $cat, $countMode ) {
+		global $wgContLang;
+
+		# Get counts, with conversion to integer so === works
+		# Note: $allCount is the total number of cat members,
+		# not the count of how many members are normal pages.
+		$allCount = $cat ? intval( $cat->getPageCount() ) : 0;
+		$subcatCount = $cat ? intval( $cat->getSubcatCount() ) : 0;
+		$fileCount = $cat ? intval( $cat->getFileCount() ) : 0;
+		$pages = $allCount - $subcatCount - $fileCount;
+
+		$attr = [
+			'title' => $context->msg( 'categorytree-member-counts' )
+				->numParams( $subcatCount, $pages , $fileCount, $allCount, $countMode )->text(),
+			'dir' => $context->getLanguage()->getDir() # numbers and commas get messed up in a mixed dir env
+		];
+
+		$s = $wgContLang->getDirMark() . ' ';
+
+		# Create a list of category members with only non-zero member counts
+		$memberNums = [];
+		if ( $subcatCount ) {
+			$memberNums[] = $context->msg( 'categorytree-num-categories' )
+				->numParams( $subcatCount )->text();
+		}
+		if ( $pages ) {
+			$memberNums[] = $context->msg( 'categorytree-num-pages' )->numParams( $pages )->text();
+		}
+		if ( $fileCount ) {
+			$memberNums[] = $context->msg( 'categorytree-num-files' )
+				->numParams( $fileCount )->text();
+		}
+		$memberNumsShort = $memberNums
+			? $context->getLanguage()->commaList( $memberNums )
+			: $context->msg( 'categorytree-num-empty' )->text();
+
+		# Only $5 is actually used in the default message.
+		# Other arguments can be used in a customized message.
+		$s .= Xml::tags(
+			'span',
+			$attr,
+			$context->msg( 'categorytree-member-num' )
+				// Do not use numParams on params 1-4, as they are only used for customisation.
+				->params( $subcatCount, $pages, $fileCount, $allCount, $memberNumsShort )
+				->escaped()
+		);
 
 		return $s;
 	}
@@ -756,5 +745,32 @@ class CategoryTree {
 			$t = Title::newFromText( $title );
 		}
 		return $t;
+	}
+
+	/**
+	 * Internal function to cap depth
+	 * @param $mode
+	 * @param $depth
+	 * @return int|mixed
+	 */
+	static function capDepth( $mode, $depth ) {
+		global $wgCategoryTreeMaxDepth;
+
+		if ( is_numeric( $depth ) ) {
+			$depth = intval( $depth );
+		} else {
+			return 1;
+		}
+
+		if ( is_array( $wgCategoryTreeMaxDepth ) ) {
+			$max = isset( $wgCategoryTreeMaxDepth[$mode] ) ? $wgCategoryTreeMaxDepth[$mode] : 1;
+		} elseif ( is_numeric( $wgCategoryTreeMaxDepth ) ) {
+			$max = $wgCategoryTreeMaxDepth;
+		} else {
+			wfDebug( 'CategoryTree::capDepth: $wgCategoryTreeMaxDepth is invalid.' );
+			$max = 1;
+		}
+
+		return min( $depth, $max );
 	}
 }

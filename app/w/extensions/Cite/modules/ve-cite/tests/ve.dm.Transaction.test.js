@@ -1,7 +1,7 @@
 /*!
  * VisualEditor DataModel Cite-specific Transaction tests.
  *
- * @copyright 2011-2016 VisualEditor Team and others; see AUTHORS.txt
+ * @copyright 2011-2017 Cite VisualEditor Team and others; see AUTHORS.txt
  * @license The MIT License (MIT); see LICENSE.txt
  */
 
@@ -43,7 +43,7 @@ QUnit.test( 'newFromDocumentInsertion with references', function ( assert ) {
 				offset: 0,
 				range: new ve.Range( 0, 7 ),
 				modify: function ( newDoc ) {
-					newDoc.commit( ve.dm.Transaction.newFromMetadataInsertion(
+					newDoc.commit( ve.dm.TransactionBuilder.static.newFromMetadataInsertion(
 						newDoc, 4, 0, [ comment ]
 					) );
 				},
@@ -96,7 +96,7 @@ QUnit.test( 'newFromDocumentInsertion with references', function ( assert ) {
 				offset: 24,
 				range: new ve.Range( 24, 31 ),
 				modify: function ( newDoc ) {
-					newDoc.commit( ve.dm.Transaction.newFromMetadataRemoval(
+					newDoc.commit( ve.dm.TransactionBuilder.static.newFromMetadataRemoval(
 						newDoc, 6, new ve.Range( 0, 1 )
 					) );
 				},
@@ -171,22 +171,20 @@ QUnit.test( 'newFromDocumentInsertion with references', function ( assert ) {
 		} else if ( cases[ i ].range ) {
 			doc2 = doc.cloneFromRange( cases[ i ].range );
 			cases[ i ].modify( doc2 );
-			tx = ve.dm.Transaction.newFromRemoval( doc, cases[ i ].range, true );
+			tx = ve.dm.TransactionBuilder.static.newFromRemoval( doc, cases[ i ].range, true );
 			doc.commit( tx );
 			removalOps = tx.getOperations();
 		}
 
 		assert.deepEqualWithDomElements( removalOps, cases[ i ].removalOps, cases[ i ].msg + ': removal' );
 
-		tx = ve.dm.Transaction.newFromDocumentInsertion( doc, cases[ i ].offset, doc2 );
+		tx = ve.dm.TransactionBuilder.static.newFromDocumentInsertion( doc, cases[ i ].offset, doc2 );
 		assert.deepEqualWithDomElements( tx.getOperations(), cases[ i ].expectedOps, cases[ i ].msg + ': transaction' );
 
 		actualStoreItems = [];
 		expectedStoreItems = cases[ i ].expectedStoreItems || [];
 		for ( j = 0; j < expectedStoreItems.length; j++ ) {
-			actualStoreItems[ j ] = doc.store.value( doc.store.indexOfHash(
-				OO.getHash( expectedStoreItems[ j ] )
-			) );
+			actualStoreItems[ j ] = doc.store.value( OO.getHash( expectedStoreItems[ j ] ) );
 		}
 		assert.deepEqual( actualStoreItems, expectedStoreItems, cases[ i ].msg + ': store items' );
 	}

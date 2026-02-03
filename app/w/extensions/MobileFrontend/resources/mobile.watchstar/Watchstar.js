@@ -1,6 +1,6 @@
 ( function ( M ) {
 
-	var View = M.require( 'mobile.view/View' ),
+	var View = M.require( 'mobile.startup/View' ),
 		WatchstarGateway = M.require( 'mobile.watchstar/WatchstarGateway' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		watchIcon = new Icon( {
@@ -11,9 +11,9 @@
 			name: 'watched',
 			additionalClassNames: 'watch-this-article watched'
 		} ),
-		toast = M.require( 'mobile.toast/toast' ),
-		user = M.require( 'mobile.user/user' ),
-		CtaDrawer = M.require( 'mobile.drawers/CtaDrawer' );
+		toast = M.require( 'mobile.startup/toast' ),
+		user = M.require( 'mobile.startup/user' ),
+		CtaDrawer = M.require( 'mobile.startup/CtaDrawer' );
 
 	/**
 	 * A clickable watchstar
@@ -23,6 +23,9 @@
 	 * @uses Icon
 	 * @uses WatchstarGateway
 	 * @uses Toast
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function Watchstar( options ) {
 		var self = this,
@@ -57,7 +60,7 @@
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {mw.Api} defaults.api
 		 * @cfg {Page} defaults.page Current page.
-		 * @cfg {String} defaults.funnel to log events with
+		 * @cfg {string} defaults.funnel to log events with
 		 */
 		defaults: {
 			page: undefined,

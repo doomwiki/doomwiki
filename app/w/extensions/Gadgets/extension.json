@@ -7,6 +7,9 @@
 	"url": "https://www.mediawiki.org/wiki/Extension:Gadgets",
 	"descriptionmsg": "gadgets-desc",
 	"license-name": "GPL-2.0+",
+	"requires": {
+		"MediaWiki": ">= 1.28.0"
+	},
 	"type": "other",
 	"namespaces": [
 		{
@@ -76,8 +79,8 @@
 		"GadgetDefinitionDeletionUpdate": "includes/content/GadgetDefinitionDeletionUpdate.php"
 	},
 	"Hooks": {
-		"ArticleSaveComplete": [
-			"GadgetHooks::articleSaveComplete"
+		"PageContentSaveComplete": [
+			"GadgetHooks::onPageContentSaveComplete"
 		],
 		"BeforePageDisplay": [
 			"GadgetHooks::beforePageDisplay"
@@ -102,9 +105,6 @@
 		],
 		"ResourceLoaderRegisterModules": [
 			"GadgetHooks::registerModules"
-		],
-		"UnitTestsList": [
-			"GadgetHooks::onUnitTestsList"
 		],
 		"wgQueryPages": [
 			"GadgetHooks::onwgQueryPages"

@@ -6,7 +6,8 @@
 			"Tacsipacsi",
 			"ViDam",
 			"Macofe",
-			"Wolf Rex"
+			"Wolf Rex",
+			"Dj"
 		]
 	},
 	"apihelp-main-param-action": "Milyen műveletet hajtson végre.",
@@ -42,6 +43,7 @@
 	"apihelp-feedrecentchanges-param-hidepatrolled": "Ellenőrzött változtatások elrejtése.",
 	"apihelp-login-param-name": "Szerkesztőnév.",
 	"apihelp-login-param-password": "Jelszó.",
+	"apihelp-login-param-domain": "Tartomány (opcionális)",
 	"apihelp-login-example-login": "Bejelentkezés.",
 	"apihelp-logout-example-logout": "Aktuális felhasználó kijelentkeztetése.",
 	"apihelp-mergehistory-description": "Laptörténetek egyesítése",
@@ -90,5 +92,6 @@
 	"api-help-param-limit2": "Nem engedélyezett több mint $1 (botoknak $2).",
 	"api-help-param-integer-min": "Az {{PLURAL:$1|1=érték nem lehet kisebb|2=értékek nem lehetnek kisebbek}} mint $2.",
 	"api-help-param-integer-max": "Az {{PLURAL:$1|1=érték nem lehet nagyobb|2=értékek nem lehetnek nagyobbak}} mint $3.",
-	"api-help-param-integer-minmax": "{{PLURAL:$1|1=Az értéknek $2 és $3 között kell lennie.|2=Az értékeknek $2 és $3 között kell lenniük.}}"
+	"api-help-param-integer-minmax": "{{PLURAL:$1|1=Az értéknek $2 és $3 között kell lennie.|2=Az értékeknek $2 és $3 között kell lenniük.}}",
+	"api-help-param-default": "Alapértelmezett: $1"
 }

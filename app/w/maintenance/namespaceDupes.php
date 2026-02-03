@@ -24,9 +24,12 @@
  * @ingroup Maintenance
  */
 
-use MediaWiki\Linker\LinkTarget;
-
 require_once __DIR__ . '/Maintenance.php';
+
+use MediaWiki\Linker\LinkTarget;
+use MediaWiki\MediaWikiServices;
+use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 /**
  * Maintenance script that checks for articles to fix after
@@ -37,7 +40,7 @@ require_once __DIR__ . '/Maintenance.php';
 class NamespaceConflictChecker extends Maintenance {
 
 	/**
-	 * @var DatabaseBase
+	 * @var IMaintainableDatabase
 	 */
 	protected $db;
 
@@ -224,7 +227,7 @@ class NamespaceConflictChecker extends Maintenance {
 	 * @return array
 	 */
 	private function getInterwikiList() {
-		$result = Interwiki::getAllPrefixes();
+		$result = MediaWikiServices::getInstance()->getInterwikiLookup()->getAllPrefixes();
 		$prefixes = [];
 		foreach ( $result as $row ) {
 			$prefixes[] = $row['iw_prefix'];
@@ -570,7 +573,7 @@ class NamespaceConflictChecker extends Maintenance {
 	/**
 	 * Merge page histories
 	 *
-	 * @param integer $id The page_id
+	 * @param stdClass $row Page row
 	 * @param Title $newTitle The new title
 	 * @return bool
 	 */
@@ -596,6 +599,8 @@ class NamespaceConflictChecker extends Maintenance {
 
 		$this->db->delete( 'page', [ 'page_id' => $id ], __METHOD__ );
 
+		$this->commitTransaction( $this->db, __METHOD__ );
+
 		/* Call LinksDeletionUpdate to delete outgoing links from the old title,
 		 * and update category counts.
 		 *
@@ -605,9 +610,8 @@ class NamespaceConflictChecker extends Maintenance {
 		 * accidentally introduce an assumption of title validity to the code we
 		 * are calling.
 		 */
-		$update = new LinksDeletionUpdate( $wikiPage );
-		$update->doUpdate();
-		$this->commitTransaction( $this->db, __METHOD__ );
+		DeferredUpdates::addUpdate( new LinksDeletionUpdate( $wikiPage ) );
+		DeferredUpdates::doUpdates();
 
 		return true;
 	}

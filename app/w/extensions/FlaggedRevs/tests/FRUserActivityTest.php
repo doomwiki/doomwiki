@@ -21,7 +21,8 @@ class FRUserActivityTest extends PHPUnit_Framework_TestCase {
 	/**
 	 * Constructs the test case.
 	 */
-	public function __construct() {}
+	public function __construct() {
+	}
 
 	public function testPageIsUnderReview() {
 		$page = 110;
@@ -54,7 +55,7 @@ class FRUserActivityTest extends PHPUnit_Framework_TestCase {
 		$page = 110;
 
 		FRUserActivity::clearAllReviewingPage( $page ); // clear
-		$this->assertEquals( array( null, null ),
+		$this->assertEquals( [ null, null ],
 			FRUserActivity::getUserReviewingPage( $page ),
 			"Not reviewing page" );
 
@@ -62,7 +63,7 @@ class FRUserActivityTest extends PHPUnit_Framework_TestCase {
 		FRUserActivity::setUserReviewingPage( $this->user, $page );
 		$now2 = time();
 
-		list($name, $ts) = FRUserActivity::getUserReviewingPage( $page );
+		list( $name, $ts ) = FRUserActivity::getUserReviewingPage( $page );
 		$this->assertEquals( $this->user->getName(), $name,
 			"Now reviewing page (name matches)" );
 		$this->assertGreaterThanOrEqual( $now1, wfTimestamp( TS_UNIX, $ts ),
@@ -76,7 +77,7 @@ class FRUserActivityTest extends PHPUnit_Framework_TestCase {
 		$newid = 11910;
 
 		FRUserActivity::clearAllReviewingDiff( $oldid, $newid ); // clear
-		$this->assertEquals( array( null, null ),
+		$this->assertEquals( [ null, null ],
 			FRUserActivity::getUserReviewingDiff( $oldid, $newid ),
 			"Not reviewing diff" );
 
@@ -84,7 +85,7 @@ class FRUserActivityTest extends PHPUnit_Framework_TestCase {
 		FRUserActivity::setUserReviewingDiff( $this->user, $oldid, $newid );
 		$now2 = time();
 
-		list($name, $ts) = FRUserActivity::getUserReviewingDiff( $oldid, $newid );
+		list( $name, $ts ) = FRUserActivity::getUserReviewingDiff( $oldid, $newid );
 		$this->assertEquals( $this->user->getName(), $name,
 			"Now reviewing diff (name matches)" );
 		$this->assertGreaterThanOrEqual( $now1, wfTimestamp( TS_UNIX, $ts ),
@@ -100,7 +101,7 @@ class FRUserActivityTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals( true,
 			FRUserActivity::setUserReviewingPage( $this->user, $page ),
 			"Set reviewing page succeeds" );
-		
+
 		$this->assertEquals( true,
 			FRUserActivity::clearUserReviewingPage( $this->user, $page ),
 			"Unset reviewing page" );

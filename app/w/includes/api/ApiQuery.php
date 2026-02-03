@@ -24,6 +24,8 @@
  * @file
  */
 
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * This is the main query class. It behaves similar to ApiMain: based on the
  * parameters given, it will create a list of titles to work on (an ApiPageSet
@@ -168,7 +170,7 @@ class ApiQuery extends ApiBase {
 	 * @param string $name Name to assign to the database connection
 	 * @param int $db One of the DB_* constants
 	 * @param array $groups Query groups
-	 * @return DatabaseBase
+	 * @return IDatabase
 	 */
 	public function getNamedDB( $name, $db, $groups ) {
 		if ( !array_key_exists( $name, $this->mNamedDB ) ) {
@@ -258,6 +260,11 @@ class ApiQuery extends ApiBase {
 		// Write the continuation data into the result
 		$this->setContinuationManager( null );
 		if ( $this->mParams['rawcontinue'] ) {
+			$data = $continuationManager->getRawNonContinuation();
+			if ( $data ) {
+				$this->getResult()->addValue( null, 'query-noncontinue', $data,
+					ApiResult::ADD_ON_TOP | ApiResult::NO_SIZE_CHECK );
+			}
 			$data = $continuationManager->getRawContinuation();
 			if ( $data ) {
 				$this->getResult()->addValue( null, 'query-continue', $data,
@@ -305,7 +312,7 @@ class ApiQuery extends ApiBase {
 					ApiBase::dieDebug( __METHOD__, 'Error instantiating module' );
 				}
 				if ( !$wasPosted && $instance->mustBePosted() ) {
-					$this->dieUsageMsgOrDebug( [ 'mustbeposted', $moduleName ] );
+					$this->dieWithErrorOrDebug( [ 'apierror-mustbeposted', $moduleName ] );
 				}
 				// Ignore duplicates. TODO 2.0: die()?
 				if ( !array_key_exists( $moduleName, $modules ) ) {
@@ -357,6 +364,9 @@ class ApiQuery extends ApiBase {
 			$vals = [];
 			ApiQueryBase::addTitleInfo( $vals, $title );
 			$vals['missing'] = true;
+			if ( $title->isKnown() ) {
+				$vals['known'] = true;
+			}
 			$pages[$fakeId] = $vals;
 		}
 		// Report any invalid titles
@@ -367,7 +377,7 @@ class ApiQuery extends ApiBase {
 		foreach ( $pageSet->getMissingPageIDs() as $pageid ) {
 			$pages[$pageid] = [
 				'pageid' => $pageid,
-				'missing' => true
+				'missing' => true,
 			];
 		}
 		// Report special pages
@@ -376,13 +386,7 @@ class ApiQuery extends ApiBase {
 			$vals = [];
 			ApiQueryBase::addTitleInfo( $vals, $title );
 			$vals['special'] = true;
-			if ( $title->isSpecialPage() &&
-				!SpecialPageFactory::exists( $title->getDBkey() )
-			) {
-				$vals['missing'] = true;
-			} elseif ( $title->getNamespace() == NS_MEDIA &&
-				!wfFindFile( $title )
-			) {
+			if ( !$title->isKnown() ) {
 				$vals['missing'] = true;
 			}
 			$pages[$fakeId] = $vals;
@@ -413,11 +417,7 @@ class ApiQuery extends ApiBase {
 		}
 
 		if ( !$fit ) {
-			$this->dieUsage(
-				'The value of $wgAPIMaxResultSize on this wiki is ' .
-					'too small to hold basic result information',
-				'badconfig'
-			);
+			$this->dieWithError( 'apierror-badconfig-resulttoosmall', 'badconfig' );
 		}
 
 		if ( $this->mParams['export'] ) {
@@ -443,16 +443,13 @@ class ApiQuery extends ApiBase {
 		}
 
 		$exporter = new WikiExporter( $this->getDB() );
-		// WikiExporter writes to stdout, so catch its
-		// output with an ob
-		ob_start();
+		$sink = new DumpStringOutput;
+		$exporter->setOutputSink( $sink );
 		$exporter->openStream();
 		foreach ( $exportTitles as $title ) {
 			$exporter->pageByTitle( $title );
 		}
 		$exporter->closeStream();
-		$exportxml = ob_get_contents();
-		ob_end_clean();
 
 		// Don't check the size of exported stuff
 		// It's not continuable, so it would cause more
@@ -460,11 +457,11 @@ class ApiQuery extends ApiBase {
 		if ( $this->mParams['exportnowrap'] ) {
 			$result->reset();
 			// Raw formatter will handle this
-			$result->addValue( null, 'text', $exportxml, ApiResult::NO_SIZE_CHECK );
+			$result->addValue( null, 'text', $sink, ApiResult::NO_SIZE_CHECK );
 			$result->addValue( null, 'mime', 'text/xml', ApiResult::NO_SIZE_CHECK );
 			$result->addValue( null, 'filename', 'export.xml', ApiResult::NO_SIZE_CHECK );
 		} else {
-			$result->addValue( 'query', 'export', $exportxml, ApiResult::NO_SIZE_CHECK );
+			$result->addValue( 'query', 'export', $sink, ApiResult::NO_SIZE_CHECK );
 			$result->addValue( 'query', ApiResult::META_BC_SUBELEMENTS, [ 'export' ] );
 		}
 	}
@@ -497,61 +494,6 @@ class ApiQuery extends ApiBase {
 		}
 
 		return $result;
-	}
-
-	/**
-	 * Override the parent to generate help messages for all available query modules.
-	 * @deprecated since 1.25
-	 * @return string
-	 */
-	public function makeHelpMsg() {
-		wfDeprecated( __METHOD__, '1.25' );
-
-		// Use parent to make default message for the query module
-		$msg = parent::makeHelpMsg();
-
-		$querySeparator = str_repeat( '--- ', 12 );
-		$moduleSeparator = str_repeat( '*** ', 14 );
-		$msg .= "\n$querySeparator Query: Prop  $querySeparator\n\n";
-		$msg .= $this->makeHelpMsgHelper( 'prop' );
-		$msg .= "\n$querySeparator Query: List  $querySeparator\n\n";
-		$msg .= $this->makeHelpMsgHelper( 'list' );
-		$msg .= "\n$querySeparator Query: Meta  $querySeparator\n\n";
-		$msg .= $this->makeHelpMsgHelper( 'meta' );
-		$msg .= "\n\n$moduleSeparator Modules: continuation  $moduleSeparator\n\n";
-
-		return $msg;
-	}
-
-	/**
-	 * For all modules of a given group, generate help messages and join them together
-	 * @deprecated since 1.25
-	 * @param string $group Module group
-	 * @return string
-	 */
-	private function makeHelpMsgHelper( $group ) {
-		$moduleDescriptions = [];
-
-		$moduleNames = $this->mModuleMgr->getNames( $group );
-		sort( $moduleNames );
-		foreach ( $moduleNames as $name ) {
-			/**
-			 * @var $module ApiQueryBase
-			 */
-			$module = $this->mModuleMgr->getModule( $name );
-
-			$msg = ApiMain::makeHelpMsgHeader( $module, $group );
-			$msg2 = $module->makeHelpMsg();
-			if ( $msg2 !== false ) {
-				$msg .= $msg2;
-			}
-			if ( $module instanceof ApiQueryGeneratorBase ) {
-				$msg .= "Generator:\n  This module may be used as a generator\n";
-			}
-			$moduleDescriptions[] = $msg;
-		}
-
-		return implode( "\n", $moduleDescriptions );
 	}
 
 	public function isReadMode() {
@@ -597,10 +539,10 @@ class ApiQuery extends ApiBase {
 
 	public function getHelpUrls() {
 		return [
-			'https://www.mediawiki.org/wiki/API:Query',
-			'https://www.mediawiki.org/wiki/API:Meta',
-			'https://www.mediawiki.org/wiki/API:Properties',
-			'https://www.mediawiki.org/wiki/API:Lists',
+			'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Query',
+			'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Meta',
+			'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Properties',
+			'https://www.mediawiki.org/wiki/Special:MyLanguage/API:Lists',
 		];
 	}
 }

@@ -20,18 +20,21 @@
  * @file
  */
 
+use Wikimedia\Rdbms\FakeResultWrapper;
+
 /**
  * Special handling for file pages
  *
  * @ingroup Media
  */
 class WikiFilePage extends WikiPage {
-	/**
-	 * @var File
-	 */
+	/** @var File */
 	protected $mFile = false;
+	/** @var LocalRepo */
 	protected $mRepo = null;
+	/** @var bool */
 	protected $mFileLoaded = false;
+	/** @var array */
 	protected $mDupes = null;
 
 	public function __construct( $title ) {
@@ -170,7 +173,6 @@ class WikiFilePage extends WikiPage {
 		if ( $this->mFile->exists() ) {
 			wfDebug( 'ImagePage::doPurge purging ' . $this->mFile->getName() . "\n" );
 			DeferredUpdates::addUpdate( new HTMLCacheUpdate( $this->mTitle, 'imagelinks' ) );
-			$this->mFile->upgradeRow();
 			$this->mFile->purgeCache( [ 'forThumbRefresh' => true ] );
 		} else {
 			wfDebug( 'ImagePage::doPurge no image for '
@@ -207,7 +209,7 @@ class WikiFilePage extends WikiPage {
 
 		/** @var LocalRepo $repo */
 		$repo = $file->getRepo();
-		$dbr = $repo->getSlaveDB();
+		$dbr = $repo->getReplicaDB();
 
 		$res = $dbr->select(
 			[ 'page', 'categorylinks' ],
@@ -225,5 +227,21 @@ class WikiFilePage extends WikiPage {
 		);
 
 		return TitleArray::newFromResult( $res );
+	}
+
+	/**
+	 * @since 1.28
+	 * @return string
+	 */
+	public function getWikiDisplayName() {
+		return $this->getFile()->getRepo()->getDisplayName();
+	}
+
+	/**
+	 * @since 1.28
+	 * @return string
+	 */
+	public function getSourceURL() {
+		return $this->getFile()->getDescriptionUrl();
 	}
 }

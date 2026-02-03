@@ -8,6 +8,9 @@
 	"descriptionmsg": "pdf-desc",
 	"license-name": "GPL-2.0+",
 	"type": "media",
+	"requires": {
+		"MediaWiki": ">= 1.25.0"
+	},
 	"config": {
 		"PdfOutputExtension": "jpg",
 		"PdfHandlerDpi": 150,
