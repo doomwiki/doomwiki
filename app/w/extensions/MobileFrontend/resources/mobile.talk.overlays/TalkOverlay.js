@@ -2,7 +2,7 @@
 	var TalkOverlayBase = M.require( 'mobile.talk.overlays/TalkOverlayBase' ),
 		Page = M.require( 'mobile.startup/Page' ),
 		Anchor = M.require( 'mobile.startup/Anchor' ),
-		user = M.require( 'mobile.user/user' );
+		user = M.require( 'mobile.startup/user' );
 	/**
 	 * Overlay for talk page
 	 * @extends Overlay
@@ -24,10 +24,10 @@
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {Array} defaults.headings A list of {Section} objects to render heading links
 		 * for. If not set ajax request will be performed.
-		 * @cfg {String} defaults.heading Heading for talk overlay.
-		 * @cfg {String} defaults.leadHeading Heading for a discussion which has no heading
+		 * @cfg {string} defaults.heading Heading for talk overlay.
+		 * @cfg {string} defaults.leadHeading Heading for a discussion which has no heading
 		 * (lead section of talk page).
-		 * @cfg {String} defaults.headerButtonsListClassName Class name of the header buttons
+		 * @cfg {string} defaults.headerButtonsListClassName Class name of the header buttons
 		 * list
 		 * @cfg {Array} defaults.headerButtons Objects that will be used as defaults for
 		 * generating header buttons. Default list includes an 'add' button, which opens
@@ -37,7 +37,7 @@
 			headings: undefined,
 			heading: '<strong>' + mw.msg( 'mobile-frontend-talk-overlay-header' ) + '</strong>',
 			leadHeading: mw.msg( 'mobile-frontend-talk-overlay-lead-header' ),
-			headerButtonsListClassName: 'overlay-action',
+			headerButtonsListClassName: 'header-action',
 			headerButtons: [ {
 				href: '#/talk/new',
 				className: 'add continue hidden',
@@ -143,7 +143,7 @@
 		 * @private
 		 */
 		_setupAddDiscussionButton: function () {
-			var $add = this.$( '.overlay-action .add' );
+			var $add = this.$( '.header-action .add' );
 			M.on( 'talk-discussion-added', $.proxy( this, '_loadContent', this.options ) );
 			if ( !user.isAnon() ) {
 				$add.removeClass( 'hidden' );

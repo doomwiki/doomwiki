@@ -1,11 +1,14 @@
-@chrome @en.m.wikipedia.beta.wmflabs.org @firefox @skip @test2.m.wikipedia.org @vagrant
+@chrome @en.m.wikipedia.beta.wmflabs.org @firefox @integration @test2.m.wikipedia.org @vagrant
 Feature: Search
 
   Background:
     Given I am using the mobile site
+      And I am in beta mode
       And the page "Selenium search test" exists
       And I am on the "Main Page" page
-    When I click the placeholder search box
+      And I am viewing the site in mobile mode
+      And I click the search icon
+      And I see the search overlay
 
   Scenario: Closing search (overlay button)
     When I click the search overlay close button
@@ -21,15 +24,13 @@ Feature: Search
     Then search results should contain "Selenium search test"
 
   Scenario: Search with search in pages button
-      And I see the search overlay
-      And I type into search box "Test is used by Selenium web driver"
+    When I type into search box "Test is used by Selenium web driver"
       And I see the search in pages button
       And I click the search in pages button
     Then I should see a list of search results
 
   Scenario: Search with enter key
-      And I see the search overlay
-      And I type into search box "Test is used by Selenium web driver"
+    When I type into search box "Test is used by Selenium web driver"
       And I press the enter key
     Then I should see a list of search results
 
@@ -44,14 +45,6 @@ Feature: Search
     When I type into search box "Selenium search tes"
     And I click a search result
     And the text of the first heading should be "Selenium search test"
-    And I click the placeholder search box
+    And I click the search icon
     And I type into search box "Main Page"
     Then search results should contain "Main Page"
-
-  Scenario: Clicking on a watchstar toggles the watchstar
-    Given I am logged into the mobile website
-      And the page "Selenium search test" exists
-    When I click the placeholder search box
-      And I type into search box "Selenium search tes"
-      And I click a search watch star
-    Then I should see a toast

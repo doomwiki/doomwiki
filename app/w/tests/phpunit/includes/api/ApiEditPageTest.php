@@ -195,16 +195,16 @@ class ApiEditPageTest extends ApiTestCase {
 				'section' => '9999',
 				'text' => 'text',
 			] );
-			$this->fail( "Should have raised a UsageException" );
-		} catch ( UsageException $e ) {
-			$this->assertEquals( 'nosuchsection', $e->getCodeString() );
+			$this->fail( "Should have raised an ApiUsageException" );
+		} catch ( ApiUsageException $e ) {
+			$this->assertTrue( self::apiExceptionHasCode( $e, 'nosuchsection' ) );
 		}
 	}
 
 	/**
 	 * Test action=edit&section=new
 	 * Run it twice so we test adding a new section on a
-	 * page that doesn't exist (bug 52830) and one that
+	 * page that doesn't exist (T54830) and one that
 	 * does exist
 	 */
 	public function testEditNewSection() {
@@ -333,8 +333,8 @@ class ApiEditPageTest extends ApiTestCase {
 			], null, self::$users['sysop']->getUser() );
 
 			$this->fail( 'redirect-appendonly error expected' );
-		} catch ( UsageException $ex ) {
-			$this->assertEquals( 'redirect-appendonly', $ex->getCodeString() );
+		} catch ( ApiUsageException $ex ) {
+			$this->assertTrue( self::apiExceptionHasCode( $ex, 'redirect-appendonly' ) );
 		}
 	}
 
@@ -369,8 +369,8 @@ class ApiEditPageTest extends ApiTestCase {
 			], null, self::$users['sysop']->getUser() );
 
 			$this->fail( 'edit conflict expected' );
-		} catch ( UsageException $ex ) {
-			$this->assertEquals( 'editconflict', $ex->getCodeString() );
+		} catch ( ApiUsageException $ex ) {
+			$this->assertTrue( self::apiExceptionHasCode( $ex, 'editconflict' ) );
 		}
 	}
 
@@ -416,7 +416,7 @@ class ApiEditPageTest extends ApiTestCase {
 		$count++;
 
 		/*
-		* bug 41990: if the target page has a newer revision than the redirect, then editing the
+		* T43990: if the target page has a newer revision than the redirect, then editing the
 		* redirect while specifying 'redirect' and *not* specifying 'basetimestamp' erroneously
 		* caused an edit conflict to be detected.
 		*/
@@ -474,7 +474,7 @@ class ApiEditPageTest extends ApiTestCase {
 
 	public function testCheckDirectApiEditingDisallowed_forNonTextContent() {
 		$this->setExpectedException(
-			'UsageException',
+			'ApiUsageException',
 			'Direct editing via API is not supported for content model ' .
 				'testing used by Dummy:ApiEditPageTest_nonTextPageEdit'
 		);
@@ -512,5 +512,58 @@ class ApiEditPageTest extends ApiTestCase {
 		$page = WikiPage::factory( Title::newFromText( $name ) );
 		$this->assertEquals( "testing-nontext", $page->getContentModel() );
 		$this->assertEquals( $data, $page->getContent()->serialize() );
+	}
+
+	/**
+	 * This test verifies that after changing the content model
+	 * of a page, undoing that edit via the API will also
+	 * undo the content model change.
+	 */
+	public function testUndoAfterContentModelChange() {
+		$name = 'Help:' . __FUNCTION__;
+		$uploader = self::$users['uploader']->getUser();
+		$sysop = self::$users['sysop']->getUser();
+		$apiResult = $this->doApiRequestWithToken( [
+			'action' => 'edit',
+			'title' => $name,
+			'text' => 'some text',
+		], null, $sysop )[0];
+
+		// Check success
+		$this->assertArrayHasKey( 'edit', $apiResult );
+		$this->assertArrayHasKey( 'result', $apiResult['edit'] );
+		$this->assertEquals( 'Success', $apiResult['edit']['result'] );
+		$this->assertArrayHasKey( 'contentmodel', $apiResult['edit'] );
+		// Content model is wikitext
+		$this->assertEquals( 'wikitext', $apiResult['edit']['contentmodel'] );
+
+		// Convert the page to JSON
+		$apiResult = $this->doApiRequestWithToken( [
+			'action' => 'edit',
+			'title' => $name,
+			'text' => '{}',
+			'contentmodel' => 'json',
+		], null, $uploader )[0];
+
+		// Check success
+		$this->assertArrayHasKey( 'edit', $apiResult );
+		$this->assertArrayHasKey( 'result', $apiResult['edit'] );
+		$this->assertEquals( 'Success', $apiResult['edit']['result'] );
+		$this->assertArrayHasKey( 'contentmodel', $apiResult['edit'] );
+		$this->assertEquals( 'json', $apiResult['edit']['contentmodel'] );
+
+		$apiResult = $this->doApiRequestWithToken( [
+			'action' => 'edit',
+			'title' => $name,
+			'undo' => $apiResult['edit']['newrevid']
+		], null, $sysop )[0];
+
+		// Check success
+		$this->assertArrayHasKey( 'edit', $apiResult );
+		$this->assertArrayHasKey( 'result', $apiResult['edit'] );
+		$this->assertEquals( 'Success', $apiResult['edit']['result'] );
+		$this->assertArrayHasKey( 'contentmodel', $apiResult['edit'] );
+		// Check that the contentmodel is back to wikitext now.
+		$this->assertEquals( 'wikitext', $apiResult['edit']['contentmodel'] );
 	}
 }

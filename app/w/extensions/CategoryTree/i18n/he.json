@@ -10,7 +10,7 @@
 	"categorytree-portlet": "קטגוריות",
 	"categorytree-legend": "הצגת עץ קטגוריות",
 	"categorytree-desc": "ניווט דינמי ב[[Special:CategoryTree|מבנה הקטגוריות]]",
-	"categorytree-header": "נא להקליד שם קטגוריה כדי לראות את תוכנה במבנה עץ.\nנא לשים לב לכך שזה דורש יכולת JavaScript מתקדמת, הידועה בשם AJAX.\nאם יש לכם דפדפן ישן מאוד, או שהתמיכה ב־JavaScript כבויה אצלך בדפדפן, זה לא יעבוד.",
+	"categorytree-header": "נא להקליד את שם הקטגוריה כדי לראות את התוכן שלה במבנה עץ. (תכונה זו דורשת JavaScript.)",
 	"categorytree-category": "קטגוריה:",
 	"categorytree-go": "הצגת העץ",
 	"categorytree-parents": "הורים",
@@ -38,5 +38,6 @@
 	"categorytree-retry": "נא להמתין מעט ולנסות שוב.",
 	"apihelp-categorytree-description": "מודול פנימי של ההרחבה CategoryTree.",
 	"apihelp-categorytree-param-category": "כותרת במרחב השם קטגוריה, התחילית לא תשפיע על התוצאה גם אם תינתן.",
-	"apihelp-categorytree-param-options": "אפשרויות לקונסטרוקטור של CategoryTree בתור עצם JSON. בררת המחדל עבור האפשרות depth היא 1."
+	"apihelp-categorytree-param-options": "אפשרויות לקונסטרוקטור של CategoryTree בתור עצם JSON. ברירת המחדל עבור האפשרות <var>depth</var> היא <kbd>1</kbd>.",
+	"apierror-categorytree-invalidjson": "האופציות צריכות להיות עצם JSON תקין."
 }

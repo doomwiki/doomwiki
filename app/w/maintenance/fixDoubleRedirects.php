@@ -54,7 +54,7 @@ class FixDoubleRedirects extends Maintenance {
 			$title = null;
 		}
 
-		$dbr = $this->getDB( DB_SLAVE );
+		$dbr = $this->getDB( DB_REPLICA );
 
 		// See also SpecialDoubleRedirects
 		$tables = [
@@ -72,7 +72,7 @@ class FixDoubleRedirects extends Maintenance {
 			'rd_from = pa.page_id',
 			'rd_namespace = pb.page_namespace',
 			'rd_title = pb.page_title',
-			'rd_interwiki IS NULL OR rd_interwiki = ' . $dbr->addQuotes( '' ), // bug 40352
+			'rd_interwiki IS NULL OR rd_interwiki = ' . $dbr->addQuotes( '' ), // T42352
 			'pb.page_is_redirect' => 1,
 		];
 

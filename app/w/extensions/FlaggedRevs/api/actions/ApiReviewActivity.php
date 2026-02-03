@@ -35,28 +35,50 @@ class ApiReviewActivity extends ApiBase {
 		$user = $this->getUser();
 		$params = $this->extractRequestParams();
 		// Check basic permissions
-		if ( !$user->isAllowed( 'review' ) ) {
-			$this->dieUsage( "You don't have the right to review revisions.",
-				'permissiondenied' );
-		} elseif ( $user->isBlocked( false ) ) {
-			$this->dieUsageMsg( array( 'blockedtext' ) );
+		if ( is_callable( [ $this, 'checkUserRightsAny' ] ) ) {
+			$this->checkUserRightsAny( 'review' );
+		} else {
+			if ( !$user->isAllowed( 'review' ) ) {
+				$this->dieUsage( "You don't have the right to review revisions.",
+					'permissiondenied' );
+			}
+		}
+
+		if ( $user->isBlocked( false ) ) {
+			if ( is_callable( [ $this, 'dieBlocked' ] ) ) {
+				$this->dieBlocked( $user->getBlock() );
+			} else {
+				$this->dieUsageMsg( [ 'blockedtext' ] );
+			}
 		}
 
 		$newRev = Revision::newFromId( $params['oldid'] );
 		if ( !$newRev || !$newRev->getTitle() ) {
-			$this->dieUsage( "Cannot find a revision with the specified ID.", 'notarget' );
+			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+				$this->dieWithError( [ 'apierror-nosuchrevid', $params['oldid'] ], 'notarget' );
+			} else {
+				$this->dieUsage( "Cannot find a revision with the specified ID.", 'notarget' );
+			}
 		}
 		$title = $newRev->getTitle();
 
 		$fa = FlaggableWikiPage::getTitleInstance( $title );
 		if ( !$fa->isReviewable() ) {
-			$this->dieUsage( "Provided page is not reviewable.", 'notreviewable' );
+			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+				$this->dieWithError( 'apierror-flaggedrevs-notreviewable', 'notreviewable' );
+			} else {
+				$this->dieUsage( "Provided page is not reviewable.", 'notreviewable' );
+			}
 		}
 
 		if ( $params['previd'] ) { // changes
 			$oldRev = Revision::newFromId( $params['previd'] );
 			if ( !$oldRev || $oldRev->getPage() != $newRev->getPage() ) {
-				$this->dieUsage( "Revisions do not belong to the same page.", 'notarget' );
+				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
+					$this->dieWithError( 'apierror-flaggedrevs-notsamepage', 'notarget' );
+				} else {
+					$this->dieUsage( "Revisions do not belong to the same page.", 'notarget' );
+				}
 			}
 			// Mark as reviewing...
 			if ( $params['reviewing'] ) {
@@ -80,11 +102,11 @@ class ApiReviewActivity extends ApiBase {
 		# Success in setting flag...
 		if ( $status === true ) {
 			$this->getResult()->addValue(
-				null, $this->getModuleName(), array( 'result' => 'Success' ) );
+				null, $this->getModuleName(), [ 'result' => 'Success' ] );
 		# Failure...
 		} else {
 			$this->getResult()->addValue(
-				null, $this->getModuleName(), array( 'result' => 'Failure' ) );
+				null, $this->getModuleName(), [ 'result' => 'Failure' ] );
 		}
 	}
 
@@ -93,28 +115,28 @@ class ApiReviewActivity extends ApiBase {
 	}
 
 	public function isWriteMode() {
- 		return true;
- 	}
+			return true;
+	}
 
 	public function getAllowedParams() {
-		return array(
+		return [
 			'previd'   	=> null,
 			'oldid' 	=> null,
-			'reviewing' => array( ApiBase::PARAM_TYPE => array( 0, 1 ) ),
+			'reviewing' => [ ApiBase::PARAM_TYPE => [ 0, 1 ] ],
 			'token' 	=> null,
-		);
+		];
 	}
 
 	/**
 	 * @deprecated since MediaWiki core 1.25
 	 */
 	public function getParamDescription() {
-		return array(
+		return [
 			'previd'  	=> 'The prior revision ID (for reviewing changes only)',
 			'oldid'  	=> 'The ID of the revision being reviewed',
 			'reviewing' => 'Whether to advertising as reviewing or no longer reviewing',
 			'token' 	=> 'A token previously obtained through the gettoken parameter or prop=info',
-		);
+		];
 	}
 
 	/**
@@ -143,9 +165,9 @@ class ApiReviewActivity extends ApiBase {
 	 * @see ApiBase::getExamplesMessages()
 	 */
 	protected function getExamplesMessages() {
-		return array(
+		return [
 			'action=reviewactivity&previd=12345&reviewing=1'
 				=> 'apihelp-reviewactivity-example-1',
-		);
+		];
 	}
 }

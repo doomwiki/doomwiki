@@ -40,7 +40,7 @@ class GadgetDefinitionContent extends JsonContent {
 	 */
 	public function beautifyJSON() {
 		// @todo we should normalize entries in module.scripts and module.styles
-		return FormatJson::encode( $this->getAssocArray(), true, FormatJson::UTF8_OK );
+		return FormatJson::encode( $this->getAssocArray(), "\t", FormatJson::UTF8_OK );
 	}
 
 	/**
@@ -57,7 +57,7 @@ class GadgetDefinitionContent extends JsonContent {
 	) {
 		parent::fillParserOutput( $title, $revId, $options, $generateHtml, $output );
 		$assoc = $this->getAssocArray();
-		foreach ( array( 'scripts', 'styles' ) as $type ) {
+		foreach ( [ 'scripts', 'styles' ] as $type ) {
 			foreach ( $assoc['module'][$type] as $page ) {
 				$title = Title::makeTitleSafe( NS_GADGET, $page );
 				if ( $title ) {
@@ -103,7 +103,7 @@ class GadgetDefinitionContent extends JsonContent {
 	public function getDeletionUpdates( WikiPage $page, ParserOutput $parserOutput = null ) {
 		return array_merge(
 			parent::getDeletionUpdates( $page, $parserOutput ),
-			array( new GadgetDefinitionDeletionUpdate( $page->getTitle()->getText() ) )
+			[ new GadgetDefinitionDeletionUpdate( $page->getTitle()->getText() ) ]
 		);
 	}
 
@@ -119,7 +119,7 @@ class GadgetDefinitionContent extends JsonContent {
 	) {
 		return array_merge(
 			parent::getSecondaryDataUpdates( $title, $old, $recursive, $parserOutput ),
-			array( new GadgetDefinitionSecondaryDataUpdate( $title->getText() ) )
+			[ new GadgetDefinitionSecondaryDataUpdate( $title->getText() ) ]
 		);
 	}
 }

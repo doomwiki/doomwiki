@@ -5,11 +5,12 @@
 			"Ex13",
 			"Herr Mlinka",
 			"MaGa",
-			"SpeedyGonsales"
+			"SpeedyGonsales",
+			"Bugoslav"
 		]
 	},
 	"validationstatistics": "Statistike pregledavanja stranice",
-	"validationstatistics-users": "{{SITENAME}}''' trenutačno ima '''[[Special:ListUsers/editor|$1]]''' {{PLURAL:$1|suradnika|suradnika}} s [[{{MediaWiki:Validationpage}}|uredničkim]] pravima.\n\nUrednici su dokazani suradnici koji mogu provjeriti inačice stranice.",
+	"validationstatistics-users": "{{SITENAME}}''' trenutačno ima '''[[Special:ListUsers/editor|$1]]''' {{PLURAL:$1|suradnik|suradnika}} s [[{{MediaWiki:Validationpage}}|uređivačkim]] pravima.\n\nUređivači su dokazani suradnici koji mogu provjeriti inačice stranica.",
 	"validationstatistics-lastupdate": "''Sljedeći podaci su posljednji put osvježeni $1 u $2.''",
 	"validationstatistics-pndtime": "Izmjene koje su pregledali potvrđeni suradnici smatraju se ''pregledanima''.\n\nProsječno čekanje za pregled [[Special:OldReviewedPages|stranica s nepregledanim izmjenama]] je '''$1'''. Navedeno čekanje označava koliko je dugo najstarija izmjena koja čeka pregled ostala nepregledanom.",
 	"validationstatistics-revtime": "Prosječno čekanje izmjena od strane ''suradnika koji nisu prijavljeni'' za pregled je '''$1'''; medijan je '''$2'''.\n$3",
@@ -20,6 +21,7 @@
 	"validationstatistics-latest": "Sinkronizirano",
 	"validationstatistics-synced": "Usklađeno/Ocijenjeno",
 	"validationstatistics-old": "Zastarjelo",
+	"validationstatistics-unreviewed": "Nepregledano",
 	"validationstatistics-utable": "Ispod je popis {{PLURAL:$1|najaktivnijeg|$1 najaktivnija|$1 najaktivnijih}} ocjenjivača u posljednjih {{PLURAL:$2|sat vremena|$2 sata|$2 sati}}.",
 	"validationstatistics-user": "Suradnik",
 	"validationstatistics-reviews": "Ocjene"

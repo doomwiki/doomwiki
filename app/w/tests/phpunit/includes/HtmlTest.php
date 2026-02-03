@@ -41,12 +41,15 @@ class HtmlTest extends MediaWikiTestCase {
 
 	/**
 	 * @covers Html::element
+	 * @covers Html::rawElement
+	 * @covers Html::openElement
+	 * @covers Html::closeElement
 	 */
 	public function testElementBasics() {
 		$this->assertEquals(
 			'<img/>',
 			Html::element( 'img', null, '' ),
-			'No close tag for short-tag elements'
+			'Self-closing tag for short-tag elements'
 		);
 
 		$this->assertEquals(
@@ -59,12 +62,6 @@ class HtmlTest extends MediaWikiTestCase {
 			'<element></element>',
 			Html::element( 'element', [], '' ),
 			'Close tag for empty element (array, string)'
-		);
-
-		$this->assertEquals(
-			'<img/>',
-			Html::element( 'img', null, '' ),
-			'Self-closing tag for short-tag elements'
 		);
 	}
 
@@ -98,7 +95,6 @@ class HtmlTest extends MediaWikiTestCase {
 	 * @covers Html::expandAttributes
 	 */
 	public function testExpandAttributesSkipsNullAndFalse() {
-
 		# ## EMPTY ########
 		$this->assertEmpty(
 			Html::expandAttributes( [ 'foo' => null ] ),
@@ -139,12 +135,6 @@ class HtmlTest extends MediaWikiTestCase {
 			' selected=""',
 			Html::expandAttributes( [ 'selected' ] ),
 			'Boolean attributes have no value when value is true (passed as numerical array)'
-		);
-
-		$this->assertEquals(
-			' selected=""',
-			Html::expandAttributes( [ 'selected' => true ] ),
-			'Boolean attributes have empty string value when value is true'
 		);
 	}
 
@@ -202,7 +192,6 @@ class HtmlTest extends MediaWikiTestCase {
 			Html::expandAttributes( [ 'zero' => 0 ] ),
 			'Number 0 value needs no quotes'
 		);
-
 	}
 
 	/**
@@ -283,7 +272,7 @@ class HtmlTest extends MediaWikiTestCase {
 	/**
 	 * How do we handle duplicate keys in HTML attributes expansion?
 	 * We could pass a "class" the values: 'GREEN' and array( 'GREEN' => false )
-	 * The later will take precedence.
+	 * The latter will take precedence.
 	 *
 	 * Feature added by r96188
 	 * @covers Html::expandAttributes
@@ -316,6 +305,7 @@ class HtmlTest extends MediaWikiTestCase {
 
 	/**
 	 * @covers Html::namespaceSelector
+	 * @covers Html::namespaceSelectorOptions
 	 */
 	public function testNamespaceSelector() {
 		$this->assertEquals(
@@ -459,7 +449,7 @@ class HtmlTest extends MediaWikiTestCase {
 
 	/**
 	 * List of input element types values introduced by HTML5
-	 * Full list at http://www.w3.org/TR/html-markup/input.html
+	 * Full list at https://www.w3.org/TR/html-markup/input.html
 	 */
 	public static function provideHtml5InputTypes() {
 		$types = [
@@ -524,10 +514,6 @@ class HtmlTest extends MediaWikiTestCase {
 		];
 		$cases[] = [ '<canvas></canvas>',
 			'canvas', [ 'width' => 300 ]
-		];
-
-		$cases[] = [ '<command/>',
-			'command', [ 'type' => 'command' ]
 		];
 
 		$cases[] = [ '<form></form>',
@@ -651,35 +637,6 @@ class HtmlTest extends MediaWikiTestCase {
 		return $ret;
 	}
 
-	/**
-	 * @covers Html::expandAttributes
-	 */
-	public function testFormValidationBlacklist() {
-		$this->assertEmpty(
-			Html::expandAttributes( [
-				'min' => 1,
-				'max' => 100,
-				'pattern' => 'abc',
-				'required' => true,
-				'step' => 2
-			] ),
-			'Blacklist form validation attributes.'
-		);
-		$this->assertEquals(
-			' step="any"',
-			Html::expandAttributes(
-				[
-					'min' => 1,
-					'max' => 100,
-					'pattern' => 'abc',
-					'required' => true,
-					'step' => 'any'
-				],
-				'Allow special case "step=any".'
-			)
-		);
-	}
-
 	public function testWrapperInput() {
 		$this->assertEquals(
 			'<input type="radio" value="testval" name="testname"/>',
@@ -749,6 +706,16 @@ class HtmlTest extends MediaWikiTestCase {
 				[ '1'  => '1x.png', '1.5' => '1_5x.png', '2'  => '2x.png' ],
 				'1x.png 1x, 1_5x.png 1.5x, 2x.png 2x',
 				'pixel depth keys may omit a trailing "x"'
+			],
+			[
+				[ '1'  => 'small.png', '1.5' => 'large.png', '2'  => 'large.png' ],
+				'small.png 1x, large.png 1.5x',
+				'omit larger duplicates'
+			],
+			[
+				[ '1'  => 'small.png', '2'  => 'large.png', '1.5' => 'large.png' ],
+				'small.png 1x, large.png 1.5x',
+				'omit larger duplicates in irregular order'
 			],
 		];
 	}

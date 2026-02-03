@@ -23,6 +23,8 @@
  * @ingroup SpecialPage
  */
 
+use Mediawiki\MediaWikiServices;
+
 /**
  * A special page that allows users to export pages in a XML file
  *
@@ -201,6 +203,7 @@ class SpecialExport extends SpecialPage {
 				'buttontype' => 'submit',
 				'buttonname' => 'addcat',
 				'buttondefault' => $this->msg( 'export-addcat' )->text(),
+				'hide-if' => [ '===', 'exportall', '1' ],
 			],
 		];
 		if ( $config->get( 'ExportFromNamespaces' ) ) {
@@ -216,6 +219,7 @@ class SpecialExport extends SpecialPage {
 					'buttontype' => 'submit',
 					'buttonname' => 'addns',
 					'buttondefault' => $this->msg( 'export-addns' )->text(),
+					'hide-if' => [ '===', 'exportall', '1' ],
 				],
 			];
 		}
@@ -240,6 +244,7 @@ class SpecialExport extends SpecialPage {
 				'nodata' => true,
 				'rows' => 10,
 				'default' => $page,
+				'hide-if' => [ '===', 'exportall', '1' ],
 			],
 		];
 
@@ -356,7 +361,7 @@ class SpecialExport extends SpecialPage {
 
 			$pages = array_keys( $pageSet );
 
-			// Normalize titles to the same format and remove dupes, see bug 17374
+			// Normalize titles to the same format and remove dupes, see T19374
 			foreach ( $pages as $k => $v ) {
 				$pages[$k] = str_replace( " ", "_", $v );
 			}
@@ -367,12 +372,12 @@ class SpecialExport extends SpecialPage {
 		/* Ok, let's get to it... */
 		if ( $history == WikiExporter::CURRENT ) {
 			$lb = false;
-			$db = wfGetDB( DB_SLAVE );
+			$db = wfGetDB( DB_REPLICA );
 			$buffer = WikiExporter::BUFFER;
 		} else {
 			// Use an unbuffered query; histories may be very long!
-			$lb = wfGetLBFactory()->newMainLB();
-			$db = $lb->getConnection( DB_SLAVE );
+			$lb = MediaWikiServices::getInstance()->getDBLoadBalancerFactory()->newMainLB();
+			$db = $lb->getConnection( DB_REPLICA );
 			$buffer = WikiExporter::STREAM;
 
 			// This might take a while... :D
@@ -389,7 +394,7 @@ class SpecialExport extends SpecialPage {
 			$exporter->allPages();
 		} else {
 			foreach ( $pages as $page ) {
-				# Bug 8824: Only export pages the user can read
+				# T10824: Only export pages the user can read
 				$title = Title::newFromText( $page );
 				if ( is_null( $title ) ) {
 					// @todo Perhaps output an <error> tag or something.
@@ -423,7 +428,7 @@ class SpecialExport extends SpecialPage {
 
 		$name = $title->getDBkey();
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			[ 'page', 'categorylinks' ],
 			[ 'page_namespace', 'page_title' ],
@@ -456,7 +461,7 @@ class SpecialExport extends SpecialPage {
 
 		$maxPages = $this->getConfig()->get( 'ExportPagelistLimit' );
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			'page',
 			[ 'page_namespace', 'page_title' ],
@@ -553,7 +558,7 @@ class SpecialExport extends SpecialPage {
 	 * @return array
 	 */
 	private function getLinks( $inputPages, $pageSet, $table, $fields, $join ) {
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 
 		foreach ( $inputPages as $page ) {
 			$title = Title::newFromText( $page );

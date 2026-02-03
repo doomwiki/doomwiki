@@ -1,6 +1,6 @@
-@import "mediawiki.ui/variables";
-@import "mediawiki.mixins";
-@import "minerva.variables";
+@import 'mediawiki.ui/variables';
+@import 'mediawiki.mixins';
+@import 'minerva.variables';
 
 @langMinWidth: 3.2em;
 
@@ -12,16 +12,17 @@
 	}
 
 	.panel {
-		background-color: white;
-		padding: 1em;
+		background-color: #fff;
+		padding: 0.5em;
 	}
 
-	input.search {
-		.background-image-svg( 'magnifying-glass.svg', '' );
-		background-position: 0 0;
-		background-repeat: no-repeat;
-		background-size: 24px 24px;
-		padding: 2px 0 2px 25px;
+	.search-box {
+		// Always show the language search input
+		display: block;
+	}
+
+	.search {
+		box-shadow: none;
 	}
 
 	.list-header {
@@ -39,7 +40,7 @@
 
 	.site-link-list {
 		li {
-			background-color: white;
+			background-color: #fff;
 			padding: 0;
 		}
 
@@ -49,28 +50,8 @@
 			display: block;
 			padding: 0.75em 1em;
 
-			div {
-				display: table-cell;
-				vertical-align: middle;
-				span {
-					font-size: 0.9em;
-				}
-			}
-
-			.lang {
-				background-color: @colorGray9;
-				border-radius: 2px;
-				color: white;
-				display: block;
-				margin-right:0.75em;
-				min-width: @langMinWidth;  // so that the 2 letter language codes don't...
-				//... have different widths due to different letter width
-				padding: 0.5em;
-				text-align: center;
-				text-transform: uppercase;
-				// prevent breaking the lang code at a hyphen
-				white-space: nowrap;
-				letter-spacing:1px;
+			span {
+				font-size: 0.9em;
 			}
 
 			.autonym,
@@ -79,7 +60,7 @@
 			}
 
 			.autonym {
-				color: black;
+				color: #000;
 				font-weight: bold;
 			}
 			.title {
@@ -90,7 +71,7 @@
 	}
 }
 
-@media all and (min-width: @deviceWidthTablet) {
+@media all and ( min-width: @deviceWidthTablet ) {
 	.language-overlay {
 		.site-link-list {
 			padding-left: 0;
@@ -99,7 +80,7 @@
 	}
 }
 
-@media all and (min-width: @wgMFDeviceWidthDesktop) {
+@media screen and ( min-width: @wgMFDeviceWidthDesktop ) {
 	.language-overlay {
 		.overlay-content {
 			margin: 0;

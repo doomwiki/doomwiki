@@ -281,7 +281,10 @@ class SkinMonaco extends SkinTemplate {
 	private function getLines($message_key) {
 		$revision = Revision::newFromTitle(Title::newFromText($message_key, NS_MEDIAWIKI));
 		if(is_object($revision)) {
-			if(trim($revision->getText()) != '') {
+			// replace $revision->getText(), removed in MW 1.29
+			$content = $revision->getContent();
+			$text = ContentHandler::getContentText($content);
+			if(trim($text) != '') {
 				$temp = MonacoSidebar::getMessageAsArray($message_key);
 				if(count($temp) > 0) {
 					wfDebugLog('monaco', sprintf('Get LOCAL %s, which contains %s lines', $message_key, count($temp)));
@@ -409,7 +412,9 @@ class SkinMonaco extends SkinTemplate {
 		global $wgParser, $wgMessageCache;
 		$revision = Revision::newFromTitle(Title::newFromText($name));
 		if(is_object($revision)) {
-			$text = $revision->getText();
+			// replace $revision->getText(), removed in MW 1.29
+			$content = $revision->getContent();
+			$text = ContentHandler::getContentText($content);
 			if(!empty($text)) {
 				$ret = $wgParser->transformMsg($text, $wgMessageCache->getParserOptions());
 				if($asArray) {

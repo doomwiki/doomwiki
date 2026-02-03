@@ -71,6 +71,11 @@
  *    'help-messages'       -- array of message keys/objects. As above, each item can
  *                             be an array of msg key and then parameters.
  *                             Overwrites 'help'.
+ *    'notice'              -- message text for a message to use as a notice in the field.
+ *                             Currently used by OOUI form fields only.
+ *    'notice-messages'     -- array of message keys/objects to use for notice.
+ *                             Overrides 'notice'.
+ *    'notice-message'      -- message key or object to use as a notice.
  *    'required'            -- passed through to the object, indicating that it
  *                             is a required field.
  *    'size'                -- the length of text fields
@@ -142,12 +147,16 @@ class HTMLForm extends ContextSource {
 		'namespaceselect' => 'HTMLSelectNamespace',
 		'namespaceselectwithbutton' => 'HTMLSelectNamespaceWithButton',
 		'tagfilter' => 'HTMLTagFilter',
+		'sizefilter' => 'HTMLSizeFilterField',
 		'submit' => 'HTMLSubmitField',
 		'hidden' => 'HTMLHiddenField',
 		'edittools' => 'HTMLEditTools',
 		'checkmatrix' => 'HTMLCheckMatrix',
 		'cloner' => 'HTMLFormFieldCloner',
 		'autocompleteselect' => 'HTMLAutoCompleteSelectField',
+		'date' => 'HTMLDateTimeField',
+		'time' => 'HTMLDateTimeField',
+		'datetime' => 'HTMLDateTimeField',
 		// HTMLTextField will output the correct type="" attribute automagically.
 		// There are about four zillion other HTML5 input types, like range, but
 		// we don't use those at the moment, so no point in adding all of them.
@@ -156,6 +165,7 @@ class HTMLForm extends ContextSource {
 		'url' => 'HTMLTextField',
 		'title' => 'HTMLTitleTextField',
 		'user' => 'HTMLUserTextField',
+		'usersmultiselect' => 'HTMLUsersMultiselectField',
 	];
 
 	public $mFieldData;
@@ -168,7 +178,9 @@ class HTMLForm extends ContextSource {
 	protected $mFieldTree;
 	protected $mShowReset = false;
 	protected $mShowSubmit = true;
-	protected $mSubmitFlags = [ 'constructive', 'primary' ];
+	protected $mSubmitFlags = [ 'primary', 'progressive' ];
+	protected $mShowCancel = false;
+	protected $mCancelTarget;
 
 	protected $mSubmitCallback;
 	protected $mValidationErrorMessage;
@@ -188,6 +200,7 @@ class HTMLForm extends ContextSource {
 	protected $mSubmitText;
 	protected $mSubmitTooltip;
 
+	protected $mFormIdentifier;
 	protected $mTitle;
 	protected $mMethod = 'post';
 	protected $mWasSubmitted = false;
@@ -267,14 +280,12 @@ class HTMLForm extends ContextSource {
 
 		switch ( $displayFormat ) {
 			case 'vform':
-				$reflector = new ReflectionClass( 'VFormHTMLForm' );
-				return $reflector->newInstanceArgs( $arguments );
+				return ObjectFactory::constructClassInstance( VFormHTMLForm::class, $arguments );
 			case 'ooui':
-				$reflector = new ReflectionClass( 'OOUIHTMLForm' );
-				return $reflector->newInstanceArgs( $arguments );
+				return ObjectFactory::constructClassInstance( OOUIHTMLForm::class, $arguments );
 			default:
-				$reflector = new ReflectionClass( 'HTMLForm' );
-				$form = $reflector->newInstanceArgs( $arguments );
+				/** @var HTMLForm $form */
+				$form = ObjectFactory::constructClassInstance( HTMLForm::class, $arguments );
 				$form->setDisplayFormat( $displayFormat );
 				return $form;
 		}
@@ -346,6 +357,26 @@ class HTMLForm extends ContextSource {
 		}
 
 		$this->mFieldTree = $loadedDescriptor;
+	}
+
+	/**
+	 * @param string $fieldname
+	 * @return bool
+	 */
+	public function hasField( $fieldname ) {
+		return isset( $this->mFlatFields[$fieldname] );
+	}
+
+	/**
+	 * @param string $fieldname
+	 * @return HTMLFormField
+	 * @throws DomainException on invalid field name
+	 */
+	public function getField( $fieldname ) {
+		if ( !$this->hasField( $fieldname ) ) {
+			throw new DomainException( __METHOD__ . ': no field named ' . $fieldname );
+		}
+		return $this->mFlatFields[$fieldname];
 	}
 
 	/**
@@ -478,7 +509,14 @@ class HTMLForm extends ContextSource {
 		}
 
 		# Load data from the request.
-		$this->loadData();
+		if (
+			$this->mFormIdentifier === null ||
+			$this->getRequest()->getVal( 'wpFormIdentifier' ) === $this->mFormIdentifier
+		) {
+			$this->loadData();
+		} else {
+			$this->mFieldData = [];
+		}
 
 		return $this;
 	}
@@ -490,22 +528,29 @@ class HTMLForm extends ContextSource {
 	public function tryAuthorizedSubmit() {
 		$result = false;
 
-		$submit = false;
+		$identOkay = false;
+		if ( $this->mFormIdentifier === null ) {
+			$identOkay = true;
+		} else {
+			$identOkay = $this->getRequest()->getVal( 'wpFormIdentifier' ) === $this->mFormIdentifier;
+		}
+
+		$tokenOkay = false;
 		if ( $this->getMethod() !== 'post' ) {
-			$submit = true; // no session check needed
+			$tokenOkay = true; // no session check needed
 		} elseif ( $this->getRequest()->wasPosted() ) {
 			$editToken = $this->getRequest()->getVal( 'wpEditToken' );
 			if ( $this->getUser()->isLoggedIn() || $editToken !== null ) {
 				// Session tokens for logged-out users have no security value.
 				// However, if the user gave one, check it in order to give a nice
 				// "session expired" error instead of "permission denied" or such.
-				$submit = $this->getUser()->matchEditToken( $editToken, $this->mTokenSalt );
+				$tokenOkay = $this->getUser()->matchEditToken( $editToken, $this->mTokenSalt );
 			} else {
-				$submit = true;
+				$tokenOkay = true;
 			}
 		}
 
-		if ( $submit ) {
+		if ( $tokenOkay && $identOkay ) {
 			$this->mWasSubmitted = true;
 			$result = $this->trySubmit();
 		}
@@ -560,10 +605,14 @@ class HTMLForm extends ContextSource {
 	 */
 	public function trySubmit() {
 		$valid = true;
-		$hoistedErrors = [];
-		$hoistedErrors[] = isset( $this->mValidationErrorMessage )
-			? $this->mValidationErrorMessage
-			: [ 'htmlform-invalid-input' ];
+		$hoistedErrors = Status::newGood();
+		if ( $this->mValidationErrorMessage ) {
+			foreach ( (array)$this->mValidationErrorMessage as $error ) {
+				call_user_func_array( [ $hoistedErrors, 'fatal' ], $error );
+			}
+		} else {
+			$hoistedErrors->fatal( 'htmlform-invalid-input' );
+		}
 
 		$this->mWasSubmitted = true;
 
@@ -590,15 +639,16 @@ class HTMLForm extends ContextSource {
 			if ( $res !== true ) {
 				$valid = false;
 				if ( $res !== false && !$field->canDisplayErrors() ) {
-					$hoistedErrors[] = [ 'rawmessage', $res ];
+					if ( is_string( $res ) ) {
+						$hoistedErrors->fatal( 'rawmessage', $res );
+					} else {
+						$hoistedErrors->fatal( $res );
+					}
 				}
 			}
 		}
 
 		if ( !$valid ) {
-			if ( count( $hoistedErrors ) === 1 ) {
-				$hoistedErrors = $hoistedErrors[0];
-			}
 			return $hoistedErrors;
 		}
 
@@ -894,6 +944,7 @@ class HTMLForm extends ContextSource {
 	 *  - id: (string, optional) DOM id for the button.
 	 *  - attribs: (array, optional) Additional HTML attributes.
 	 *  - flags: (string|string[], optional) OOUI flags.
+	 *  - framed: (boolean=true, optional) OOUI framed attribute.
 	 * @return HTMLForm $this for chaining calls (since 1.20)
 	 */
 	public function addButton( $data ) {
@@ -922,6 +973,7 @@ class HTMLForm extends ContextSource {
 			'id' => null,
 			'attribs' => null,
 			'flags' => null,
+			'framed' => true,
 		];
 
 		return $this;
@@ -972,7 +1024,8 @@ class HTMLForm extends ContextSource {
 		$this->getOutput()->addModuleStyles( 'mediawiki.htmlform.styles' );
 
 		$html = ''
-			. $this->getErrors( $submitResult )
+			. $this->getErrorsOrWarnings( $submitResult, 'error' )
+			. $this->getErrorsOrWarnings( $submitResult, 'warning' )
 			. $this->getHeaderText()
 			. $this->getBody()
 			. $this->getHiddenFields()
@@ -995,6 +1048,7 @@ class HTMLForm extends ContextSource {
 			: 'application/x-www-form-urlencoded';
 		# Attributes
 		$attribs = [
+			'class' => 'mw-htmlform',
 			'action' => $this->getAction(),
 			'method' => $this->getMethod(),
 			'enctype' => $encType,
@@ -1007,6 +1061,9 @@ class HTMLForm extends ContextSource {
 		}
 		if ( $this->mName ) {
 			$attribs['name'] = $this->mName;
+		}
+		if ( $this->needsJSForHtml5FormValidation() ) {
+			$attribs['novalidate'] = true;
 		}
 		return $attribs;
 	}
@@ -1027,7 +1084,7 @@ class HTMLForm extends ContextSource {
 
 		return Html::rawElement(
 			'form',
-			$this->getFormAttributes() + [ 'class' => 'visualClear' ],
+			$this->getFormAttributes(),
 			$html
 		);
 	}
@@ -1038,6 +1095,12 @@ class HTMLForm extends ContextSource {
 	 */
 	public function getHiddenFields() {
 		$html = '';
+		if ( $this->mFormIdentifier !== null ) {
+			$html .= Html::hidden(
+				'wpFormIdentifier',
+				$this->mFormIdentifier
+			) . "\n";
+		}
 		if ( $this->getMethod() === 'post' ) {
 			$html .= Html::hidden(
 				'wpEditToken',
@@ -1106,6 +1169,21 @@ class HTMLForm extends ContextSource {
 			) . "\n";
 		}
 
+		if ( $this->mShowCancel ) {
+			$target = $this->mCancelTarget ?: Title::newMainPage();
+			if ( $target instanceof Title ) {
+				$target = $target->getLocalURL();
+			}
+			$buttons .= Html::element(
+					'a',
+					[
+						'class' => $useMediaWikiUIEverywhere ? 'mw-ui-button' : null,
+						'href' => $target,
+					],
+					$this->msg( 'cancel' )->text()
+				) . "\n";
+		}
+
 		// IE<8 has bugs with <button>, so we'll need to avoid them.
 		$isBadIE = preg_match( '/MSIE [1-7]\./i', $this->getRequest()->getHeader( 'User-Agent' ) );
 
@@ -1167,23 +1245,46 @@ class HTMLForm extends ContextSource {
 	 *
 	 * @param string|array|Status $errors
 	 *
+	 * @deprecated since 1.28, use getErrorsOrWarnings() instead
+	 *
 	 * @return string
 	 */
 	public function getErrors( $errors ) {
-		if ( $errors instanceof Status ) {
-			if ( $errors->isOK() ) {
-				$errorstr = '';
+		wfDeprecated( __METHOD__ );
+		return $this->getErrorsOrWarnings( $errors, 'error' );
+	}
+
+	/**
+	 * Returns a formatted list of errors or warnings from the given elements.
+	 *
+	 * @param string|array|Status $elements The set of errors/warnings to process.
+	 * @param string $elementsType Should warnings or errors be returned.  This is meant
+	 *     for Status objects, all other valid types are always considered as errors.
+	 * @return string
+	 */
+	public function getErrorsOrWarnings( $elements, $elementsType ) {
+		if ( !in_array( $elementsType, [ 'error', 'warning' ], true ) ) {
+			throw new DomainException( $elementsType . ' is not a valid type.' );
+		}
+		$elementstr = false;
+		if ( $elements instanceof Status ) {
+			list( $errorStatus, $warningStatus ) = $elements->splitByErrorType();
+			$status = $elementsType === 'error' ? $errorStatus : $warningStatus;
+			if ( $status->isGood() ) {
+				$elementstr = '';
 			} else {
-				$errorstr = $this->getOutput()->parse( $errors->getWikiText() );
+				$elementstr = $this->getOutput()->parse(
+					$status->getWikiText()
+				);
 			}
-		} elseif ( is_array( $errors ) ) {
-			$errorstr = $this->formatErrors( $errors );
-		} else {
-			$errorstr = $errors;
+		} elseif ( is_array( $elements ) && $elementsType === 'error' ) {
+			$elementstr = $this->formatErrors( $elements );
+		} elseif ( $elementsType === 'error' ) {
+			$elementstr = $elements;
 		}
 
-		return $errorstr
-			? Html::rawElement( 'div', [ 'class' => 'error' ], $errorstr )
+		return $elementstr
+			? Html::rawElement( 'div', [ 'class' => $elementsType ], $elementstr )
 			: '';
 	}
 
@@ -1226,17 +1327,25 @@ class HTMLForm extends ContextSource {
 	/**
 	 * Identify that the submit button in the form has a destructive action
 	 * @since 1.24
+	 *
+	 * @return HTMLForm $this for chaining calls (since 1.28)
 	 */
 	public function setSubmitDestructive() {
 		$this->mSubmitFlags = [ 'destructive', 'primary' ];
+
+		return $this;
 	}
 
 	/**
 	 * Identify that the submit button in the form has a progressive action
 	 * @since 1.25
+	 *
+	 * @return HTMLForm $this for chaining calls (since 1.28)
 	 */
 	public function setSubmitProgressive() {
 		$this->mSubmitFlags = [ 'progressive', 'primary' ];
+
+		return $this;
 	}
 
 	/**
@@ -1301,6 +1410,27 @@ class HTMLForm extends ContextSource {
 	}
 
 	/**
+	 * Set an internal identifier for this form. It will be submitted as a hidden form field, allowing
+	 * HTMLForm to determine whether the form was submitted (or merely viewed). Setting this serves
+	 * two purposes:
+	 *
+	 * - If you use two or more forms on one page, it allows HTMLForm to identify which of the forms
+	 *   was submitted, and not attempt to validate the other ones.
+	 * - If you use checkbox or multiselect fields inside a form using the GET method, it allows
+	 *   HTMLForm to distinguish between the initial page view and a form submission with all
+	 *   checkboxes or select options unchecked.
+	 *
+	 * @since 1.28
+	 * @param string $ident
+	 * @return $this
+	 */
+	public function setFormIdentifier( $ident ) {
+		$this->mFormIdentifier = $ident;
+
+		return $this;
+	}
+
+	/**
 	 * Stop a default submit button being shown for this form. This implies that an
 	 * alternate submit method must be provided manually.
 	 *
@@ -1313,6 +1443,28 @@ class HTMLForm extends ContextSource {
 	public function suppressDefaultSubmit( $suppressSubmit = true ) {
 		$this->mShowSubmit = !$suppressSubmit;
 
+		return $this;
+	}
+
+	/**
+	 * Show a cancel button (or prevent it). The button is not shown by default.
+	 * @param bool $show
+	 * @return HTMLForm $this for chaining calls
+	 * @since 1.27
+	 */
+	public function showCancel( $show = true ) {
+		$this->mShowCancel = $show;
+		return $this;
+	}
+
+	/**
+	 * Sets the target where the user is redirected to after clicking cancel.
+	 * @param Title|string $target Target as a Title object or an URL
+	 * @return HTMLForm $this for chaining calls
+	 * @since 1.27
+	 */
+	public function setCancelTarget( $target ) {
+		$this->mCancelTarget = $target;
 		return $this;
 	}
 
@@ -1727,5 +1879,23 @@ class HTMLForm extends ContextSource {
 	 */
 	protected function getMessage( $value ) {
 		return Message::newFromSpecifier( $value )->setContext( $this );
+	}
+
+	/**
+	 * Whether this form, with its current fields, requires the user agent to have JavaScript enabled
+	 * for the client-side HTML5 form validation to work correctly. If this function returns true, a
+	 * 'novalidate' attribute will be added on the `<form>` element. It will be removed if the user
+	 * agent has JavaScript support, in htmlform.js.
+	 *
+	 * @return boolean
+	 * @since 1.29
+	 */
+	public function needsJSForHtml5FormValidation() {
+		foreach ( $this->mFlatFields as $fieldname => $field ) {
+			if ( $field->needsJSForHtml5FormValidation() ) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

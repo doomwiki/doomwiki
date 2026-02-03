@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\MediaWikiServices;
+
 /**
  * ExtensionRegistry class
  *
@@ -19,7 +21,7 @@ class ExtensionRegistry {
 	/**
 	 * Version of the highest supported manifest version
 	 */
-	const MANIFEST_VERSION = 1;
+	const MANIFEST_VERSION = 2;
 
 	/**
 	 * Version of the oldest supported manifest version
@@ -29,7 +31,7 @@ class ExtensionRegistry {
 	/**
 	 * Bump whenever the registration cache needs resetting
 	 */
-	const CACHE_VERSION = 4;
+	const CACHE_VERSION = 6;
 
 	/**
 	 * Special key that defines the merge strategy
@@ -51,6 +53,13 @@ class ExtensionRegistry {
 	 * @var array
 	 */
 	protected $queued = [];
+
+	/**
+	 * Whether we are done loading things
+	 *
+	 * @var bool
+	 */
+	private $finished = false;
 
 	/**
 	 * Items in the JSON file that aren't being
@@ -98,10 +107,21 @@ class ExtensionRegistry {
 		$this->queued[$path] = $mtime;
 	}
 
+	/**
+	 * @throws MWException If the queue is already marked as finished (no further things should
+	 *  be loaded then).
+	 */
 	public function loadFromQueue() {
-		global $wgVersion;
+		global $wgVersion, $wgDevelopmentWarnings;
 		if ( !$this->queued ) {
 			return;
+		}
+
+		if ( $this->finished ) {
+			throw new MWException(
+				"The following paths tried to load late: "
+				. implode( ', ', array_keys( $this->queued ) )
+			);
 		}
 
 		// A few more things to vary the cache on
@@ -113,7 +133,7 @@ class ExtensionRegistry {
 		// We use a try/catch because we don't want to fail here
 		// if $wgObjectCaches is not configured properly for APC setup
 		try {
-			$cache = ObjectCache::getLocalServerInstance();
+			$cache = MediaWikiServices::getInstance()->getLocalServerObjectCache();
 		} catch ( MWException $e ) {
 			$cache = new EmptyBagOStuff();
 		}
@@ -132,7 +152,10 @@ class ExtensionRegistry {
 			// did that, but it should be cached
 			$data['globals']['wgAutoloadClasses'] += $data['autoload'];
 			unset( $data['autoload'] );
-			$cache->set( $key, $data, 60 * 60 * 24 );
+			if ( !( $data['warnings'] && $wgDevelopmentWarnings ) ) {
+				// If there were no warnings that were shown, cache it
+				$cache->set( $key, $data, 60 * 60 * 24 );
+			}
 		}
 		$this->queued = [];
 	}
@@ -156,6 +179,15 @@ class ExtensionRegistry {
 	}
 
 	/**
+	 * After this is called, no more extensions can be loaded
+	 *
+	 * @since 1.29
+	 */
+	public function finish() {
+		$this->finished = true;
+	}
+
+	/**
 	 * Process a queue of extensions and return their extracted data
 	 *
 	 * @param array $queue keys are filenames, values are ignored
@@ -167,8 +199,10 @@ class ExtensionRegistry {
 		$autoloadClasses = [];
 		$autoloaderPaths = [];
 		$processor = new ExtensionProcessor();
+		$versionChecker = new VersionChecker( $wgVersion );
+		$extDependencies = [];
 		$incompatible = [];
-		$coreVersionParser = new CoreVersionChecker( $wgVersion );
+		$warnings = false;
 		foreach ( $queue as $path => $mtime ) {
 			$json = file_get_contents( $path );
 			if ( $json === false ) {
@@ -178,35 +212,51 @@ class ExtensionRegistry {
 			if ( !is_array( $info ) ) {
 				throw new Exception( "$path is not a valid JSON file." );
 			}
+
 			if ( !isset( $info['manifest_version'] ) ) {
+				wfDeprecated(
+					"{$info['name']}'s extension.json or skin.json does not have manifest_version",
+					'1.29'
+				);
+				$warnings = true;
 				// For backwards-compatability, assume a version of 1
 				$info['manifest_version'] = 1;
 			}
 			$version = $info['manifest_version'];
 			if ( $version < self::OLDEST_MANIFEST_VERSION || $version > self::MANIFEST_VERSION ) {
-				throw new Exception( "$path: unsupported manifest_version: {$version}" );
+				$incompatible[] = "$path: unsupported manifest_version: {$version}";
 			}
+
 			$autoload = $this->processAutoLoader( dirname( $path ), $info );
 			// Set up the autoloader now so custom processors will work
 			$GLOBALS['wgAutoloadClasses'] += $autoload;
 			$autoloadClasses += $autoload;
-			// Check any constraints against MediaWiki core
+
+			// get all requirements/dependencies for this extension
 			$requires = $processor->getRequirements( $info );
-			if ( isset( $requires[self::MEDIAWIKI_CORE] )
-				&& !$coreVersionParser->check( $requires[self::MEDIAWIKI_CORE] )
-			) {
-				// Doesn't match, mark it as incompatible.
-				$incompatible[] = "{$info['name']} is not compatible with the current "
-					. "MediaWiki core (version {$wgVersion}), it requires: " . $requires[self::MEDIAWIKI_CORE]
-					. '.';
-				continue;
+
+			// validate the information needed and add the requirements
+			if ( is_array( $requires ) && $requires && isset( $info['name'] ) ) {
+				$extDependencies[$info['name']] = $requires;
 			}
+
 			// Get extra paths for later inclusion
 			$autoloaderPaths = array_merge( $autoloaderPaths,
 				$processor->getExtraAutoloaderPaths( dirname( $path ), $info ) );
 			// Compatible, read and extract info
 			$processor->extractInfo( $path, $info, $version );
 		}
+		$data = $processor->getExtractedInfo();
+		$data['warnings'] = $warnings;
+
+		// check for incompatible extensions
+		$incompatible = array_merge(
+			$incompatible,
+			$versionChecker
+				->setLoadedExtensionsAndSkins( $data['credits'] )
+				->checkArray( $extDependencies )
+		);
+
 		if ( $incompatible ) {
 			if ( count( $incompatible ) === 1 ) {
 				throw new Exception( $incompatible[0] );
@@ -214,7 +264,7 @@ class ExtensionRegistry {
 				throw new Exception( implode( "\n", $incompatible ) );
 			}
 		}
-		$data = $processor->getExtractedInfo();
+
 		// Need to set this so we can += to it later
 		$data['globals']['wgAutoloadClasses'] = [];
 		$data['autoload'] = $autoloadClasses;
@@ -248,6 +298,9 @@ class ExtensionRegistry {
 			switch ( $mergeStrategy ) {
 				case 'array_merge_recursive':
 					$GLOBALS[$key] = array_merge_recursive( $GLOBALS[$key], $val );
+					break;
+				case 'array_replace_recursive':
+					$GLOBALS[$key] = array_replace_recursive( $GLOBALS[$key], $val );
 					break;
 				case 'array_plus_2d':
 					$GLOBALS[$key] = wfArrayPlus2d( $GLOBALS[$key], $val );

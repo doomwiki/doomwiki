@@ -27,11 +27,11 @@ class ExtMobileFrontend {
 	 * Transforms content to be mobile friendly version.
 	 * Filters out various elements and runs the MobileFormatter.
 	 * @param OutputPage $out
-	 * @param string $mode mobile mode, i.e. stable or beta
+	 * @param string $text override out html
 	 *
 	 * @return string
 	 */
-	public static function DOMParse( OutputPage $out, $text = null, $isBeta = false ) {
+	public static function DOMParse( OutputPage $out, $text = null ) {
 		$html = $text ? $text : $out->getHTML();
 
 		$context = MobileContext::singleton();
@@ -45,7 +45,7 @@ class ExtMobileFrontend {
 		$formatter = MobileFormatter::newFromContext( $context, $html );
 		$formatter->enableTOCPlaceholder( $includeTOC );
 
-		Hooks::run( 'MobileFrontendBeforeDOM', array( $context, $formatter ) );
+		Hooks::run( 'MobileFrontendBeforeDOM', [ $context, $formatter ] );
 
 		$isSpecialPage = $title->isSpecialPage();
 
@@ -64,11 +64,12 @@ class ExtMobileFrontend {
 
 		$removeImages = $context->isLazyLoadImagesEnabled();
 		$removeReferences = $context->isLazyLoadReferencesEnabled();
+		$showFirstParagraphBeforeInfobox = $context->shouldShowFirstParagraphBeforeInfobox();
 
 		if ( $context->getContentTransformations() ) {
 			// Remove images if they're disabled from special pages, but don't transform otherwise
 			$formatter->filterContent( /* remove defaults */ !$isSpecialPage,
-				$removeReferences, $removeImages );
+				$removeReferences, $removeImages, $showFirstParagraphBeforeInfobox );
 		}
 
 		$contentHtml = $formatter->getText();

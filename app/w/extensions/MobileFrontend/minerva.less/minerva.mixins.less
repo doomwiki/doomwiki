@@ -1,14 +1,15 @@
-@import "mediawiki.mixins.less";
+@import 'mediawiki.mixins.less';
+@import 'mediawiki.mixins.animation.less';
 
 // Shorthand for background-image-svg in core
 .background-image-svg-quick( @url ) {
-	.background-image-svg( ~"@{url}.svg", ~"@{url}.png" );
+	.background-image-svg( ~'@{url}.svg', ~'@{url}.png' );
 }
 
 .m-background-image( @url ) {
 	&:after,
 	&:before {
-		.background-image(@url)
+		.background-image( @url );
 	}
 }
 
@@ -20,28 +21,7 @@
 }
 
 .m-background-image-svg-quick( @url ) {
-	.m-background-image-svg( ~"@{url}.svg", ~"@{url}.png" );
-}
-
-.box-sizing( @value ) {
-	-moz-box-sizing: @value;
-	-webkit-box-sizing: @value;
-	box-sizing: @value;
-}
-
-.background-size( @width: auto, @height: auto ) {
-	/* use -webkit prefix for older android browsers eg. nexus 1 */
-	-o-background-size: @width @height;
-	-webkit-background-size: @width @height;
-	background-size: @width @height;
-}
-
-.vertical-gradient ( @startColor: gray, @endColor: white, @startPos: 0, @endPos: 100% ) {
-	background-color: @endColor;
-	background-image: -moz-linear-gradient( top, @startColor @startPos, @endColor @endPos ); // Firefox 3.6+
-	background-image: -webkit-gradient( linear, left top, left bottom, color-stop( @startPos, @startColor ), color-stop( @endPos, @endColor ) ); // Safari 4+, Chrome 2+
-	background-image: -webkit-linear-gradient( top, @startColor @startPos, @endColor @endPos ); // Safari 5.1+, Chrome 10+
-	background-image: linear-gradient( @startColor @startPos, @endColor @endPos ); // Standard
+	.m-background-image-svg( ~'@{url}.svg', ~'@{url}.png' );
 }
 
 .transform( @transform ) {
@@ -66,7 +46,10 @@
 	transition: transform @arguments;
 }
 
-.animation( @args ) {
-	-webkit-animation: @args;
-	animation: @args;
+// Generic mixin for applying styles to text that accompanies/adds context to workflows
+.secondary-text() {
+	font-size: 0.9em;
+	color: @grayMedium;
+	margin-top: 0.5em;
+	line-height: 1.4;
 }

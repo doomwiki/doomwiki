@@ -31,7 +31,7 @@ class QualityOversight extends SpecialPage {
 		}
 
 		# Get extra query conds
-		$conds = array( 'log_namespace' => $this->namespace, 'log_action' => $actions );
+		$conds = [ 'log_namespace' => $this->namespace, 'log_action' => $actions ];
 		# Get cutoff time (mainly for performance)
 		if ( !$u ) {
 			$dbr = wfGetDB( DB_SLAVE );
@@ -64,13 +64,13 @@ class QualityOversight extends SpecialPage {
 			$out->addWikiMsg( 'logempty' );
 		}
 	}
-	
+
 	private function showForm() {
 		global $wgScript;
 
 		$this->getOutput()->addHTML(
-			Xml::openElement( 'form', array( 'name' => 'qualityoversight',
-				'action' => $wgScript, 'method' => 'get' ) ) .
+			Xml::openElement( 'form', [ 'name' => 'qualityoversight',
+				'action' => $wgScript, 'method' => 'get' ] ) .
 			'<fieldset><legend>' . $this->msg( 'qualityoversight-legend' )->escaped() . '</legend><p>' .
 			Html::hidden( 'title', $this->getPageTitle()->getPrefixedDBKey() ) .
 			FlaggedRevsXML::getNamespaceMenu( $this->namespace ) . '&#160;' .
@@ -88,16 +88,16 @@ class QualityOversight extends SpecialPage {
 			'</p></fieldset>' . Xml::closeElement( 'form' )
 		);
 	}
-	
+
 	/*
 	 * Get actions for IN clause
 	 * @return array
 	 */
 	private function getActions() {
-		$actions = array(
+		$actions = [
 			'approve' => 1, 'approve2' => 1, 'approve-a' => 1, 'approve-i' => 1,
 			'approve-ia' => 1, 'approve2-i' => 1, 'unapprove' => 1, 'unapprove2' => 1
-		);
+		];
 		if ( $this->level === 0 ) { // checked revisions
 			$actions['approve2'] = 0;
 			$actions['approve2-i'] = 0;
@@ -140,7 +140,7 @@ class QualityOversight extends SpecialPage {
 			$actions['unapprove'] = 0;
 			$actions['unapprove2'] = 0;
 		}
-		$showActions = array();
+		$showActions = [];
 		foreach ( $actions as $action => $show ) {
 			if ( $show )
 				$showActions[] = $action;

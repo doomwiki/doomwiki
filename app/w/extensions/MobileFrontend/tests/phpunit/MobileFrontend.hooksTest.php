@@ -4,6 +4,33 @@
  * @group MobileFrontend
  */
 class MobileFrontendHooksTest extends MediaWikiTestCase {
+
+	protected function setUp() {
+		parent::setUp();
+
+		MobileContext::resetInstanceForTesting();
+	}
+
+	/**
+	 * Test no alternate/canonical link is set on Special:MobileCite
+	 *
+	 * @covers MobileFrontendHooks::OnBeforePageDisplay
+	 */
+	public function testSpecialMobileCiteOnBeforePageDisplay() {
+		$this->setMwGlobals( [
+			'wgMobileUrlTemplate' => true,
+			'wgMFNoindexPages' => true
+		] );
+		$param = $this->getContextSetup( 'mobile', [], SpecialPage::getTitleFor( 'MobileCite' ) );
+		$out = $param['out'];
+		$sk = $param['sk'];
+
+		MobileFrontendHooks::onBeforePageDisplay( $out, $sk );
+
+		$links = $out->getLinkTags();
+		$this->assertEquals( 0, count( $links ),
+			'test, no alternate or canonical link is added' );
+	}
 	/**
 	 * Test headers and alternate/canonical links to be set or not
 	 *
@@ -15,13 +42,13 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		$isAlternateCanonical, $isXAnalytics, $mfVaryHeaderSet
 	) {
 		// set globals
-		$this->setMwGlobals( array(
+		$this->setMwGlobals( [
 			'wgMobileUrlTemplate' => $mobileUrlTemplate,
 			'wgMFNoindexPages' => $mfNoindexPages,
 			'wgMFEnableXAnalyticsLogging' => $mfEnableXAnalyticsLogging,
 			'wgMFAutodetectMobileView' => $mfAutoDetectMobileView,
 			'wgMFVaryOnUA' => $mfVaryOnUA,
-		) );
+		] );
 
 		// test with forced mobile view
 		$param = $this->getContextSetup( 'mobile', $mfXAnalyticsItems );
@@ -82,12 +109,13 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 	 * outputpage and skintemplate.
 	 *
 	 * @param string $mode The mode for the test cases (desktop, mobile)
+	 * @param array $mfXAnalyticsItems
+	 * @param Title $title
 	 * @return array Array of objects, including MobileContext (context),
 	 * SkinTemplate (sk) and OutputPage (out)
 	 */
-	protected function getContextSetup( $mode, $mfXAnalyticsItems ) {
-		// Create a new MobileContext object for this test
-		MobileContext::setInstance( null );
+	protected function getContextSetup( $mode, $mfXAnalyticsItems, $title = null ) {
+		MobileContext::resetInstanceForTesting();
 		// create a new instance of MobileContext
 		$context = MobileContext::singleton();
 		// create a DerivativeContext to use in MobileContext later
@@ -96,8 +124,10 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		$out = new OutputPage( $context );
 		// create a new, empty SkinTemplate
 		$sk = new SkinTemplate();
-		// create a new Title (main page)
-		$title = Title::newMainPage();
+		if ( is_null( $title ) ) {
+			// create a new Title (main page)
+			$title = Title::newMainPage();
+		}
 		// create a FauxRequest to use instead of a WebRequest object (FauxRequest forces
 		// the creation of a FauxResponse, which allows to investigate sent header values)
 		$request = new FauxRequest();
@@ -117,61 +147,97 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		foreach ( $mfXAnalyticsItems as $key => $val ) {
 			$context->addAnalyticsLogItem( $key, $val );
 		}
-		// set the newly created MobileContext object as the current instance to use
-		MobileContext::setInstance( $context );
 
 		// return the stuff
-		return array(
+		return [
 			'out' => $out,
 			'sk' => $sk,
 			'context' => $context,
-		);
+		];
 	}
 
 	/**
 	 * Dataprovider fro testOnBeforePageDisplay
 	 */
 	public function onBeforePageDisplayDataProvider() {
-		return array(
+		return [
 			// wgMobileUrlTemplate, wgMFNoindexPages, wgMFEnableXAnalyticsLogging, wgMFAutodetectMobileView,
 			// wgMFVaryOnUA, XanalyticsItems, alternate & canonical link, XAnalytics, Vary header User-Agent
-			array( true, true, true, true, true,
-				array( 'mf-m' => 'a', 'zero' => '502-13' ), 1, true, false, ),
-			array( true, false, true, false, false,
-				array( 'mf-m' => 'a', 'zero' => '502-13' ), 0, true, false, ),
-			array( false, true, true, true, true,
-				array( 'mf-m' => 'a', 'zero' => '502-13' ), 0, true, true, ),
-			array( false, false, true, false, false,
-				array( 'mf-m' => 'a', 'zero' => '502-13' ), 0, true, false, ),
-			array( true, true, false, true, true, array(), 1, false, false, ),
-			array( true, false, false, false, false, array(), 0, false, false, ),
-			array( false, true, false, true, true, array(), 0, false, true, ),
-			array( false, false, false, false, false, array(), 0, false, false, ),
-			array( false, false, false, false, true, array(), 0, false, false, ),
-		);
+			[ true, true, true, true, true,
+				[ 'mf-m' => 'a', 'zero' => '502-13' ], 1, true, false, ],
+			[ true, false, true, false, false,
+				[ 'mf-m' => 'a', 'zero' => '502-13' ], 0, true, false, ],
+			[ false, true, true, true, true,
+				[ 'mf-m' => 'a', 'zero' => '502-13' ], 0, true, true, ],
+			[ false, false, true, false, false,
+				[ 'mf-m' => 'a', 'zero' => '502-13' ], 0, true, false, ],
+			[ true, true, false, true, true, [], 1, false, false, ],
+			[ true, false, false, false, false, [], 0, false, false, ],
+			[ false, true, false, true, true, [], 0, false, true, ],
+			[ false, false, false, false, false, [], 0, false, false, ],
+			[ false, false, false, false, true, [], 0, false, false, ],
+		];
 	}
 
 	public function testOnTitleSquidURLs() {
-		$this->setMwGlobals( array(
+		$this->setMwGlobals( [
 			'wgMobileUrlTemplate' => '%h0.m.%h1.%h2',
 			'wgServer' => 'http://en.wikipedia.org',
 			'wgArticlePath' => '/wiki/$1',
 			'wgScriptPath' => '/w',
 			'wgScript' => '/w/index.php',
-		) );
-		MobileContext::setInstance( null );
-
+		] );
 		$title = Title::newFromText( 'PurgeTest' );
 
 		$urls = $title->getCdnUrls();
 
-		$expected = array(
+		$expected = [
 			'http://en.wikipedia.org/wiki/PurgeTest',
 			'http://en.wikipedia.org/w/index.php?title=PurgeTest&action=history',
 			'http://en.m.wikipedia.org/w/index.php?title=PurgeTest&action=history',
 			'http://en.m.wikipedia.org/wiki/PurgeTest',
-		);
+		];
 
 		$this->assertArrayEquals( $expected, $urls );
+	}
+
+	/**
+	 * @dataProvider provideOnPageRenderingHash
+	 * @covers MobileFrontendHooks::onPageRenderingHash
+	 *
+	 * @param bool $shouldConfstrChange Whether $confstr parameter should have
+	 *  changed
+	 * @param bool $forceMobileView
+	 * @param bool $stripResponsiveImages
+	 */
+	public function testOnPageRenderingHash(
+		$shouldConfstrChange,
+		$forceMobileView,
+		$stripResponsiveImages
+	) {
+		$context = MobileContext::singleton();
+		$context->setForceMobileView( $forceMobileView );
+		$context->setStripResponsiveImages( $stripResponsiveImages );
+
+		$expectedConfstr = $confstr = '';
+
+		if ( $shouldConfstrChange ) {
+			$expectedConfstr = '!responsiveimages=0';
+		}
+
+		$user = new User();
+		$forOptions = [];
+
+		MobileFrontendHooks::onPageRenderingHash( $confstr, $user, $forOptions );
+
+		$this->assertEquals( $expectedConfstr, $confstr );
+	}
+
+	public static function provideOnPageRenderingHash() {
+		return [
+			[ true, true, true ],
+			[ false, true, false ],
+			[ false, false, true ],
+		];
 	}
 }

@@ -21,10 +21,12 @@ class ButtonInputWidget extends InputWidget {
 	 */
 	public static $supportsSimpleLabel = false;
 
+	public static $tagName = 'span';
+
 	/* Properties */
 
 	/**
-	 * Whether to use `<input/>` rather than `<button/>`.
+	 * Whether to use `<input>` rather than `<button>`.
 	 *
 	 * @var boolean
 	 */
@@ -34,7 +36,7 @@ class ButtonInputWidget extends InputWidget {
 	 * @param array $config Configuration options
 	 * @param string $config['type'] HTML tag `type` attribute, may be 'button', 'submit' or 'reset'
 	 *   (default: 'button')
-	 * @param boolean $config['useInputTag'] Whether to use `<input/>` rather than `<button/>`. Only
+	 * @param boolean $config['useInputTag'] Whether to use `<input>` rather than `<button>`. Only
 	 *   useful if you need IE 6 support in a form with multiple buttons. If you use this option,
 	 *   icons and indicators will not be displayed, it won't be possible to have a non-plaintext
 	 *   label, and it won't be possible to set a value (which will internally become identical to the
@@ -78,7 +80,7 @@ class ButtonInputWidget extends InputWidget {
 	/**
 	 * Set label value.
 	 *
-	 * Overridden to support setting the 'value' of `<input/>` elements.
+	 * Overridden to support setting the 'value' of `<input>` elements.
 	 *
 	 * @param string|null $label Label text
 	 * @return $this
@@ -99,7 +101,7 @@ class ButtonInputWidget extends InputWidget {
 	/**
 	 * Set the value of the input.
 	 *
-	 * Overridden to disable for `<input/>` elements, which have value identical to the label.
+	 * Overridden to disable for `<input>` elements, which have value identical to the label.
 	 *
 	 * @param string $value New value
 	 * @return $this

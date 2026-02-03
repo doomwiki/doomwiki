@@ -22,7 +22,8 @@
 			"Umherirrender",
 			"Liuxinyu970226",
 			"Nemo bis",
-			"Revi"
+			"Revi",
+			"Beta16"
 		]
 	},
 	"checkuser-summary": "Explanation of CheckUser tool. See [[mw:Extension:CheckUser#Basic_interface|screenshot titled 'Basic CheckUser interface']].\n\nParameters:\n* $1 - an integer. default value: 16\n* $2 - an integer. default value: 32",
@@ -76,6 +77,7 @@
 	"checkuser-block-failure": "Used as failure message in [[Special:CheckUser]].\n\nSee also:\n* {{msg-mw|Checkuser-block-success}}\n* {{msg-mw|Checkuser-block-limit}}\n* {{msg-mw|Checkuser-block-noreason}}",
 	"checkuser-block-limit": "Used as failure message in [[Special:CheckUser]].\n\nSee also:\n* {{msg-mw|Checkuser-block-success}}\n* {{msg-mw|Checkuser-block-failure}}\n* {{msg-mw|Checkuser-block-noreason}}",
 	"checkuser-block-noreason": "Used as failure message in [[Special:CheckUser]].\n\nSee also:\n* {{msg-mw|Checkuser-block-success}}\n* {{msg-mw|Checkuser-block-failure}}\n* {{msg-mw|Checkuser-block-limit}}",
+	"checkuser-centralauth-multilock": "Label of link to Special:MultiLock shown on Special:CheckUser's block form.\n\nCf. {{msg-mw|multilock}}.",
 	"checkuser-noreason": "Used as error message in [[Special:CheckUser]].",
 	"checkuser-accounts": "Used in Special:CheckUser. Parameters:\n* $1 - number of accounts",
 	"checkuser-too-many": "Used in [[Special:CheckUser]].\n\nThis message is followed by a list of IPs that have edits.\n\nIf the number of IPs is 5000 or more, the following message is shown:\n* {{msg-mw|checkuser-limited}}",
@@ -99,6 +101,8 @@
 	"checkuser-create-action": "Text of the event displayed in the CheckUser results. Indicates creation of the user.",
 	"checkuser-email-action": "Logged text when a user sends an e-mail. Probably preceded by the name of the checkuser.\n\nParameters:\n* $1 - a salted MD5 hash for the user an email was sent to",
 	"checkuser-reset-action": "Logged text when a user resets a password. Parameters:\n* $1 - the username for which the password was reset. Can be used for GENDER.",
+	"checkuser-userlinks-ip": "Links shown next to an IP address in a CheckUser result entry. $1 - IP address\n\nSee also:\n*{{msg-mw|Signature}}\n*{{msg-mw|Checkuser-userlinks}}",
+	"checkuser-userlinks": "Links shown next to a user in a CheckUser result entry. $1 - Name of user\n\nSee also:\n*{{msg-mw|Signature}}\n*{{msg-mw|Checkuser-userlinks-ip}}",
 	"checkuser-toollinks": "{{notranslate}}\nParameters:\n* $1 - IP address",
 	"checkuser-token-fail": "Error message shown when the CSRF token does not match the current session.",
 	"group-checkuser.css": "{{doc-group|checkuser|css}}",
@@ -118,6 +122,9 @@
 	"apihelp-query+checkuserlog-param-limit": "{{doc-apihelp-param|query+checkuserlog|limit}}",
 	"apihelp-query+checkuserlog-param-from": "{{doc-apihelp-param|query+checkuserlog|from}}",
 	"apihelp-query+checkuserlog-param-to": "{{doc-apihelp-param|query+checkuserlog|to}}",
-	"apihelp-query+checkuserlog-example-1": "Do not translate \"User:Example\".\n----\n{{doc-apihelp-example|query+checkuserlog}}",
-	"apihelp-query+checkuserlog-example-2": "{{doc-apihelp-example|query+checkuserlog}}"
+	"apihelp-query+checkuserlog-example-1": "{{doc-important|Do not translate \"User:Example\".}}\n{{doc-apihelp-example|query+checkuserlog}}",
+	"apihelp-query+checkuserlog-example-2": "{{doc-apihelp-example|query+checkuserlog}}",
+	"apierror-checkuser-missingsummary": "{{doc-apierror}}",
+	"apierror-checkuser-timelimit": "{{doc-apierror}}",
+	"apierror-checkuser-invalidmode": "{{doc-apierror}}"
 }

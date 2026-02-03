@@ -1,5 +1,5 @@
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 // Pages
 //
@@ -36,8 +36,8 @@
 
 .list-header {
 	font-weight: bold;
-	font-size: .85em;
-	padding: .5em @contentMargin .4em @contentMargin;
+	font-size: 0.85em;
+	padding: 0.5em @contentMargin 0.4em @contentMargin;
 	background-color: @grayLightest;
 	color: @grayMedium;
 }
@@ -48,7 +48,7 @@
 
 	&.list-thumb-none {
 		background-color: @grayLightest;
-		.background-image-svg-quick('noimage');
+		.background-image-svg-quick( 'noimage' );
 	}
 
 	&.list-thumb-x {
@@ -60,8 +60,8 @@
 	}
 }
 
-@media all and (min-width: @deviceWidthTablet) {
+@media all and ( min-width: @deviceWidthTablet ) {
 	.list-header {
-		padding: .5em @contentPaddingTablet .4em @contentMargin;
+		padding: 0.5em @contentPaddingTablet 0.4em @contentMargin;
 	}
 }

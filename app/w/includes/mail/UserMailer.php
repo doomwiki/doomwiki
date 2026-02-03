@@ -103,9 +103,9 @@ class UserMailer {
 	 * @param string $subject Email's subject.
 	 * @param string $body Email's text or Array of two strings to be the text and html bodies
 	 * @param array $options:
-	 * 		'replyTo' MailAddress
-	 * 		'contentType' string default 'text/plain; charset=UTF-8'
-	 * 		'headers' array Extra headers to set
+	 *     'replyTo' MailAddress
+	 *     'contentType' string default 'text/plain; charset=UTF-8'
+	 *     'headers' array Extra headers to set
 	 *
 	 * @throws MWException
 	 * @throws Exception
@@ -197,9 +197,9 @@ class UserMailer {
 	 * @param string $subject Email's subject.
 	 * @param string $body Email's text or Array of two strings to be the text and html bodies
 	 * @param array $options:
-	 * 		'replyTo' MailAddress
-	 * 		'contentType' string default 'text/plain; charset=UTF-8'
-	 * 		'headers' array Extra headers to set
+	 *     'replyTo' MailAddress
+	 *     'contentType' string default 'text/plain; charset=UTF-8'
+	 *     'headers' array Extra headers to set
 	 *
 	 * @throws MWException
 	 * @throws Exception
@@ -290,7 +290,7 @@ class UserMailer {
 			->getFullURL( '', false, PROTO_CANONICAL ) . '>';
 
 		// Line endings need to be different on Unix and Windows due to
-		// the bug described at http://trac.wordpress.org/ticket/2603
+		// the bug described at https://core.trac.wordpress.org/ticket/2603
 		$endl = PHP_EOL;
 
 		if ( is_array( $body ) ) {
@@ -409,7 +409,7 @@ class UserMailer {
 			try {
 				foreach ( $to as $recip ) {
 					$sent = mail(
-						$recip->toString(),
+						$recip,
 						self::quotedPrintable( $subject ),
 						$body,
 						$headers,

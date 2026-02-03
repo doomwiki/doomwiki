@@ -1,16 +1,19 @@
 // Component of ui.less
 // FIXME: Move to components/
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
+
+/* stylelint-disable no-descending-specificity */
 
 /* Left menu */
-@menuBorder: 12px;
+@menuSectionPadding: 22px;
 @menuBorderColor: #252525;
-@menuLinkLineHeight: 22px;
-@menuItemFontSize: 1.2em;
+@menuLinkLineHeight: 24px;
+@menuItemFontSize: 0.875em;
+@menuItemBackgroundColor: @skinContentBgColor;
 
 @pageLeftListDarkBorderColor: #3e3e3e;
-@pageLeftListMediumBorderColor: #5C5C5C;
+@pageLeftListMediumBorderColor: #5c5c5c;
 @pageLeftListLightBorderColor: #717171;
 
 #mw-mf-viewport {
@@ -26,117 +29,117 @@
 .main-menu-button {
 	&.indicator-circle {
 		overflow: initial;
-		&::after {
+		&:after {
 			content: '';
 			background-color: @colorProgressive;
-		  width: .65em;
-		  height: .65em;
-		  position: absolute;
-		  top: -0.4em;
-		  right: .6em;
-		  border-radius: .5em;
-		  border: solid .2em white;
+			width: 0.65em;
+			height: 0.65em;
+			position: absolute;
+			top: -0.4em;
+			right: 0.6em;
+			border: 0.2em solid #fff;
+			border-radius: 0.5em;
 		}
 	}
-}
-
-nav {
-	float: left;
 }
 
 // needs to be more specific than .overlay rules
 .notifications-overlay.navigation-drawer {
 	right: 0;
-
 	height: 100%;
 	width: auto;
-	box-shadow: -5px 0 0 0 rgba(0, 0, 0, 0.3);
+	box-shadow: -5px 0 0 0 rgba( 0, 0, 0, 0.3 );
 }
 
 nav {
-	font-size: 90%;
+	background-color: @primaryNavBackgroundColor;
+	float: left;
 	min-height: 100%;
-	background: @mainMenuBackgroundColor;
-	border-left: solid @menuBorder @menuBorderColor;
 
+	.secondary-action {
+		border: 0;
+		position: absolute;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		padding-right: 0;
+		border-left: 1px solid @grayMediumLight;
+	}
 
-	.client-js & {
-		.secondary-action {
-			border: none;
-			position: absolute;
-			right: 0;
-			top: 0;
-			bottom: 0;
-			padding-right: 0;
-			border-left: 1px solid @colorGray7;
-		}
-
-		.primary-action {
-			// 1px for the logout icon border-left
-			margin-right: @menuLinkLineHeight * 2 + 1;
-		}
+	.primary-action {
+		// 1px for the logout icon border-left
+		margin-right: @iconSize + @iconGutterWidth * 2;
 	}
 
 	ul {
-		&:first-child {
-			border-bottom: @menuBorder solid @menuBorderColor;
+		padding-bottom: @menuSectionPadding;
 
+		&:first-child {
 			li:first-child {
-				border-top: none;
+				border-top: 0;
 			}
 		}
 
 		li {
+			background-color: @menuItemBackgroundColor;
 			position: relative; // ensure the logout link in beta can be position absolute
+			border-top: 1px solid @colorGray14;
+			// offset the border for the icon by 1px
+			margin-top: -1px;
 			font-size: @menuItemFontSize;
-			border-top: 1px solid @colorGray7;
 
-			&:hover {
-				background-color: @colorGray5;
-				margin-left: -@menuBorder;
-				a {
-					border-left: solid @menuBorder #3366BB;
-				}
-			}
-			&:last-child {
-				border-bottom: 1px solid @colorGray7;
+			&:first-child {
+				border-top: 0;
 			}
 
 			a {
-				color: white;
+				color: @colorGray5;
 				display: block;
-				padding: @menuLinkLineHeight / 2 10px @menuLinkLineHeight / 2 9px;
+				padding: @menuLinkLineHeight / 2 10px @menuLinkLineHeight / 2 15px;
 
 				&:hover {
+					box-shadow: inset 4px 0 0 0 @colorProgressive;
 					text-decoration: none;
 				}
 
 				&:visited,
 				&:active {
-					color: white;
+					color: @colorGray5;
+				}
+
+				&.mw-ui-icon {
+					font-weight: bold;
+					line-height: 1.857; // equals `26px` at `font-size: 14px` above
+
+					&:before {
+						font-size: 16px;
+					}
 				}
 			}
 		}
 
 		&.hlist {
 			li {
-				font-size: 0.8em;
+				background-color: transparent;
+				border: 0;
 				margin: 0;
-				border: none;
+				font-size: 0.75em; // equals `12px` at base `font-size: 16px`
 
 				a {
-					color: @colorGray12;
-					border: none;
-					padding: .7em 12px;
-					margin-left: 0;
+					color: @colorProgressive;
+					padding: 0.7em 12px;
+
+					&:hover {
+						background-color: transparent;
+						box-shadow: none;
+					}
 				}
 			}
 		}
 	}
 }
 
-body.navigation-enabled {
-
+.navigation-enabled {
 	#mw-mf-viewport {
 		// disable horizontal scrolling
 		overflow: hidden;
@@ -153,9 +156,6 @@ body.navigation-enabled {
 		height: 100%;
 		// Overriden in mainmenuAnimation
 		left: @menuWidth;
-		// set border here (nav doesn't expand height)
-		border-left: solid 1px #000;
-		box-shadow: -5px 0 0 0 rgba(0, 0, 0, 0.1);
 	}
 
 	.navigation-drawer,
@@ -165,19 +165,13 @@ body.navigation-enabled {
 
 	.transparent-shield {
 		background: @semiTransparent;
-		opacity: 1;
+		opacity: 0.5;
+		.transition( opacity 0.25s ease-in-out );
 	}
 }
 
 .primary-navigation-enabled {
-	// set background and border here (nav doesn't expand height
-	// and #mw-mf-viewport has overflow: hidden and clips blue hover borders)
-	border-left: solid @menuBorder @menuBorderColor;
-	background: @mainMenuBackgroundColor;
-
-	#mw-mf-viewport {
-		margin-left: -@menuBorder;
-	}
+	background-color: @primaryNavBackgroundColor;
 
 	nav {
 		width: @menuWidth;
@@ -189,7 +183,7 @@ body.navigation-enabled {
 	}
 }
 
-@media all and (min-width: @deviceWidthTablet) {
+@media all and ( min-width: @deviceWidthTablet ) {
 	@rightDrawerLeftOffset: 100% - @rightDrawerWidth;
 	.secondary-navigation-enabled {
 		#mw-mf-page-center {
@@ -208,27 +202,23 @@ body.navigation-enabled {
 }
 
 // animated version
-@duration: .25s;
+@duration: 0.25s;
 @easing: ease-in-out;
 
 // FIXME: Cleanup animation css
 .animations {
-
 	#mw-mf-page-center {
 		min-height: 100%;
-		// We need to ensure the content has a white background - otherwise it will
-		// overlap the menu during the main menu reveal/hide animation
-		background-color: #fff;
 
 		// *2 to avoid weird glitch of left nav flickering after closing
-		@transition: @duration @easing, height 0s (@duration*2);
-		.transition-transform(@transition);
+		@transition: @duration @easing, height 0s ( @duration * 2 );
+		.transition-transform( @transition );
 	}
 
 	nav {
 		width: @menuWidth;
 
-		.transition(visibility 0s @duration);
+		.transition( visibility 0s @duration );
 	}
 
 	// FIXME: Make animations a conditional class on the drawer itself
@@ -236,21 +226,20 @@ body.navigation-enabled {
 		display: block;
 
 		// +2% to accommodate for the border/box-shadow
-		.transform(translate(102%, 0));
-		.transition-transform(@duration @easing, visibility 0s @duration;);
+		.transform( translate( 102%, 0 ) );
+		.transition-transform( @duration @easing, visibility 0s @duration; );
 
 		&.visible {
-			.transform(translate(0, 0));
+			.transform( translate( 0, 0 ) );
 		}
 	}
 }
-
 
 .navigation-enabled.animations {
 	// FIXME: Menu shouldn't need to know about drawers but a cta drawer might be open
 	.drawer .position-fixed,
 	#mw-mf-page-center {
-		.transition-transform(@duration @easing);
+		.transition-transform( @duration @easing );
 	}
 }
 
@@ -260,14 +249,13 @@ body.navigation-enabled {
 	#mw-mf-page-center {
 		// override non-animated version
 		left: 0 !important;
-		.transform(translate(@menuWidth, 0));
+		.transform( translate( @menuWidth, 0 ) );
 	}
 
 	nav {
 		// make menu scrollable when open (on small screens)
 		position: static;
-
-		.transition(none);
+		.transition( none );
 	}
 }
 
@@ -275,33 +263,7 @@ body.navigation-enabled {
 	#mw-mf-page-center {
 		// override non-animated version
 		left: 0 !important;
-		.transform(translate(-@rightDrawerWidth, 0));
+		.transform( translate( -@rightDrawerWidth, 0 ) );
 		width: 100%;
-	}
-}
-
-.rtl {
-	// FIXME: Make animations a conditional class on the drawer itself
-	.animations .notifications-overlay.navigation-drawer {
-		// +2% to accommodate for the border/box-shadow
-		.transform(translate(-102%, 0));
-
-		&.visible {
-			.transform(translate(0, 0));
-		}
-	}
-
-	&.primary-navigation-enabled.animations {
-		// FIXME: Menu shouldn't need to know about drawers
-		.drawer .position-fixed,
-		#mw-mf-page-center {
-			.transform(translate(-@menuWidth, 0));
-		}
-	}
-
-	&.secondary-navigation-enabled.animations {
-		#mw-mf-page-center {
-			.transform(translate(@rightDrawerWidth, 0));
-		}
 	}
 }

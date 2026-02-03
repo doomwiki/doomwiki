@@ -8,7 +8,10 @@ use DomainException;
  * Model for a menu that can be presented in a skin.
  */
 class MenuBuilder {
-	private $entries = array();
+	/**
+	 * @var MenuEntry[]
+	 */
+	private $entries = [];
 
 	/**
 	 * Get all entries represented as plain old PHP arrays.
@@ -17,10 +20,10 @@ class MenuBuilder {
 	 */
 	public function getEntries() {
 		$entryPresenter = function ( MenuEntry $entry ) {
-			$result = array(
+			$result = [
 				'name' => $entry->getName(),
 				'components' => $entry->getComponents(),
-			);
+			];
 
 			if ( $entry->isJSOnly() ) {
 				$result['class'] = 'jsonly';
@@ -90,7 +93,7 @@ class MenuBuilder {
 		}
 
 		$entry = new MenuEntry( $name, $isJSOnly );
-		array_splice( $this->entries, $index + 1, 0, array( $entry ) );
+		array_splice( $this->entries, $index + 1, 0, [ $entry ] );
 
 		return $entry;
 	}
@@ -111,7 +114,7 @@ class MenuEntry {
 	public function __construct( $name, $isJSOnly ) {
 		$this->name = $name;
 		$this->isJSOnly = $isJSOnly;
-		$this->components = array();
+		$this->components = [];
 	}
 
 	/**
@@ -151,12 +154,12 @@ class MenuEntry {
 	 *
 	 * @return MenuEntry
 	 */
-	public function addComponent( $label, $url, $className = '', $attrs = array() ) {
-		$this->components[] = array(
+	public function addComponent( $label, $url, $className = '', $attrs = [] ) {
+		$this->components[] = [
 			'text' => $label,
 			'href' => $url,
 			'class' => $className,
-		) + $attrs;
+		] + $attrs;
 
 		return $this;
 	}

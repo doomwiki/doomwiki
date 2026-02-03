@@ -1,0 +1,9 @@
+<div class="overlay-header-container header-container{{#headerChrome}} header-chrome{{/headerChrome}}{{#fixedHeader}} position-fixed{{/fixedHeader}}">
+	<div class="overlay-header header">
+		{{>header}}
+	</div>
+</div>
+<div class="overlay-content">
+	{{>content}}
+</div>
+<div class="overlay-footer-container position-fixed">{{#footerAnchor}}{{>anchor}}{{/footerAnchor}}</div>

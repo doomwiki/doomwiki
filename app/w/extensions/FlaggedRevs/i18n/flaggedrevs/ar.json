@@ -13,7 +13,9 @@
 			"Ouda",
 			"Prof.Sherif",
 			"زكريا",
-			"محمد أحمد عبد الفتاح"
+			"محمد أحمد عبد الفتاح",
+			"Shbib Al-Subaie",
+			"علاء"
 		]
 	},
 	"action-review": "راجع المراجعات",
@@ -44,6 +46,8 @@
 	"group-autoreview": "مراجعون تلقائيون",
 	"group-autoreview-member": "{{GENDER:$1|مستخدم مراجع تلقائيا|مستخدمة مراجعة تلقائيا}}",
 	"grouppage-autoreview": "{{ns:project}}:مراجع تلقائي",
+	"logentry-review-approve": "$1 {{GENDER:$2|راجع}} نسخة من $3",
+	"logentry-review-approve-auto": "$1 {{GENDER:$2|راجع}} بشكل تلقائي نسخة من $3",
 	"revreview-hist-draft": "مراجعة غير مفحوصة",
 	"revreview-hist-pending": "مراجعة موقفة",
 	"revreview-hist-quality": "مراجعة جودة",
@@ -64,8 +68,6 @@
 	"revreview-log-details-hide": "أخفِ التفاصيل",
 	"revreview-log-details-title": "بدّل عرض سجل إعدادات الاستقرار",
 	"review-diff2stable": "عرض التغييرات قيد الانتظار للنسخة المنشورة",
-	"review-logentry-app": "راجع نسخة من [[$1]]",
-	"review-logentry-dis": "أزال نسخة من [[$1]]",
 	"review-logentry-id": "مراجعة: $2",
 	"review-logentry-diff": "التغييرات تمت مراجعتها",
 	"review-logentry-diff2": "التغييرات تم التجاوز عنها",
@@ -78,7 +80,6 @@
 	"revreview-accuracy-2": "دقيقة",
 	"revreview-accuracy-3": "مصادرها جيدة",
 	"revreview-accuracy-4": "مميزة",
-	"revreview-auto": "(تلقائيا)",
 	"revreview-basic": "هذه هي [[{{MediaWiki:Validationpage}}|النسخة المستقرة]]، [{{fullurl:{{#Special:Log}}|type=review&page={{FULLPAGENAMEE}}}} المفحوصة] في <i>$2</i>.\n[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} {{PLURAL:$3||تغيير واحد معلق|تغييران معلقان|$3 تغييرات معلقة|$3 تغييرا معلقا|$3 تغيير معلق}}] {{PLURAL:$3||ينتظر|ينتظران|تنتظر|ينتظر}} المراجعة.",
 	"revreview-basic-i": "هذه هي [[{{MediaWiki:Validationpage}}|النسخة المستقرة]]، [{{fullurl:{{#Special:Log}}|type=review&page={{FULLPAGENAMEE}}}} المفحوصة] في <i>$2</i>.\n[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} تغييرات قوالب/ملفات] تنتظر المراجعة.",
 	"revreview-basic-old": "هذه نسخة [[{{MediaWiki:Validationpage}}|مفحوصة]] ([{{fullurl:{{#Special:Stableversions}}|page={{FULLPAGENAMEE}}}} اسرد الكل]), [{{fullurl:{{#Special:Log}}|type=review&page={{FULLPAGENAMEE}}}} اعتمدت] في <i>$2</i>.\n[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} تغييرات] جديدة ربما تكون قد حدثت.",
@@ -92,7 +93,6 @@
 	"revreview-depth-3": "مرتفع",
 	"revreview-depth-4": "مميز",
 	"revreview-draft-title": "التعديلات المعلقة معروضة في هذه الصفحة",
-	"revreview-edit": "عدل",
 	"revreview-editnotice": "'''ستظهر تغييراتك للقراء متى ما قبلها مستخدم مخول. ([[{{MediaWiki:Validationpage}}|مساعدة]])'''",
 	"revreview-submitedit": "أرسل التغييرات",
 	"revreview-submitedit-title": "أرسل تعديلاتك للمراجعة",
@@ -123,7 +123,6 @@
 	"revreview-quick-quality-same": "'''[[{{MediaWiki:Validationpage}}|الجودة]]'''",
 	"revreview-quick-see-basic": "[[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}}راجع التغييرات المعلقة]]",
 	"revreview-quick-see-quality": "[[{{fullurl:{{FULLPAGENAMEE}}|oldid=$1&diff=cur{{MediaWiki:flaggedrevs-diffonly}}}} راجع التغييرات المعلقة]]",
-	"revreview-source": "اعرض المصدر",
 	"revreview-basic-title": "هذه نسخة متحقق منها من هذه الصفحة",
 	"revreview-style": "القابلية للقراءة",
 	"revreview-style-0": "غير مقبول",
@@ -186,5 +185,9 @@
 	"revreview-locked": "'''ملاحظة:''' يجب أن [[{{MediaWiki:Validationpage}}|تراجع]] التعديلات على هذه الصفحة قبل أن تعرض للقراء.",
 	"revreview-unlocked": "'''ملاحظة:''' لا يجب أن [[{{MediaWiki:Validationpage}}|تراجع]] التعديلات على هذه الصفحة قبل أن تعرض للقراء.",
 	"log-show-hide-review": "$1 سجل المراجعة",
-	"validationpage": "{{ns:help}}:تحقيق الصفحة"
+	"validationpage": "{{ns:help}}:تحقيق الصفحة",
+	"log-action-filter-review": "نوع المراجعة:",
+	"log-action-filter-review-accept": "قبول يدوي",
+	"log-action-filter-review-autoaccept": "قبول آلي",
+	"log-action-filter-review-unaccept": "رفض يدوي"
 }

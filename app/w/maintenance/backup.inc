@@ -27,6 +27,9 @@
 require_once __DIR__ . '/Maintenance.php';
 require_once __DIR__ . '/../includes/export/DumpFilter.php';
 
+use Wikimedia\Rdbms\LoadBalancer;
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * @ingroup Dump Maintenance
  */
@@ -41,6 +44,7 @@ class BackupDumper extends Maintenance {
 	public $revEndId = 0;
 	public $dumpUploads = false;
 	public $dumpUploadFileContents = false;
+	public $orderRevs = false;
 
 	protected $reportingInterval = 100;
 	protected $pageCount = 0;
@@ -59,7 +63,7 @@ class BackupDumper extends Maintenance {
 	/**
 	 * The dependency-injected database to use.
 	 *
-	 * @var DatabaseBase|null
+	 * @var IDatabase|null
 	 *
 	 * @see self::setDB
 	 */
@@ -162,7 +166,7 @@ class BackupDumper extends Maintenance {
 					$val = explode( ':', $param );
 
 					if ( count( $val ) === 1 ) {
-						$this->loadPlugin( $val[0] );
+						$this->loadPlugin( $val[0], '' );
 					} elseif ( count( $val ) === 2 ) {
 						$this->loadPlugin( $val[0], $val[1] );
 					} else {
@@ -271,7 +275,7 @@ class BackupDumper extends Maintenance {
 		} elseif ( is_null( $this->pages ) ) {
 			# Page dumps: all or by page ID range
 			if ( $this->startId || $this->endId ) {
-				$exporter->pagesByRange( $this->startId, $this->endId );
+				$exporter->pagesByRange( $this->startId, $this->endId, $this->orderRevs );
 			} elseif ( $this->revStartId || $this->revEndId ) {
 				$exporter->revsByRange( $this->revStartId, $this->revEndId );
 			} else {
@@ -301,7 +305,7 @@ class BackupDumper extends Maintenance {
 
 		$dbr = $this->forcedDb;
 		if ( $this->forcedDb === null ) {
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 		}
 		$this->maxCount = $dbr->selectField( $table, "MAX($field)", '', __METHOD__ );
 		$this->startTime = microtime( true );
@@ -313,7 +317,7 @@ class BackupDumper extends Maintenance {
 	 * @todo Fixme: the --server parameter is currently not respected, as it
 	 * doesn't seem terribly easy to ask the load balancer for a particular
 	 * connection by name.
-	 * @return DatabaseBase
+	 * @return IDatabase
 	 */
 	function backupDb() {
 		if ( $this->forcedDb !== null ) {
@@ -321,7 +325,7 @@ class BackupDumper extends Maintenance {
 		}
 
 		$this->lb = wfGetLBFactory()->newMainLB();
-		$db = $this->lb->getConnection( DB_SLAVE, 'dump' );
+		$db = $this->lb->getConnection( DB_REPLICA, 'dump' );
 
 		// Discourage the server from disconnecting us if it takes a long time
 		// to read out the big ol' batch query.
@@ -334,7 +338,7 @@ class BackupDumper extends Maintenance {
 	 * Force the dump to use the provided database connection for database
 	 * operations, wherever possible.
 	 *
-	 * @param DatabaseBase|null $db (Optional) the database connection to use. If null, resort to
+	 * @param IDatabase|null $db (Optional) the database connection to use. If null, resort to
 	 *   use the globally provided ways to get database connections.
 	 */
 	function setDB( IDatabase $db = null ) {

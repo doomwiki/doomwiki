@@ -3,10 +3,9 @@
 		Section = M.require( 'mobile.startup/Section' ),
 		EditorGateway = M.require( 'mobile.editor.api/EditorGateway' ),
 		AbuseFilterPanel = M.require( 'mobile.abusefilter/AbuseFilterPanel' ),
-		settings = M.require( 'mobile.settings/settings' ),
+		settings = M.require( 'mobile.startup/settings' ),
 		Button = M.require( 'mobile.startup/Button' ),
-		overlayManager = M.require( 'mobile.startup/overlayManager' ),
-		toast = M.require( 'mobile.toast/toast' ),
+		toast = M.require( 'mobile.startup/toast' ),
 		MessageBox = M.require( 'mobile.messageBox/MessageBox' );
 
 	/**
@@ -17,6 +16,9 @@
 	 * @uses EditorGateway
 	 * @uses VisualEditorOverlay
 	 * @extends EditorOverlayBase
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function EditorOverlay( options ) {
 		this.gateway = new EditorGateway( {
@@ -26,7 +28,7 @@
 			oldId: options.oldId,
 			isNewPage: options.isNewPage
 		} );
-		this.readOnly = options.oldId ? true : false; // If old revision, readOnly mode
+		this.readOnly = !!options.oldId; // If old revision, readOnly mode
 		if ( this.isVisualEditorEnabled() ) {
 			options.editSwitcher = true;
 		}
@@ -90,7 +92,7 @@
 		/**
 		 * Check whether VisualEditor is enabled or not.
 		 * @method
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		isVisualEditorEnabled: function () {
 			return mw.config.get( 'wgVisualEditorConfig' ) &&
@@ -131,23 +133,43 @@
 			var self = this;
 
 			if ( this.isVisualEditorEnabled() ) {
-				this.initializeSwitcher();
-				/**
-				 * 'Edit' button handler
-				 */
-				this.switcherToolbar.tools.editVe.onSelect = function () {
-					// If the user tries to switch to the VisualEditor, check if any changes have
-					// been made, and if so, tell the user they have to save first.
-					if ( !self.gateway.hasChanged ) {
-						self._switchToVisualEditor( self.options );
-					} else {
-						if ( window.confirm( mw.msg( 'mobile-frontend-editor-switch-confirm' ) ) ) {
-							self.onStageChanges();
-						} else {
-							self.switcherToolbar.tools.editVe.setActive( false );
+				mw.loader.using( 'ext.visualEditor.switching' ).then( function () {
+					var switchToolbar,
+						toolFactory = new OO.ui.ToolFactory(),
+						toolGroupFactory = new OO.ui.ToolGroupFactory();
+
+					toolFactory.register( mw.libs.ve.MWEditModeVisualTool );
+					toolFactory.register( mw.libs.ve.MWEditModeSourceTool );
+					switchToolbar = new OO.ui.Toolbar( toolFactory, toolGroupFactory, {
+						classes: [ 'editor-switcher' ]
+					} );
+
+					switchToolbar.on( 'switchEditor', function ( mode ) {
+						if ( mode === 'visual' ) {
+							// If the user tries to switch to the VisualEditor, check if any changes have
+							// been made, and if so, tell the user they have to save first.
+							if ( !self.gateway.hasChanged ) {
+								self._switchToVisualEditor( self.options );
+							} else {
+								if ( window.confirm( mw.msg( 'mobile-frontend-editor-switch-confirm' ) ) ) {
+									self.onStageChanges();
+								}
+							}
 						}
-					}
-				};
+					} );
+
+					switchToolbar.setup( [
+						{
+							type: 'list',
+							icon: 'edit',
+							title: mw.msg( 'visualeditor-mweditmode-tooltip' ), // resource-modules-disable-line
+							include: [ 'editModeVisual', 'editModeSource' ]
+						}
+					] );
+
+					self.$el.find( '.switcher-container' ).html( switchToolbar.$element );
+					switchToolbar.emit( 'updateState' );
+				} );
 			}
 
 			EditorOverlayBase.prototype.postRender.apply( this );
@@ -164,12 +186,16 @@
 			// make license links open in separate tabs
 			this.$( '.license a' ).attr( 'target', '_blank' );
 
-			this.abuseFilterPanel = new AbuseFilterPanel().appendTo( this.$( '.panels' ) );
+			this.abuseFilterPanel = new AbuseFilterPanel( {
+				overlayManager: this.overlayManager
+			} ).appendTo( this.$( '.panels' ) );
 
 			// If in readOnly mode, make textarea readonly
 			if ( this.readOnly ) {
 				this.$content.prop( 'readonly', true );
 			}
+
+			this.$content.on( 'input', this._resizeEditor.bind( this ) );
 
 			if ( !self.options.isAnon ) {
 				this._loadContent();
@@ -186,14 +212,14 @@
 		_prepareAnonWarning: function ( options ) {
 			var params = $.extend( {
 				// use wgPageName as this includes the namespace if outside Main
-				returnto: options.returnTo || mw.config.get( 'wgPageName' ),
-				returntoquery: 'action=edit&section=' + options.sectionId,
-				warning: 'mobile-frontend-edit-login-action'
-			}, options.queryParams ),
-			signupParams = $.extend( {
-				type: 'signup',
-				warning: 'mobile-frontend-edit-signup-action'
-			}, options.signupQueryParams );
+					returnto: options.returnTo || mw.config.get( 'wgPageName' ),
+					returntoquery: 'action=edit&section=' + options.sectionId,
+					warning: 'mobile-frontend-edit-login-action'
+				}, options.queryParams ),
+				signupParams = $.extend( {
+					type: 'signup',
+					warning: 'mobile-frontend-edit-signup-action'
+				}, options.signupQueryParams );
 
 			options.loginButton = $.extend( {
 				href: mw.util.getUrl( 'Special:UserLogin', params )
@@ -271,19 +297,40 @@
 		},
 
 		/**
+		 * Resize the editor textarea, maintaining scroll position in iOS
+		 */
+		_resizeEditor: function () {
+			var scrollTop;
+
+			if ( !this.$scrollContainer ) {
+				this.$scrollContainer = $( OO.ui.Element.static.getClosestScrollableContainer( this.$content[ 0 ] ) );
+				this.$content.css( 'padding-bottom', this.$scrollContainer.height() * 0.6 );
+			}
+
+			if ( this.$content.prop( 'scrollHeight' ) ) {
+				scrollTop = this.$scrollContainer.scrollTop();
+				this.$content
+					.css( 'height', 'auto' )
+					// can't reuse prop( 'scrollHeight' ) because we need the current value
+					.css( 'height', ( this.$content.prop( 'scrollHeight' ) + 2 ) + 'px' );
+				this.$scrollContainer.scrollTop( scrollTop );
+			}
+		},
+
+		/**
 		 * Set content to the user input field.
-		 * @param {String} content The content to set.
+		 * @param {string} content The content to set.
 		 */
 		setContent: function ( content ) {
 			this.$content
 				.show()
-				.val( content )
-				.microAutosize();
+				.val( content );
+			this._resizeEditor();
 		},
 
 		/**
 		 * Returns the content of the user input field.
-		 * @return {String}
+		 * @return {string}
 		 */
 		getContent: function () {
 			return this.$content.val();
@@ -308,6 +355,7 @@
 					// check if user is blocked
 					if ( userinfo && userinfo.hasOwnProperty( 'blockid' ) ) {
 						// Workaround to parse a message parameter for mw.message, see T96885
+						// eslint-disable-next-line new-cap
 						parser = new mw.jqueryMsg.parser();
 						ast = parser.wikiTextToAst( userinfo.blockreason );
 						parsedBlockReason = parser.emitter.emit( ast );
@@ -352,12 +400,11 @@
 					var VisualEditorOverlay = M.require( 'mobile.editor.ve/VisualEditorOverlay' );
 
 					self.clearSpinner();
-					overlayManager.replaceCurrent( new VisualEditorOverlay( options ) );
+					self.overlayManager.replaceCurrent( new VisualEditorOverlay( options ) );
 				},
 				function () {
 					self.clearSpinner();
 					self.$content.show();
-					self.switcherToolbar.tools.editVe.setActive( false );
 					// FIXME: We should show an error notification, but right now toast
 					// notifications are not dismissible when shown within the editor.
 				}
@@ -368,8 +415,8 @@
 		 * Reveals an abuse filter panel inside the view.
 		 * @method
 		 * @private
-		 * @param {String} type The type of alert, e.g. 'warning' or 'disallow'
-		 * @param {String} message Message to show in the AbuseFilter overlay
+		 * @param {string} type The type of alert, e.g. 'warning' or 'disallow'
+		 * @param {string} message Message to show in the AbuseFilter overlay
 		 */
 		_showAbuseFilter: function ( type, message ) {
 			this.abuseFilterPanel.show( type, message );
@@ -464,7 +511,7 @@
 		/**
 		 * Checks whether the existing content has changed.
 		 * @method
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		hasChanged: function () {
 			return this.gateway.hasChanged;

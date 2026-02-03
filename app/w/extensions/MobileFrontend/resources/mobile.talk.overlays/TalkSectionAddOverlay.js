@@ -1,6 +1,6 @@
 ( function ( M, $ ) {
 	var TalkOverlayBase = M.require( 'mobile.talk.overlays/TalkOverlayBase' ),
-		toast = M.require( 'mobile.toast/toast' ),
+		toast = M.require( 'mobile.startup/toast' ),
 		Icon = M.require( 'mobile.startup/Icon' );
 
 	/**
@@ -8,6 +8,9 @@
 	 * @class TalkSectionAddOverlay
 	 * @extends TalkOverlayBase
 	 * @uses Toast
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function TalkSectionAddOverlay( options ) {
 		TalkOverlayBase.apply( this, arguments );
@@ -21,12 +24,12 @@
 		/**
 		 * @inheritdoc
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.cancelMsg Caption for cancel button on edit form.
-		 * @cfg {String} defaults.topicTitlePlaceHolder Placeholder text to prompt user to add
+		 * @cfg {string} defaults.cancelMsg Caption for cancel button on edit form.
+		 * @cfg {string} defaults.topicTitlePlaceHolder Placeholder text to prompt user to add
 		 * a talk page topic subject.
-		 * @cfg {String} defaults.topicContentPlaceHolder Placeholder text to prompt user to add
+		 * @cfg {string} defaults.topicContentPlaceHolder Placeholder text to prompt user to add
 		 * content to talk page content.
-		 * @cfg {String} defaults.editingMsg Label for button which submits a new talk page topic.
+		 * @cfg {string} defaults.editingMsg Label for button which submits a new talk page topic.
 		 */
 		defaults: $.extend( {}, TalkOverlayBase.prototype.defaults, {
 			cancelMsg: mw.msg( 'mobile-frontend-editor-cancel' ),
@@ -105,29 +108,29 @@
 					}
 				}
 			} ).fail( function ( error ) {
-				var editMsg = 'mobile-frontend-talk-topic-error';
+				var editMsg = mw.msg( 'mobile-frontend-talk-topic-error' );
 
 				self.$confirm.prop( 'disabled', false );
 				switch ( error.details ) {
 					case 'protectedpage':
-						editMsg = 'mobile-frontend-talk-topic-error-protected';
+						editMsg = mw.msg( 'mobile-frontend-talk-topic-error-protected' );
 						break;
 					case 'noedit':
 					case 'blocked':
-						editMsg = 'mobile-frontend-talk-topic-error-permission';
+						editMsg = mw.msg( 'mobile-frontend-talk-topic-error-permission' );
 						break;
 					case 'spamdetected':
-						editMsg = 'mobile-frontend-talk-topic-error-spam';
+						editMsg = mw.msg( 'mobile-frontend-talk-topic-error-spam' );
 						break;
 					case 'badtoken':
-						editMsg = 'mobile-frontend-talk-topic-error-badtoken';
+						editMsg = mw.msg( 'mobile-frontend-talk-topic-error-badtoken' );
 						break;
 					default:
-						editMsg = 'mobile-frontend-talk-topic-error';
+						editMsg = mw.msg( 'mobile-frontend-talk-topic-error' );
 						break;
 				}
 
-				toast.show( mw.msg( editMsg ), 'error' );
+				toast.show( editMsg, 'error' );
 				self.showHidden( '.save-header, .save-panel' );
 			} );
 		},
@@ -156,7 +159,7 @@
 				section: 'new',
 				sectiontitle: heading,
 				title: self.title,
-				summary: mw.msg( 'mobile-frontend-talk-edit-summary', heading ),
+				summary: mw.msg( 'newsectionsummary', heading ),
 				text: text + ' ~~~~'
 			} ).done( function () {
 				result.resolve( 'ok' );

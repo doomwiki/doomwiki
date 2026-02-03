@@ -14,7 +14,8 @@
 			"Pietrodn",
 			"Stefano-c",
 			"Nivit",
-			"Lucas2"
+			"Lucas2",
+			"Selven"
 		]
 	},
 	"checkuser-summary": "Questo strumento analizza le modifiche recenti per recuperare gli indirizzi IP utilizzati da un utente o mostrare contributi e dati di un IP. Utenti e contributi di un client IP possono essere rintracciati attraverso gli header XFF aggiungendo all'IP il suffisso \"/xff\". Sono supportati IPv4 (CIDR $1-32) e IPv6 (CIDR $2-128). Non saranno restituite più di 5.000 modifiche, per ragioni di prestazioni. Usa questo strumento in stretta conformità alle policy.",
@@ -40,7 +41,7 @@
 	"checkuser-edits": "Vedi i contributi",
 	"checkuser-ips": "Cerca IP",
 	"checkuser-period": "Periodo:",
-	"checkuser-week-1": "ultima settimana",
+	"checkuser-week-1": "settimana scorsa",
 	"checkuser-week-2": "ultime due settimane",
 	"checkuser-month": "ultimi 30 giorni",
 	"checkuser-all": "tutti gli edit",
@@ -68,6 +69,7 @@
 	"checkuser-block-failure": "'''Nessun utente bloccato.'''",
 	"checkuser-block-limit": "Troppi utenti selezionati.",
 	"checkuser-block-noreason": "È obbligatorio fornire una motivazione per i blocchi.",
+	"checkuser-centralauth-multilock": "Blocco multiplo degli utenti selezionati",
 	"checkuser-noreason": "È necessario fornire una motivazione per questa query.",
 	"checkuser-accounts": "$1 {{PLURAL:$1|nuova|nuove}} utenze",
 	"checkuser-too-many": "Troppi risultati (per stima della query), per favore usa un CIDR più ristretto.\nQui di seguito ci sono gli indirizzi IP utilizzati (fino a un massimo di 5000, ordinati per indirizzo):",
@@ -91,6 +93,8 @@
 	"checkuser-create-action": "è stato creato",
 	"checkuser-email-action": "ha inviato una e-mail a \"$1\"",
 	"checkuser-reset-action": "reimposta password per l'utente \"$1\"",
+	"checkuser-userlinks-ip": "([[User_talk:$1|discussioni]] | [[Special:Contributions/$1|contributi]] | [[Special:Block/$1|blocca]] | <span class=\"plainlinks\">[https://www.robtex.com/whois/$1.html WHOIS/RDNS]</span>)",
+	"checkuser-userlinks": "([[User_talk:$1|discussioni]] | [[Special:Contributions/$1|contributi]] | [[Special:Block/$1|blocca]])",
 	"checkuser-token-fail": "Errore di sessione. Riprova ancora.",
 	"apihelp-query+checkuser-description": "Controlla quali indirizzi IP vengono usati da un determinato nome utente o quali nomi utente vengono usati da un dato IP.",
 	"apihelp-query+checkuser-param-request": "Tipo di richiesta CheckUser:\n;userips:Ottieni l'indirizzo IP dell'utente osservato.\n;edit:Ottieni i cambiamenti dell'indirizzo IP o range.\n;ipusers:Ottieni gli utenti da un indirizzo IP o range.",

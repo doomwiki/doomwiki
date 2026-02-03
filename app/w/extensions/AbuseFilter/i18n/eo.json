@@ -9,7 +9,10 @@
 			"Tlustulimu",
 			"Tradukisto",
 			"Yekrats",
-			"Matma Rex"
+			"Matma Rex",
+			"Robin van der Vliet",
+			"Rafaneta",
+			"Psychoslave"
 		]
 	},
 	"abusefilter-desc": "Aplikas aŭtomatan heŭristikon al redaktoj.",
@@ -122,7 +125,7 @@
 	"abusefilter-tools-reautoconfirm": "Restarigi aŭtomate konfirmitan statuson",
 	"abusefilter-tools-reautoconfirm-user": "Uzanto:",
 	"abusefilter-tools-reautoconfirm-submit": "Aŭtomate rekonfirmi",
-	"abusefilter-reautoconfirm-none": "Tiu uzanto ne havis {{GENDER:$1|lian|ŝian|la}} statuson pri aŭtomata konfirmado haltitan.",
+	"abusefilter-reautoconfirm-none": "Tiu uzanto ne havis {{GENDER:$1|sian}} statuson pri aŭtomata konfirmado haltitan.",
 	"abusefilter-reautoconfirm-notallowed": "Vi ne rajtas restarigi statuson de aŭtomata konfirmado",
 	"abusefilter-reautoconfirm-done": "Statuso de aŭtomata konfirmado estis restarigita",
 	"abusefilter-status": "El la lastaj $1 {{PLURAL:$1|lasta 1 ago|lastaj $1 agoj}}, $2 ($3%) atingis la kondiĉa limo de $4, kaj $5 ($6%) kongruis unu el la ŝaltataj filtriloj.",
@@ -183,7 +186,7 @@
 	"abusefilter-edit-revert": "Malfari agojn faritajn de ĉi tiu filtrilo",
 	"abusefilter-edit-tools": "Iloj:",
 	"abusefilter-edit-test-link": "Testi ĉi tiun filtrilon kontraŭ lastatempaj redaktoj",
-	"abusefilter-edit-export": "Eksporti ĉi tiun filtrilon al alia vikio",
+	"abusefilter-edit-export": "Elporti ĉi tiun filtrilon al alia vikio",
 	"abusefilter-edit-syntaxok": "Neniuj sintaksaj eraroj troviĝis.",
 	"abusefilter-edit-syntaxerr": "Sintaksa eraro troviĝis: $1",
 	"abusefilter-edit-bad-tags": "Unu aŭ pliaj de la etikedoj kiun vi specifigis ne estas valida.\nEtikedoj devas esti mallonga, kaj ili ne devas enhavi specialajn signojn.",
@@ -265,6 +268,7 @@
 	"abusefilter-edit-builder-vars-user-age": "Aĝo de uzula konto",
 	"abusefilter-edit-builder-vars-user-name": "Nomo de uzula konto",
 	"abusefilter-edit-builder-vars-user-groups": "Grupoj (inkluzivante implicaj) de uzanto",
+	"abusefilter-edit-builder-vars-user-rights": "Rajtoj de la uzanto",
 	"abusefilter-edit-builder-vars-user-blocked": "Ĉu uzanto estas blokita",
 	"abusefilter-edit-builder-vars-user-emailconfirm": "Tempo kiam adreso estis konfirmita",
 	"abusefilter-edit-builder-vars-recent-contributors": "Lastaj dek uzantoj kontribuantaj al la paĝo",
@@ -391,7 +395,7 @@
 	"abusefilter-diff-backhistory": "Reiri al filtrila historio",
 	"abusefilter-diff-prev": "Pli frua ŝanĝo",
 	"abusefilter-diff-next": "Pli malfrua ŝanĝo",
-	"abusefilter-import-intro": "Vi povas uzi ĉi tiun interfacon por importi filtrilojn de aliaj vikioj.\nEn la fonta vikio, klaku \"{{int:abusefilter-edit-export}}\" sub \"{{int:abusefilter-edit-tools}}\" en la redakta interfaco.\nKopiu de la tekstujo kiu aperas, kaj gluu ĝin en ĉi tiun tekstujon, kaj klaku \"{{int:abusefilter-import-submit}}\".",
+	"abusefilter-import-intro": "Vi povas uzi ĉi tiun interfacon por enporti filtrilojn de aliaj vikioj.\nEn la fonta vikio, klaku \"{{int:abusefilter-edit-export}}\" sub \"{{int:abusefilter-edit-tools}}\" en la redakta interfaco.\nKopiu de la tekstujo kiu aperas, kaj gluu ĝin en ĉi tiun tekstujon, kaj klaku \"{{int:abusefilter-import-submit}}\".",
 	"abusefilter-import-submit": "Importi datenojn",
 	"abusefilter-group-default": "Defaŭlta"
 }

@@ -7,14 +7,16 @@
 			"Priviet",
 			"ToePeu",
 			"아라",
-			"Mooozi"
+			"Mooozi",
+			"Ykhwong",
+			"Jerrykim306"
 		]
 	},
 	"categorytree": "분류 트리",
 	"categorytree-portlet": "분류",
 	"categorytree-legend": "분류 트리 보기",
 	"categorytree-desc": "[[Special:CategoryTree|분류 구조]]를 동적으로 둘러볼 수 있습니다",
-	"categorytree-header": "트리 구조로 볼 분류 이름을 입력해주세요.\n이 기능을 사용하려면 웹 브라우저에서 AJAX를 지원해야 합니다.\n오래된 브라우저를 사용하거나, 브라우저에서 자바스크립트를 사용하지 않도록 설정했다면 트리 기능이 동작하지 않습니다.",
+	"categorytree-header": "내용을 트리 구조로 볼 분류 이름을 입력하십시오. (자바스크립트 필요)",
 	"categorytree-category": "분류:",
 	"categorytree-go": "트리 보기",
 	"categorytree-parents": "상위 분류",
@@ -39,5 +41,7 @@
 	"categorytree-error": "값을 불러오는 중 오류 발생",
 	"categorytree-retry": "잠시 후에 다시 해보세요.",
 	"apihelp-categorytree-description": "CategoryTree 확장 기능을 위한 내부 모듈",
-	"apihelp-categorytree-param-category": "분류 이름공간에서의 제목, 접두어는 무시됩니다."
+	"apihelp-categorytree-param-category": "분류 이름공간에서의 제목, 접두어는 무시됩니다.",
+	"apihelp-categorytree-param-options": "JSON 오브젝트 자격의 CategoryTree 생성자를 위한 옵션입니다. <var>depth</var> 옵션의 기본값은 <kbd>1</kbd>입니다.",
+	"apierror-categorytree-invalidjson": "옵션은 반드시 유효한 JSON 형식이어야 합니다."
 }

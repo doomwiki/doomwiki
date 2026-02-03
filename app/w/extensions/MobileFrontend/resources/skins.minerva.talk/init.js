@@ -1,13 +1,13 @@
 ( function ( M, $ ) {
-	var loader = M.require( 'mobile.overlays/moduleLoader' ),
-		LoadingOverlay = M.require( 'mobile.overlays/LoadingOverlay' ),
-		user = M.require( 'mobile.user/user' ),
+	var loader = M.require( 'mobile.startup/rlModuleLoader' ),
+		LoadingOverlay = M.require( 'mobile.startup/LoadingOverlay' ),
+		user = M.require( 'mobile.startup/user' ),
 		Button = M.require( 'mobile.startup/Button' ),
 		$talk = $( '.talk' ),
 		// use the plain return value here - T128273
 		title = $talk.attr( 'data-title' ),
 		page = M.getCurrentPage(),
-		overlayManager = M.require( 'mobile.startup/overlayManager' ),
+		overlayManager = M.require( 'skins.minerva.scripts/overlayManager' ),
 		skin = M.require( 'skins.minerva.scripts/skin' ),
 		pageTitle, talkTitle;
 

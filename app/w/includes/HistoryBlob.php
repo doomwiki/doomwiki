@@ -239,13 +239,13 @@ class HistoryBlobStub {
 	}
 
 	/**
-	 * @return string
+	 * @return string|false
 	 */
 	function getText() {
 		if ( isset( self::$blobCache[$this->mOldId] ) ) {
 			$obj = self::$blobCache[$this->mOldId];
 		} else {
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			$row = $dbr->selectRow(
 				'text',
 				[ 'old_flags', 'old_text' ],
@@ -336,7 +336,7 @@ class HistoryBlobCurStub {
 	 * @return string|bool
 	 */
 	function getText() {
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$row = $dbr->selectRow( 'cur', [ 'cur_text' ], [ 'cur_id' => $this->mCurId ] );
 		if ( !$row ) {
 			return false;
@@ -590,7 +590,7 @@ class DiffHistoryBlob implements HistoryBlob {
 
 	/**
 	 * Compute a binary "Adler-32" checksum as defined by LibXDiff, i.e. with
-	 * the bytes backwards and initialised with 0 instead of 1. See bug 34428.
+	 * the bytes backwards and initialised with 0 instead of 1. See T36428.
 	 *
 	 * @param string $s
 	 * @return string|bool False if the hash extension is not available

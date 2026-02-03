@@ -17,7 +17,10 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 	 */
 	public function execute( $par ) {
 		$out = $this->getOutput();
-		$out->addModuleStyles( 'mobile.special.pagefeed.styles' );
+		$out->addModuleStyles( [
+			'mobile.special.pagefeed.styles',
+			'skins.minerva.icons.images.scripts'
+		] );
 		$this->setHeaders();
 		$out->setProperty( 'unstyledContent', true );
 		parent::execute( $par );
@@ -56,10 +59,10 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 				);
 			}
 			$output->addHtml(
-				Html::element( 'h2', array( 'class' => 'list-header' ), $date ) .
-				Html::openElement( 'ul', array(
+				Html::element( 'h2', [ 'class' => 'list-header' ], $date ) .
+				Html::openElement( 'ul', [
 						'class' => 'page-list diff-summary-list side-list'
-					)
+					]
 				)
 			);
 		}
@@ -93,32 +96,32 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 			$usernameClass = MobileUI::iconClass( 'user', 'before', 'mw-mf-user' );
 		}
 
-		$html = Html::openElement( 'li', array( 'class' => 'page-summary' ) );
+		$html = Html::openElement( 'li', [ 'class' => 'page-summary' ] );
 
 		if ( $diffLink ) {
-			$html .= Html::openElement( 'a', array( 'href' => $diffLink, 'class' => 'title' ) );
+			$html .= Html::openElement( 'a', [ 'href' => $diffLink, 'class' => 'title' ] );
 		} else {
-			$html .= Html::openElement( 'div', array( 'class' => 'title' ) );
+			$html .= Html::openElement( 'div', [ 'class' => 'title' ] );
 		}
 
 		if ( $title ) {
-			$html .= Html::element( 'h3', array(), $title->getPrefixedText() );
+			$html .= Html::element( 'h3', [], $title->getPrefixedText() );
 		}
 
 		if ( $username && $this->showUsername ) {
-			$html .= Html::element( 'p', array( 'class' => $usernameClass ), $username );
+			$html .= Html::element( 'p', [ 'class' => $usernameClass ], $username );
 		}
 
 		$html .= Html::element(
-			'p', array( 'class' => 'edit-summary component truncated-text multi-line two-line' ), $comment
+			'p', [ 'class' => 'edit-summary component truncated-text multi-line two-line' ], $comment
 		);
 
 		if ( $isMinor ) {
 			$html .= ChangesList::flag( 'minor' );
 		}
 
-		$html .= Html::openElement( 'div', array( 'class' => 'list-thumb' ) ) .
-			Html::element( 'p', array( 'class' => 'timestamp' ), $lang->userTime( $ts, $user ) );
+		$html .= Html::openElement( 'div', [ 'class' => 'list-thumb' ] ) .
+			Html::element( 'p', [ 'class' => 'timestamp' ], $lang->userTime( $ts, $user ) );
 
 		if ( $bytes ) {
 			$formattedBytes = $lang->formatNum( $bytes );
@@ -130,10 +133,10 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 			}
 			$html .= Html::element(
 				'p',
-				array(
+				[
 					'class' => $bytesClass,
 					'dir' => 'ltr',
-				),
+				],
 				$formattedBytes
 			);
 		}

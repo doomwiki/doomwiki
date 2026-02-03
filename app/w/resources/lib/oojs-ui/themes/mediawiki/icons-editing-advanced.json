@@ -4,8 +4,21 @@
 	"intro": "@import '../../../../src/styles/common';",
 	"variants": {
 		"invert": {
-			"color": "#ffffff",
+			"color": "#fff",
 			"global": true
+		},
+		"progressive": {
+			"color": "#36c",
+			"global": true
+		},
+		"constructive": {
+			"color": "#36c"
+		},
+		"destructive": {
+			"color": "#d33"
+		},
+		"warning": {
+			"color": "#ff5d00"
 		}
 	},
 	"images": {
@@ -63,6 +76,7 @@
 			"rtl": "images/icons/articleRedirect-rtl.svg"
 		} },
 		"searchCaseSensitive": { "file": "images/icons/case-sensitive.svg" },
+		"searchDiacritics": { "file": "images/icons/diacritic.svg" },
 		"searchRegularExpression": { "file": "images/icons/regular-expression.svg" },
 		"specialCharacter": { "file": "images/icons/specialCharacter.svg" },
 		"table": { "file": "images/icons/table.svg" },

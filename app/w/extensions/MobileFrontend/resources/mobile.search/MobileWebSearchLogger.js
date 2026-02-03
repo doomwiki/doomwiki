@@ -1,4 +1,4 @@
-( function ( M, mw, $ ) {
+( function ( M, mw ) {
 	/**
 	 * Coordinates the logging of MobileWebSchema events.
 	 * Implements schema defined at https://meta.wikimedia.org/wiki/Schema:MobileWebSearch
@@ -77,7 +77,7 @@
 		/**
 		 * Handles the 'search-result-click' event.
 		 *
-		 * @param {Object} event with property {Number} event.index The zero-based index of the result in the
+		 * @param {Object} event with property {number} event.index The zero-based index of the result in the
 		 *  set of results
 		 */
 		onSearchResultClick: function ( event ) {
@@ -103,16 +103,12 @@
 	MobileWebSearchLogger.register = function () {
 		var logger = new MobileWebSearchLogger();
 
-		$.each( {
-			'search-show': logger.onSearchShow,
-			'search-start': logger.onSearchStart,
-			'search-results': logger.onSearchResults,
-			'search-result-click': logger.onSearchResultClick
-		}, function ( eventName, handler ) {
-			M.on( eventName, $.proxy( handler, logger ) );
-		} );
+		M.on( 'search-show', logger.onSearchShow.bind( logger ) );
+		M.on( 'search-start', logger.onSearchStart.bind( logger ) );
+		M.on( 'search-results', logger.onSearchResults.bind( logger ) );
+		M.on( 'search-result-click', logger.onSearchResultClick.bind( logger ) );
 	};
 
 	M.define( 'mobile.search/MobileWebSearchLogger', MobileWebSearchLogger );
 
-}( mw.mobileFrontend, mw, jQuery ) );
+}( mw.mobileFrontend, mw ) );

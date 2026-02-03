@@ -2,21 +2,28 @@
 	"@metadata": {
 		"authors": [
 			"Хомелка",
-			"Дзяніс Тутэйшы"
+			"Дзяніс Тутэйшы",
+			"Mechanizatar"
 		]
 	},
 	"antispoof-desc": "Блакуе стварэнне рахункаў з імёнамі карыстальнікаў са змяшанымі раскладкамі, падобных ці тых, якія можна зблытаць",
-	"antispoof-conflict-top": "Назва рахунку «$1» занадта падобная на $2 {{PLURAL:$2|існуючы рахунак|існуючыя рахункі|існуючых рахункаў}}:",
+	"antispoof-conflict-top": "Імя «$1» занадта падобнае на {{PLURAL:$2|1=наступнае імя карыстальніка|наступныя імёны карыстальнікаў}}:",
 	"antispoof-conflict-bottom": "Калі ласка, выберыце іншую назву рахунка.",
 	"antispoof-name-illegal": "Імя «$1» не дазволенае, каб прадухіліць блытаніну ці падробку імені ўдзельніка: $2. Калі ласка, абярыце іншае імя.",
 	"antispoof-badtype": "Няслушны тып звестак",
 	"antispoof-empty": "Пусты радок",
-	"antispoof-blacklisted": "Утрымлівае забаронены сімвал",
-	"antispoof-combining": "Пачынаецца з аб'яднальнага знаку",
-	"antispoof-unassigned": "Утрымлівае нявызначаны ці састарэлы сімвал",
+	"antispoof-blacklisted": "Утрымлівае забаронены сімвал $1",
+	"antispoof-combining": "Пачынаецца з аб'яднальнага знаку $1",
+	"antispoof-unassigned": "Утрымлівае нявызначаны сімвал $1",
+	"antispoof-deprecated": "Утрымлівае забаронены сімвал $1",
 	"antispoof-noletters": "Не ўтрымлівае ніводнай літары",
 	"antispoof-mixedscripts": "Утрымлівае несумяшчальныя змяшаныя альфавіты",
 	"antispoof-tooshort": "Нармалізаванае імя занадта кароткае",
 	"antispoof-ignore": "Ігнараваць праверкі на падобнасць імёнаў",
-	"right-override-antispoof": "ігнараванне праверак на падобныя назвы рахункаў"
+	"antispoof-ignore-help": "Дазваляе карыстальніку з дастатковымі прывілеямі стварыць уліковы запіс, нават калі яго імя падобна на існуючы ўліковы запіс.",
+	"right-override-antispoof": "ігнараванне праверак на падобныя назвы рахункаў",
+	"apihelp-antispoof-description": "Праверце імя карыстальніка праз AntiSpoof.",
+	"apihelp-antispoof-param-username": "Імя карыстальніка для праверкі AntiSpoof.",
+	"apihelp-antispoof-example-1": "Праверыць імя карыстальніка \"Foo\" з дапамогай AntiSpoof",
+	"apihelp-createaccount-param-ignoreantispoof": "Ігнараваць праверкі на падобныя імёны (патрабуе правоў <code>override-antispoof</code>)."
 }

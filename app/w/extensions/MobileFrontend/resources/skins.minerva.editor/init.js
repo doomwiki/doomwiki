@@ -3,16 +3,15 @@
 	var
 		// see: https://www.mediawiki.org/wiki/Manual:Interface/JavaScript#Page-specific
 		isEditable = mw.config.get( 'wgIsProbablyEditable' ),
-		blockInfo =  mw.config.get( 'wgMinervaUserBlockInfo', false ),
-		settings = M.require( 'mobile.settings/settings' ),
-		router = M.require( 'mobile.startup/router' ),
-		overlayManager = M.require( 'mobile.startup/overlayManager' ),
-		loader = M.require( 'mobile.overlays/moduleLoader' ),
+		blockInfo = mw.config.get( 'wgMinervaUserBlockInfo', false ),
+		settings = M.require( 'mobile.startup/settings' ),
+		router = require( 'mediawiki.router' ),
+		overlayManager = M.require( 'skins.minerva.scripts/overlayManager' ),
+		loader = M.require( 'mobile.startup/rlModuleLoader' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		Button = M.require( 'mobile.startup/Button' ),
 		Anchor = M.require( 'mobile.startup/Anchor' ),
 		skin = M.require( 'skins.minerva.scripts/skin' ),
-		browser = M.require( 'mobile.browser/browser' ),
 		disabledEditIcon = new Icon( {
 			name: 'edit'
 		} ),
@@ -22,9 +21,8 @@
 		currentPage = M.getCurrentPage(),
 		enabledClass = enabledEditIcon.getGlyphClassName(),
 		disabledClass = disabledEditIcon.getGlyphClassName(),
-		context = M.require( 'mobile.context/context' ),
-		user = M.require( 'mobile.user/user' ),
-		popup = M.require( 'mobile.toast/toast' ),
+		user = M.require( 'mobile.startup/user' ),
+		popup = M.require( 'mobile.startup/toast' ),
 		// FIXME: Disable on IE < 10 for time being
 		blacklisted = /MSIE \d\./.test( navigator.userAgent ),
 		isEditingSupported = router.isSupported() && !blacklisted,
@@ -34,7 +32,7 @@
 		veConfig = mw.config.get( 'wgVisualEditorConfig' ),
 		// FIXME: Should we consider default site options and user prefs?
 		isVisualEditorEnabled = veConfig,
-		CtaDrawer = M.require( 'mobile.drawers/CtaDrawer' ),
+		CtaDrawer = M.require( 'mobile.startup/CtaDrawer' ),
 		drawer,
 		$caEdit = $( '#ca-edit' );
 
@@ -48,9 +46,9 @@
 	 * Prepend an edit page button to the container
 	 * @method
 	 * @ignore
-	 * @param {Number} section number
-	 * @param {String} container CSS selector of the container
-	 * @returns {jQuery.Object} newly created edit page button
+	 * @param {number} section number
+	 * @param {string} container CSS selector of the container
+	 * @return {jQuery.Object} newly created edit page button
 	 */
 	function addEditButton( section, container ) {
 		return $( '<a class="edit-page">' )
@@ -67,7 +65,7 @@
 	 * @method
 	 * @ignore
 	 * @param {jQuery.Object} $el Element which will render a drawer on click
-	 * @param {Number} section number representing the section
+	 * @param {number} section number representing the section
 	 */
 	function makeCta( $el, section ) {
 		$el
@@ -103,7 +101,7 @@
 	 * editor for this wiki.
 	 * @method
 	 * @ignore
-	 * @return {String} Either 'VisualEditor' or 'SourceEditor'
+	 * @return {string} Either 'VisualEditor' or 'SourceEditor'
 	 */
 	function getPreferredEditor() {
 		var preferredEditor = settings.get( 'preferredEditor', true );
@@ -132,7 +130,7 @@
 			window.alert( mw.msg( 'mobile-frontend-editor-undo-unsupported' ) );
 		}
 
-		page.$( '.edit-page' ).on( 'click', function () {
+		page.$( '.edit-page, .edit-link' ).removeClass( disabledClass ).on( 'click', function () {
 			router.navigate( '#/editor/' + $( this ).data( 'section' ) );
 			return false;
 		} );
@@ -142,6 +140,7 @@
 				result = $.Deferred(),
 				preferredEditor = getPreferredEditor(),
 				editorOptions = {
+					overlayManager: overlayManager,
 					api: new mw.Api(),
 					licenseMsg: skin.getLicenseMsg(),
 					title: page.title,
@@ -162,7 +161,7 @@
 			 * won't have loaded yet.
 			 * @private
 			 * @ignore
-			 * @param {String} editor name e.g. wikitext or visualeditor
+			 * @param {string} editor name e.g. wikitext or visualeditor
 			 * @method
 			 */
 			function logInit( editor ) {
@@ -181,22 +180,10 @@
 			 * @method
 			 */
 			function loadSourceEditor() {
-				var rlModuleName, moduleName;
-
 				logInit( 'wikitext' );
 
-				// use the new wikitexteditor with a basic toolbar as a test for beta users and users
-				// without an iphone (bottom toolbars doesn't work) - Bug T109224
-				// FIXME: Make this working with iOS8
-				if ( !user.inUserBucketA() && context.isBetaGroupMember() && !browser.isIos( 8 ) ) {
-					moduleName = 'mobile.editor.overlay.withtoolbar/EditorOverlayWithToolbar';
-					rlModuleName = 'mobile.editor.overlay.withtoolbar';
-				} else {
-					moduleName = 'mobile.editor.overlay/EditorOverlay';
-					rlModuleName = 'mobile.editor.overlay';
-				}
-				loader.loadModule( rlModuleName ).done( function () {
-					var EditorOverlay = M.require( moduleName );
+				loader.loadModule( 'mobile.editor.overlay' ).done( function () {
+					var EditorOverlay = M.require( 'mobile.editor.overlay/EditorOverlay' );
 					result.resolve( new EditorOverlay( editorOptions ) );
 				} );
 			}
@@ -231,7 +218,8 @@
 			return result;
 		} );
 		$caEdit.addClass( enabledClass ).removeClass( disabledClass ).removeClass( 'hidden' );
-
+		// reveal edit links on user pages
+		page.$( '.edit-link' ).removeClass( 'hidden' );
 		currentPage.getRedLinks().on( 'click', function ( ev ) {
 			var drawerOptions = {
 					progressiveButton: new Button( {
@@ -305,7 +293,7 @@
 				$( '.edit-page' ).detach();
 			} else {
 				$caEdit.removeClass( 'hidden' );
-				showSorryToast( 'mobile-frontend-editor-disabled' );
+				showSorryToast( mw.msg( 'mobile-frontend-editor-disabled' ) );
 			}
 		}
 	}
@@ -335,7 +323,7 @@
 			} );
 		} else {
 			$caEdit.removeClass( 'hidden' );
-			showSorryToast( 'mobile-frontend-editor-disabled' );
+			showSorryToast( mw.msg( 'mobile-frontend-editor-disabled' ) );
 		}
 	}
 
@@ -343,11 +331,11 @@
 	 * Show a toast message with sincere condolences.
 	 * @method
 	 * @ignore
-	 * @param {String} msg Message key for sorry message
+	 * @param {string} msg Message for sorry message
 	 */
 	function showSorryToast( msg ) {
 		$( '#ca-edit, .edit-page' ).on( 'click', function ( ev ) {
-			popup.show( mw.msg( msg ) );
+			popup.show( msg );
 			ev.preventDefault();
 		} );
 	}
@@ -355,11 +343,11 @@
 	if ( !isEditingSupported ) {
 		// Editing is disabled (or browser is blacklisted)
 		$caEdit.removeClass( 'hidden' );
-		showSorryToast( 'mobile-frontend-editor-unavailable' );
+		showSorryToast( mw.msg( 'mobile-frontend-editor-unavailable' ) );
 	} else if ( isNewFile ) {
 		$caEdit.removeClass( 'hidden' );
 		// Is a new file page (enable upload image only) Bug 58311
-		showSorryToast( 'mobile-frontend-editor-uploadenable' );
+		showSorryToast( mw.msg( 'mobile-frontend-editor-uploadenable' ) );
 	} else {
 		if ( user.isAnon() ) {
 			// Cta's will be rendered in EditorOverlay, if anonymous editing is enabled.

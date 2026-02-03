@@ -4,33 +4,27 @@
  */
 
 /**
- * Extends ResourceLoaderSiteModule (Module for site customizations).
- * Mobile.[css|js] is a temporary drop in replacement for Common.css which predates Minerva
- * and is not compatible.
+ * Alternate of ResourceLoaderSiteModule for mobile web.
+ * Mobile.[css|js] is a temporary drop-in replacement for Common.css/js, which
+ * predates Minerva and is not compatible.
  */
-class MobileSiteModule extends ResourceLoaderSiteModule {
-	/** @var array Saves the target for the module.
-	 * Should not be enabled on desktop which has ResourceLoaderSiteModule
-	 */
-	protected $targets = array( 'mobile' );
+class MobileSiteModule extends ResourceLoaderWikiModule {
+	// Should not be enabled on desktop which has ResourceLoaderSiteModule instead
+	protected $targets = [ 'mobile' ];
+
+	// Always load from bottom, which differs from other skins.
+	protected $position = 'bottom';
 
 	/**
-	 * Gets list of pages used by this module.
+	 * Get a list of pages used by this module.
+	 *
 	 * @param ResourceLoaderContext $context
 	 * @return array
 	 */
 	protected function getPages( ResourceLoaderContext $context ) {
-		return array(
-			'MediaWiki:Mobile.css' => array( 'type' => 'style' ),
-			'MediaWiki:Mobile.js' => array( 'type' => 'script' ),
-		);
-	}
-
-	/**
-	 * Get the position where on the HTML page this module's JS be loaded to.
-	 * @return string Always bottom which differs from other skins.
-	 */
-	public function getPosition() {
-		return 'bottom';
+		return [
+			'MediaWiki:Mobile.css' => [ 'type' => 'style' ],
+			'MediaWiki:Mobile.js' => [ 'type' => 'script' ],
+		];
 	}
 }

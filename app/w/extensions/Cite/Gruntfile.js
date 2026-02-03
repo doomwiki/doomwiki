@@ -4,38 +4,46 @@
  * @package Cite
  */
 
-/*jshint node:true */
+/* eslint-env node, es6 */
+
 module.exports = function ( grunt ) {
-	'use strict';
-	grunt.loadNpmTasks( 'grunt-contrib-jshint' );
-	grunt.loadNpmTasks( 'grunt-jscs' );
-	grunt.loadNpmTasks( 'grunt-jsonlint' );
+	var conf = grunt.file.readJSON( 'extension.json' );
+
 	grunt.loadNpmTasks( 'grunt-banana-checker' );
+	grunt.loadNpmTasks( 'grunt-eslint' );
+	grunt.loadNpmTasks( 'grunt-jsonlint' );
+	grunt.loadNpmTasks( 'grunt-stylelint' );
 	grunt.initConfig( {
-		jshint: {
-			options: {
-				jshintrc: true
+		eslint: {
+			fix: {
+				options: {
+					fix: true
+				},
+				src: '<%= eslint.main %>'
 			},
-			all: [
+			main: [
 				'**/*.js',
 				'{.jsduck,build}/**/*.js',
 				'modules/**/*.js',
 				'!node_modules/**'
 			]
 		},
-		banana: {
-			core: [ 'i18n/' ],
-			ve: [ 'modules/ve-cite/i18n/' ]
-		},
-		jscs: {
-			fix: {
-				options: {
-					fix: true
-				},
-				src: '<%= jshint.all %>'
+		banana: conf.MessagesDirs,
+		stylelint: {
+			core: {
+				src: [
+					'**/*.css',
+					'!modules/ve-cite/**',
+					'!node_modules/**'
+				]
 			},
-			main: {
-				src: '<%= jshint.all %>'
+			've-cite': {
+				options: {
+					configFile: 'modules/ve-cite/.stylelintrc'
+				},
+				src: [
+					'modules/ve-cite/**/*.css'
+				]
 			}
 		},
 		jsonlint: {
@@ -46,6 +54,6 @@ module.exports = function ( grunt ) {
 		}
 	} );
 
-	grunt.registerTask( 'test', [ 'jshint', 'jscs:main', 'jsonlint', 'banana' ] );
+	grunt.registerTask( 'test', [ 'eslint:main', 'stylelint', 'jsonlint', 'banana' ] );
 	grunt.registerTask( 'default', 'test' );
 };

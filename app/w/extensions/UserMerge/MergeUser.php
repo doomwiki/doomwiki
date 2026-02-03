@@ -1,4 +1,5 @@
 <?php
+use MediaWiki\MediaWikiServices;
 
 /**
  * Contains the actual database backend logic for merging users
@@ -18,7 +19,7 @@ class MergeUser {
 	/** @var integer */
 	private $flags;
 
-	const USE_MULTI_COMMIT = 1; // allow begin/commit; useful for jobs
+	const USE_MULTI_COMMIT = 1; // allow begin/commit; useful for jobs or CLI mode
 
 	/**
 	 * @param User $oldUser
@@ -40,10 +41,11 @@ class MergeUser {
 
 	/**
 	 * @param User $performer
+	 * @param string $fnameTrxOwner
 	 */
-	public function merge( User $performer ) {
+	public function merge( User $performer, $fnameTrxOwner = __METHOD__ ) {
 		$this->mergeEditcount();
-		$this->mergeDatabaseTables();
+		$this->mergeDatabaseTables( $fnameTrxOwner );
 		$this->logger->addMergeEntry( $performer, $this->oldUser, $this->newUser );
 	}
 
@@ -66,7 +68,7 @@ class MergeUser {
 	 */
 	private function mergeEditcount() {
 		$dbw = wfGetDB( DB_MASTER );
-		$this->begin( $dbw );
+		$dbw->startAtomic( __METHOD__ );
 
 		$totalEdits = $dbw->selectField(
 			'user',
@@ -94,11 +96,11 @@ class MergeUser {
 			);
 		}
 
-		$this->commit( $dbw );
+		$dbw->endAtomic( __METHOD__ );
 	}
 
 	private function mergeBlocks( DatabaseBase $dbw ) {
-		$this->begin( $dbw );
+		$dbw->startAtomic( __METHOD__ );
 
 		// Pull blocks directly from master
 		$rows = $dbw->select(
@@ -121,9 +123,11 @@ class MergeUser {
 
 		if ( !$newBlock && !$oldBlock ) {
 			// No one is blocked, yaaay
+			$dbw->endAtomic( __METHOD__ );
 			return;
 		} elseif ( $newBlock && !$oldBlock ) {
 			// Only the new user is blocked, so nothing to do.
+			$dbw->endAtomic( __METHOD__ );
 			return;
 		} elseif ( $oldBlock && !$newBlock ) {
 			// Just move the old block to the new username
@@ -133,6 +137,7 @@ class MergeUser {
 				[ 'ipb_id' => $oldBlock->ipb_id ],
 				__METHOD__
 			);
+			$dbw->endAtomic( __METHOD__ );
 			return;
 		}
 
@@ -154,7 +159,7 @@ class MergeUser {
 			);
 		}
 
-		$this->commit( $dbw );
+		$dbw->endAtomic( __METHOD__ );
 	}
 
 	/**
@@ -194,8 +199,10 @@ class MergeUser {
 	 *
 	 * Merges database references from one user ID or username to another user ID or username
 	 * to preserve referential integrity.
+	 *
+	 * @param string $fnameTrxOwner
 	 */
-	private function mergeDatabaseTables() {
+	private function mergeDatabaseTables( $fnameTrxOwner ) {
 		// Fields to update with the format:
 		// array(
 		//        tableName, idField, textField,
@@ -220,13 +227,15 @@ class MergeUser {
 		Hooks::run( 'UserMergeAccountFields', [ &$updateFields ] );
 
 		$dbw = wfGetDB( DB_MASTER );
+		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+		$ticket = $lbFactory->getEmptyTransactionTicket( __METHOD__ );
 
 		$this->deduplicateWatchlistEntries( $dbw );
 		$this->mergeBlocks( $dbw );
 
-		// For readability, flush any trx (though mergeBlocks will manage this)
 		if ( $this->flags & self::USE_MULTI_COMMIT ) {
-			$dbw->commit( __METHOD__, 'flush' );
+			// Flush prior writes; this actives the non-transaction path in the loop below.
+			$lbFactory->commitMasterChanges( $fnameTrxOwner );
 		}
 
 		foreach ( $updateFields as $fieldInfo ) {
@@ -253,9 +262,8 @@ class MergeUser {
 				$limit = 200;
 				do {
 					$checkSince = microtime( true );
-					// Batch and wait for slaves (ORDER BY + LIMIT is not well supported)
-					$db->begin();
-					// Grab a batch of values on a mostly unique column for this user ID
+					// Note that UPDATE with ORDER BY + LIMIT is not well supported.
+					// Grab a batch of values on a mostly unique column for this user ID.
 					$res = $db->select(
 						$tableName,
 						[ $keyField ],
@@ -278,8 +286,9 @@ class MergeUser {
 							$options
 						);
 					}
-					$db->commit();
-					wfWaitForSlaves( $checkSince, false, '*' );
+					// Wait for replication to catch up
+					$opts = [ 'ifWritesSince' => $checkSince ];
+					$lbFactory->commitAndWaitForReplication( __METHOD__, $ticket, $opts );
 				} while ( count( $keyValues ) >= $limit );
 			}
 		}
@@ -296,44 +305,46 @@ class MergeUser {
 	 * @param DatabaseBase $dbw
 	 */
 	private function deduplicateWatchlistEntries( $dbw ) {
-		$this->begin( $dbw );
+		$dbw->startAtomic( __METHOD__ );
 
+		// Get all titles both watched by the old and new user accounts.
+		// Avoid using self-joins as this fails on temporary tables (e.g. unit tests).
+		// See https://bugs.mysql.com/bug.php?id=10327.
+		$titlesToDelete = [];
 		$res = $dbw->select(
-			[
-				'w1' => 'watchlist',
-				'w2' => 'watchlist'
-			],
-			[
-				'w2.wl_namespace',
-				'w2.wl_title'
-			],
-			[
-				'w1.wl_user' => $this->newUser->getId(),
-				'w2.wl_user' => $this->oldUser->getId()
-			],
+			'watchlist',
+			[ 'wl_namespace', 'wl_title' ],
+			[ 'wl_user' => $this->oldUser->getId() ],
 			__METHOD__,
-			[ 'FOR UPDATE' ],
-			[
-				'w2' => [
-					'INNER JOIN',
-					[
-						'w1.wl_namespace = w2.wl_namespace',
-						'w1.wl_title = w2.wl_title'
-					],
-				]
-			]
+			[ 'FOR UPDATE' ]
 		);
+		foreach ( $res as $row ) {
+			$titlesToDelete[$row->wl_namespace . "|" . $row->wl_title] = false;
+		}
+		$res = $dbw->select(
+			'watchlist',
+			[ 'wl_namespace', 'wl_title' ],
+			[ 'wl_user' => $this->newUser->getId() ],
+			__METHOD__,
+			[ 'FOR UPDATE' ]
+		);
+		foreach ( $res as $row ) {
+			$key = $row->wl_namespace . "|" . $row->wl_title;
+			if ( isset( $titlesToDelete[$key] ) ) {
+				$titlesToDelete[$key] = true;
+			}
+		}
+		$dbw->freeResult( $res );
+		$titlesToDelete = array_filter( $titlesToDelete );
 
-		# Construct an array to delete all watched pages of the old user
-		# which the new user already watches
 		$conds = [];
-
-		foreach ( $res as $result ) {
+		foreach ( $titlesToDelete as $tuple ) {
+			list( $ns, $dbKey ) = explode( "|", $tuple, 2 );
 			$conds[] = $dbw->makeList(
 				[
 					'wl_user' => $this->oldUser->getId(),
-					'wl_namespace' => $result->wl_namespace,
-					'wl_title' => $result->wl_title
+					'wl_namespace' => $ns,
+					'wl_title' => $dbKey
 				],
 				LIST_AND
 			);
@@ -348,7 +359,7 @@ class MergeUser {
 			);
 		}
 
-		$this->commit( $dbw );
+		$dbw->endAtomic( __METHOD__ );
 	}
 
 	/**
@@ -500,23 +511,5 @@ class MergeUser {
 		Hooks::run( 'DeleteAccount', [ &$this->oldUser ] );
 
 		DeferredUpdates::addUpdate( SiteStatsUpdate::factory( [ 'users' => -1 ] ) );
-	}
-
-	/**
-	 * @param DatabaseBase $dbw
-	 */
-	private function begin( $dbw ) {
-		if ( $this->flags & self::USE_MULTI_COMMIT ) {
-			$dbw->begin( __METHOD__ );
-		}
-	}
-
-	/**
-	 * @param DatabaseBase $dbw
-	 */
-	private function commit( $dbw ) {
-		if ( $this->flags & self::USE_MULTI_COMMIT ) {
-			$dbw->commit( __METHOD__ );
-		}
 	}
 }

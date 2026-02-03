@@ -8,6 +8,9 @@
 	 * @extends PageList
 	 * @class WatchList
 	 * @uses InfiniteScroll
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function WatchList( options ) {
 		var lastTitle;
@@ -54,13 +57,12 @@
 		 * Infinite scroll is re-enabled in postRender.
 		 */
 		_loadPages: function () {
-			var self = this;
 			this.gateway.loadWatchlist().done( function ( pages ) {
-				$.each( pages, function ( i, page ) {
-					self.appendPage( page );
-				} );
-				self.render();
-			} );
+				pages.forEach( function ( page ) {
+					this.appendPage( page );
+				}.bind( this ) );
+				this.render();
+			}.bind( this ) );
 		},
 
 		/**
@@ -75,6 +77,7 @@
 		 * Get the last title from the rendered HTML.
 		 * Used for initializing the API
 		 * @param {jQuery.Object} $el Dom element of the list
+		 * @return {string}
 		 */
 		getLastTitle: function ( $el ) {
 			return $el.find( 'li:last' ).attr( 'title' );

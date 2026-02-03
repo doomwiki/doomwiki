@@ -1,7 +1,7 @@
 ( function ( M, $ ) {
-	var context = M.require( 'mobile.context/context' ),
-		settings = M.require( 'mobile.settings/settings' ),
-		browser = M.require( 'mobile.browser/browser' ),
+	var context = M.require( 'mobile.startup/context' ),
+		settings = M.require( 'mobile.startup/settings' ),
+		browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		escapeHash = M.require( 'mobile.startup/util' ).escapeHash,
 		arrowOptions = {
 			name: 'arrow',
@@ -27,11 +27,11 @@
 	 *
 	 * @method
 	 * @param {Page} page
-	 * @returns {Object} representing open sections
+	 * @return {Object} representing open sections
 	 * @ignore
 	 */
 	function getExpandedSections( page ) {
-		var expandedSections = $.parseJSON(
+		var expandedSections = JSON.parse(
 			settings.get( 'expandedSections', false ) || '{}'
 		);
 		expandedSections[page.title] = expandedSections[page.title] || {};
@@ -109,9 +109,11 @@
 			expandedSections = getExpandedSections( page ),
 			// the number of days between now and the time a setting was saved
 			daysDifference;
-		$.each( expandedSections, function ( page, sections ) {
+		Object.keys( expandedSections ).forEach( function ( page ) {
+			var sections = expandedSections[ page ];
 			// clean the setting if it is more than a day old
-			$.each( sections, function ( section, timestamp ) {
+			Object.keys( sections ).forEach( function ( section ) {
+				var timestamp = sections[ section ];
 				daysDifference = Math.floor( ( now - timestamp ) / 1000 / 60 / 60 / 24 );
 				if ( daysDifference >= 1 ) {
 					delete expandedSections[page][section];
@@ -131,7 +133,8 @@
 		var indicator,
 			wasExpanded = $heading.is( '.open-block' ),
 			page = $heading.data( 'page' ),
-			sectionId = $heading.data( 'section-number' );
+			sectionNumber = $heading.data( 'section-number' ),
+			$content = $heading.next();
 
 		$heading.toggleClass( 'open-block' );
 		$heading.data( 'indicator' ).remove();
@@ -139,18 +142,31 @@
 		/**
 		 * @event toggled
 		 */
-		this.emit( 'toggled', wasExpanded, sectionId );
+		this.emit( 'toggled', wasExpanded, sectionNumber );
 		indicator = new Icon( arrowOptions ).prependTo( $heading );
 		$heading.data( 'indicator', indicator );
 
-		$heading.next()
+		/**
+		 * @event section-toggling Emitted before a section is being toggled
+		 */
+		M.emit( 'before-section-toggled', {
+			page: page,
+			wasExpanded: wasExpanded,
+			$heading: $heading,
+			isReferenceSection: Boolean( $content.attr( 'data-is-reference-section' ) )
+		} );
+
+		$content
 			.toggleClass( 'open-block' )
 			.attr( {
 				'aria-pressed': !wasExpanded,
 				'aria-expanded': !wasExpanded
 			} );
 
-		M.emit( 'section-toggled', wasExpanded, sectionId );
+		/**
+		 * @event section-toggled Emitted after a section has been toggled
+		 */
+		M.emit( 'section-toggled', wasExpanded, sectionNumber );
 
 		if ( !browser.isWideScreen() ) {
 			storeSectionToggleState( $heading, page );
@@ -179,7 +195,7 @@
 	 * Reveals an element and its parent section as identified by it's id
 	 *
 	 * @ignore
-	 * @param {String} selector A css selector that identifies a single element
+	 * @param {string} selector A css selector that identifies a single element
 	 * @param {Object} $container jQuery element to search in
 	 */
 	Toggler.prototype.reveal = function ( selector, $container ) {
@@ -208,14 +224,14 @@
 	 * is enabled.
 	 *
 	 * @param {jQuery.Object} $container to apply toggling to
-	 * @param {String} prefix a prefix to use for the id.
+	 * @param {string} prefix a prefix to use for the id.
 	 * @param {Page} [page] to allow storage of session for future visits
 	 * @param {Page} [isClosed] whether the element should begin closed
 	 * @private
 	 * @constructor
 	 */
 	Toggler.prototype._enable = function ( $container, prefix, page, isClosed ) {
-		var tagName, expandSections, indicator,
+		var tagName, expandSections, indicator, $content,
 			$firstHeading,
 			self = this,
 			collapseSectionsByDefault = mw.config.get( 'wgMFCollapseSectionsByDefault' );
@@ -233,12 +249,15 @@
 			( context.isBetaGroupMember() && settings.get( 'expandSections', true ) === 'true' );
 
 		$container.children( tagName ).each( function ( i ) {
-			var $heading = $( this ),
+			var isReferenceSection,
+				$heading = $( this ),
 				$indicator = $heading.find( '.indicator' ),
 				id = prefix + 'collapsible-block-' + i;
 			// Be sure there is a div wrapping the section content.
 			// Otherwise, collapsible sections for this page is not enabled.
 			if ( $heading.next().is( 'div' ) ) {
+				$content = $heading.next( 'div' );
+				isReferenceSection = Boolean( $content.attr( 'data-is-reference-section' ) );
 				$heading
 					.addClass( 'collapsible-heading ' )
 					.data( 'section-number', i )
@@ -265,7 +284,7 @@
 					indicator.prependTo( $heading );
 				}
 				$heading.data( 'indicator', indicator.$el );
-				$heading.next( 'div' )
+				$content
 					.addClass( 'collapsible-block' )
 					.eq( 0 )
 					.attr( {
@@ -278,7 +297,7 @@
 					} );
 
 				enableKeyboardActions( self, $heading );
-				if ( !isClosed && browser.isWideScreen() || expandSections ) {
+				if ( !isReferenceSection && ( !isClosed && browser.isWideScreen() || expandSections ) ) {
 					// Expand sections by default on wide screen devices or if the expand sections setting is set
 					self.toggle.call( self, $heading );
 				}

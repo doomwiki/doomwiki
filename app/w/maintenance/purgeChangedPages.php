@@ -23,6 +23,8 @@
 
 require_once __DIR__ . '/Maintenance.php';
 
+use Wikimedia\Rdbms\ResultWrapper;
+
 /**
  * Maintenance script that sends purge requests for pages edited in a date
  * range to squid/varnish.
@@ -65,7 +67,7 @@ class PurgeChangedPages extends Maintenance {
 			}
 		}
 
-		$dbr = $this->getDB( DB_SLAVE );
+		$dbr = $this->getDB( DB_REPLICA );
 		$minTime = $dbr->timestamp( $this->getOption( 'starttime' ) );
 		$maxTime = $dbr->timestamp( $this->getOption( 'endtime' ) );
 

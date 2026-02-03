@@ -155,7 +155,8 @@ class FileTest extends MediaWikiMediaTestCase {
 			->method( 'getLocalReference' )
 			->will( $this->returnValue( $fsFile ) );
 
-		$handlerMock = $this->getMock( 'BitmapHandler', [ 'supportsBucketing' ] );
+		$handlerMock = $this->getMockBuilder( 'BitmapHandler' )
+			->setMethods( [ 'supportsBucketing' ] )->getMock();
 		$handlerMock->expects( $this->any() )
 			->method( 'supportsBucketing' )
 			->will( $this->returnValue( $data['supportsBucketing'] ) );
@@ -206,7 +207,7 @@ class FileTest extends MediaWikiMediaTestCase {
 			] ],
 			[ [
 				'supportsBucketing' => true,
-				'tmpBucketedThumbCache' => [ 1024 => '/tmp/shouldnotexist' + rand() ],
+				'tmpBucketedThumbCache' => [ 1024 => '/tmp/shouldnotexist' . rand() ],
 				'thumbnailBucket' => 1024,
 				'physicalWidth' => 2048,
 				'expectedPath' => 'fsFilePath',
@@ -261,7 +262,8 @@ class FileTest extends MediaWikiMediaTestCase {
 				'generateAndSaveThumb', 'getHandler' ] )
 			->getMockForAbstractClass();
 
-		$handlerMock = $this->getMock( 'JpegHandler', [ 'supportsBucketing' ] );
+		$handlerMock = $this->getMockBuilder( 'JpegHandler' )
+			->setMethods( [ 'supportsBucketing' ] )->getMock();
 		$handlerMock->expects( $this->any() )
 			->method( 'supportsBucketing' )
 			->will( $this->returnValue( true ) );

@@ -129,7 +129,7 @@ class CategoryMembershipChange {
 			$this->getUser(),
 			$this->getChangeMessageText(
 				$type,
-				[ 'prefixedText' => $this->pageTitle->getPrefixedText() ],
+				$this->pageTitle->getPrefixedText(),
 				$this->numTemplateLinks
 			),
 			$this->pageTitle,
@@ -164,7 +164,7 @@ class CategoryMembershipChange {
 		/**
 		 * T109700 - Default bot flag to true when there is no corresponding RC entry
 		 * This means all changes caused by parser functions & Lua on reparse are marked as bot
-		 * Also in the case no RC entry could be found due to slave lag
+		 * Also in the case no RC entry could be found due to replica DB lag
 		 */
 		$bot = 1;
 		$lastRevId = 0;
@@ -245,13 +245,12 @@ class CategoryMembershipChange {
 	 *
 	 * @param int $type may be CategoryMembershipChange::CATEGORY_ADDITION
 	 * or CategoryMembershipChange::CATEGORY_REMOVAL
-	 * @param array $params
-	 * - prefixedText: result of Title::->getPrefixedText()
+	 * @param string $prefixedText result of Title::->getPrefixedText()
 	 * @param int $numTemplateLinks
 	 *
 	 * @return string
 	 */
-	private function getChangeMessageText( $type, array $params, $numTemplateLinks ) {
+	private function getChangeMessageText( $type, $prefixedText, $numTemplateLinks ) {
 		$array = [
 			self::CATEGORY_ADDITION => 'recentchanges-page-added-to-category',
 			self::CATEGORY_REMOVAL => 'recentchanges-page-removed-from-category',
@@ -263,7 +262,7 @@ class CategoryMembershipChange {
 			$msgKey .= '-bundled';
 		}
 
-		return wfMessage( $msgKey, $params )->inContentLanguage()->text();
+		return wfMessage( $msgKey, $prefixedText )->inContentLanguage()->text();
 	}
 
 	/**

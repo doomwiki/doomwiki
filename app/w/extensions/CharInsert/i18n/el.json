@@ -1,8 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
-			"Geraki"
+			"Geraki",
+			"Protnet"
 		]
 	},
-	"charinsert-desc": "Επιτρέπει την δημιουργία κουτιού JavaScript για την [[MediaWiki:Edittools|εισαγωγή μη-κανονικών χαρακτήρων]]"
+	"charinsert-desc": "Επιτρέπει τη δημιουργία κουτιού JavaScript για την [[MediaWiki:Edittools|εισαγωγή μη κανονικών χαρακτήρων]]"
 }

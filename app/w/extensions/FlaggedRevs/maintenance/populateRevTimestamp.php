@@ -5,10 +5,10 @@
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
-	$IP = dirname(__FILE__).'/../../..';
+	$IP = dirname( __FILE__ ).'/../../..';
 }
 
-require_once( "$IP/maintenance/Maintenance.php" );
+require_once ( "$IP/maintenance/Maintenance.php" );
 
 class PopulateFRRevTimestamp extends Maintenance {
 
@@ -53,13 +53,13 @@ class PopulateFRRevTimestamp extends Maintenance {
 			$this->output( "...doing fr_rev_id from $blockStart to $blockEnd\n" );
 			$cond = "fr_rev_id BETWEEN $blockStart AND $blockEnd AND fr_rev_timestamp = ''";
 			$res = $db->select(
-				array( 'flaggedrevs', 'revision', 'archive' ),
-				array( 'fr_rev_id', 'rev_timestamp', 'ar_timestamp' ),
+				[ 'flaggedrevs', 'revision', 'archive' ],
+				[ 'fr_rev_id', 'rev_timestamp', 'ar_timestamp' ],
 				$cond,
 				__METHOD__,
-				array(),
-				array( 'revision' => array( 'LEFT JOIN', 'rev_id = fr_rev_id' ),
-					'archive' => array( 'LEFT JOIN', 'ar_rev_id = fr_rev_id' ) ) // non-unique but OK
+				[],
+				[ 'revision' => [ 'LEFT JOIN', 'rev_id = fr_rev_id' ],
+					'archive' => [ 'LEFT JOIN', 'ar_rev_id = fr_rev_id' ] ] // non-unique but OK
 			);
 			$db->begin();
 			# Go through and clean up missing items, as well as correct fr_quality...
@@ -73,8 +73,8 @@ class PopulateFRRevTimestamp extends Maintenance {
 				if ( $timestamp != '' ) {
 					# Update the row...
 					$db->update( 'flaggedrevs',
-						array( 'fr_rev_timestamp'   => $timestamp ),
-						array( 'fr_rev_id'          => $row->fr_rev_id ),
+						[ 'fr_rev_timestamp'   => $timestamp ],
+						[ 'fr_rev_id'          => $row->fr_rev_id ],
 						__METHOD__
 					);
 					$changed++;
@@ -98,4 +98,4 @@ class PopulateFRRevTimestamp extends Maintenance {
 }
 
 $maintClass = "PopulateFRRevTimestamp";
-require_once( RUN_MAINTENANCE_IF_MAIN );
+require_once ( RUN_MAINTENANCE_IF_MAIN );

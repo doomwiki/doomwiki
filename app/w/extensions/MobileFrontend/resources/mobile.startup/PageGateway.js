@@ -34,19 +34,20 @@
 	 * @private
 	 * @ignore
 	 * @param {Array} sections Array of section objects created from response HTML
-	 * @returns {Array} Ordered array of sections
+	 * @return {Array} Ordered array of sections
 	 */
 	function transformSections( sections ) {
-		var
-			collapseLevel = Math.min.apply( this, $.map( sections, function ( s ) {
-				return s.level;
-			} ) ).toString(),
+		var sectionLevels = sections.map( function ( s ) { return s.level; } ),
+			existingSectionLevels = sectionLevels.filter( function ( level ) {
+				return !!level;
+			} ),
+			collapseLevel = Math.min.apply( this, existingSectionLevels ).toString(),
 			lastSection,
 			result = [];
 
 		// if the first section level is not equal to collapseLevel, this first
 		// section will not have a parent and will be appended to the result.
-		$.each( sections, function ( i, section ) {
+		sections.forEach( function ( section ) {
 			if ( section.line !== undefined ) {
 				section.line = section.line.replace( /<\/?a\b[^>]*>/g, '' );
 			}
@@ -95,9 +96,9 @@
 		 * Retrieve a page from the api
 		 *
 		 * @method
-		 * @param {String} title the title of the page to be retrieved
-		 * @param {String} endpoint an alternative api url to retrieve the page from
-		 * @param {Boolean} leadOnly When set only the lead section content is returned
+		 * @param {string} title the title of the page to be retrieved
+		 * @param {string} endpoint an alternative api url to retrieve the page from
+		 * @param {boolean} leadOnly When set only the lead section content is returned
 		 * @return {jQuery.Deferred} with parameter page data that can be passed to a Page view
 		 */
 		getPage: function ( title, endpoint, leadOnly ) {
@@ -156,7 +157,7 @@
 							protection: protection,
 							lead: sections[0].text,
 							sections: sections.slice( 1 ),
-							isMainPage: mv.hasOwnProperty( 'mainpage' ) ? true : false,
+							isMainPage: mv.hasOwnProperty( 'mainpage' ),
 							historyUrl: mw.util.getUrl( title, {
 								action: 'history'
 							} ),
@@ -185,7 +186,7 @@
 		 * Invalidate the internal cache for a given page
 		 *
 		 * @method
-		 * @param {String} title the title of the page who's cache you want to invalidate
+		 * @param {string} title the title of the page who's cache you want to invalidate
 		 */
 		invalidatePage: function ( title ) {
 			delete this.cache[title];
@@ -196,9 +197,9 @@
 		 *
 		 * @method
 		 * @private
-		 * @param  {String} title Name of the page to obtain variants for
+		 * @param  {string} title Name of the page to obtain variants for
 		 * @param  {Object} data Data from API
-		 * @return {Array|Boolean} List of language variant objects or false if no variants exist
+		 * @return {Array|boolean} List of language variant objects or false if no variants exist
 		 */
 		_getLanguageVariantsFromApiResponse: function ( title, data ) {
 			var generalData = data.query.general,
@@ -210,11 +211,13 @@
 			}
 
 			// Create the data object for each variant and store it
-			$.each( generalData.variants, function ( index, item ) {
-				var variant = {
-					autonym: item.name,
-					lang: item.code
-				};
+			Object.keys( generalData.variants ).forEach( function ( index ) {
+				var item = generalData.variants[ index ],
+					variant = {
+						autonym: item.name,
+						lang: item.code
+					};
+
 				if ( variantPath ) {
 					variant.url = variantPath
 						.replace( '$1', title )
@@ -234,29 +237,37 @@
 		 * Retrieve available languages for a given title
 		 *
 		 * @method
-		 * @param {String} title the title of the page languages should be retrieved for
+		 * @param {string} title the title of the page languages should be retrieved for
+		 * @param {string} [language] when provided the names of the languages returned
+		 *  will be translated additionally into this language.
 		 * @return {jQuery.Deferred} which is called with an object containing langlinks
-		 * and variant links
+		 * and variant links as defined @ https://en.m.wikipedia.org/w/api.php?action=help&modules=query%2Blanglinks
 		 */
-		getPageLanguages: function ( title ) {
+		getPageLanguages: function ( title, language ) {
 			var self = this,
-				result = $.Deferred();
-
-			this.api.get( {
+				result = $.Deferred(),
+				args = {
 					action: 'query',
 					meta: 'siteinfo',
 					siprop: 'general',
 					prop: 'langlinks',
-					llprop: 'url|autonym',
 					lllimit: 'max',
 					titles: title,
 					formatversion: 2
-				} ).done( function ( resp ) {
-					result.resolve( {
-						languages: resp.query.pages[0].langlinks || [],
-						variants: self._getLanguageVariantsFromApiResponse( title, resp )
-					} );
-				} ).fail( $.proxy( result, 'reject' ) );
+				};
+
+			if ( language ) {
+				args.llprop = 'url|autonym|langname';
+				args.llinlanguagecode = language;
+			} else {
+				args.llprop = 'url|autonym';
+			}
+			this.api.get( args ).done( function ( resp ) {
+				result.resolve( {
+					languages: resp.query.pages[0].langlinks || [],
+					variants: self._getLanguageVariantsFromApiResponse( title, resp )
+				} );
+			} ).fail( $.proxy( result, 'reject' ) );
 
 			return result;
 		},
@@ -266,7 +277,7 @@
 		 * @method
 		 * @private
 		 * @param {jQuery.Object} $el object from which sections are extracted
-		 * @returns {Array} Array of section objects created from headings in $el
+		 * @return {Array} Array of section objects created from headings in $el
 		 * FIXME: Where's a better place for these two functions to live?
 		 */
 		_getAPIResponseFromHTML: function ( $el ) {
@@ -293,7 +304,7 @@
 		 * Order sections hierarchically
 		 * @method
 		 * @param {jQuery.Object} $el object from which sections are extracted
-		 * @returns {Array} Ordered array of sections
+		 * @return {Array} Ordered array of sections
 		 */
 		getSectionsFromHTML: function ( $el ) {
 			return transformSections( this._getAPIResponseFromHTML( $el ) );

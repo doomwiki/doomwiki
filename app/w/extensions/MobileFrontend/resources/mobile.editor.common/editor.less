@@ -1,29 +1,29 @@
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 .editor-overlay {
-	.box-sizing(border-box);
+	.box-sizing( border-box );
 
 	.preview {
 		display: none;
 	}
 
 	.wikitext-editor {
-		.box-sizing(border-box);
+		.box-sizing( border-box );
 		padding: 10px @contentMargin;
 	}
 
 	.summary-request {
 		font-size: 1.4em;
 		font-weight: bold;
-		margin: .5em 0;
+		margin: 0.5em 0;
 		color: @grayMediumDark;
 	}
 
 	.buttonBar {
 		.message {
-			margin: 0 0 .7em;
-			padding: 0 0 .3em;
+			margin: 0 0 0.7em;
+			padding: 0 0 0.3em;
 			border-bottom: 1px solid @colorGray12;
 			color: @infoColor;
 
@@ -36,11 +36,16 @@
 	}
 
 	.editor-switcher {
+		border-left: 1px solid #ddd;
 		.oo-ui-toolbar-bar {
 			font-size: unit( 0.8 * @targetIconSize / @baseIconSize, em );
 			border-collapse: separate;
 			border: 0;
 			box-shadow: none;
+		}
+		.oo-ui-toolGroup {
+			display: block;
+			height: 3.14em;
 		}
 	}
 }

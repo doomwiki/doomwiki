@@ -20,6 +20,7 @@
  */
 
 use MediaWiki\Logger\LoggerFactory;
+use UtfNormal\Validator;
 
 /**
  * inspired by djvuimage from Brion Vibber
@@ -153,7 +154,7 @@ class PdfImage {
 				foreach( $pages as $page => $pageText ) {
 					# Get rid of invalid UTF-8, strip control characters
 					# Note we need to do this per page, as \f page feed would be stripped.
-					$pages[$page] = UtfNormal::cleanUp( $pageText );
+					$pages[$page] = Validator::cleanUp( $pageText );
 				}
 				$data['text'] = $pages;
 			}

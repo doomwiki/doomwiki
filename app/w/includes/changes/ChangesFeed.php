@@ -20,6 +20,8 @@
  * @file
  */
 
+use Wikimedia\Rdbms\ResultWrapper;
+
 /**
  * Feed to Special:RecentChanges and Special:RecentChangesLiked
  *
@@ -152,7 +154,7 @@ class ChangesFeed {
 			if ( $feedAge < $wgFeedCacheTimeout || $feedLastmodUnix > $lastmodUnix ) {
 				wfDebug( "RC: loading feed from cache ($key; $feedLastmod; $lastmod)...\n" );
 				if ( $feedLastmodUnix < $lastmodUnix ) {
-					$wgOut->setLastModified( $feedLastmod ); // bug 21916
+					$wgOut->setLastModified( $feedLastmod ); // T23916
 				}
 				return $cache->get( $key );
 			} else {
@@ -164,7 +166,7 @@ class ChangesFeed {
 
 	/**
 	 * Generate the feed items given a row from the database, printing the feed.
-	 * @param object $rows DatabaseBase resource with recentchanges rows
+	 * @param object $rows IDatabase resource with recentchanges rows
 	 * @param ChannelFeed $feed
 	 */
 	public static function generateFeed( $rows, &$feed ) {
@@ -178,7 +180,7 @@ class ChangesFeed {
 
 	/**
 	 * Generate the feed items given a row from the database.
-	 * @param object $rows DatabaseBase resource with recentchanges rows
+	 * @param object $rows IDatabase resource with recentchanges rows
 	 * @return array
 	 */
 	public static function buildItems( $rows ) {

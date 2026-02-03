@@ -1,7 +1,7 @@
 ( function ( HTML, M, $ ) {
 
-	var time = M.require( 'mobile.modifiedBar/time' ),
-		View = M.require( 'mobile.view/View' ),
+	var time = M.require( 'mobile.startup/time' ),
+		View = M.require( 'mobile.startup/View' ),
 		Section = M.require( 'mobile.startup/Section' ),
 		Thumbnail = M.require( 'mobile.startup/Thumbnail' );
 
@@ -11,6 +11,9 @@
 	 * @class Page
 	 * @uses Section
 	 * @extends View
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function Page( options ) {
 		var thumb;
@@ -37,24 +40,24 @@
 	OO.mfExtend( Page, View, {
 		/**
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {Number} defaults.id Page ID. The default value of 0 represents a new page.
+		 * @cfg {number} defaults.id Page ID. The default value of 0 represents a new page.
 		 * Be sure to override it to avoid side effects.
-		 * @cfg {String} defaults.title Title of the page. It includes prefix where needed and
+		 * @cfg {string} defaults.title Title of the page. It includes prefix where needed and
 		 * is human readable, e.g. Talk:The man who lived.
-		 * @cfg {String} defaults.displayTitle HTML title of the page for display. Falls back
+		 * @cfg {string} defaults.displayTitle HTML title of the page for display. Falls back
 		 * to defaults.title (escaped) if no value is provided. Must be safe HTML!
-		 * @cfg {Number} defaults.namespaceNumber the number of the namespace the page belongs to
+		 * @cfg {number} defaults.namespaceNumber the number of the namespace the page belongs to
 		 * @cfg {Object} defaults.protection List of permissions as returned by API,
 		 * e.g. [{ edit: ['*'] }]
 		 * @cfg {Array} defaults.sections Array of {Section} objects.
-		 * @cfg {Boolean} defaults.isMainPage Whether the page is the Main Page.
-		 * @cfg {Boolean} defaults.isMissing Whether the page exists in the wiki.
-		 * @cfg {String} defaults.hash Window location hash.
+		 * @cfg {boolean} defaults.isMainPage Whether the page is the Main Page.
+		 * @cfg {boolean} defaults.isMissing Whether the page exists in the wiki.
+		 * @cfg {string} defaults.hash Window location hash.
 		 * @cfg {Object} defaults.thumbnail thumbnail definition corresponding to page image
-		 * @cfg {Boolean} defaults.thumbnail.isLandscape whether the image is in landscape format
-		 * @cfg {Number} defaults.thumbnail.width of image in pixels.
-		 * @cfg {Number} defaults.thumbnail.height of image in pixels.
-		 * @cfg {String} defaults.thumbnail.source url for image
+		 * @cfg {boolean} defaults.thumbnail.isLandscape whether the image is in landscape format
+		 * @cfg {number} defaults.thumbnail.width of image in pixels.
+		 * @cfg {number} defaults.thumbnail.height of image in pixels.
+		 * @cfg {string} defaults.thumbnail.source url for image
 		 */
 		defaults: {
 			id: 0,
@@ -83,7 +86,7 @@
 		/**
 		 * Retrieve the title that should be displayed to the user
 		 * @method
-		 * @return {String} HTML
+		 * @return {string} HTML
 		 */
 		getDisplayTitle: function () {
 			return this.options.displayTitle || HTML.escape( this.options.title );
@@ -91,8 +94,8 @@
 		/**
 		 * Determine if current page is in a specified namespace
 		 * @method
-		 * @param {String} namespace Name of namespace
-		 * @return {Boolean}
+		 * @param {string} namespace Name of namespace
+		 * @return {boolean}
 		 */
 		inNamespace: function ( namespace ) {
 			return this.options.namespaceNumber === mw.config.get( 'wgNamespaceIds' )[namespace];
@@ -101,7 +104,7 @@
 		/**
 		 * Get the lead section of the page view.
 		 * @method
-		 * @return {jQuery.Object}
+		 * @return {jQuery.Object|null}
 		 */
 		getLeadSectionElement: function () {
 			/*
@@ -122,14 +125,14 @@
 			if ( $( '.mw-mobilefrontend-leadsection' ).length ) {
 				return $( '.mw-mobilefrontend-leadsection' );
 			}
-			// FIXME: Remove this, when the cache has cleared - bug T122471
-			return this.$( '> div > div' ).eq( 0 );
+			// no lead section found
+			return null;
 		},
 
 		/**
 		 * Determines if content model is wikitext
 		 * @method
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		isWikiText: function () {
 			return mw.config.get( 'wgPageContentModel' ) === 'wikitext';
@@ -138,7 +141,7 @@
 		/**
 		 * Checks whether the current page is the main page
 		 * @method
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		isMainPage: function () {
 			return this.options.isMainPage;
@@ -146,7 +149,7 @@
 		/**
 		 * Checks whether the current page is watched
 		 * @method
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		isWatched: function () {
 			return this.options.isWatched;
@@ -155,7 +158,7 @@
 		/**
 		 * Return the latest revision id for this page
 		 * @method
-		 * @return {Number}
+		 * @return {number}
 		 */
 		getRevisionId: function () {
 			return this.options.revId;
@@ -164,7 +167,7 @@
 		/**
 		 * Return prefixed page title
 		 * @method
-		 * @return {String}
+		 * @return {string}
 		 */
 		getTitle: function () {
 			return this.options.title;
@@ -173,7 +176,7 @@
 		/**
 		 * Return page id
 		 * @method
-		 * @return {Number}
+		 * @return {number}
 		 */
 		getId: function () {
 			return this.options.id;
@@ -182,7 +185,7 @@
 		/**
 		 * return namespace id
 		 * @method
-		 * @return {Number} namespace Number
+		 * @return {number} namespace Number
 		 */
 		getNamespaceId: function () {
 			var nsId,
@@ -199,7 +202,7 @@
 		/**
 		 * Determines if current page is a talk page
 		 * @method
-		 * @return {Boolean} Whether the page is a talk page or not
+		 * @return {boolean} Whether the page is a talk page or not
 		 */
 		isTalkPage: function () {
 			var ns = this.getNamespaceId();
@@ -211,16 +214,15 @@
 		 * @inheritdoc
 		 */
 		preRender: function () {
-			var self = this;
 			this.sections = [];
 			this._sectionLookup = {};
 			this.title = this.options.title;
 
-			$.each( this.options.sections, function () {
-				var section = new Section( this );
-				self.sections.push( section );
-				self._sectionLookup[section.id] = section;
-			} );
+			this.options.sections.forEach( function ( sectionData ) {
+				var section = new Section( sectionData );
+				this.sections.push( section );
+				this._sectionLookup[section.id] = section;
+			}.bind( this ) );
 		},
 
 		/**
@@ -249,13 +251,14 @@
 			if ( !this._thumbs ) {
 				this.$el.find( 'a.image, a.thumbimage' ).each( function () {
 					var $a = $( this ),
+						legacyMatch = $a.attr( 'href' ).match( /title=([^\/&]+)/ ),
 						match = $a.attr( 'href' ).match( /[^\/]+$/ );
 
-					if ( match ) {
+					if ( legacyMatch || match ) {
 						thumbs.push(
 							new Thumbnail( {
 								el: $a,
-								filename: decodeURIComponent( match[0] )
+								filename: decodeURIComponent( legacyMatch ? legacyMatch[1] : match[0] )
 							} )
 						);
 					}
@@ -268,7 +271,7 @@
 		/**
 		 * FIXME: Change function signature to take the anchor of the heading
 		 * @method
-		 * @param {String} id of the section
+		 * @param {string} id of the section
 		 * @return {Section}
 		 */
 		getSection: function ( id ) {
@@ -285,6 +288,7 @@
 
 		/**
 		 * Returns a jQuery object representing all redlinks on the page.
+		 * @return {jQuery.Object}
 		 */
 		getRedLinks: function () {
 			return this.$( '.new' );
@@ -296,7 +300,7 @@
 	 *
 	 * @static
 	 * @param {Object} resp as representing a page in the API
-	 * @returns {Page}
+	 * @return {Page}
 	 */
 	Page.newFromJSON = function ( resp ) {
 		var revision, displayTitle,
@@ -331,7 +335,7 @@
 		return new Page(
 			$.extend( resp, {
 				id: resp.pageid,
-				isMissing: resp.missing ? true : false,
+				isMissing: !!resp.missing,
 				url: mw.util.getUrl( resp.title ),
 				displayTitle: displayTitle // this is HTML!
 			} )

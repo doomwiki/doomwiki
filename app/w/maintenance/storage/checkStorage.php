@@ -21,6 +21,8 @@
  * @ingroup Maintenance ExternalStorage
  */
 
+use MediaWiki\MediaWikiServices;
+
 if ( !defined( 'MEDIAWIKI' ) ) {
 	$optionsWithoutArgs = [ 'fix' ];
 	require_once __DIR__ . '/../commandLine.inc';
@@ -57,7 +59,7 @@ class CheckStorage {
 	];
 
 	function check( $fix = false, $xml = '' ) {
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		if ( $fix ) {
 			print "Checking, will fix errors if possible...\n";
 		} else {
@@ -462,7 +464,7 @@ class CheckStorage {
 			return;
 		}
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$dbw = wfGetDB( DB_MASTER );
 		$dbr->ping();
 		$dbw->ping();
@@ -470,7 +472,7 @@ class CheckStorage {
 		$source = new ImportStreamSource( $file );
 		$importer = new WikiImporter(
 			$source,
-			ConfigFactory::getDefaultInstance()->makeConfig( 'main' )
+			MediaWikiServices::getInstance()->getMainConfig()
 		);
 		$importer->setRevisionCallback( [ $this, 'importRevision' ] );
 		$importer->doImport();
@@ -507,7 +509,7 @@ class CheckStorage {
 		}
 
 		// Find text row again
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$oldId = $dbr->selectField( 'revision', 'rev_text_id', [ 'rev_id' => $id ], __METHOD__ );
 		if ( !$oldId ) {
 			echo "Missing revision row for rev_id $id\n";

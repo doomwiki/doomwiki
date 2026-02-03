@@ -56,7 +56,7 @@ class XCFHandler extends BitmapHandler {
 	/**
 	 * Get width and height from the XCF header.
 	 *
-	 * @param File $image
+	 * @param File|FSFile $image
 	 * @param string $filename
 	 * @return array
 	 */
@@ -67,7 +67,7 @@ class XCFHandler extends BitmapHandler {
 		}
 
 		# Forge a return array containing metadata information just like getimagesize()
-		# See PHP documentation at: http://www.php.net/getimagesize
+		# See PHP documentation at: https://secure.php.net/getimagesize
 		return [
 			0 => $header['width'],
 			1 => $header['height'],
@@ -149,7 +149,7 @@ class XCFHandler extends BitmapHandler {
 	 *
 	 * Greyscale files need different command line options.
 	 *
-	 * @param File $file The image object, or false if there isn't one.
+	 * @param File|FSFile $file The image object, or false if there isn't one.
 	 *   Warning, FSFile::getPropsFromPath might pass an (object)array() instead (!)
 	 * @param string $filename The filename
 	 * @return string

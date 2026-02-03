@@ -8,7 +8,8 @@
 			"아라",
 			"Hym411",
 			"Revi",
-			"HDNua"
+			"HDNua",
+			"IRTC1015"
 		]
 	},
 	"interwiki": "인터위키 데이터 보기 및 편집",
@@ -22,8 +23,8 @@
 	"interwiki_url_intro": "URL 서식. $1 자리에는 <code>[<nowiki />[접두어:<em>문서 이름</em>]]</code>에서의 <em>문서 이름</em>으로 바뀔 것입니다.",
 	"interwiki_local": "전달",
 	"interwiki-local-label": "전달:",
-	"interwiki_local_0_intro": "무시함, 보통 \"{{int:badtitle}}\"을 대신 출력합니다.",
-	"interwiki_local_1_intro": "인터위키 링크 정의에 입력된 URL로 이동합니다. (즉, 로컬 문서의 링크로 취급됩니다)",
+	"interwiki_local_0_intro": "이 인터위키 접두어를 사용한 외부 HTTP 요청에 대해 \"{{int:badtitle}}\" 오류 문서가 표시됩니다.",
+	"interwiki_local_1_intro": "이 인터위키 접두어를 사용한 외부 HTTP 요청을 인터위키의 대상 URL로 넘깁니다 (즉, 로컬 문서의 링크처럼 취급됩니다)",
 	"interwiki_trans": "끼워넣기",
 	"interwiki-trans-label": "끼워넣기:",
 	"interwiki_trans_1_intro": "위키문법 <code>{<nowiki />{접두어:<em>문서 이름</em>}}</code>이 쓰였다면, 일반적으로 인터위키 틀 포함(([//www.mediawiki.org/wiki/Manual:$wgEnableScaryTranscluding scary transclusion])이 활성화되었을 때 다른 위키에서 틀/문서 포함을 허용합니다.",
@@ -53,9 +54,9 @@
 	"interwiki-submit-empty": "접두어와 URL 칸은 비워둘 수 없습니다.",
 	"interwiki-submit-invalidurl": "URL의 프로토콜이 잘못되었습니다.",
 	"log-name-interwiki": "인터위키 테이블 기록",
-	"logentry-interwiki-iw_add": "$1 사용자가 \"$4\" ($5) (틀 포함: $6, 로컬: $7) 접두어를 인터위키 테이블에 {{GENDER:$2|추가}}했습니다.",
-	"logentry-interwiki-iw_edit": "$1 사용자가 인터위키 테이블의 \"$4\" ($5) (틀 포함: $6, 로컬: $7) 접두어를 {{GENDER:$2|수정}}했습니다.",
-	"logentry-interwiki-iw_delete": "$1 사용자가 인터위키 테이블의 \"$4\" 접두어를 {{GENDER:$2|삭제}}했습니다.",
+	"logentry-interwiki-iw_add": "$1님이 \"$4\" ($5) (끼워넣기: $6, 로컬: $7) 접두어를 인터위키 테이블에 {{GENDER:$2|추가했습니다}}",
+	"logentry-interwiki-iw_edit": "$1님이 인터위키 테이블의 \"$4\" ($5) (끼워넣기: $6, 로컬: $7) 접두어를 {{GENDER:$2|수정했습니다}}",
+	"logentry-interwiki-iw_delete": "$1님이 인터위키 테이블에서 \"$4\" 접두어를 {{GENDER:$2|삭제했습니다}}",
 	"log-description-interwiki": "[[Special:Interwiki|인터위키 테이블]]이 바뀐 기록입니다.",
 	"right-interwiki": "인터위키 데이터 편집",
 	"action-interwiki": "이 인터위키 접두어 바꾸기",

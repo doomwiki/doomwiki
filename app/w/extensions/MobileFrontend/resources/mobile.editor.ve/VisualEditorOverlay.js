@@ -1,12 +1,14 @@
 ( function ( M, $, ve ) {
 	var EditorOverlayBase = M.require( 'mobile.editor.common/EditorOverlayBase' ),
-		settings = M.require( 'mobile.settings/settings' ),
-		overlayManager = M.require( 'mobile.startup/overlayManager' );
+		settings = M.require( 'mobile.startup/settings' );
 
 	/**
 	 * Overlay for VisualEditor view
 	 * @class VisualEditorOverlay
 	 * @extends EditorOverlayBase
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function VisualEditorOverlay( options ) {
 		this.applyHeaderOptions( options, true );
@@ -30,8 +32,8 @@
 		 * EditorOverlay so that an EditorOverlay instance can be created effortlessly.
 		 * FIXME: Must be smarter way to do this.
 		 * @method
-		 * @param {Object} options
-		 * @param {Boolean} isVE whether the options are being generated for a VisualEditorOverlay
+		 * @param {Object} options Configuration options
+		 * @param {boolean} isVE whether the options are being generated for a VisualEditorOverlay
 		 *  or a EditorOverlay
 		 */
 		applyHeaderOptions: function ( options, isVE ) {
@@ -64,9 +66,9 @@
 				.then( function () {
 					overlay.target = ve.init.mw.targetFactory.create( 'article', overlay, {
 						$element: overlay.$el,
-						// || undefined so that scrolling is not triggered for the lead (0) section
+						// || null so that scrolling is not triggered for the lead (0) section
 						// (which has no header to scroll to)
-						section: overlay.options.sectionId || undefined
+						section: overlay.options.sectionId || null
 					} );
 					overlay.target.activating = true;
 					overlay.target.load();
@@ -127,7 +129,7 @@
 
 				self.clearSpinner();
 				self.applyHeaderOptions( self.options, false );
-				overlayManager.replaceCurrent( new EditorOverlay( self.options ) );
+				self.overlayManager.replaceCurrent( new EditorOverlay( self.options ) );
 			} );
 		},
 		/** @inheritdoc **/

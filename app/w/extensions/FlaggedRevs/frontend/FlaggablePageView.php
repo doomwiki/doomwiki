@@ -32,8 +32,10 @@ class FlaggablePageView extends ContextSource {
 		}
 		return self::$instance;
 	}
-	protected function __construct() { }
-	protected function __clone() { }
+	protected function __construct() {
+	}
+	protected function __clone() {
+	}
 
 	/*
 	 * Clear the FlaggablePageView for this request.
@@ -238,7 +240,7 @@ class FlaggablePageView extends ContextSource {
 	public function displayTag() {
 		$this->load();
 		// Sanity check that this is a reviewable page
-		if ( $this->article->isReviewable() ) {
+		if ( $this->article->isReviewable() && $this->reviewNotice ) {
 			$this->out->addSubtitle( $this->reviewNotice );
 		}
 		return true;
@@ -349,20 +351,26 @@ class FlaggablePageView extends ContextSource {
 				# Tell MW that parser output is done by setting $outputDone
 				$outputDone = $this->showOldReviewedVersion( $frev, $tag, $prot );
 				$useParserCache = false;
+				$tagTypeClass = 'flaggedrevs_oldstable';
 			// Stable version requested by ID or relevant conditions met to
 			// to override page view with the stable version.
 			} elseif ( $stable || $this->showingStable() ) {
 				# Tell MW that parser output is done by setting $outputDone
 				$outputDone = $this->showStableVersion( $srev, $tag, $prot );
 				$useParserCache = false;
+				$tagTypeClass = ( $this->article->stableVersionIsSynced() ) ?
+					'flaggedrevs_stable_synced' : 'flaggedrevs_stable_notsynced';
 			// Looking at some specific old revision (&oldid=x) or if FlaggedRevs is not
 			// set to override given the relevant conditions (like &stable=0).
 			} else {
 				$this->showDraftVersion( $srev, $tag, $prot );
+				$tagTypeClass = ( $this->article->stableVersionIsSynced() ) ?
+					'flaggedrevs_draft_synced' : 'flaggedrevs_draft_notsynced';
 			}
 		} else {
 			// Looking at a page with no stable version; add "no reviewed version" tag.
 			$this->showUnreviewedPage( $tag, $prot );
+			$tagTypeClass = 'flaggedrevs_unreviewed';
 		}
 		# Some checks for which tag CSS to use
 		if ( $this->useSimpleUI() ) {
@@ -378,9 +386,10 @@ class FlaggablePageView extends ContextSource {
 				$tagClass = 'flaggedrevs_basic';
 			}
 		}
-		# Wrap tag contents in a div
+		# Wrap tag contents in a div, with class indicating sync status and
+		# whether stable version is shown (for customization of the notice)
 		if ( $tag != '' ) {
-			$css = "{$tagClass} plainlinks noprint nomobile";
+			$css = "{$tagClass} {$tagTypeClass} plainlinks noprint nomobile";
 			$notice = "<div id=\"mw-fr-revisiontag\" class=\"{$css}\">{$tag}</div>\n";
 			$this->reviewNotice .= $notice;
 		}
@@ -476,7 +485,7 @@ class FlaggablePageView extends ContextSource {
 			if ( $anchor != null ) {
 				// Hack: reverse some of the Sanitizer::escapeId() encoding
 				$section = urldecode( str_replace( // bug 35661
-					array( ':' , '.' ), array( '%3A', '%' ), $anchor
+					[ ':' , '.' ], [ '%3A', '%' ], $anchor
 				) );
 				$section = str_replace( '_', ' ', $section ); // prettify
 				$pending .= $this->msg( 'revreview-edited-section', $anchor, $section )->parseAsBlock();
@@ -726,7 +735,7 @@ class FlaggablePageView extends ContextSource {
 
 	protected function showPoolError( Status $status ) {
 		$this->out->enableClientCache( false );
-		$this->out->setRobotPolicy('noindex,nofollow' );
+		$this->out->setRobotPolicy( 'noindex,nofollow' );
 
 		$errortext = $status->getWikiText( false, 'view-pool-error' );
 		$this->out->addWikiText( '<div class="errorbox">' . $errortext . '</div>' );
@@ -744,10 +753,10 @@ class FlaggablePageView extends ContextSource {
 
 	// Show icons for draft/stable/old reviewed versions
 	protected function showRatingIcon() {
-		if ( FlaggedRevs::useOnlyIfProtected() ) {
+		if ( FlaggedRevs::useSimpleConfig() ) {
 			// If there is only one quality level and we have tabs to know
 			// which version we are looking at, then just use the lock icon...
-			return FlaggedRevs::qualityVersions();
+			return false;
 		}
 		return true;
 	}
@@ -821,15 +830,15 @@ class FlaggablePageView extends ContextSource {
 				$multiNotice . "</td></tr>";
 		}
 		return
-			"<table border='0' width='98%' cellpadding='0' cellspacing='4' class='$tableClass'>" .
+			"<table border='0' cellpadding='0' cellspacing='4' style='width: 98%;' class='$tableClass'>" .
 				"<col class='diff-marker' />" .
 				"<col class='diff-content' />" .
 				"<col class='diff-marker' />" .
 				"<col class='diff-content' />" .
 				"<tr>" .
-					"<td colspan='2' width='50%' style='text-align: center;' class='diff-otitle'><b>" .
+					"<td colspan='2' style='text-align: center; width: 50%;' class='diff-otitle'><b>" .
 						$leftStatus . "</b></td>" .
-					"<td colspan='2' width='50%' style='text-align: center;' class='diff-ntitle'><b>" .
+					"<td colspan='2' style='text-align: center; width: 50%;' class='diff-ntitle'><b>" .
 						$rightStatus . "</b></td>" .
 				"</tr>" .
 				$multiNotice .
@@ -866,8 +875,8 @@ class FlaggablePageView extends ContextSource {
 				$dbr = wfGetDB( DB_SLAVE );
 				$time = $dbr->selectField( 'flaggedimages',
 					'fi_img_timestamp',
-					array( 'fi_rev_id' => $frev->getRevId(),
-						'fi_name' => $this->article->getTitle()->getDBkey() ),
+					[ 'fi_rev_id' => $frev->getRevId(),
+						'fi_name' => $this->article->getTitle()->getDBkey() ],
 					__METHOD__
 				);
 				$time = trim( $time ); // remove garbage
@@ -884,7 +893,7 @@ class FlaggablePageView extends ContextSource {
 		}
 
 		$title = $this->article->getTitle();
-		$displayFile = wfFindFile( $title, array( 'time' => $time ) );
+		$displayFile = wfFindFile( $title, [ 'time' => $time ] );
 		# If none found, try current
 		if ( !$displayFile ) {
 			wfDebug( __METHOD__ . ": {$title->getPrefixedDBkey()}: $time not found, using current\n" );
@@ -935,7 +944,7 @@ class FlaggablePageView extends ContextSource {
 		$log = $this->stabilityLogNotice( false );
 		if ( $log ) {
 			$notices[$this->article->isPageLocked() ? 'revreview-locked' : 'revreview-unlocked'] = $log;
-		} else if ( $this->editWillRequireReview( $editPage ) ) {
+		} elseif ( $this->editWillRequireReview( $editPage ) ) {
 			$notices['revreview-editnotice'] = $this->msg( 'revreview-editnotice' )->parseAsBlock();
 		}
 		$frev = $this->article->getStableRev();
@@ -951,8 +960,8 @@ class FlaggablePageView extends ContextSource {
 			&& $revId === $latestId // only for current rev
 		) {
 			// Construct a link to the diff
-			$diffUrl = $this->article->getTitle()->getFullURL( array(
-				'diff' => $revId, 'oldid' => $frev->getRevId() )
+			$diffUrl = $this->article->getTitle()->getFullURL( [
+				'diff' => $revId, 'oldid' => $frev->getRevId() ]
 			);
 			$notices['review-edit-diff'] = $this->msg( 'review-edit-diff' )->parse() . ' ' .
 				FlaggedRevsXML::diffToggle( $diffUrl );
@@ -975,7 +984,7 @@ class FlaggablePageView extends ContextSource {
 		if ( !$this->article->isReviewable() ) {
 			return true;
 		}
-		$items = array();
+		$items = [];
 		# Show stabilization log
 		$log = $this->stabilityLogNotice();
 		if ( $log ) $items[] = $log;
@@ -1098,13 +1107,13 @@ class FlaggablePageView extends ContextSource {
 		if ( !$reqUser->isAllowed( 'review' ) ) {
 			return true;
 		}
-		if ( !FlaggedRevs::useOnlyIfProtected() ) {
+		if ( !FlaggedRevs::useSimpleConfig() ) {
 			# Add links to lists of unreviewed pages and pending changes in this category
 			$category = $this->article->getTitle()->getText();
 			$this->out->addSubtitle(
 				Html::rawElement(
 					'span',
-					array( 'class' => 'plainlinks', 'id' => 'mw-fr-category-oldreviewed' ),
+					[ 'class' => 'plainlinks', 'id' => 'mw-fr-category-oldreviewed' ],
 					$this->msg( 'flaggedrevs-categoryview', urlencode( $category ) )->parse()
 				)
 			);
@@ -1193,7 +1202,7 @@ class FlaggablePageView extends ContextSource {
 	public function addStabilizationLink() {
 		$request = $this->getRequest();
 		$this->load();
-		if ( FlaggedRevs::useProtectionLevels() ) {
+		if ( FlaggedRevs::useSimpleConfig() ) {
 			return true; // simple custom levels set for action=protect
 		}
 		# Check only if the title is reviewable
@@ -1229,7 +1238,7 @@ class FlaggablePageView extends ContextSource {
 	public function setActionTabs( $skin, array &$actions ) {
 		$reqUser = $this->getUser();
 		$this->load();
-		if ( FlaggedRevs::useProtectionLevels() ) {
+		if ( FlaggedRevs::useSimpleConfig() ) {
 			return true; // simple custom levels set for action=protect
 		}
 		$title = $this->article->getTitle()->getSubjectPage();
@@ -1247,11 +1256,11 @@ class FlaggablePageView extends ContextSource {
 		{
 			$stableTitle = SpecialPage::getTitleFor( 'Stabilization' );
 			// Add the tab
-			$actions['default'] = array(
+			$actions['default'] = [
 				'class' => false,
 				'text' => $this->msg( 'stabilization-tab' )->text(),
 				'href' => $stableTitle->getLocalUrl( 'page=' . $title->getPrefixedUrl() )
-			);
+			];
 		}
 		return true;
 	}
@@ -1301,18 +1310,18 @@ class FlaggablePageView extends ContextSource {
 	protected function addDraftTab( array &$views, FlaggedRevision $srev, $type ) {
 		$request = $this->getRequest();
 		$title = $this->article->getTitle(); // convenience
-		$tabs = array(
-			'read' => array( // view stable
+		$tabs = [
+			'read' => [ // view stable
 				'text'  => '', // unused
 				'href'  => $title->getLocalUrl( 'stable=1' ),
 				'class' => ''
-			),
-			'draft' => array( // view draft
+			],
+			'draft' => [ // view draft
 				'text'  => $this->msg( 'revreview-current' )->text(),
 				'href'  => $title->getLocalUrl( 'stable=0&redirect=no' ),
 				'class' => 'collapsible'
-			),
-		);
+			],
+		];
 		// Set tab selection CSS
 		if ( $this->showingStable() || $request->getVal( 'stableid' ) ) {
 			// We are looking a the stable version or an old reviewed one
@@ -1337,7 +1346,7 @@ class FlaggablePageView extends ContextSource {
 				$tabs['read']['class'] = 'selected';
 			}
 		}
-		$newViews = array();
+		$newViews = [];
 		// Rebuild tabs array. Deals with Monobook vs Vector differences.
 		if ( $type == 'nav' ) { // Vector et al
 			$previousTab = null;
@@ -1432,6 +1441,10 @@ class FlaggablePageView extends ContextSource {
 	 * (c) When comparing the stable revision to the current:
 	 *   (i)  Show a tag with some explanation for the diff
 	 *   (ii) List any template/file changes pending review
+	 *
+	 * @param $diff
+	 * @param Revision $oldRev
+	 * @param Revision $newRev
 	 */
 	public function addToDiffView( $diff, $oldRev, $newRev ) {
 		global $wgMemc, $wgParserCacheExpireTime;
@@ -1488,7 +1501,7 @@ class FlaggablePageView extends ContextSource {
 					// Reviewer just edited...
 					if ( $request->getInt( 'shownotice' )
 						&& $newRev->isCurrent()
-						&& $newRev->getRawUserText() == $reqUser->getName() )
+						&& $newRev->getUserText( Revision::RAW ) == $reqUser->getName() )
 					{
 						$title = $this->article->getTitle(); // convenience
 						// @TODO: make diff class cache this
@@ -1586,8 +1599,8 @@ class FlaggablePageView extends ContextSource {
 			$review = Linker::linkKnown(
 				$article->getTitle(),
 				wfMessage( 'review-diff2stable' )->escaped(),
-				array(),
-				array( 'oldid' => $srev->getRevId(), 'diff' => 'cur' ) + FlaggedRevs::diffOnlyCGI()
+				[],
+				[ 'oldid' => $srev->getRevId(), 'diff' => 'cur' ] + FlaggedRevs::diffOnlyCGI()
 			);
 			$review = wfMessage( 'parentheses' )->rawParams( $review )->escaped();
 			$review = "<div class='fr-diff-to-stable' style='text-align: center;'>$review</div>";
@@ -1605,13 +1618,13 @@ class FlaggablePageView extends ContextSource {
 		if ( $oldRev && $newRev ) {
 			list( $msg, $class ) = self::getDiffRevMsgAndClass( $oldRev, $srev );
 			$table .= "<table class='fr-diff-ratings'><tr>";
-			$table .= "<td width='50%' style='text-align: center;'>";
+			$table .= "<td style='text-align: center; width: 50%;'>";
 			// @todo i18n FIXME: Hard coded brackets
 			$table .= "<span class='$class'>[" .
 				wfMessage( $msg )->escaped() . "]</span>";
 
 			list( $msg, $class ) = self::getDiffRevMsgAndClass( $newRev, $srev );
-			$table .= "</td><td width='50%' style='text-align: center;'>";
+			$table .= "</td><td style='text-align: center; width: 50%;'>";
 			// @todo i18n FIXME: Hard coded brackets
 			$table .= "<span class='$class'>[" .
 				wfMessage( $msg )->escaped() . "]</span>";
@@ -1643,13 +1656,13 @@ class FlaggablePageView extends ContextSource {
 				'revreview-hist-draft';
 		}
 		$css = FlaggedRevsXML::getQualityColor( $tier );
-		return array( $msg, $css );
+		return [ $msg, $css ];
 	}
 
 	// Fetch template changes for a reviewed revision since review
 	// @return array
 	protected static function fetchTemplateChanges( FlaggedRevision $frev, $newTemplates = null ) {
-		$diffLinks = array();
+		$diffLinks = [];
 		if ( $newTemplates === null ) {
 			$changes = $frev->findPendingTemplateChanges();
 		} else {
@@ -1660,8 +1673,8 @@ class FlaggablePageView extends ContextSource {
 			$link = Linker::linkKnown(
 				$title,
 				htmlspecialchars( $title->getPrefixedText() ),
-				array(),
-				array( 'diff' => 'cur', 'oldid' => $revIdStable ) );
+				[],
+				[ 'diff' => 'cur', 'oldid' => $revIdStable ] );
 			if ( !$hasStable ) {
 				$link = "<strong>$link</strong>";
 			}
@@ -1673,7 +1686,7 @@ class FlaggablePageView extends ContextSource {
 	// Fetch file changes for a reviewed revision since review
 	// @return array
 	protected static function fetchFileChanges( FlaggedRevision $frev, $newFiles = null ) {
-		$diffLinks = array();
+		$diffLinks = [];
 		if ( $newFiles === null ) {
 			$changes = $frev->findPendingFileChanges( 'noForeign' );
 		} else {
@@ -1717,7 +1730,7 @@ class FlaggablePageView extends ContextSource {
 					$this->isReviewableDiff = true;
 				}
 			}
-			$this->diffRevs = array( 'old' => $oldRev, 'new' => $newRev );
+			$this->diffRevs = [ 'old' => $oldRev, 'new' => $newRev ];
 		}
 		return true;
 	}
@@ -1745,27 +1758,27 @@ class FlaggablePageView extends ContextSource {
 			return true; // only for pages with stable versions
 		}
 
-		$params = array();
+		$params = [];
 		// If the edit was not autoreviewed, and the user can actually make a
 		// new stable version, then go to the diff...
 		if ( $this->article->revsArePending() && $frev->userCanSetFlags( $reqUser ) ) {
-			$params += array( 'oldid' => $frev->getRevId(), 'diff' => 'cur', 'shownotice' => 1 );
+			$params += [ 'oldid' => $frev->getRevId(), 'diff' => 'cur', 'shownotice' => 1 ];
 			$params += FlaggedRevs::diffOnlyCGI();
 		// ...otherwise, go to the draft revision after completing an edit.
 		// This allows for users to immediately see their changes. Even if the stable
 		// and draft page match, we can avoid a parse due to FR_INCLUDES_STABLE.
 		} else {
-			$params += array( 'stable' => 0 );
+			$params += [ 'stable' => 0 ];
 			// Show a notice at the top of the page for non-reviewers...
 			if ( $this->article->revsArePending()
 				&& $this->article->isStableShownByDefault()
 				&& !$reqUser->isAllowed( 'review' )
 			) {
-				$params += array( 'shownotice' => 1 );
+				$params += [ 'shownotice' => 1 ];
 				if ( $sectionAnchor ) {
 					// Pass a section parameter in the URL as needed to add a link to
 					// the "your changes are pending" box on the top of the page...
-					$params += array( 'fromsection' => substr( $sectionAnchor, 1 ) ); // strip #
+					$params += [ 'fromsection' => substr( $sectionAnchor, 1 ) ]; // strip #
 					$sectionAnchor = ''; // go to the top of the page to see notice
 				}
 			}
@@ -1793,11 +1806,13 @@ class FlaggablePageView extends ContextSource {
 			$dom = new DOMDocument();
 			$dom->loadXML( $buttons['save'] ); // load button XML from hook
 			foreach ( $dom->getElementsByTagName( 'input' ) as $input ) { // one <input>
-				$input->setAttribute( 'value', $this->msg( 'revreview-submitedit' )->text() );
-				// @todo i18n FIXME: Hard coded brackets.
-				$input->setAttribute( 'title', // keep accesskey
-					$this->msg( 'revreview-submitedit-title' )->text() .
-						' [' . $this->msg( 'accesskey-save' )->text() . ']' );
+				$buttonLabel = $this->msg( 'revreview-submitedit' )->text();
+				$input->setAttribute( 'value', $buttonLabel );
+				// This attempts to re-implement Linker::titleAttrib(); TODO, consider a re-use pattern
+				$buttonTitle = $this->msg( 'revreview-submitedit-title' )->text() . ' ' .
+					$this->msg( 'brackets', $this->msg( 'accesskey-save' )->text() )->text();
+				$input->setAttribute( 'title', $buttonTitle ); // keep accesskey
+
 				# Change submit button text & title
 				$buttons['save'] = $dom->saveXML( $dom->documentElement );
 			}
@@ -1870,7 +1885,7 @@ class FlaggablePageView extends ContextSource {
 	 * (a) there are currently any revisions pending (bug 16713)
 	 * (b) this is an unreviewed page (bug 23970)
 	 */
-	public function addReviewCheck( EditPage $editPage, array &$checkboxes, &$tabindex ) {
+	public function addReviewCheck( EditPage $editPage, array &$checkboxes, &$tabindex = null ) {
 		$this->load();
 		$request = $this->getRequest();
 		$title = $this->article->getTitle(); // convenience
@@ -1884,31 +1899,46 @@ class FlaggablePageView extends ContextSource {
 			# the user decide if he/she wants it reviewed on the spot. One might
 			# do this if he/she just saw the diff-to-stable and *then* decided to edit.
 			# Note: check not shown when editing old revisions, which is confusing.
-			$checkbox = Xml::check(
-				'wpReviewEdit',
-				$request->getCheck( 'wpReviewEdit' ),
-				array( 'tabindex' => ++$tabindex, 'id' => 'wpReviewEdit' )
-			);
-			$attribs = array( 'for' => 'wpReviewEdit' );
+			$name = 'wpReviewEdit';
+			$options = [
+				'label-message' => null,
+				'id' => 'wpReviewEdit',
+				'default' => $request->getCheck( $name ),
+				'title-message' => null,
+				'legacy-name' => 'reviewed',
+			];
 			// For reviewed pages...
 			if ( $this->article->getStable() ) {
 				// For pending changes...
 				if ( $this->article->revsArePending() ) {
 					$n = $this->article->getPendingRevCount();
-					$attribs['title'] = $this->msg( 'revreview-check-flag-p-title' )->text();
-					$labelMsg = $this->msg( 'revreview-check-flag-p' )->numParams( $n )->parse();
+					$options['title-message'] = 'revreview-check-flag-p-title';
+					$options['label-message'] = $this->msg( 'revreview-check-flag-p' )->numParams( $n );
 				// For just the user's changes...
 				} else {
-					$attribs['title'] = $this->msg( 'revreview-check-flag-y-title' )->parse();
-					$labelMsg = $this->msg( 'revreview-check-flag-y' )->parse();
+					$options['title-message'] = 'revreview-check-flag-y-title';
+					$options['label-message'] = 'revreview-check-flag-y';
 				}
 			// For unreviewed pages...
 			} else {
-				$attribs['title'] = $this->msg( 'revreview-check-flag-u-title' )->text();
-				$labelMsg = $this->msg( 'revreview-check-flag-u' )->parse();
+				$options['title-message'] = 'revreview-check-flag-u-title';
+				$options['label-message'] = 'revreview-check-flag-u';
 			}
-			$label = Xml::element( 'label', $attribs, $labelMsg );
-			$checkboxes['reviewed'] = $checkbox . '&#160;' . $label;
+			if ( $tabindex === null ) {
+				// New style
+				$checkboxes[$name] = $options;
+			} else {
+				// Old style
+				$checkbox = Xml::check(
+					$name,
+					$options['default'],
+					[ 'tabindex' => ++$tabindex, 'id' => $options['id'] ]
+				);
+				$attribs = [ 'for' => $options['id'] ];
+				$attribs['title'] = $this->msg( $options['title-message'] )->text();
+				$label = Xml::tags( 'label', $attribs, $this->msg( $options['label-message'] )->parse() );
+				$checkboxes[ $options['legacy-name'] ] = $checkbox . '&#160;' . $label;
+			}
 		}
 		return true;
 	}

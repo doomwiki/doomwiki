@@ -113,6 +113,16 @@ class OracleUpdater extends DatabaseUpdater {
 			[ 'dropTable', 'msg_resource' ],
 			[ 'addField', 'watchlist', 'wl_id', 'patch-watchlist-wl_id.sql' ],
 
+			// 1.28
+			[ 'addIndex', 'recentchanges', 'rc_name_type_patrolled_timestamp',
+				'patch-add-rc_name_type_patrolled_timestamp_index.sql' ],
+			[ 'addField', 'change_tag', 'ct_id', 'patch-change_tag-ct_id.sql' ],
+			[ 'addField', 'tag_summary', 'ts_id', 'patch-tag_summary-ts_id.sql' ],
+
+			// 1.29
+			[ 'addField', 'externallinks', 'el_index_60', 'patch-externallinks-el_index_60.sql' ],
+			[ 'addField', 'user_groups', 'ug_expiry', 'patch-user_groups-ug_expiry.sql' ],
+
 			// KEEP THIS AT THE BOTTOM!!
 			[ 'doRebuildDuplicateFunction' ],
 
@@ -275,7 +285,7 @@ class OracleUpdater extends DatabaseUpdater {
 	 *
 	 * @param array $what
 	 */
-	public function doUpdates( $what = [ 'core', 'extensions', 'purge', 'stats' ] ) {
+	public function doUpdates( array $what = [ 'core', 'extensions', 'purge', 'stats' ] ) {
 		parent::doUpdates( $what );
 
 		$this->db->query( 'BEGIN fill_wiki_info; END;' );

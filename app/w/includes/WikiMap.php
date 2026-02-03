@@ -65,6 +65,14 @@ class WikiMap {
 
 		$path = $wgConf->get( 'wgArticlePath', $wikiID, $major,
 			[ 'lang' => $minor, 'site' => $major ] );
+
+		// If we don't have a canonical server or a path containing $1, the
+		// WikiReference isn't going to function properly. Just return null in
+		// that case.
+		if ( !is_string( $canonicalServer ) || !is_string( $path ) || strpos( $path, '$1' ) === false ) {
+			return null;
+		}
+
 		return new WikiReference( $canonicalServer, $path, $server );
 	}
 
@@ -133,7 +141,7 @@ class WikiMap {
 	 * @param string $wikiID Wiki'd id (generally database name)
 	 * @param string $page Page name (must be normalised before calling this function!)
 	 * @param string $text Link's text; optional, default to $page
-	 * @return string HTML link or false if the wiki was not found
+	 * @return string|false HTML link or false if the wiki was not found
 	 */
 	public static function makeForeignLink( $wikiID, $page, $text = null ) {
 		if ( !$text ) {
@@ -174,7 +182,7 @@ class WikiMap {
 class WikiReference {
 	private $mCanonicalServer; ///< canonical server URL, e.g. 'https://www.mediawiki.org'
 	private $mServer; ///< server URL, may be protocol-relative, e.g. '//www.mediawiki.org'
-	private $mPath;   ///< path, '/wiki/$1'
+	private $mPath; ///< path, '/wiki/$1'
 
 	/**
 	 * @param string $canonicalServer

@@ -54,6 +54,8 @@ class SpecialNewpages extends IncludableSpecialPage {
 		$opts->add( 'feed', '' );
 		$opts->add( 'tagfilter', '' );
 		$opts->add( 'invert', false );
+		$opts->add( 'size-mode', 'max' );
+		$opts->add( 'size', 0 );
 
 		$this->customFilters = [];
 		Hooks::run( 'SpecialNewPagesFilters', [ $this, &$this->customFilters ] );
@@ -188,9 +190,13 @@ class SpecialNewpages extends IncludableSpecialPage {
 		unset( $changed['offset'] ); // Reset offset if query type changes
 
 		$self = $this->getPageTitle();
+		$linkRenderer = $this->getLinkRenderer();
 		foreach ( $filters as $key => $msg ) {
 			$onoff = 1 - $this->opts->getValue( $key );
-			$link = Linker::link( $self, $showhide[$onoff], [],
+			$link = $linkRenderer->makeLink(
+				$self,
+				new HtmlArmor( $showhide[$onoff] ),
+				[],
 				[ $key => $onoff ] + $changed
 			);
 			$links[$key] = $this->msg( $msg )->rawParams( $link )->escaped();
@@ -209,6 +215,9 @@ class SpecialNewpages extends IncludableSpecialPage {
 		$username = $this->opts->consumeValue( 'username' );
 		$tagFilterVal = $this->opts->consumeValue( 'tagfilter' );
 		$nsinvert = $this->opts->consumeValue( 'invert' );
+
+		$size = $this->opts->consumeValue( 'size' );
+		$max = $this->opts->consumeValue( 'size-mode' ) === 'max';
 
 		// Check username input validity
 		$ut = Title::makeTitleSafe( NS_USER, $username );
@@ -249,6 +258,11 @@ class SpecialNewpages extends IncludableSpecialPage {
 				'id' => 'mw-np-username',
 				'size' => 30,
 				'cssclass' => 'mw-autocomplete-user', // used by mediawiki.userSuggest
+			],
+			'size' => [
+				'type' => 'sizefilter',
+				'name' => 'size',
+				'default' => -$max * $size,
 			],
 		];
 
@@ -307,28 +321,25 @@ class SpecialNewpages extends IncludableSpecialPage {
 		$spanTime = Html::element( 'span', [ 'class' => 'mw-newpages-time' ],
 			$lang->userTimeAndDate( $result->rc_timestamp, $this->getUser() )
 		);
-		$time = Linker::linkKnown(
+		$linkRenderer = $this->getLinkRenderer();
+		$time = $linkRenderer->makeKnownLink(
 			$title,
-			$spanTime,
+			new HtmlArmor( $spanTime ),
 			[],
-			[ 'oldid' => $result->rc_this_oldid ],
-			[]
+			[ 'oldid' => $result->rc_this_oldid ]
 		);
 
 		$query = $title->isRedirect() ? [ 'redirect' => 'no' ] : [];
 
-		// Linker::linkKnown() uses 'known' and 'noclasses' options.
-		// This breaks the colouration for stubs.
-		$plink = Linker::link(
+		$plink = $linkRenderer->makeKnownLink(
 			$title,
 			null,
 			[ 'class' => 'mw-newpages-pagename' ],
-			$query,
-			[ 'known' ]
+			$query
 		);
-		$histLink = Linker::linkKnown(
+		$histLink = $linkRenderer->makeKnownLink(
 			$title,
-			$this->msg( 'hist' )->escaped(),
+			$this->msg( 'hist' )->text(),
 			[],
 			[ 'action' => 'history' ]
 		);
@@ -375,7 +386,11 @@ class SpecialNewpages extends IncludableSpecialPage {
 
 		if ( !$title->equals( $oldTitle ) ) {
 			$oldTitleText = $oldTitle->getPrefixedText();
-			$oldTitleText = $this->msg( 'rc-old-title' )->params( $oldTitleText )->escaped();
+			$oldTitleText = Html::rawElement(
+				'span',
+				[ 'class' => 'mw-newpages-oldtitle' ],
+				$this->msg( 'rc-old-title' )->params( $oldTitleText )->escaped()
+			);
 		}
 
 		return "<li{$css}>{$time} {$dm}{$plink} {$hist} {$dm}{$length} "
@@ -477,5 +492,9 @@ class SpecialNewpages extends IncludableSpecialPage {
 
 	protected function getGroupName() {
 		return 'changes';
+	}
+
+	protected function getCacheTTL() {
+		return 60 * 5;
 	}
 }

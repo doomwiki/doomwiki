@@ -19,7 +19,8 @@
 			"Zache",
 			"ZeiP",
 			"Matma Rex",
-			"01miki10"
+			"01miki10",
+			"Pyscowicz"
 		]
 	},
 	"abusefilter-desc": "Mahdollistaa muokkauksien suodattamisen automaattisella heuristiikalla.",
@@ -64,9 +65,9 @@
 	"abusefilter-log-search-title": "Kohteen nimi:",
 	"abusefilter-log-search-wiki": "Wiki:",
 	"abusefilter-log-search-submit": "Etsi",
-	"abusefilter-log-entry": "$1: $2 laukaisi väärinkäyttösuodattimen käyttäessään toimintoa ”$3” kohteessa $4.\nToimenpiteet: $5;\nSuodattimen kuvaus: $6",
-	"abusefilter-log-entry-withdiff": "$1: $2 laukaisi väärinkäyttösuodattimen käyttäessään toimintoa ”$3” kohteessa $4.\nToimenpiteet: $5;\nSuodattimen kuvaus: $6 ($7)",
-	"abusefilter-log-detailedentry-meta": "$1: $2 laukaisi suodattimen $3 käyttäessään toimintoa ”$4” kohteessa $5.\nToimenpiteet: $6;\nSuodattimen kuvaus: $7 ($8)",
+	"abusefilter-log-entry": "$1: $2 laukaisi väärinkäyttösuodattimen {{GENDER:$8|käyttäessään}} toimintoa ”$3” kohteessa $4.\nToimenpiteet: $5;\nSuodattimen kuvaus: $6",
+	"abusefilter-log-entry-withdiff": "$1: $2 laukaisi väärinkäyttösuodattimen {{GENDER:$8|käyttäessään}} toimintoa ”$3” kohteessa $4.\nToimenpiteet: $5;\nSuodattimen kuvaus: $6 ($7)",
+	"abusefilter-log-detailedentry-meta": "$1: $2 laukaisi suodattimen $3 {{GENDER:$9|käyttäessään}} toimintoa ”$4” kohteessa $5.\nToimenpiteet: $6;\nSuodattimen kuvaus: $7 ($8)",
 	"abusefilter-log-detailedentry-global": "järjestelmänlaajuinen suodatin $1",
 	"abusefilter-log-detailedentry-local": "suodatin $1",
 	"abusefilter-log-detailslink": "tarkat tiedot",
@@ -258,6 +259,8 @@
 	"abusefilter-edit-builder-vars-diff": "Muokkauksessa tehtyjen muutosten yhdistetty diff-tuloste",
 	"abusefilter-edit-builder-vars-newsize": "Uuden sivun koko",
 	"abusefilter-edit-builder-vars-oldsize": "Vanhan sivun koko",
+	"abusefilter-edit-builder-vars-old-content-model": "Vanha sisältömalli",
+	"abusefilter-edit-builder-vars-new-content-model": "Uusi sisältömalli",
 	"abusefilter-edit-builder-vars-removedlines": "Muokkauksessa poistettujen rivien määrä",
 	"abusefilter-edit-builder-vars-summary": "Muokkausyhteenveto tai syy",
 	"abusefilter-edit-builder-vars-article-id": "Sivun tunnistenumero",
@@ -352,7 +355,7 @@
 	"abusefilter-action-disallow": "Älä salli",
 	"abusefilter-revert-title": "Peruuta kaikki suodattimen $1 tekemät muutokset",
 	"abusefilter-revert-intro": "Tämä lomake antaa sinun peruuttaa kaikki muutokset, jotka väärinkäyttösuodatin on tehnyt suodattimen $1 ehtojen perusteella.\nKäytä tätä työkalua varoen.",
-	"abusefilter-revert-preview-item": "$1: käyttäjä $2 käytti toimintoa \"$3\" kohteessa $4.\nPeruttavat toimenpiteet ovat: $5 ($6)",
+	"abusefilter-revert-preview-item": "$1: käyttäjä $2 {{GENDER:$7|käytti}} toimintoa \"$3\" kohteessa $4.\nPeruttavat toimenpiteet ovat: $5 ($6)",
 	"abusefilter-revert-search-legend": "Valitse suodattimen toimenpiteet, jotka haluat peruuttaa",
 	"abusefilter-revert-periodstart": "Aikaväli alkaa:",
 	"abusefilter-revert-periodend": "Aikaväli loppuu:",
@@ -420,9 +423,13 @@
 	"apihelp-abusefilterchecksyntax-description": "Tarkista väärinkäyttösuodattimen syntaksi.",
 	"apihelp-abusefilterchecksyntax-example-1": "Tarkasta kelvollisen suodattimen ehtolauserakenne",
 	"apihelp-abusefilterchecksyntax-example-2": "Tarkasta epäkelvon suodattimen ehtolauserakenne",
+	"apihelp-abusefilterevalexpression-description": "Arvioi väärinkäyttösuodattimen lauseketta.",
+	"apihelp-abusefilterevalexpression-param-expression": "Arvioitava lauseke.",
+	"apihelp-abusefilterevalexpression-example-1": "Arvioi yksinkertaista lauseketta",
 	"apihelp-abusefilterunblockautopromote-param-user": "Käyttäjän, jolta haluat poistaa eston, käyttäjänimi.",
 	"apihelp-query+abusefilters-description": "Näytä väärinkäyttösuodatinten yksityiskohdat.",
 	"apihelp-query+abusefilters-example-1": "Luetteloi käytössä olevat julkiset suodattimet",
 	"apihelp-query+abusefilters-example-2": "Näytä joitain tietoja suodattimista",
-	"apihelp-query+abuselog-example-1": "Näytä viimeisimmät lokimerkinnät"
+	"apihelp-query+abuselog-example-1": "Näytä viimeisimmät lokimerkinnät",
+	"apierror-abusefilter-badsyntax": "Suodattimella on virheellinen syntaksi."
 }

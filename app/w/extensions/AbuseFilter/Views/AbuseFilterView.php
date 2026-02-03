@@ -1,7 +1,14 @@
 <?php
 
+use MediaWiki\MediaWikiServices;
+
 abstract class AbuseFilterView extends ContextSource {
 	public $mFilter, $mHistoryID, $mSubmit;
+
+	/**
+	 * @var \MediaWiki\Linker\LinkRenderer
+	 */
+	protected $linkRenderer;
 
 	/**
 	 * @param $page SpecialAbuseFilter
@@ -11,6 +18,7 @@ abstract class AbuseFilterView extends ContextSource {
 		$this->mPage = $page;
 		$this->mParams = $params;
 		$this->setContext( $this->mPage->getContext() );
+		$this->linkRenderer = MediaWikiServices::getInstance()->getLinkRenderer();
 	}
 
 	/**
@@ -27,7 +35,10 @@ abstract class AbuseFilterView extends ContextSource {
 	 * @return bool
 	 */
 	public function canEdit() {
-		return $this->getUser()->isAllowed( 'abusefilter-modify' );
+		return (
+			!$this->getUser()->isBlocked() &&
+			$this->getUser()->isAllowed( 'abusefilter-modify' )
+		);
 	}
 
 	/**
@@ -77,9 +88,9 @@ class AbuseFilterChangesList extends OldChangesList {
 		$examineParams = empty( $rc->examineParams ) ? array() : $rc->examineParams;
 
 		$title = SpecialPage::getTitleFor( 'AbuseFilter', 'examine/' . $rc->mAttribs['rc_id'] );
-		$examineLink = Linker::link(
+		$examineLink = $this->linkRenderer->makeLink(
 			$title,
-			$this->msg( 'abusefilter-changeslist-examine' )->parse(),
+			new HtmlArmor( $this->msg( 'abusefilter-changeslist-examine' )->parse() ),
 			array(),
 			$examineParams
 		);

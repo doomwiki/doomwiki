@@ -1,7 +1,7 @@
 /*!
  * VisualEditor ContentEditable MediaWiki MWReferenceNode styles.
  *
- * @copyright 2011-2016 Cite VisualEditor Team and others; see AUTHORS.txt
+ * @copyright 2011-2017 Cite VisualEditor Team and others; see AUTHORS.txt
  * @license The MIT License (MIT); see LICENSE.txt
  */
 
@@ -13,4 +13,12 @@
 /* In IE, force hasLayout so the <sup>'s box gets measured correctly */
 .ve-init-target-ie .ve-ce-mwReferenceNode {
 	display: inline-block;
+}
+
+/* Use zero font size to hide the default rendering, rather than display:none, to
+ * work around T123608 (cursoring bug in Chromium). See that bug for a discussion
+ * of the effect this has on bidi text. */
+.ve-ce-mwReferenceNode span.mw-reflink-text {
+	font-size: 0;
+	display: inline;
 }

@@ -1,5 +1,5 @@
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 .backtotop {
 	/* initially hide the element */
@@ -11,7 +11,7 @@
 	width: 2.5em;
 	height: 2.5em;
 	border-radius: 100%;
-	box-shadow: .1em .2em .3em lightgrey;
+	box-shadow: 0.1em 0.2em 0.3em #d3d3d3;
 	bottom: 20px;
 	right: @contentMargin;
 	cursor: pointer;
@@ -19,7 +19,7 @@
 	background-color: @colorProgressive;
 
 	/* define what happens, if the visible class is added/removed, add a nice fade out/in */
-	.transition( opacity .5s 0s );
+	.transition( opacity 0.5s 0s );
 
 	&.visible {
 		&:hover {
@@ -28,20 +28,20 @@
 		opacity: 0.8;
 	}
 
-	/* center arrow in RTL wikis */
-	.rtl > & .arrow-up {
-		transform: translate(50%, -50%);
-	}
-
-	>.arrow-up {
+	> .arrow-up {
 		width: 0;
 		height: 0;
 		border-left: 7px solid transparent;
 		border-right: 7px solid transparent;
-		border-bottom: 7px solid white;
+		border-bottom: 7px solid #fff;
 		position: absolute;
 		top: 50%;
 		left: 50%;
-		transform: translate(-50%, -50%);
+		transform: translate( -50%, -50% );
+	}
+
+	/* center arrow in RTL wikis */
+	.rtl > & .arrow-up {
+		transform: translate( 50%, -50% );
 	}
 }

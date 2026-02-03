@@ -1,6 +1,6 @@
 <?php
 /**
- * Special page for the  CategoryTree extension, an AJAX based gadget
+ * Special page for the CategoryTree extension, an AJAX based gadget
  * to display the category structure of a wiki
  *
  * @file
@@ -9,11 +9,6 @@
  * @copyright © 2006 Daniel Kinzler
  * @license GNU General Public Licence 2.0 or later
  */
-
-if ( !defined( 'MEDIAWIKI' ) ) {
-	echo( "This file is part of an extension to the MediaWiki software and cannot be used standalone.\n" );
-	die( 1 );
-}
 
 class CategoryTreePage extends SpecialPage {
 	public $target = '';
@@ -53,7 +48,7 @@ class CategoryTreePage extends SpecialPage {
 		if ( $par ) {
 			$this->target = $par;
 		} else {
-			$this->target = $request->getVal( 'target', wfMessage( 'rootcategory' )->text() );
+			$this->target = $request->getVal( 'target', $this->msg( 'rootcategory' )->text() );
 		}
 
 		$this->target = trim( $this->target );
@@ -63,7 +58,7 @@ class CategoryTreePage extends SpecialPage {
 			$this->target = null;
 		}
 
-		$options = array();
+		$options = [];
 
 		# grab all known options from the request. Normalization is done by the CategoryTree class
 		foreach ( $wgCategoryTreeDefaultOptions as $option => $default ) {
@@ -89,26 +84,26 @@ class CategoryTreePage extends SpecialPage {
 			$title = CategoryTree::makeTitle( $this->target );
 
 			if ( $title && $title->getArticleID() ) {
-				$output->addHTML( Xml::openElement( 'div', array( 'class' => 'CategoryTreeParents' ) ) );
-				$output->addHTML( wfMessage( 'categorytree-parents' )->parse() );
-				$output->addHTML( wfMessage( 'colon-separator' )->escaped() );
+				$output->addHTML( Xml::openElement( 'div', [ 'class' => 'CategoryTreeParents' ] ) );
+				$output->addHTML( $this->msg( 'categorytree-parents' )->parse() );
+				$output->addHTML( $this->msg( 'colon-separator' )->escaped() );
 
 				$parents = $this->tree->renderParents( $title );
 
 				if ( $parents == '' ) {
-					$output->addHTML( wfMessage( 'categorytree-no-parent-categories' )->parse() );
+					$output->addHTML( $this->msg( 'categorytree-no-parent-categories' )->parse() );
 				} else {
 					$output->addHTML( $parents );
 				}
 
 				$output->addHTML( Xml::closeElement( 'div' ) );
 
-				$output->addHTML( Xml::openElement( 'div', array( 'class' => 'CategoryTreeResult' ) ) );
+				$output->addHTML( Xml::openElement( 'div', [ 'class' => 'CategoryTreeResult' ] ) );
 				$output->addHTML( $this->tree->renderNode( $title, 1 ) );
 				$output->addHTML( Xml::closeElement( 'div' ) );
 			} else {
-				$output->addHTML( Xml::openElement( 'div', array( 'class' => 'CategoryTreeNotice' ) ) );
-				$output->addHTML( wfMessage( 'categorytree-not-found', $this->target )->parse() );
+				$output->addHTML( Xml::openElement( 'div', [ 'class' => 'CategoryTreeNotice' ] ) );
+				$output->addHTML( $this->msg( 'categorytree-not-found', $this->target )->parse() );
 				$output->addHTML( Xml::closeElement( 'div' ) );
 			}
 		}
@@ -118,29 +113,53 @@ class CategoryTreePage extends SpecialPage {
 	 * Input form for entering a category
 	 */
 	function executeInputForm() {
-		global $wgScript;
-		$thisTitle = SpecialPage::getTitleFor( $this->getName() );
 		$namespaces = $this->getRequest()->getVal( 'namespaces', '' );
 		//mode may be overriden by namespaces option
-		$mode = ( $namespaces == '' ? $this->getOption( 'mode' ) : CT_MODE_ALL );
-		$modeSelector = Xml::openElement( 'select', array( 'name' => 'mode' ) );
-		$modeSelector .= Xml::option( wfMessage( 'categorytree-mode-categories' )->plain(), 'categories', $mode == CT_MODE_CATEGORIES );
-		$modeSelector .= Xml::option( wfMessage( 'categorytree-mode-pages' )->plain(), 'pages', $mode == CT_MODE_PAGES );
-		$modeSelector .= Xml::option( wfMessage( 'categorytree-mode-all' )->plain(), 'all', $mode == CT_MODE_ALL );
-		$modeSelector .= Xml::closeElement( 'select' );
-		$table = Xml::buildForm( array(
-			'categorytree-category' => Xml::input( 'target', 20, $this->target, array( 'id' => 'target' ) ) ,
-			'categorytree-mode-label' => $modeSelector,
-			'namespace' => Html::namespaceSelector(
-				array( 'selected' => $namespaces, 'all' => '' ),
-				array( 'name' => 'namespaces', 'id' => 'namespaces' )
-			)
-		), 'categorytree-go' );
-		$preTable = Xml::element( 'legend', null, wfMessage( 'categorytree-legend' )->plain() );
-		$preTable .= Html::Hidden( 'title', $thisTitle->getPrefixedDbKey() );
-		$fieldset = Xml::tags( 'fieldset', array(), $preTable . $table );
-		$output = $this->getOutput();
-		$output->addHTML( Xml::tags( 'form', array( 'name' => 'categorytree', 'method' => 'get', 'action' => $wgScript, 'id' => 'mw-categorytree-form' ), $fieldset ) );
+		$mode = ( $namespaces == '' ? $this->getOption( 'mode' ) : CategoryTreeMode::ALL );
+		if ( $mode == CategoryTreeMode::CATEGORIES ) {
+			$modeDefault = 'categories';
+		} elseif( $mode == CategoryTreeMode::PAGES ) {
+			$modeDefault = 'pages';
+		} else {
+			$modeDefault = 'all';
+		}
+
+		$formDescriptor = [
+			'category' => [
+				'type' => 'title',
+				'name' => 'target',
+				'label-message' => 'categorytree-category',
+				'namespace' => NS_CATEGORY,
+			],
+
+			'mode' => [
+				'type' => 'select',
+				'name' => 'mode',
+				'label-message' => 'categorytree-mode-label',
+				'options-messages' => [
+					'categorytree-mode-categories' => 'categories',
+					'categorytree-mode-pages' => 'pages',
+					'categorytree-mode-all' => 'all',
+				],
+				'default' => $modeDefault,
+				'nodata' => true,
+			],
+
+			'namespace' => [
+				'type' => 'namespaceselect',
+				'name' => 'namespaces',
+				'label-message' => 'namespace',
+				'all' => '',
+			],
+		];
+
+		$form = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() )
+			->addHiddenFields( [ 'title' => $this->getPageTitle()->getPrefixedDbKey() ] )
+			->setWrapperLegendMsg( 'categorytree-legend' )
+			->setSubmitTextMsg( 'categorytree-go' )
+			->setMethod( 'get' )
+			->prepareForm()
+			->displayForm( false );
 	}
 
 	/**
@@ -159,11 +178,11 @@ class CategoryTreePage extends SpecialPage {
 		}
 		if ( !$title ) {
 			// No prefix suggestion outside of category namespace
-			return array();
+			return [];
 		}
 		// Autocomplete subpage the same as a normal search, but just for categories
 		$prefixSearcher = new TitlePrefixSearch;
-		$result = $prefixSearcher->search( $title->getPrefixedText(), $limit, array( NS_CATEGORY ), $offset );
+		$result = $prefixSearcher->search( $title->getPrefixedText(), $limit, [ NS_CATEGORY ], $offset );
 
 		return array_map( function ( Title $t ) {
 			// Remove namespace in search suggestion

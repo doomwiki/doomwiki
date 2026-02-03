@@ -34,7 +34,8 @@
 	 * @return {string}
 	 */
 	function getFirstKey( obj ) {
-		for ( var key in obj ) {
+		var key;
+		for ( key in obj ) {
 			if ( obj.hasOwnProperty( key ) ) {
 				return key;
 			}
@@ -45,6 +46,7 @@
 	 * Get new iframe object for an upload.
 	 *
 	 * @private
+	 * @param {string} id
 	 * @return {HTMLIframeElement}
 	 */
 	function getNewIframe( id ) {
@@ -58,6 +60,8 @@
 	 * Shortcut for getting hidden inputs
 	 *
 	 * @private
+	 * @param {string} name
+	 * @param {string} val
 	 * @return {jQuery}
 	 */
 	function getHiddenInput( name, val ) {
@@ -283,6 +287,8 @@
 			this[ this.needToken() ? 'postWithEditToken' : 'post' ]( data, {
 				// Use FormData (if we got here, we know that it's available)
 				contentType: 'multipart/form-data',
+				// No timeout (default from mw.Api is 30 seconds)
+				timeout: 0,
 				// Provide upload progress notifications
 				xhr: function () {
 					var xhr = $.ajaxSettings.xhr();
@@ -371,6 +377,7 @@
 		 *
 		 * @param {string} filekey
 		 * @param {Object} data
+		 * @return {jQuery.Promise}
 		 */
 		uploadFromStash: function ( filekey, data ) {
 			data.filekey = filekey;

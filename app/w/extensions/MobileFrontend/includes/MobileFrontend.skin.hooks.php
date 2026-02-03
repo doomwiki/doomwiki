@@ -1,6 +1,30 @@
 <?php
 
+use MediaWiki\MediaWikiServices;
+
 class MobileFrontendSkinHooks {
+	/**
+	 * Make it possible to open sections while JavaScript is still loading.
+	 *
+	 * @return string The JavaScript code to add event handlers to the skin
+	 */
+	public static function interimTogglingSupport() {
+		$js = <<<JAVASCRIPT
+function mfTempOpenSection( id ) {
+	var block = document.getElementById( "mf-section-" + id );
+	block.className += " open-block";
+	// The previous sibling to the content block is guaranteed to be the
+	// associated heading due to mobileformatter. We need to add the same
+	// class to flip the collapse arrow icon.
+	// <h[1-6]>heading</h[1-6]><div id="mf-section-[1-9]+"></div>
+	block.previousSibling.className += " open-block";
+}
+JAVASCRIPT;
+		return Html::inlineScript(
+			ResourceLoader::filter( 'minify-js', $js )
+		);
+	}
+
 	/**
 	 * Fallback for Grade C to load lazyload image placeholders.
 	 *
@@ -25,7 +49,7 @@ class MobileFrontendSkinHooks {
 	ns = document.getElementsByTagName( 'noscript' );
 	for ( i = 0; i < ns.length; i++ ) {
 		p = ns[i].nextSibling;
-		if ( p.className.indexOf( 'lazy-image-placeholder' ) > -1 ) {
+		if ( p && p.className && p.className.indexOf( 'lazy-image-placeholder' ) > -1 ) {
 			img = document.createElement( 'img' );
 			img.setAttribute( 'src', p.getAttribute( 'data-src' ) );
 			img.setAttribute( 'width', p.getAttribute( 'data-width' ) );
@@ -56,7 +80,7 @@ JAVASCRIPT;
 
 		return Html::element(
 			'a',
-			array( 'href' => Skin::makeInternalOrExternalUrl( $url ) ),
+			[ 'href' => Skin::makeInternalOrExternalUrl( $url ) ],
 			$sk->msg( 'mobile-frontend-terms-text' )->text()
 		);
 	}
@@ -67,6 +91,7 @@ JAVASCRIPT;
 	 * FIXME: This hack shouldn't be needed anymore after fixing T111833
 	 *
 	 * @param string $license
+	 * @param Message $msgObj delimiter (optional)
 	 * @return integer Returns 2, if there are multiple licenses, 1 otherwise.
 	 */
 	public static function getPluralLicenseInfo( $license, $msgObj = null ) {
@@ -95,7 +120,7 @@ JAVASCRIPT;
 	 * @param array $attribs An associative array of extra HTML attributes to add to the link
 	 * @return array Associative array containing the license text and link
 	 */
-	public static function getLicense( $context, $attribs = array() ) {
+	public static function getLicense( $context, $attribs = [] ) {
 		$config = MobileContext::singleton()->getConfig();
 		$rightsPage = $config->get( 'RightsPage' );
 		$rightsUrl = $config->get( 'RightsUrl' );
@@ -107,7 +132,7 @@ JAVASCRIPT;
 			// for the currently offered strings. Unfortunately, there is no good way to
 			// comprehensively support localized licensing strings since the license (as
 			// stored in LocalSettings.php) is just freeform text, not an i18n key.
-			$commonLicenses = array(
+			$commonLicenses = [
 				'Creative Commons Attribution-Share Alike 3.0' => 'CC BY-SA 3.0',
 				'Creative Commons Attribution Share Alike' => 'CC BY-SA',
 				'Creative Commons Attribution 3.0' => 'CC BY 3.0',
@@ -116,14 +141,18 @@ JAVASCRIPT;
 				'Creative Commons Attribution Non-Commercial Share Alike' => 'CC BY-NC-SA',
 				'Creative Commons Zero (Public Domain)' => 'CC0 (Public Domain)',
 				'GNU Free Documentation License 1.3 or later' => 'GFDL 1.3 or later',
-			);
+			];
 
 			if ( isset( $commonLicenses[$rightsText] ) ) {
 				$rightsText = $commonLicenses[$rightsText];
 			}
 			if ( $rightsPage ) {
 				$title = Title::newFromText( $rightsPage );
-				$link = Linker::linkKnown( $title, $rightsText, $attribs );
+				$link = MediaWikiServices::getInstance()->getLinkRenderer()->makeKnownLink(
+					$title,
+					new HtmlArmor( $rightsText ),
+					$attribs
+				);
 			} elseif ( $rightsUrl ) {
 				$link = Linker::makeExternalLink( $rightsUrl, $rightsText, true, '', $attribs );
 			} else {
@@ -135,13 +164,13 @@ JAVASCRIPT;
 
 		// Allow other extensions (for example, WikimediaMessages) to override
 		$msg = 'mobile-frontend-copyright';
-		Hooks::run( 'MobileLicenseLink', array( &$link, $context, $attribs, &$msg ) );
+		Hooks::run( 'MobileLicenseLink', [ &$link, $context, $attribs, &$msg ] );
 
-		return array(
+		return [
 			'msg' => $msg,
 			'link' => $link,
 			'plural' => self::getPluralLicenseInfo( $link )
-		);
+		];
 	}
 
 	/**
@@ -185,7 +214,7 @@ JAVASCRIPT;
 		$mobileViewUrl = $ctx->getMobileUrl( $mobileViewUrl );
 
 		$link = Html::element( 'a',
-			array( 'href' => $mobileViewUrl, 'class' => 'noprint stopMobileRedirectToggle' ),
+			[ 'href' => $mobileViewUrl, 'class' => 'noprint stopMobileRedirectToggle' ],
 			$ctx->msg( 'mobile-frontend-view' )->text()
 		);
 		$tpl->set( 'mobileview', $link );
@@ -213,20 +242,12 @@ JAVASCRIPT;
 				$req->appendQueryValue( 'mobileaction', 'toggle_view_desktop', true )
 			);
 		}
-		$url = htmlspecialchars(
-			$ctx->getDesktopUrl( wfExpandUrl( $url, PROTO_RELATIVE ) )
-		);
+		$desktopUrl = $ctx->getDesktopUrl( wfExpandUrl( $url, PROTO_RELATIVE ) );
 
 		$desktop = $ctx->msg( 'mobile-frontend-view-desktop' )->escaped();
-		$mobile = $ctx->msg( 'mobile-frontend-view-mobile' )->escaped();
-
+		$desktopToggler = Html::element( 'a',
+			[ 'id' => "mw-mf-display-toggle", "href" => $desktopUrl ], $desktop );
 		$sitename = self::getSitename( true );
-		$switcherHtml = <<<HTML
-<h2>{$sitename}</h2>
-<ul>
-	<li>{$mobile}</li><li><a id="mw-mf-display-toggle" href="{$url}">{$desktop}</a></li>
-</ul>
-HTML;
 
 		// Generate the licensing text displayed in the footer of each page.
 		// See Skin::getCopyright for desktop equivalent.
@@ -238,25 +259,23 @@ HTML;
 		}
 
 		// Enable extensions to add links to footer in Mobile view, too - bug 66350
-		Hooks::run( 'MobileSiteOutputPageBeforeExec', array( &$sk, &$tpl ) );
-		// FIXME: Deprecate this hook.
-		Hooks::run( 'SkinMinervaOutputPageBeforeExec', array( &$sk, &$tpl ), '1.26' );
+		Hooks::run( 'MobileSiteOutputPageBeforeExec', [ &$sk, &$tpl ] );
 
-		$tpl->set( 'mobile-switcher', $switcherHtml );
+		$tpl->set( 'footer-site-heading-html', $sitename );
+		$tpl->set( 'desktop-toggle', $desktopToggler );
 		$tpl->set( 'mobile-license', $licenseText );
 		$tpl->set( 'privacy', $sk->footerLink( 'mobile-frontend-privacy-link-text', 'privacypage' ) );
 		$tpl->set( 'terms-use', self::getTermsLink( $sk ) );
 
-		$tpl->set( 'footerlinks', array(
-			'info' => array(
-				'mobile-switcher',
-				'mobile-license',
-			),
-			'places' => array(
-				'terms-use',
-				'privacy',
-			),
-		) );
+		$places = [
+			'terms-use',
+			'privacy',
+			'desktop-toggle'
+		];
+		$footerlinks = [
+			'places' => $places,
+		];
+		$tpl->set( 'footerlinks', $footerlinks );
 		return $tpl;
 	}
 
@@ -281,19 +300,19 @@ HTML;
 		if ( $withPossibleTrademark ) {
 			// Registered trademark
 			if ( $trademarkSymbol === 'registered' ) {
-				$suffix = Html::element( 'sup', array(), '®' );
+				$suffix = Html::element( 'sup', [], '®' );
 			// Unregistered (or unspecified) trademark
 			} elseif ( $trademarkSymbol ) {
-				$suffix = Html::element( 'sup', array(), '™' );
+				$suffix = Html::element( 'sup', [], '™' );
 			}
 		}
 
 		// If there's a custom site logo, use that instead of text
 		if ( isset( $customLogos['copyright'] ) ) {
-			$attributes =  array(
+			$attributes =  [
 				'src' => $customLogos['copyright'],
-				'alt' => $footerSitename . $suffix,
-			);
+				'alt' => $footerSitename,
+			];
 			if ( isset( $customLogos['copyright-height'] ) ) {
 				$attributes['height'] = $customLogos['copyright-height'];
 			}

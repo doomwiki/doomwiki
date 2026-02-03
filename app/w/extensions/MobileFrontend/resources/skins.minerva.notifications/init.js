@@ -5,8 +5,8 @@
 ( function ( M, $, mw ) {
 	var mainMenu = M.require( 'skins.minerva.scripts/skin' ).getMainMenu(),
 		$btn = $( '#secondary-button.user-button' ).parent(),
-		router = M.require( 'mobile.startup/router' ),
-		overlayManager = M.require( 'mobile.startup/overlayManager' ),
+		router = require( 'mediawiki.router' ),
+		overlayManager = M.require( 'skins.minerva.scripts/overlayManager' ),
 		icons = M.require( 'mobile.startup/icons' );
 
 	/**
@@ -14,8 +14,8 @@
 	 * @method
 	 * @ignore
 	 * FIXME: Upstream to mw.mobileFrontend and reuse elsewhere
-	 * @param {String} moduleName Name of a module to fetch
-	 * @returns {jQuery.Deferred}
+	 * @param {string} moduleName Name of a module to fetch
+	 * @return {jQuery.Deferred}
 	 */
 	function loadModuleScript( moduleName ) {
 		var d = $.Deferred(),
@@ -48,7 +48,7 @@
 		 * @ignore
 		 * @private
 		 * @uses NotificationsOverlay
-		 * @returns {jQuery.Deferred} with an instance of NotificationsOverlay
+		 * @return {jQuery.Deferred} with an instance of NotificationsOverlay
 		 */
 		function loadNotificationOverlay() {
 			var result = $.Deferred();

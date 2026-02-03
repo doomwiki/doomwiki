@@ -1,30 +1,25 @@
 <div class="panel">
-	<div class="panel-body">
+	<div class="panel-body search-box">
 		<input type="search" class="search" placeholder="{{inputPlaceholder}}">
 	</div>
 </div>
 
 <div class="overlay-content-body">
-	{{#preferredLanguagesCount}}
-	<h3 class="list-header">{{preferredLanguagesHeader}}</h3>
-	<ol class="site-link-list preferred-languages">
-		{{#preferredLanguages}}
+	{{#suggestedLanguagesCount}}
+	<h3 class="list-header">{{suggestedLanguagesHeader}}</h3>
+	<ol class="site-link-list suggested-languages">
+		{{#suggestedLanguages}}
 			<li>
 				<a href="{{url}}" class="{{lang}}" hreflang="{{lang}}" lang="{{lang}}">
-					<div>
-						<span class="lang">{{lang}}</span>
-					</div>
-					<div>
-						<span class="autonym">{{autonym}}</span>
-						{{#title}}
-							<span class="title">{{title}}</span>
-						{{/title}}
-					</div>
+					<span class="autonym">{{autonym}}</span>
+					{{#title}}
+						<span class="title">{{title}}</span>
+					{{/title}}
 				</a>
 			</li>
-		{{/preferredLanguages}}
+		{{/suggestedLanguages}}
 	</ol>
-	{{/preferredLanguagesCount}}
+	{{/suggestedLanguagesCount}}
 
 	{{#allLanguagesCount}}
 	<h3 class="list-header">{{allLanguagesHeader}}<span>{{allLanguagesCount}}</span></h3>
@@ -32,15 +27,10 @@
 		{{#allLanguages}}
 			<li>
 				<a href="{{url}}" class="{{lang}}" hreflang="{{lang}}" lang="{{lang}}">
-					<div>
-						<span class="lang">{{lang}}</span>
-					</div>
-					<div>
-						<span class="autonym">{{autonym}}</span>
-						{{#title}}
-							<span class="title">{{title}}</span>
-						{{/title}}
-					</div>
+					<span class="autonym">{{autonym}}</span>
+					{{#title}}
+						<span class="title">{{title}}</span>
+					{{/title}}
 				</a>
 			</li>
 		{{/allLanguages}}

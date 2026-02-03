@@ -1,5 +1,5 @@
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
 // hide the texts inside these selectors because they push the login form below the fold
 #userloginprompt,
@@ -12,14 +12,14 @@
 .errorbox,
 .successbox,
 .warningbox {
-	padding: .5em 1em;
+	padding: 0.5em 1em;
 	margin: 1em 0;
 }
 
 // FIXME: Move to ConfirmEdit extension
 /* fancycaptcha reload button */
-#mf-captcha-reload-container,
-.confirmedit-captcha-reload {
+.confirmedit-captcha-reload,
+#mf-captcha-reload-container {
 	border-top: 1px dashed #e1e1e1;
 	display: inline-block;
 	padding: 14px 25%;
@@ -30,33 +30,21 @@
 		color: @colorGray7;
 		font-weight: bold;
 		background: none;
+
+		/* stylelint-disable no-descending-specificity */
 		&:before {
+			// Note icon is provided in mobile.ajax
 			content: '';
-			.background-image-svg('icons/refresh.svg', 'icons/refresh.png');
 			background-position: center left;
 			background-repeat: no-repeat;
-			background-size: 16px;
+			.background-size( 16px, 16px );
 			width: 1em;
 			height: 1em;
 			display: inline-block;
 			padding-right: 8px;
 			line-height: 1;
 		}
-	}
-}
-
-#mw-mf-login,
-#mw-mf-accountcreate,
-#userloginForm {
-	.watermark {
-		text-align: center;
-		// FIXME: Should we set the height here?
-		height: 72px;
-		margin-bottom: @headingMargin;
-		img {
-			// Important to override default max-width and height auto combo
-			height: 72px !important;
-		}
+		/* stylelint-enable no-descending-specificity */
 	}
 }
 
@@ -85,28 +73,29 @@
 
 	// CAPTCHA style improvements
 	.captcha {
-		border-radius: 2px;
-		margin: .8em 0 0;
+		margin: 0.8em 0 0;
 		border: solid 1px @colorGray12;
-		border-radius: 5px;
+		border-radius: @borderRadius;
 		overflow: hidden;
 		background: #fff;
 		text-align: center;
 
-		input:not([type=submit]), img, #wpCaptchaWord {
-			border: none;
+		input:not( [type='submit'] ) {
+			-webkit-appearance: none;
+			border-radius: 0;
+			padding: 0.8em 0.5em;
+			margin: 0;
+		}
+
+		input:not( [type='submit'] ),
+		img,
+		#wpCaptchaWord {
+			border: 0;
 			border-top: solid 1px @colorGray12;
 
 			&:first-child {
-				border-top: none;
+				border-top: 0;
 			}
-		}
-
-		input:not([type=submit]) {
-			-webkit-appearance: none;
-			border-radius: 0;
-			padding: .8em .5em;
-			margin: 0;
 		}
 
 		// CAPTCHA's are well known by internet users, save the space of the explanation
@@ -123,7 +112,7 @@
 		}
 
 		.mw-createacct-captcha-assisted {
-			font-size: .8em;
+			font-size: 0.8em;
 		}
 
 		.confirmedit-captcha-reload {
@@ -132,15 +121,30 @@
 	}
 }
 
+#mw-mf-login,
+#mw-mf-accountcreate,
+#userloginForm {
+	.watermark {
+		text-align: center;
+		// FIXME: Should we set the height here?
+		height: 72px;
+		margin-bottom: @headingMargin;
+		img {
+			// Important to override default max-width and height auto combo
+			height: 72px !important;
+		}
+	}
+}
+
 // FIXME: Some of these rules should actually be mobile first, only hiding inputs needs to be wrapped in a media query
-@media all and (max-width: @deviceWidthTablet) {
+@media all and ( max-width: @deviceWidthTablet ) {
 	@margin: 12px;
 
 	#userloginForm {
 		// tips are not useful
-		.prefsectiontip,
+		.prefsectiontip, .htmlform-tip,
 		// hide help link
-		#mw-userlogin-help,
+		#mw-userlogin-help, .mw-userlogin-help,
 		// benefits are obvious through the workflows
 		#wpReason,
 		// real name in account creation is not so important on mobile
@@ -168,11 +172,21 @@
 		text-align: center;
 	}
 
+	// Make the inputs look connected in mobile mode
+	.mw-ui-input {
+		&#wpEmail,
+		&.loginPassword {
+			border-top-left-radius: 0;
+			border-top-right-radius: 0;
+			margin-top: -1px;
+		}
+	}
+
 	.mw-ui-vform {
 		margin: auto;
 
 		.mw-ui-input {
-			padding: .8em .5em;
+			padding: 0.8em 0.5em;
 		}
 
 		// hide on mobile only media queries (placeholder support)
@@ -188,18 +202,6 @@
 			> label {
 				display: none;
 			}
-		}
-	}
-
-	// Make the inputs look connected in mobile mode
-	.mw-ui-input {
-		border: solid 1px @colorGrayLight;
-
-		&#wpEmail,
-		&.loginPassword {
-			border-top-left-radius: 0;
-			border-top-right-radius: 0;
-			margin-top: -1px;
 		}
 	}
 

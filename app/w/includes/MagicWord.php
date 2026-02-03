@@ -43,12 +43,12 @@
  *
  * @par Example:
  * @code
- * $magicWords = array();
+ * $magicWords = [];
  *
- * $magicWords['en'] = array(
- * 	'magicwordkey' => array( 0, 'case_insensitive_magic_word' ),
- * 	'magicwordkey2' => array( 1, 'CASE_sensitive_magic_word2' ),
- * );
+ * $magicWords['en'] = [
+ *   'magicwordkey' => [ 0, 'case_insensitive_magic_word' ],
+ *   'magicwordkey2' => [ 1, 'CASE_sensitive_magic_word2' ],
+ * ];
  * @endcode
  *
  * For magic words which are also Parser variables, add a MagicWordwgVariableIDs
@@ -169,6 +169,7 @@ class MagicWord {
 		'localtimestamp',
 		'directionmark',
 		'contentlanguage',
+		'pagelanguage',
 		'numberofadmins',
 		'cascadingsources',
 	];
@@ -501,7 +502,7 @@ class MagicWord {
 			# multiple matched parts (variable match); some will be empty because of
 			# synonyms. The variable will be the second non-empty one so remove any
 			# blank elements and re-sort the indices.
-			# See also bug 6526
+			# See also T8526
 
 			$matches = array_values( array_filter( $matches ) );
 

@@ -78,7 +78,7 @@ class TitleCleanup extends TableCleanup {
 	protected function fileExists( $name ) {
 		// XXX: Doesn't actually check for file existence, just presence of image record.
 		// This is reasonable, since cleanupImages.php only iterates over the image table.
-		$dbr = $this->getDB( DB_SLAVE );
+		$dbr = $this->getDB( DB_REPLICA );
 		$row = $dbr->selectRow( 'image', [ 'img_name' ], [ 'img_name' => $name ], __METHOD__ );
 
 		return $row !== false;
@@ -138,14 +138,14 @@ class TitleCleanup extends TableCleanup {
 				$prior = $title->getDBkey();
 			}
 
-			# Old cleanupTitles could move articles there. See bug 23147.
+			# Old cleanupTitles could move articles there. See T25147.
 			$ns = $row->page_namespace;
 			if ( $ns < 0 ) {
 				$ns = 0;
 			}
 
 			# Namespace which no longer exists. Put the page in the main namespace
-			# since we don't have any idea of the old namespace name. See bug 68501.
+			# since we don't have any idea of the old namespace name. See T70501.
 			if ( !MWNamespace::exists( $ns ) ) {
 				$ns = 0;
 			}

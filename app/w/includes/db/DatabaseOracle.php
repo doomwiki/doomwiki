@@ -21,166 +21,11 @@
  * @ingroup Database
  */
 
-/**
- * The oci8 extension is fairly weak and doesn't support oci_num_rows, among
- * other things. We use a wrapper class to handle that and other
- * Oracle-specific bits, like converting column names back to lowercase.
- * @ingroup Database
- */
-class ORAResult {
-	private $rows;
-	private $cursor;
-	private $nrows;
-
-	private $columns = [];
-
-	private function array_unique_md( $array_in ) {
-		$array_out = [];
-		$array_hashes = [];
-
-		foreach ( $array_in as $item ) {
-			$hash = md5( serialize( $item ) );
-			if ( !isset( $array_hashes[$hash] ) ) {
-				$array_hashes[$hash] = $hash;
-				$array_out[] = $item;
-			}
-		}
-
-		return $array_out;
-	}
-
-	/**
-	 * @param DatabaseBase $db
-	 * @param resource $stmt A valid OCI statement identifier
-	 * @param bool $unique
-	 */
-	function __construct( &$db, $stmt, $unique = false ) {
-		$this->db =& $db;
-
-		$this->nrows = oci_fetch_all( $stmt, $this->rows, 0, -1, OCI_FETCHSTATEMENT_BY_ROW | OCI_NUM );
-		if ( $this->nrows === false ) {
-			$e = oci_error( $stmt );
-			$db->reportQueryError( $e['message'], $e['code'], '', __METHOD__ );
-			$this->free();
-
-			return;
-		}
-
-		if ( $unique ) {
-			$this->rows = $this->array_unique_md( $this->rows );
-			$this->nrows = count( $this->rows );
-		}
-
-		if ( $this->nrows > 0 ) {
-			foreach ( $this->rows[0] as $k => $v ) {
-				$this->columns[$k] = strtolower( oci_field_name( $stmt, $k + 1 ) );
-			}
-		}
-
-		$this->cursor = 0;
-		oci_free_statement( $stmt );
-	}
-
-	public function free() {
-		unset( $this->db );
-	}
-
-	public function seek( $row ) {
-		$this->cursor = min( $row, $this->nrows );
-	}
-
-	public function numRows() {
-		return $this->nrows;
-	}
-
-	public function numFields() {
-		return count( $this->columns );
-	}
-
-	public function fetchObject() {
-		if ( $this->cursor >= $this->nrows ) {
-			return false;
-		}
-		$row = $this->rows[$this->cursor++];
-		$ret = new stdClass();
-		foreach ( $row as $k => $v ) {
-			$lc = $this->columns[$k];
-			$ret->$lc = $v;
-		}
-
-		return $ret;
-	}
-
-	public function fetchRow() {
-		if ( $this->cursor >= $this->nrows ) {
-			return false;
-		}
-
-		$row = $this->rows[$this->cursor++];
-		$ret = [];
-		foreach ( $row as $k => $v ) {
-			$lc = $this->columns[$k];
-			$ret[$lc] = $v;
-			$ret[$k] = $v;
-		}
-
-		return $ret;
-	}
-}
-
-/**
- * Utility class.
- * @ingroup Database
- */
-class ORAField implements Field {
-	private $name, $tablename, $default, $max_length, $nullable,
-		$is_pk, $is_unique, $is_multiple, $is_key, $type;
-
-	function __construct( $info ) {
-		$this->name = $info['column_name'];
-		$this->tablename = $info['table_name'];
-		$this->default = $info['data_default'];
-		$this->max_length = $info['data_length'];
-		$this->nullable = $info['not_null'];
-		$this->is_pk = isset( $info['prim'] ) && $info['prim'] == 1 ? 1 : 0;
-		$this->is_unique = isset( $info['uniq'] ) && $info['uniq'] == 1 ? 1 : 0;
-		$this->is_multiple = isset( $info['nonuniq'] ) && $info['nonuniq'] == 1 ? 1 : 0;
-		$this->is_key = ( $this->is_pk || $this->is_unique || $this->is_multiple );
-		$this->type = $info['data_type'];
-	}
-
-	function name() {
-		return $this->name;
-	}
-
-	function tableName() {
-		return $this->tablename;
-	}
-
-	function defaultValue() {
-		return $this->default;
-	}
-
-	function maxLength() {
-		return $this->max_length;
-	}
-
-	function isNullable() {
-		return $this->nullable;
-	}
-
-	function isKey() {
-		return $this->is_key;
-	}
-
-	function isMultipleKey() {
-		return $this->is_multiple;
-	}
-
-	function type() {
-		return $this->type;
-	}
-}
+use Wikimedia\Rdbms\Database;
+use Wikimedia\Rdbms\Blob;
+use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\DBConnectionError;
+use Wikimedia\Rdbms\DBUnexpectedError;
 
 /**
  * @ingroup Database
@@ -230,32 +75,12 @@ class DatabaseOracle extends Database {
 		return 'oracle';
 	}
 
-	function cascadingDeletes() {
-		return true;
-	}
-
-	function cleanupTriggers() {
-		return true;
-	}
-
-	function strictIPs() {
-		return true;
-	}
-
-	function realTimestamps() {
-		return true;
-	}
-
 	function implicitGroupby() {
 		return false;
 	}
 
 	function implicitOrderby() {
 		return false;
-	}
-
-	function searchableIPs() {
-		return true;
 	}
 
 	/**
@@ -265,7 +90,7 @@ class DatabaseOracle extends Database {
 	 * @param string $password
 	 * @param string $dbName
 	 * @throws DBConnectionError
-	 * @return DatabaseBase|null
+	 * @return resource|null
 	 */
 	function open( $server, $user, $password, $dbName ) {
 		global $wgDBOracleDRCP;
@@ -369,7 +194,7 @@ class DatabaseOracle extends Database {
 	protected function doQuery( $sql ) {
 		wfDebug( "SQL: [$sql]\n" );
 		if ( !StringUtils::isUtf8( $sql ) ) {
-			throw new MWException( "SQL encoding is invalid\n$sql" );
+			throw new InvalidArgumentException( "SQL encoding is invalid\n$sql" );
 		}
 
 		// handle some oracle specifics
@@ -432,7 +257,7 @@ class DatabaseOracle extends Database {
 
 	/**
 	 * Frees resources associated with the LOB descriptor
-	 * @param ResultWrapper|resource $res
+	 * @param ResultWrapper|ORAResult $res
 	 */
 	function freeResult( $res ) {
 		if ( $res instanceof ResultWrapper ) {
@@ -443,7 +268,7 @@ class DatabaseOracle extends Database {
 	}
 
 	/**
-	 * @param ResultWrapper|stdClass $res
+	 * @param ResultWrapper|ORAResult $res
 	 * @return mixed
 	 */
 	function fetchObject( $res ) {
@@ -454,6 +279,10 @@ class DatabaseOracle extends Database {
 		return $res->fetchObject();
 	}
 
+	/**
+	 * @param ResultWrapper|ORAResult $res
+	 * @return mixed
+	 */
 	function fetchRow( $res ) {
 		if ( $res instanceof ResultWrapper ) {
 			$res = $res->result;
@@ -462,6 +291,10 @@ class DatabaseOracle extends Database {
 		return $res->fetchRow();
 	}
 
+	/**
+	 * @param ResultWrapper|ORAResult $res
+	 * @return int
+	 */
 	function numRows( $res ) {
 		if ( $res instanceof ResultWrapper ) {
 			$res = $res->result;
@@ -470,6 +303,10 @@ class DatabaseOracle extends Database {
 		return $res->numRows();
 	}
 
+	/**
+	 * @param ResultWrapper|ORAResult $res
+	 * @return int
+	 */
 	function numFields( $res ) {
 		if ( $res instanceof ResultWrapper ) {
 			$res = $res->result;
@@ -720,14 +557,15 @@ class DatabaseOracle extends Database {
 		return oci_free_statement( $stmt );
 	}
 
-	function insertSelect( $destTable, $srcTable, $varMap, $conds, $fname = __METHOD__,
+	function nativeInsertSelect( $destTable, $srcTable, $varMap, $conds, $fname = __METHOD__,
 		$insertOptions = [], $selectOptions = []
 	) {
 		$destTable = $this->tableName( $destTable );
 		if ( !is_array( $selectOptions ) ) {
 			$selectOptions = [ $selectOptions ];
 		}
-		list( $startOpts, $useIndex, $tailOpts ) = $this->makeSelectOptions( $selectOptions );
+		list( $startOpts, $useIndex, $tailOpts, $ignoreIndex ) =
+			$this->makeSelectOptions( $selectOptions );
 		if ( is_array( $srcTable ) ) {
 			$srcTable = implode( ',', array_map( [ $this, 'tableName' ], $srcTable ) );
 		} else {
@@ -749,7 +587,7 @@ class DatabaseOracle extends Database {
 
 		$sql = "INSERT INTO $destTable (" . implode( ',', array_keys( $varMap ) ) . ')' .
 			" SELECT $startOpts " . implode( ',', $varMap ) .
-			" FROM $srcTable $useIndex ";
+			" FROM $srcTable $useIndex $ignoreIndex ";
 		if ( $conds != '*' ) {
 			$sql .= ' WHERE ' . $this->makeList( $conds, LIST_AND );
 		}
@@ -1054,7 +892,7 @@ class DatabaseOracle extends Database {
 	 *
 	 * @param array|string $table
 	 * @param string $field
-	 * @return ORAField|ORAResult
+	 * @return ORAField|ORAResult|false
 	 */
 	private function fieldInfoMulti( $table, $field ) {
 		$field = strtoupper( $field );
@@ -1146,24 +984,18 @@ class DatabaseOracle extends Database {
 		}
 	}
 
-	/**
-	 * defines must comply with ^define\s*([^\s=]*)\s*=\s?'\{\$([^\}]*)\}';
-	 *
-	 * @param resource $fp
-	 * @param bool|string $lineCallback
-	 * @param bool|callable $resultCallback
-	 * @param string $fname
-	 * @param bool|callable $inputCallback
-	 * @return bool|string
-	 */
-	function sourceStream( $fp, $lineCallback = false, $resultCallback = false,
-		$fname = __METHOD__, $inputCallback = false ) {
+	function sourceStream(
+		$fp,
+		callable $lineCallback = null,
+		callable $resultCallback = null,
+		$fname = __METHOD__, callable $inputCallback = null
+	) {
 		$cmd = '';
 		$done = false;
 		$dollarquote = false;
 
 		$replacements = [];
-
+		// Defines must comply with ^define\s*([^\s=]*)\s*=\s?'\{\$([^\}]*)\}';
 		while ( !feof( $fp ) ) {
 			if ( $lineCallback ) {
 				call_user_func( $lineCallback );
@@ -1363,7 +1195,13 @@ class DatabaseOracle extends Database {
 			$useIndex = '';
 		}
 
-		return [ $startOpts, $useIndex, $preLimitTail, $postLimitTail ];
+		if ( isset( $options['IGNORE INDEX'] ) && !is_array( $options['IGNORE INDEX'] ) ) {
+			$ignoreIndex = $this->ignoreIndexClause( $options['IGNORE INDEX'] );
+		} else {
+			$ignoreIndex = '';
+		}
+
+		return [ $startOpts, $useIndex, $preLimitTail, $postLimitTail, $ignoreIndex ];
 	}
 
 	public function delete( $table, $conds, $fname = __METHOD__ ) {
@@ -1543,8 +1381,13 @@ class DatabaseOracle extends Database {
 		return '(' . $this->selectSQLText( $table, $fld, $conds, null, [], $join_conds ) . ')';
 	}
 
-	public function getSearchEngine() {
-		return 'SearchOracle';
+	/**
+	 * @param string $field Field or column to cast
+	 * @return string
+	 * @since 1.28
+	 */
+	public function buildStringCast( $field ) {
+		return 'CAST ( ' . $field . ' AS VARCHAR2 )';
 	}
 
 	public function getInfinity() {

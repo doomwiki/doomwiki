@@ -43,6 +43,7 @@ class ApiQueryTest extends ApiTestCase {
 
 		$this->assertEquals(
 			[
+				'fromencoded' => false,
 				'from' => 'Project:articleA',
 				'to' => $to->getPrefixedText(),
 			],
@@ -51,6 +52,7 @@ class ApiQueryTest extends ApiTestCase {
 
 		$this->assertEquals(
 			[
+				'fromencoded' => false,
 				'from' => 'article_B',
 				'to' => 'Article B'
 			],
@@ -97,11 +99,11 @@ class ApiQueryTest extends ApiTestCase {
 		$exceptionCaught = false;
 		try {
 			$this->assertEquals( $expected, $api->titlePartToKey( $titlePart, $namespace ) );
-		} catch ( UsageException $e ) {
+		} catch ( ApiUsageException $e ) {
 			$exceptionCaught = true;
 		}
 		$this->assertEquals( $expectException, $exceptionCaught,
-			'UsageException thrown by titlePartToKey' );
+			'ApiUsageException thrown by titlePartToKey' );
 	}
 
 	function provideTestTitlePartToKey() {
@@ -121,21 +123,16 @@ class ApiQueryTest extends ApiTestCase {
 	 * Test if all classes in the query module manager exists
 	 */
 	public function testClassNamesInModuleManager() {
-		global $wgAutoloadLocalClasses, $wgAutoloadClasses;
-
-		// wgAutoloadLocalClasses has precedence, just like in includes/AutoLoader.php
-		$classes = $wgAutoloadLocalClasses + $wgAutoloadClasses;
-
 		$api = new ApiMain(
 			new FauxRequest( [ 'action' => 'query', 'meta' => 'siteinfo' ] )
 		);
 		$queryApi = new ApiQuery( $api, 'query' );
 		$modules = $queryApi->getModuleManager()->getNamesWithClasses();
+
 		foreach ( $modules as $name => $class ) {
-			$this->assertArrayHasKey(
-				$class,
-				$classes,
-				'Class ' . $class . ' for api module ' . $name . ' not in autoloader (with exact case)'
+			$this->assertTrue(
+				class_exists( $class ),
+				'Class ' . $class . ' for api module ' . $name . ' does not exist (with exact case)'
 			);
 		}
 	}

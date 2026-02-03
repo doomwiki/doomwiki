@@ -25,12 +25,26 @@
  * @copyright © 2013 Wikimedia Foundation Inc.
  */
 
+use Wikimedia\Rdbms\TransactionProfiler;
+use Wikimedia\Rdbms\DatabaseDomain;
+use Wikimedia\Rdbms\MySQLMasterPos;
+use Wikimedia\Rdbms\DatabaseMysqlBase;
+
 /**
  * Fake class around abstract class so we can call concrete methods.
  */
 class FakeDatabaseMysqlBase extends DatabaseMysqlBase {
-	// From DatabaseBase
+	// From Database
 	function __construct() {
+		$this->profiler = new ProfilerStub( [] );
+		$this->trxProfiler = new TransactionProfiler();
+		$this->cliMode = true;
+		$this->connLogger = new \Psr\Log\NullLogger();
+		$this->queryLogger = new \Psr\Log\NullLogger();
+		$this->errorLogger = function ( Exception $e ) {
+			wfWarn( get_class( $e ) . ": {$e->getMessage()}" );
+		};
+		$this->currentDomain = DatabaseDomain::newUnspecified();
 	}
 
 	protected function closeConnection() {
@@ -76,14 +90,10 @@ class FakeDatabaseMysqlBase extends DatabaseMysqlBase {
 	protected function mysqlFetchField( $res, $n ) {
 	}
 
-	protected function mysqlPing() {
-	}
-
 	protected function mysqlRealEscapeString( $s ) {
 
 	}
 
-	// From interface DatabaseType
 	function insertId() {
 	}
 
@@ -111,7 +121,7 @@ class DatabaseMysqlBaseTest extends MediaWikiTestCase {
 	/**
 	 * Feeds testAddIdentifierQuotes
 	 *
-	 * Named per bug 20281 convention.
+	 * Named per T22281 convention.
 	 */
 	function provideDiapers() {
 		return [
@@ -165,27 +175,19 @@ class DatabaseMysqlBaseTest extends MediaWikiTestCase {
 	}
 
 	function getMockForViews() {
-		$db = $this->getMockBuilder( 'DatabaseMysql' )
+		$db = $this->getMockBuilder( 'DatabaseMysqli' )
 			->disableOriginalConstructor()
 			->setMethods( [ 'fetchRow', 'query' ] )
 			->getMock();
 
-		$db->expects( $this->any() )
-			->method( 'query' )
+		$db->method( 'query' )
 			->with( $this->anything() )
-			->will(
-				$this->returnValue( null )
-			);
+			->willReturn( new FakeResultWrapper( [
+				(object)[ 'Tables_in_' => 'view1' ],
+				(object)[ 'Tables_in_' => 'view2' ],
+				(object)[ 'Tables_in_' => 'myview' ]
+			] ) );
 
-		$db->expects( $this->any() )
-			->method( 'fetchRow' )
-			->with( $this->anything() )
-			->will( $this->onConsecutiveCalls(
-				[ 'Tables_in_' => 'view1' ],
-				[ 'Tables_in_' => 'view2' ],
-				[ 'Tables_in_' => 'myview' ],
-				false  # no more rows
-			) );
 		return $db;
 	}
 	/**
@@ -194,9 +196,6 @@ class DatabaseMysqlBaseTest extends MediaWikiTestCase {
 	function testListviews() {
 		$db = $this->getMockForViews();
 
-		// The first call populate an internal cache of views
-		$this->assertEquals( [ 'view1', 'view2', 'myview' ],
-			$db->listViews() );
 		$this->assertEquals( [ 'view1', 'view2', 'myview' ],
 			$db->listViews() );
 
@@ -212,64 +211,73 @@ class DatabaseMysqlBaseTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @covers DatabaseMysqlBase::isView
-	 * @dataProvider provideViewExistanceChecks
-	 */
-	function testIsView( $isView, $viewName ) {
-		$db = $this->getMockForViews();
-
-		switch ( $isView ) {
-			case true:
-				$this->assertTrue( $db->isView( $viewName ),
-					"$viewName should be considered a view" );
-			break;
-
-			case false:
-				$this->assertFalse( $db->isView( $viewName ),
-					"$viewName has not been defined as a view" );
-			break;
-		}
-
-	}
-
-	function provideViewExistanceChecks() {
-		return [
-			// format: whether it is a view, view name
-			[ true, 'view1' ],
-			[ true, 'view2' ],
-			[ true, 'myview' ],
-
-			[ false, 'user' ],
-
-			[ false, 'view10' ],
-			[ false, 'my' ],
-			[ false, 'OH_MY_GOD' ],  # they killed kenny!
-		];
-	}
-
-	/**
 	 * @dataProvider provideComparePositions
 	 */
-	function testHasReached( MySQLMasterPos $lowerPos, MySQLMasterPos $higherPos ) {
-		$this->assertTrue( $higherPos->hasReached( $lowerPos ) );
-		$this->assertTrue( $higherPos->hasReached( $higherPos ) );
-		$this->assertTrue( $lowerPos->hasReached( $lowerPos ) );
-		$this->assertFalse( $lowerPos->hasReached( $higherPos ) );
+	function testHasReached( MySQLMasterPos $lowerPos, MySQLMasterPos $higherPos, $match ) {
+		if ( $match ) {
+			$this->assertTrue( $lowerPos->channelsMatch( $higherPos ) );
+
+			$this->assertTrue( $higherPos->hasReached( $lowerPos ) );
+			$this->assertTrue( $higherPos->hasReached( $higherPos ) );
+			$this->assertTrue( $lowerPos->hasReached( $lowerPos ) );
+			$this->assertFalse( $lowerPos->hasReached( $higherPos ) );
+		} else { // channels don't match
+			$this->assertFalse( $lowerPos->channelsMatch( $higherPos ) );
+
+			$this->assertFalse( $higherPos->hasReached( $lowerPos ) );
+			$this->assertFalse( $lowerPos->hasReached( $higherPos ) );
+		}
 	}
 
 	function provideComparePositions() {
 		return [
+			// Binlog style
 			[
 				new MySQLMasterPos( 'db1034-bin.000976', '843431247' ),
-				new MySQLMasterPos( 'db1034-bin.000976', '843431248' )
+				new MySQLMasterPos( 'db1034-bin.000976', '843431248' ),
+				true
 			],
 			[
 				new MySQLMasterPos( 'db1034-bin.000976', '999' ),
-				new MySQLMasterPos( 'db1034-bin.000976', '1000' )
+				new MySQLMasterPos( 'db1034-bin.000976', '1000' ),
+				true
 			],
 			[
 				new MySQLMasterPos( 'db1034-bin.000976', '999' ),
-				new MySQLMasterPos( 'db1035-bin.000976', '1000' )
+				new MySQLMasterPos( 'db1035-bin.000976', '1000' ),
+				false
+			],
+			// MySQL GTID style
+			[
+				new MySQLMasterPos( 'db1-bin.2', '1', '3E11FA47-71CA-11E1-9E33-C80AA9429562:23' ),
+				new MySQLMasterPos( 'db1-bin.2', '2', '3E11FA47-71CA-11E1-9E33-C80AA9429562:24' ),
+				true
+			],
+			[
+				new MySQLMasterPos( 'db1-bin.2', '1', '3E11FA47-71CA-11E1-9E33-C80AA9429562:99' ),
+				new MySQLMasterPos( 'db1-bin.2', '2', '3E11FA47-71CA-11E1-9E33-C80AA9429562:100' ),
+				true
+			],
+			[
+				new MySQLMasterPos( 'db1-bin.2', '1', '3E11FA47-71CA-11E1-9E33-C80AA9429562:99' ),
+				new MySQLMasterPos( 'db1-bin.2', '2', '1E11FA47-71CA-11E1-9E33-C80AA9429562:100' ),
+				false
+			],
+			// MariaDB GTID style
+			[
+				new MySQLMasterPos( 'db1-bin.2', '1', '255-11-23' ),
+				new MySQLMasterPos( 'db1-bin.2', '2', '255-11-24' ),
+				true
+			],
+			[
+				new MySQLMasterPos( 'db1-bin.2', '1', '255-11-99' ),
+				new MySQLMasterPos( 'db1-bin.2', '2', '255-11-100' ),
+				true
+			],
+			[
+				new MySQLMasterPos( 'db1-bin.2', '1', '255-11-999' ),
+				new MySQLMasterPos( 'db1-bin.2', '2', '254-11-1000' ),
+				false
 			],
 		];
 	}
@@ -311,19 +319,17 @@ class DatabaseMysqlBaseTest extends MediaWikiTestCase {
 	 * @dataProvider provideLagAmounts
 	 */
 	function testPtHeartbeat( $lag ) {
-		$db = $this->getMockBuilder( 'DatabaseMysql' )
+		$db = $this->getMockBuilder( 'DatabaseMysqli' )
 			->disableOriginalConstructor()
 			->setMethods( [
 				'getLagDetectionMethod', 'getHeartbeatData', 'getMasterServerInfo' ] )
 			->getMock();
 
-		$db->expects( $this->any() )
-			->method( 'getLagDetectionMethod' )
-			->will( $this->returnValue( 'pt-heartbeat' ) );
+		$db->method( 'getLagDetectionMethod' )
+			->willReturn( 'pt-heartbeat' );
 
-		$db->expects( $this->any() )
-			->method( 'getMasterServerInfo' )
-			->will( $this->returnValue( [ 'serverId' => 172, 'asOf' => time() ] ) );
+		$db->method( 'getMasterServerInfo' )
+			->willReturn( [ 'serverId' => 172, 'asOf' => time() ] );
 
 		// Fake the current time.
 		list( $nowSecFrac, $nowSec ) = explode( ' ', microtime() );
@@ -337,10 +343,9 @@ class DatabaseMysqlBaseTest extends MediaWikiTestCase {
 		$ptTimeISO = $ptDateTime->format( 'Y-m-d\TH:i:s' );
 		$ptTimeISO .= ltrim( number_format( $ptSecFrac, 6 ), '0' );
 
-		$db->expects( $this->any() )
-			->method( 'getHeartbeatData' )
+		$db->method( 'getHeartbeatData' )
 			->with( [ 'server_id' => 172 ] )
-			->will( $this->returnValue( [ $ptTimeISO, $now ] ) );
+			->willReturn( [ $ptTimeISO, $now ] );
 
 		$db->setLBInfo( 'clusterMasterHost', 'db1052' );
 		$lagEst = $db->getLag();

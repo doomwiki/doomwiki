@@ -22,17 +22,17 @@ use Symfony\Component\Process\ProcessBuilder;
 class SyntaxHighlight_GeSHi {
 // @codingStandardsIgnoreEnd
 
-	/** @var const The maximum number of lines that may be selected for highlighting. **/
+	/** @var int The maximum number of lines that may be selected for highlighting. **/
 	const HIGHLIGHT_MAX_LINES = 1000;
 
-	/** @var const Maximum input size for the highlighter (100 kB). **/
+	/** @var int Maximum input size for the highlighter (100 kB). **/
 	const HIGHLIGHT_MAX_BYTES = 102400;
 
-	/** @var const CSS class for syntax-highlighted code. **/
+	/** @var string CSS class for syntax-highlighted code. **/
 	const HIGHLIGHT_CSS_CLASS = 'mw-highlight';
 
-	/** @var const Cache version. Increment whenever the HTML changes. */
-	const CACHE_VERSION = 1;
+	/** @var int Cache version. Increment whenever the HTML changes. */
+	const CACHE_VERSION = 2;
 
 	/** @var array Mapping of MIME-types to lexer names. **/
 	private static $mimeLexers = array(
@@ -91,7 +91,6 @@ class SyntaxHighlight_GeSHi {
 	 * Register parser hook
 	 *
 	 * @param $parser Parser
-	 * @return bool
 	 */
 	public static function onParserFirstCallInit( Parser &$parser ) {
 		foreach ( array( 'source', 'syntaxhighlight' ) as $tag ) {
@@ -106,6 +105,7 @@ class SyntaxHighlight_GeSHi {
 	 * @param array $args
 	 * @param Parser $parser
 	 * @return string
+	 * @throws MWException
 	 */
 	public static function parserHook( $text, $args = array(), $parser ) {
 		global $wgUseTidy;
@@ -237,7 +237,11 @@ class SyntaxHighlight_GeSHi {
 				$status->value = htmlspecialchars( trim( $code ), ENT_NOQUOTES );
 			} else {
 				$pre = Html::element( 'pre', array(), $code );
-				$status->value = Html::rawElement( 'div', array( 'class' => self::HIGHLIGHT_CSS_CLASS ), $pre );
+				$status->value = Html::rawElement(
+					'div',
+					array( 'class' => self::HIGHLIGHT_CSS_CLASS ),
+					$pre
+				);
 			}
 			return $status;
 		}
@@ -450,6 +454,7 @@ class SyntaxHighlight_GeSHi {
 	 * @param string $mime
 	 * @param string $format
 	 * @since MW 1.24
+	 * @return bool
 	 */
 	public static function onApiFormatHighlight( IContextSource $context, $text, $mime, $format ) {
 		if ( !isset( self::$mimeLexers[$mime] ) ) {
@@ -498,13 +503,64 @@ class SyntaxHighlight_GeSHi {
 		return true;
 	}
 
-	/** Backward-compatibility shim for extensions.  */
+	/**
+	 * Conditionally register resource loader modules that depends on the
+	 * VisualEditor MediaWiki extension.
+	 *
+	 * @param ResourceLoader $resourceLoader
+	 */
+	public static function onResourceLoaderRegisterModules( &$resourceLoader ) {
+		if ( ! ExtensionRegistry::getInstance()->isLoaded( 'VisualEditor' ) ) {
+			return;
+		}
+
+		$resourceLoader->register( 'ext.geshi.visualEditor', [
+			'class' => 'ResourceLoaderGeSHiVisualEditorModule',
+			'localBasePath' => __DIR__ . DIRECTORY_SEPARATOR . 'modules',
+			'remoteExtPath' => 'SyntaxHighlight_GeSHi/modules',
+			'scripts' => [
+				've-syntaxhighlight/ve.dm.MWSyntaxHighlightNode.js',
+				've-syntaxhighlight/ve.ce.MWSyntaxHighlightNode.js',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightWindow.js',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightDialog.js',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightDialogTool.js',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightInspector.js',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightInspectorTool.js',
+			],
+			'styles' => [
+				've-syntaxhighlight/ve.ce.MWSyntaxHighlightNode.css',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightDialog.css',
+				've-syntaxhighlight/ve.ui.MWSyntaxHighlightInspector.css',
+			],
+			'dependencies' => [
+				'ext.visualEditor.mwcore',
+			],
+			'messages' => [
+				'syntaxhighlight-visualeditor-mwsyntaxhighlightinspector-code',
+				'syntaxhighlight-visualeditor-mwsyntaxhighlightinspector-language',
+				'syntaxhighlight-visualeditor-mwsyntaxhighlightinspector-none',
+				'syntaxhighlight-visualeditor-mwsyntaxhighlightinspector-showlines',
+				'syntaxhighlight-visualeditor-mwsyntaxhighlightinspector-title',
+			],
+			'targets' => [ 'desktop', 'mobile' ],
+		] );
+	}
+
+	/**
+	 * Backward-compatibility shim for extensions.
+	 * @deprecated since MW 1.25
+	 */
 	public static function prepare( $text, $lang ) {
 		wfDeprecated( __METHOD__ );
 		return new GeSHi( self::highlight( $text, $lang )->getValue() );
 	}
 
-	/** Backward-compatibility shim for extensions. */
+	/**
+	 * Backward-compatibility shim for extensions.
+	 * @deprecated since MW 1.25
+	 * @param GeSHi $geshi
+	 * @return string
+	 */
 	public static function buildHeadItem( $geshi ) {
 		wfDeprecated( __METHOD__ );
 		$geshi->parse_code();

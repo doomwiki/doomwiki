@@ -1,9 +1,24 @@
 ( function ( M, $ ) {
 	var MainMenu = M.require( 'mobile.mainMenu/MainMenu' ),
-		menuData = mw.config.get( 'wgMinervaMenuData' ),
-		mainMenu = new MainMenu( $.extend( menuData, {
-			activator: '.header .main-menu-button'
-		} ) );
+		mainMenu = createMainMenu();
+
+	/**
+	 * Creates an instance of the `MainMenu`, using the `wgMinervaMenuData` for configuration.
+	 *
+	 * N.B. that the activator - the UI element that the user must click in order to open the main
+	 * menu - is always `.header .main-menu-button`.
+	 *
+	 * @return {MainMenu}
+	 *
+	 * @ignore
+	 */
+	function createMainMenu() {
+		var options = mw.config.get( 'wgMinervaMenuData' );
+
+		options.activator = '.header .main-menu-button';
+
+		return new MainMenu( options );
+	}
 
 	$( function () {
 		if ( !$( '#mw-mf-page-left' ).find( '.menu' ).length ) {
@@ -13,7 +28,5 @@
 		}
 	} );
 
-	M.define( 'skins.minerva.scripts.top/mainMenu', mainMenu )
-		// Used by Gather
-		.deprecate( 'skins.minerva.scripts/mainMenu' );
+	M.define( 'skins.minerva.scripts.top/mainMenu', mainMenu );
 }( mw.mobileFrontend, jQuery ) );

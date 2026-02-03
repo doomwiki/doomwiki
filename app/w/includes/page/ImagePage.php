@@ -20,6 +20,8 @@
  * @file
  */
 
+use Wikimedia\Rdbms\ResultWrapper;
+
 /**
  * Class for viewing MediaWiki file description pages
  *
@@ -50,18 +52,6 @@ class ImagePage extends Article {
 	protected function newPage( Title $title ) {
 		// Overload mPage with a file-specific page
 		return new WikiFilePage( $title );
-	}
-
-	/**
-	 * Constructor from a page id
-	 * @param int $id Article ID to load
-	 * @return ImagePage|null
-	 */
-	public static function newFromID( $id ) {
-		$t = Title::newFromID( $id );
-		# @todo FIXME: Doesn't inherit right
-		return $t == null ? null : new self( $t );
-		# return $t == null ? null : new static( $t ); // PHP 5.3
 	}
 
 	/**
@@ -223,11 +213,11 @@ class ImagePage extends Article {
 				$out->addStyle( $css );
 			}
 		}
-		// always show the local local Filepage.css, bug 29277
-		$out->addModuleStyles( 'filepage' );
 
-		// Add MediaWiki styles for a file page
-		$out->addModuleStyles( 'mediawiki.action.view.filepage' );
+		$out->addModuleStyles( [
+			'filepage', // always show the local local Filepage.css, T31277
+			'mediawiki.action.view.filepage', // Add MediaWiki styles for a file page
+		] );
 	}
 
 	/**
@@ -348,7 +338,7 @@ class ImagePage extends Article {
 			$filename = wfEscapeWikiText( $this->displayImg->getName() );
 			$linktext = $filename;
 
-			// Use of &$this in hooks triggers warnings in PHP 7.1
+			// Avoid PHP 7.1 warning from passing $this by reference
 			$imagePage = $this;
 
 			Hooks::run( 'ImageOpenShowImageInlineBefore', [ &$imagePage, &$out ] );
@@ -546,7 +536,7 @@ class ImagePage extends Article {
 				// this will get messy.
 				// The dirmark, however, must not be immediately adjacent
 				// to the filename, because it can get copied with it.
-				// See bug 25277.
+				// See T27277.
 				// @codingStandardsIgnoreStart Ignore long line
 				$out->addWikiText( <<<EOT
 <div class="fullMedia"><span class="dangerousLink">{$medialink}</span> $dirmark<span class="fileInfo">$longDesc</span></div>
@@ -597,6 +587,8 @@ EOT
 		} else {
 			# Image does not exist
 			if ( !$this->getId() ) {
+				$dbr = wfGetDB( DB_REPLICA );
+
 				# No article exists either
 				# Show deletion log to be consistent with normal articles
 				LogEventsList::showLogExtract(
@@ -605,7 +597,7 @@ EOT
 					$this->getTitle()->getPrefixedText(),
 					'',
 					[ 'lim' => 10,
-						'conds' => [ "log_action != 'revision'" ],
+						'conds' => [ 'log_action != ' . $dbr->addQuotes( 'revision' ) ],
 						'showIfEmpty' => false,
 						'msgKey' => [ 'moveddeleted-notice' ]
 					]
@@ -813,7 +805,7 @@ EOT
 	 * @return ResultWrapper
 	 */
 	protected function queryImageLinks( $target, $limit ) {
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 
 		return $dbr->select(
 			[ 'imagelinks', 'page' ],

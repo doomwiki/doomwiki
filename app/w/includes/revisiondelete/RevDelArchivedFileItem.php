@@ -23,9 +23,15 @@
  * Item class for a filearchive table row
  */
 class RevDelArchivedFileItem extends RevDelFileItem {
+	/** @var $list RevDelArchivedFileList */
+	/** @var $file ArchivedFile */
+	/** @var LocalFile */
+	protected $lockFile;
+
 	public function __construct( $list, $row ) {
 		RevDelItem::__construct( $list, $row );
 		$this->file = ArchivedFile::newFromRow( $row );
+		$this->lockFile = RepoGroup::singleton()->getLocalRepo()->newFile( $row->fa_name );
 	}
 
 	public function getIdField() {
@@ -63,16 +69,16 @@ class RevDelArchivedFileItem extends RevDelFileItem {
 	}
 
 	protected function getLink() {
-		$date = htmlspecialchars( $this->list->getLanguage()->userTimeAndDate(
-			$this->file->getTimestamp(), $this->list->getUser() ) );
+		$date = $this->list->getLanguage()->userTimeAndDate(
+			$this->file->getTimestamp(), $this->list->getUser() );
 
 		# Hidden files...
 		if ( !$this->canViewContent() ) {
-			$link = $date;
+			$link = htmlspecialchars( $date );
 		} else {
 			$undelete = SpecialPage::getTitleFor( 'Undelete' );
 			$key = $this->file->getKey();
-			$link = Linker::link( $undelete, $date, [],
+			$link = $this->getLinkRenderer()->makeLink( $undelete, $date, [],
 				[
 					'target' => $this->list->title->getPrefixedText(),
 					'file' => $key,
@@ -96,10 +102,10 @@ class RevDelArchivedFileItem extends RevDelFileItem {
 			'width' => $file->getWidth(),
 			'height' => $file->getHeight(),
 			'size' => $file->getSize(),
+			'userhidden' => (bool)$file->isDeleted( Revision::DELETED_USER ),
+			'commenthidden' => (bool)$file->isDeleted( Revision::DELETED_COMMENT ),
+			'contenthidden' => (bool)$this->isDeleted(),
 		];
-		$ret += $file->isDeleted( Revision::DELETED_USER ) ? [ 'userhidden' => '' ] : [];
-		$ret += $file->isDeleted( Revision::DELETED_COMMENT ) ? [ 'commenthidden' => '' ] : [];
-		$ret += $this->isDeleted() ? [ 'contenthidden' => '' ] : [];
 		if ( $this->canViewContent() ) {
 			$ret += [
 				'url' => SpecialPage::getTitleFor( 'Revisiondelete' )->getLinkURL(
@@ -107,8 +113,7 @@ class RevDelArchivedFileItem extends RevDelFileItem {
 						'target' => $this->list->title->getPrefixedText(),
 						'file' => $file->getKey(),
 						'token' => $user->getEditToken( $file->getKey() )
-					],
-					false, PROTO_RELATIVE
+					]
 				),
 			];
 		}
@@ -125,5 +130,13 @@ class RevDelArchivedFileItem extends RevDelFileItem {
 		}
 
 		return $ret;
+	}
+
+	public function lock() {
+		return $this->lockFile->acquireFileLock();
+	}
+
+	public function unlock() {
+		return $this->lockFile->releaseFileLock();
 	}
 }

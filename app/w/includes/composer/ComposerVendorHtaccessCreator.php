@@ -41,4 +41,3 @@ class ComposerVendorHtaccessCreator {
 		file_put_contents( $fname, "Deny from all\n" );
 	}
 }
-

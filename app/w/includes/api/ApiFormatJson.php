@@ -56,15 +56,6 @@ class ApiFormatJson extends ApiFormatBase {
 		return 'application/json';
 	}
 
-	/**
-	 * @deprecated since 1.25
-	 */
-	public function getWantsHelp() {
-		wfDeprecated( __METHOD__, '1.25' );
-		// Help is always ugly in JSON
-		return false;
-	}
-
 	public function execute() {
 		$params = $this->extractRequestParams();
 
@@ -93,14 +84,14 @@ class ApiFormatJson extends ApiFormatBase {
 					break;
 
 				default:
-					$this->dieUsage( __METHOD__ .
-						': Unknown value for \'formatversion\'', 'unknownformatversion' );
+					// Should have been caught during parameter validation
+					$this->dieDebug( __METHOD__, 'Unknown value for \'formatversion\'' );
 			}
 		}
 		$data = $this->getResult()->getResultData( null, $transform );
 		$json = FormatJson::encode( $data, $this->getIsHtml(), $opt );
 
-		// Bug 66776: wfMangleFlashPolicy() is needed to avoid a nasty bug in
+		// T68776: wfMangleFlashPolicy() is needed to avoid a nasty bug in
 		// Flash, but what it does isn't friendly for the API, so we need to
 		// work around it.
 		if ( preg_match( '/\<\s*cross-domain-policy(?=\s|\>)/i', $json ) ) {
@@ -112,7 +103,7 @@ class ApiFormatJson extends ApiFormatBase {
 		if ( isset( $params['callback'] ) ) {
 			$callback = preg_replace( "/[^][.\\'\\\"_A-Za-z0-9]/", '', $params['callback'] );
 			# Prepend a comment to try to avoid attacks against content
-			# sniffers, such as bug 68187.
+			# sniffers, such as T70187.
 			$this->printText( "/**/$callback($json)" );
 		} else {
 			$this->printText( $json );

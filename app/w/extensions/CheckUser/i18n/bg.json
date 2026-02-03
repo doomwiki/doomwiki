@@ -5,7 +5,9 @@
 			"DCLXVI",
 			"Spiritia",
 			"Turin",
-			"Vodnokon4e"
+			"Vodnokon4e",
+			"StanProg",
+			"Termininja"
 		]
 	},
 	"checkuser-summary": "Този инструмент сканира последните промени и извлича IP адресите, използвани от потребител или показва информацията за редакциите/потребителя за посоченото IP.\n\tПотребители и редакции по клиентско IP могат да бъдат извлечени чрез XFF headers като се добави IP с \"/xff\". Поддържат се IPv4 (CIDR $1-32) и IPv6 (CIDR $2-128).\n\tОт съображения, свързани с производителността на уикито, ще бъдат показани не повече от 5000 редакции. Използвайте инструмента съобразно установената политика.",
@@ -15,9 +17,11 @@
 	"checkuserlog": "Дневник на проверяващите",
 	"checkuser-contribs": "проверка на IP-адресите на потребителя",
 	"group-checkuser": "Проверяващи",
-	"group-checkuser-member": "Проверяващ",
-	"right-checkuser": "проверяване на потребителски IP адреси и друга информация",
+	"group-checkuser-member": "{{GENDER:$1|проверяващ}}",
+	"right-checkuser": "Проверяване на потребителски IP адреси и друга информация",
 	"right-checkuser-log": "Преглеждане на дневника с проверки на потребители",
+	"action-checkuser": "проверка на потребител",
+	"action-checkuser-log": "проверка на дневника на проверяващите",
 	"grouppage-checkuser": "{{ns:project}}:Проверяващи",
 	"checkuser-reason": "Причина:",
 	"checkuser-showlog": "Показване на дневника",
@@ -58,6 +62,7 @@
 	"checkuser-search-submit": "Търсене",
 	"checkuser-search-initiator": "инициатор",
 	"checkuser-search-target": "цел",
+	"checkuser-log-search-type": "Търсене по:",
 	"checkuser-ipeditcount": "~$1 от всички потребители",
 	"checkuser-showmain": "Връщане към основния формуляр за проверка",
 	"checkuser-limited": "'''Резултатите бяха съкратени от съображения, свързани с производителността на системата.'''",

@@ -1,12 +1,15 @@
 ( function ( M, $ ) {
-	var browser = M.require( 'mobile.browser/browser' ),
-		View = M.require( 'mobile.view/View' );
+	var browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
+		View = M.require( 'mobile.startup/View' );
 
 	/**
 	 * Representation of the main menu
 	 *
 	 * @class MainMenu
 	 * @extends View
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function MainMenu( options ) {
 		this.activator = options.activator;
@@ -18,10 +21,14 @@
 		isTemplateMode: true,
 		/** @inheritdoc */
 		template: mw.template.get( 'mobile.mainMenu', 'menu.hogan' ),
+		/** @inheritdoc */
+		templatePartials: {
+			menuGroup: mw.template.get( 'mobile.mainMenu', 'menuGroup.hogan' )
+		},
 
 		/**
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.activator selector for element that when clicked can open or close the menu
+		 * @cfg {string} defaults.activator selector for element that when clicked can open or close the menu
 		 */
 		defaults: {
 			activator: undefined
@@ -29,9 +36,9 @@
 
 		/**
 		 * Advertise a new feature in the main menu.
-		 * @param {String} selector to an element inside the main menu
-		 * @param {String} msg a message to show in the pointer
-		 * @returns {jQuery.Deferred} with the PointerOverlay as the only argument.
+		 * @param {string} selector to an element inside the main menu
+		 * @param {string} msg a message to show in the pointer
+		 * @return {jQuery.Deferred} with the PointerOverlay as the only argument.
 		 * @throws exception when you try to advertise more than one feature.
 		 */
 		advertiseNewFeature: function ( selector, msg ) {
@@ -45,10 +52,10 @@
 			$( function () {
 				var $activator = $( self.activator ).eq( 0 );
 				$activator.addClass( 'indicator-circle' );
-				mw.loader.using( 'mobile.contentOverlays' ).done( function () {
+				mw.loader.using( 'mobile.pointerOverlay' ).done( function () {
 					$activator.one( 'click', function () {
 						var po,
-							PointerOverlay = M.require( 'mobile.contentOverlays/PointerOverlay' );
+							PointerOverlay = require( 'mobile.pointerOverlay' );
 
 						po = new PointerOverlay( {
 							appendToElement: self.$el.parent(),
@@ -116,7 +123,7 @@
 
 		/**
 		 * Check whether the navigation drawer is open
-		 * @return {Boolean}
+		 * @return {boolean}
 		 */
 		isOpen: function () {
 			// FIXME: We should be moving away from applying classes to the body
@@ -135,7 +142,7 @@
 
 		/**
 		 * Toggle open navigation drawer
-		 * @param {String} [drawerType] A name that identifies the navigation drawer that
+		 * @param {string} [drawerType] A name that identifies the navigation drawer that
 		 *     should be toggled open. Defaults to 'primary'.
 		 */
 		openNavigationDrawer: function ( drawerType ) {

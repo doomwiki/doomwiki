@@ -23,6 +23,8 @@
 use Cdb\Reader as CdbReader;
 use Cdb\Writer as CdbWriter;
 use CLDRPluralRuleParser\Evaluator;
+use CLDRPluralRuleParser\Error as CLDRPluralRuleError;
+use MediaWiki\MediaWikiServices;
 
 /**
  * Class for caching the contents of localisation files, Messages*.php
@@ -224,7 +226,7 @@ class LocalisationCache {
 			}
 		}
 
-		wfDebugLog( 'caches', get_class( $this ) . ": using store $storeClass" );
+		wfDebugLog( 'caches', static::class . ": using store $storeClass" );
 		if ( !empty( $conf['storeDirectory'] ) ) {
 			$storeConf['directory'] = $conf['storeDirectory'];
 		}
@@ -309,7 +311,7 @@ class LocalisationCache {
 	 * array.
 	 * @param string $code
 	 * @param string $key
-	 * @return bool|null|string
+	 * @return bool|null|string|string[]
 	 */
 	public function getSubitemList( $code, $key ) {
 		if ( in_array( $key, self::$splitKeys ) ) {
@@ -545,7 +547,6 @@ class LocalisationCache {
 	 * @return array Array with a 'messages' key, or empty array if the file doesn't exist
 	 */
 	public function readJSONFile( $fileName ) {
-
 		if ( !is_readable( $fileName ) ) {
 			return [];
 		}
@@ -557,7 +558,6 @@ class LocalisationCache {
 
 		$data = FormatJson::decode( $json, true );
 		if ( $data === null ) {
-
 			throw new MWException( __METHOD__ . ": Invalid JSON file: $fileName" );
 		}
 
@@ -800,12 +800,15 @@ class LocalisationCache {
 	 * @return array
 	 */
 	public function getMessagesDirs() {
-		global $wgMessagesDirs, $IP;
+		global $IP;
+
+		$config = MediaWikiServices::getInstance()->getMainConfig();
+		$messagesDirs = $config->get( 'MessagesDirs' );
 		return [
 			'core' => "$IP/languages/i18n",
 			'api' => "$IP/includes/api/i18n",
 			'oojs-ui' => "$IP/resources/lib/oojs-ui/i18n",
-		] + $wgMessagesDirs;
+		] + $messagesDirs;
 	}
 
 	/**
@@ -956,8 +959,9 @@ class LocalisationCache {
 
 		# Add cache dependencies for any referenced globals
 		$deps['wgExtensionMessagesFiles'] = new GlobalDependency( 'wgExtensionMessagesFiles' );
-		// $wgMessagesDirs is used in LocalisationCache::getMessagesDirs()
-		$deps['wgMessagesDirs'] = new GlobalDependency( 'wgMessagesDirs' );
+		// The 'MessagesDirs' config setting is used in LocalisationCache::getMessagesDirs().
+		// We use the key 'wgMessagesDirs' for historical reasons.
+		$deps['wgMessagesDirs'] = new MainConfigDependency( 'MessagesDirs' );
 		$deps['version'] = new ConstantDependency( 'LocalisationCache::VERSION' );
 
 		# Add dependencies to the cache entry
@@ -1028,7 +1032,6 @@ class LocalisationCache {
 			$blobStore = new MessageBlobStore();
 			$blobStore->clear();
 		}
-
 	}
 
 	/**

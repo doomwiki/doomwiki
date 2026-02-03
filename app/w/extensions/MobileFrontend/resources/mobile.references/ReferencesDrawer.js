@@ -1,5 +1,5 @@
 ( function ( M, $ ) {
-	var Drawer = M.require( 'mobile.drawers/Drawer' ),
+	var Drawer = M.require( 'mobile.startup/Drawer' ),
 		icons = M.require( 'mobile.startup/icons' ),
 		Icon = M.require( 'mobile.startup/Icon' );
 
@@ -16,13 +16,13 @@
 	OO.mfExtend( ReferencesDrawer, Drawer, {
 		/**
 		 * @cfg {Object} defaults Default options hash.
-		 * @cfg {String} defaults.cancelButton HTML of the button that closes the drawer.
-		 * @cfg {Boolean} defaults.error whether an error message is being shown
+		 * @cfg {string} defaults.cancelButton HTML of the button that closes the drawer.
+		 * @cfg {boolean} defaults.error whether an error message is being shown
 		 */
 		defaults: $.extend( {}, Drawer.prototype.defaults, {
 			spinner: icons.spinner().toHtmlString(),
 			cancelButton: new Icon( {
-				name: 'close-gray',
+				name: 'overlay-close-gray',
 				additionalClassNames: 'cancel',
 				label: mw.msg( 'mobile-frontend-overlay-close' )
 			} ).toHtmlString(),
@@ -76,9 +76,9 @@
 		},
 		/**
 		 * Fetch and render nested reference upon click
-		 * @param {String} id of the reference to be retrieved
+		 * @param {string} id of the reference to be retrieved
 		 * @param {Page} page to locate reference for
-		 * @param {String} refNumber the number it identifies as in the page
+		 * @param {string} refNumber the number it identifies as in the page
 		 */
 		showReference: function ( id, page, refNumber ) {
 			var drawer = this;
@@ -101,6 +101,7 @@
 		/**
 		 * Fetch and render nested reference upon click
 		 * @param {jQuery.Event} ev
+		 * @return {boolean} False to cancel the native event
 		 */
 		showNestedReference: function ( ev ) {
 			var $dest = $( ev.target );

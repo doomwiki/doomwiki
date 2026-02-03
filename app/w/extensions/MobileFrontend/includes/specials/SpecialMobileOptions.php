@@ -13,9 +13,9 @@ class SpecialMobileOptions extends MobileSpecialPage {
 	protected $hasDesktopVersion = true;
 	/** @var array $options Used in the execute() function as a map of subpages to
 	 functions that are executed when the request method is defined. */
-	private $options = array(
-		'Language' => array( 'get' => 'chooseLanguage' ),
-	);
+	private $options = [
+		'Language' => [ 'get' => 'chooseLanguage' ],
+	];
 	/** @var boolean Whether the special page's content should be wrapped in div.content */
 	protected $unstyledContent = false;
 
@@ -38,7 +38,6 @@ class SpecialMobileOptions extends MobileSpecialPage {
 		parent::execute( $par );
 		$context = MobileContext::singleton();
 
-		wfIncrStats( 'mobile.options.views' );
 		$this->returnToTitle = Title::newFromText( $this->getRequest()->getText( 'returnto' ) );
 		if ( !$this->returnToTitle ) {
 			$this->returnToTitle = Title::newMainPage();
@@ -63,15 +62,32 @@ class SpecialMobileOptions extends MobileSpecialPage {
 			if ( $this->getRequest()->wasPosted() ) {
 				$this->submitSettingsForm();
 			} else {
-				$this->getSettingsForm();
+				$this->addSettingsForm();
 			}
 		}
 	}
 
 	/**
-	 * Render the settings form (with actual set settings) to display to user
+	 * Gets the Resource Loader modules that should be added to the output.
+	 *
+	 * @param MobileContext $context
+	 * @return string[]
 	 */
-	private function getSettingsForm() {
+	private function getModules( MobileContext $context ) {
+		$result = [];
+
+		if ( $context->getConfigVariable( 'MinervaEnableFontChanger' ) ) {
+			$result[] = 'mobile.special.mobileoptions.scripts.fontchanger';
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Render the settings form (with actual set settings) and add it to the
+	 * output as well as any supporting modules.
+	 */
+	private function addSettingsForm() {
 		$out = $this->getOutput();
 		$context = MobileContext::singleton();
 		$user = $this->getUser();
@@ -97,32 +113,32 @@ class SpecialMobileOptions extends MobileSpecialPage {
 		$saveSettings = $this->msg( 'mobile-frontend-save-settings' )->escaped();
 		$action = $this->getPageTitle()->getLocalURL();
 		$html = Html::openElement( 'form',
-			array( 'class' => 'mw-mf-settings', 'method' => 'POST', 'action' => $action )
+			[ 'class' => 'mw-mf-settings', 'method' => 'POST', 'action' => $action ]
 		);
 		$token = $user->isLoggedIn() ? Html::hidden( 'token', $user->getEditToken() ) : '';
 		$returnto = Html::hidden( 'returnto', $this->returnToTitle->getFullText() );
 
 		// array to save the data of options, which should be displayed here
-		$options = array();
+		$options = [];
 
 		// image settings
-		$options['images'] = array(
+		$options['images'] = [
 			'checked' => $imagesChecked,
 			'label' => $disableMsg,
 			'description' => $imagesDescriptionMsg,
 			'name' => 'enableImages',
 			'id' => 'enable-images-toggle',
-		);
+		];
 
 		// beta settings
 		if ( $this->getMFConfig()->get( 'MFEnableBeta' ) ) {
-			$options['beta'] = array(
+			$options['beta'] = [
 				'checked' => $imagesBeta,
 				'label' => $betaEnableMsg,
 				'description' => $betaDescriptionMsg,
 				'name' => 'enableBeta',
 				'id' => 'enable-beta-toggle',
-			);
+			];
 		}
 
 		$templateParser = new TemplateParser(
@@ -150,6 +166,11 @@ class SpecialMobileOptions extends MobileSpecialPage {
 HTML;
 		// @codingStandardsIgnoreEnd
 		$out->addHTML( $html );
+
+		$modules = $this->getModules( $context );
+
+		$this->getOutput()
+			->addModules( $modules );
 	}
 
 	/**
@@ -172,7 +193,7 @@ HTML;
 			} else {
 				$url = '';
 			}
-			$attrs = array( 'href' => $url );
+			$attrs = [ 'href' => $url ];
 			$count++;
 			if ( $code == $this->getConfig()->get( 'LanguageCode' ) ) {
 				$attrs['class'] = 'selected';
@@ -211,18 +232,17 @@ HTML;
 	private function submitSettingsForm() {
 		$schema = 'MobileOptionsTracking';
 		$schemaRevision = 14003392;
-		$schemaData = array(
+		$schemaData = [
 			'action' => 'success',
 			'images' => "nochange",
 			'beta' => "nochange",
-		);
+		];
 		$context = MobileContext::singleton();
 		$request = $this->getRequest();
 		$user = $this->getUser();
 
 		if ( $user->isLoggedIn() && !$user->matchEditToken( $request->getVal( 'token' ) ) ) {
 			$errorText = __METHOD__ . '(): token mismatch';
-			wfIncrStats( 'mobile.options.errors' );
 			wfDebugLog( 'mobile', $errorText );
 			$this->getOutput()->addHTML( '<div class="error">'
 				. $this->msg( "mobile-frontend-save-error" )->parse()
@@ -231,10 +251,9 @@ HTML;
 			$schemaData['action'] = 'error';
 			$schemaData['errorText'] = $errorText;
 			ExtMobileFrontend::eventLog( $schema, $schemaRevision, $schemaData );
-			$this->getSettingsForm();
+			$this->addSettingsForm();
 			return;
 		}
-		wfIncrStats( 'mobile.options.saves' );
 
 		if ( $request->getBool( 'enableBeta' ) ) {
 			$group = 'beta';
@@ -277,7 +296,7 @@ HTML;
 	 */
 	public static function getURL( $option, Title $returnTo = null, $fullUrl = false ) {
 		$t = SpecialPage::getTitleFor( 'MobileOptions', $option );
-		$params = array();
+		$params = [];
 		if ( $returnTo ) {
 			$params['returnto'] = $returnTo->getPrefixedText();
 		}

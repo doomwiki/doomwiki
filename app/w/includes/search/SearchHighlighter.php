@@ -38,10 +38,11 @@ class SearchHighlighter {
 	}
 
 	/**
-	 * Default implementation of wikitext highlighting
+	 * Wikitext highlighting when $wgAdvancedSearchHighlighting = true
 	 *
 	 * @param string $text
-	 * @param array $terms Terms to highlight (unescaped)
+	 * @param array $terms Terms to highlight (not html escaped but
+	 *   regex escaped via SearchDatabase::regexTerm())
 	 * @param int $contextlines
 	 * @param int $contextchars
 	 * @return string
@@ -78,10 +79,10 @@ class SearchHighlighter {
 			if ( preg_match( $spat, $text, $matches, PREG_OFFSET_CAPTURE, $start ) ) {
 				$epat = '';
 				foreach ( $matches as $key => $val ) {
-					if ( $key > 0 && $val[1] != - 1 ) {
+					if ( $key > 0 && $val[1] != -1 ) {
 						if ( $key == 2 ) {
 							// see if this is an image link
-							$ns = substr( $val[0], 2, - 1 );
+							$ns = substr( $val[0], 2, -1 );
 							if ( $wgContLang->getNsIndex( $ns ) != NS_FILE ) {
 								break;
 							}
@@ -149,7 +150,6 @@ class SearchHighlighter {
 		}
 		$anyterm = implode( '|', $terms );
 		$phrase = implode( "$wgSearchHighlightBoundaries+", $terms );
-
 		// @todo FIXME: A hack to scale contextchars, a correct solution
 		// would be to have contextchars actually be char and not byte
 		// length, and do proper utf-8 substrings and lengths everywhere,
@@ -256,10 +256,10 @@ class SearchHighlighter {
 
 		// $snippets = array_map( 'htmlspecialchars', $extended );
 		$snippets = $extended;
-		$last = - 1;
+		$last = -1;
 		$extract = '';
 		foreach ( $snippets as $index => $line ) {
-			if ( $last == - 1 ) {
+			if ( $last == -1 ) {
 				$extract .= $line; // first line
 			} elseif ( $last + 1 == $index
 				&& $offsets[$last] + strlen( $snippets[$last] ) >= strlen( $all[$last] )
@@ -493,8 +493,10 @@ class SearchHighlighter {
 	 * Simple & fast snippet extraction, but gives completely unrelevant
 	 * snippets
 	 *
+	 * Used when $wgAdvancedSearchHighlighting is false.
+	 *
 	 * @param string $text
-	 * @param array $terms
+	 * @param array $terms Escaped for regex by SearchDatabase::regexTerm()
 	 * @param int $contextlines
 	 * @param int $contextchars
 	 * @return string

@@ -27,6 +27,8 @@
 require_once __DIR__ . '/backup.inc';
 require_once __DIR__ . '/../includes/export/WikiExporter.php';
 
+use Wikimedia\Rdbms\IMaintainableDatabase;
+
 /**
  * @ingroup Maintenance
  */
@@ -74,6 +76,9 @@ class TextPassDumper extends BackupDumper {
 	 */
 	protected $spawnErr = false;
 
+	/**
+	 * @var bool|XmlDumpWriter
+	 */
 	protected $xmlwriterobj = false;
 
 	protected $timeExceeded = false;
@@ -83,7 +88,7 @@ class TextPassDumper extends BackupDumper {
 	protected $checkpointFiles = [];
 
 	/**
-	 * @var DatabaseBase
+	 * @var IMaintainableDatabase
 	 */
 	protected $db;
 
@@ -209,7 +214,6 @@ TEXT
 		// We do /not/ retry upon failure, but delegate to encapsulating logic, to avoid
 		// individually retrying at different layers of code.
 
-		// 1. The LoadBalancer.
 		try {
 			$this->lb = wfGetLBFactory()->newMainLB();
 		} catch ( Exception $e ) {
@@ -217,9 +221,8 @@ TEXT
 				. " rotating DB failed to obtain new load balancer (" . $e->getMessage() . ")" );
 		}
 
-		// 2. The Connection, through the load balancer.
 		try {
-			$this->db = $this->lb->getConnection( DB_SLAVE, 'dump' );
+			$this->db = $this->lb->getConnection( DB_REPLICA, 'dump' );
 		} catch ( Exception $e ) {
 			throw new MWException( __METHOD__
 				. " rotating DB failed to obtain new database (" . $e->getMessage() . ")" );

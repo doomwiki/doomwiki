@@ -17,13 +17,17 @@ class MobilePage {
 	 */
 	private $title;
 	/**
+	 * @var Revision|bool
+	 */
+	private $rev;
+	/**
+	 * @var string|bool
+	 */
+	private $revisionTimestamp;
+	/**
 	 * @var File Associated page image file (see PageImages extension)
 	 */
 	private $file;
-	/**
-	 * @var string Page content
-	 */
-	private $content;
 	/**
 	 * @var boolean Whether to use page images
 	 */
@@ -44,31 +48,58 @@ class MobilePage {
 	}
 
 	/**
-	 * Retrieve the last time the page content was modified. Do not reflect null edits.
-	 * @return string timestamp representing last edited time.
+	 * @return Revision|bool
+	 */
+	private function getRevision() {
+		if ( $this->rev === null ) {
+			$this->rev = Revision::newKnownCurrent(
+				wfGetDB( DB_REPLICA ),
+				$this->title->getArticleID(),
+				$this->title->getLatestRevID()
+			);
+		}
+		return $this->rev;
+	}
+
+	/**
+	 * Retrieve timestamp when the page content was last modified. Does not reflect null edits.
+	 * @return string|bool Timestamp (MW format) or false
 	 */
 	public function getLatestTimestamp() {
-		$title = $this->getTitle();
-		return Revision::getTimestampFromId( $title, $title->getLatestRevID() );
+		if ( $this->revisionTimestamp === null ) {
+			$rev = $this->getRevision();
+			$this->revisionTimestamp = $rev ? $rev->getTimestamp() : false;
+		}
+		return $this->revisionTimestamp;
+	}
+
+	/**
+	 * Set rev_timestamp of latest edit to this page
+	 * @param string Timestamp (MW format)
+	 */
+	public function setLatestTimestamp( $timestamp ) {
+		$this->revisionTimestamp = $timestamp;
 	}
 
 	/**
 	 * Retrieve the last edit to this page.
-	 * @return array defining edit with keys name, timestamp and gender
+	 * @return array defining edit with keys:
+	 * - string name
+	 * - string timestamp (Unix format)
+	 * - string gender
 	 */
 	public function getLatestEdit() {
-		$rev = Revision::newFromId( $this->getTitle()->getLatestRevID() );
-		$unixTimestamp = wfTimestamp( TS_UNIX, $this->getLatestTimestamp() );
-		$edit = array(
-			'timestamp' => $unixTimestamp,
+		$rev = $this->getRevision();
+		$edit = [
+			'timestamp' => false,
 			'name' => '',
 			'gender' => '',
-		);
+		];
 		if ( $rev ) {
+			$edit['timestamp'] = wfTimestamp( TS_UNIX, $rev->getTimestamp() );
 			$userId = $rev->getUser();
 			if ( $userId ) {
 				$revUser = User::newFromId( $userId );
-				$revUser->load( User::READ_NORMAL );
 				$edit['name'] = $revUser->getName();
 				$edit['gender'] = $revUser->getOption( 'gender' );
 			}
@@ -92,9 +123,9 @@ class MobilePage {
 	 * @return string
 	 */
 	public static function getPlaceHolderThumbnailHtml( $className, $iconClassName = 'icon-32px' ) {
-		return Html::element( 'div', array(
+		return Html::element( 'div', [
 			'class' => 'list-thumb list-thumb-placeholder ' . $iconClassName . ' ' . $className,
-		) );
+		] );
 	}
 
 	/**
@@ -129,15 +160,15 @@ class MobilePage {
 		if ( $this->usePageImages ) {
 			$file = $this->file;
 			if ( $file ) {
-				$thumb = $file->transform( array( 'width' => $size ) );
+				$thumb = $file->transform( [ 'width' => $size ] );
 				if ( $thumb && $thumb->getUrl() ) {
 					$className = 'list-thumb ';
 					$className .= $thumb->getWidth() > $thumb->getHeight()
 						? 'list-thumb-y'
 						: 'list-thumb-x';
-					$props = array(
+					$props = [
 						'class' => $className,
-					);
+					];
 
 					$imgUrl = wfExpandUrl( $thumb->getUrl(), PROTO_CURRENT );
 					if ( $useBackgroundImage ) {

@@ -75,6 +75,12 @@ $specialPageAliases['bjn'] = array(
 	'AbuseFilter' => array( 'Filter_panyalahgunaan' ),
 );
 
+/** Bengali (বাংলা) */
+$specialPageAliases['bn'] = array(
+	'AbuseLog' => array( 'অপব্যবহার_লগ' ),
+	'AbuseFilter' => array( 'অপব্যবহার_ছাঁকনি' ),
+);
+
 /** Bosnian (bosanski) */
 $specialPageAliases['bs'] = array(
 	'AbuseLog' => array( 'ZapisZloupotrebe' ),
@@ -466,8 +472,8 @@ $specialPageAliases['tr'] = array(
 
 /** Ukrainian (українська) */
 $specialPageAliases['uk'] = array(
-	'AbuseLog' => array( 'Журнал_зловживань' ),
-	'AbuseFilter' => array( 'Фільтр_редагувань', 'Фільтр_зловживань' ),
+	'AbuseLog' => array( 'Журнал_зловживань', 'Журнал_злоупотреблений' ),
+	'AbuseFilter' => array( 'Фільтр_редагувань', 'Фільтр_зловживань', 'Фильтр_злоупотреблений' ),
 );
 
 /** Urdu (اردو) */

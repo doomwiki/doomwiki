@@ -10,14 +10,15 @@
 			"Vivaelcelta",
 			"Fitoschido",
 			"Themasterriot",
-			"Macofe"
+			"Macofe",
+			"Dgstranz"
 		]
 	},
 	"categorytree": "Árbol de categorías",
 	"categorytree-portlet": "Categorías",
 	"categorytree-legend": "Mostrar árbol de categorías",
 	"categorytree-desc": "Navegar dinámicamente por la [[Special:CategoryTree|estructura de categorías]]",
-	"categorytree-header": "Escribe un nombre de categoría para ver su contenido con una estructura en árbol.\nTen en cuenta que esto requiere funciones JavaScript avanzadas conocidas como AJAX.\nSi tienes un navegador antiguo, o tienes deshabilitado el JavaScript, esto no funcionará.",
+	"categorytree-header": "Escribe un nombre de categoría para ver su contenido con una estructura de árbol. (Requiere JavaScript.)",
 	"categorytree-category": "Categoría:",
 	"categorytree-go": "Cargar",
 	"categorytree-parents": "Categorías superiores",
@@ -42,5 +43,9 @@
 	"categorytree-no-pages": "sin páginas ni subcategorías",
 	"categorytree-not-found": "Categoría <i>$1</i> no encontrada",
 	"categorytree-error": "Error al cargar los datos.",
-	"categorytree-retry": "Espera un momento y vuelve a intentarlo."
+	"categorytree-retry": "Espera un momento y vuelve a intentarlo.",
+	"apihelp-categorytree-description": "Módulo interno para la extensión CategoryTree.",
+	"apihelp-categorytree-param-category": "Título en el espacio de nombres Categoría; el prefijo, en caso de indicarse, se ignorará.",
+	"apihelp-categorytree-param-options": "Opciones para el constructor CategoryTree como objeto JSON. La opción <var>depth</var> por defecto toma el valor <kbd>1</kbd>.",
+	"apierror-categorytree-invalidjson": "Las opciones deben ser un objeto JSON válido."
 }

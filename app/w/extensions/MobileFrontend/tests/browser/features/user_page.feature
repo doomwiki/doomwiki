@@ -1,4 +1,4 @@
-@chrome @en.m.wikipedia.beta.wmflabs.org @firefox @login @test2.m.wikipedia.org @vagrant @integration
+@chrome @en.m.wikipedia.beta.wmflabs.org @firefox @login @test2.m.wikipedia.org @vagrant @integration @login
 Feature:  User:<username>
 
   Background:
@@ -10,3 +10,9 @@ Feature:  User:<username>
     And there should be a link to my talk page
     And there should be a link to my contributions
     And there should be a link to my uploads
+
+  Scenario: Check user page is editable
+    And I should be on my user page
+    And there should be a link to create my user page
+    When I click the create my user page link
+    Then I see the wikitext editor overlay

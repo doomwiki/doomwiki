@@ -29,7 +29,7 @@
 	"checkuser-query": "সাম্প্রতিক পরিবর্তনসমূহ জানুন",
 	"checkuser-target": "আইপি ঠিকানা বা ব্যবহারকারীর নাম:",
 	"checkuser-users": "ব্যবহারকারী খুঁজুন",
-	"checkuser-edits": "সম্পাদনাগুলি দেখুন",
+	"checkuser-edits": "সম্পাদনাগুলি খুঁজুন",
 	"checkuser-ips": "আইপিসমূহ খুঁজুন",
 	"checkuser-period": "সময়:",
 	"checkuser-week-1": "পূর্ববর্তী সপ্তাহ",
@@ -70,7 +70,7 @@
 	"checkuser-search-target": "লক্ষ্য",
 	"checkuser-log-search-target": "লক্ষ্য:",
 	"checkuser-log-search-type": "কর্তৃক অনুসন্ধান:",
-	"checkuser-ipeditcount": "~$1 সমস্ত ব্যবহারকারী থেকে",
+	"checkuser-ipeditcount": "সকল ব্যবহারকারী থেকে ~$1টি",
 	"checkuser-showmain": "CheckUser মূল ফর্মে ফেরত যান",
 	"checkuser-limited": "'''এসব ফলাফল কর্মক্ষমতা কারণে ছেঁটে ফেলা হয়েছে।'''",
 	"checkuser-log-entry-userips": "$3, $1 $2-এর জন্য আইপি ঠিকানাগুলি পেয়েছেন",
@@ -83,6 +83,8 @@
 	"checkuser-create-action": "তৈরি করা হয়েছে",
 	"checkuser-email-action": "ব্যবহারকারী \"$1\"-এর কাছে একটি ই-মেইল পাঠাও",
 	"checkuser-reset-action": "ব্যবহারকারী \"$1\"-এর জন্য পাসওয়ার্ড পুনঃস্থাপন করো",
+	"checkuser-userlinks-ip": "([[User_talk:$1|আলাপ]] | [[Special:Contributions/$1|অবদান]] | [[Special:Block/$1|বাধা দিন]] | <span class=\"plainlinks\">[https://www.robtex.com/whois/$1.html WHOIS/RDNS]</span>)",
+	"checkuser-userlinks": "([[User_talk:$1|আলাপ]] | [[Special:Contributions/$1|অবদান]] | [[Special:Block/$1|বাধা দিন]])",
 	"checkuser-token-fail": "সেশন ব্যর্থতা। অনুগ্রহপূর্বক আবার চেষ্টা করুন।",
 	"apihelp-query+checkuser-param-reason": "পরীক্ষার কারণ।"
 }

@@ -27,6 +27,11 @@
 	z-index: 100;
 }
 
+.mw-apisandbox-fullscreen .mw-apisandbox-container {
+	border-width: 1px 0 0 0;
+	border-radius: 0;
+}
+
 .mw-apisandbox-spacer {
 	display: inline-block;
 	height: 1px;
@@ -38,7 +43,7 @@
 }
 
 .mw-apisandbox-help-field:last-child {
-	border-bottom: none;
+	border-bottom: 0;
 }
 
 .mw-apisandbox-optionalWidget {
@@ -79,4 +84,17 @@
 
 .oo-ui-textInputWidget.oo-ui-widget-enabled > .oo-ui-indicatorElement-indicator.mw-apisandbox-clickable-indicator {
 	cursor: pointer;
+}
+
+.mw-apisandbox-textInputCode .oo-ui-inputWidget-input {
+	font-family: monospace, monospace;
+	font-size: 0.8125em;
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+}
+
+.mw-apisandbox-widget-field .oo-ui-textInputWidget {
+	/* Leave at least enough space for icon, indicator, and a sliver of text */
+	min-width: 6em;
 }

@@ -1,5 +1,7 @@
 <?php
 
+use MediaWiki\MediaWikiServices;
+
 /**
  * Helper for generating test recent changes entries.
  *
@@ -100,7 +102,8 @@ class TestRecentChangesHelper {
 	public function getCacheEntry( $recentChange ) {
 		$rcCacheFactory = new RCCacheEntryFactory(
 			new RequestContext(),
-			[ 'diff' => 'diff', 'cur' => 'cur', 'last' => 'last' ]
+			[ 'diff' => 'diff', 'cur' => 'cur', 'last' => 'last' ],
+			MediaWikiServices::getInstance()->getLinkRenderer()
 		);
 		return $rcCacheFactory->newFromRecentChange( $recentChange, false );
 	}

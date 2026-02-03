@@ -10,14 +10,16 @@
 			"Peter17",
 			"Sherbrooke",
 			"Urhixidur",
-			"Verdy p"
+			"Verdy p",
+			"Wladek92",
+			"Dgstranz"
 		]
 	},
 	"categorytree": "Arborescence des catégories",
 	"categorytree-portlet": "Catégories",
 	"categorytree-legend": "Visionner l’arborescence de la catégorie",
 	"categorytree-desc": "Visite dynamiquement la [[Special:CategoryTree|structure des catégories]]",
-	"categorytree-header": "Entrez un nom de catégorie pour voir son contenu en structure arborescente. Ceci utilise des fonctionnalités JavaScript avancées connues sous le nom d’AJAX. Si vous avez un très vieux navigateur Web ou si vous n’avez pas activé la fonctionnalité JavaScript, cela ne fonctionnera pas.",
+	"categorytree-header": "Entrez un nom de catégorie pour voir son contenu en structure arborescente (nécessite JavaScript).",
 	"categorytree-category": "Catégorie :",
 	"categorytree-go": "Voir l’arborescence",
 	"categorytree-parents": "super-catégorie(s)",
@@ -43,5 +45,6 @@
 	"categorytree-retry": "Veuillez attendre un instant puis réessayer.",
 	"apihelp-categorytree-description": "Module interne pour l’extension CategoryTree.",
 	"apihelp-categorytree-param-category": "Titre dans l’espace de noms Catégorie, le préfixe sera ignoré s’il est fourni.",
-	"apihelp-categorytree-param-options": "Options pour le constructeur CategoryTree comme objet JSON. L’option profondeur par défaut vaut 1."
+	"apihelp-categorytree-param-options": "Options pour le constructeur CategoryTree comme objet JSON. L’option <var>depth</var> par défaut vaut <kbd>1</kbd>.",
+	"apierror-categorytree-invalidjson": "Les options doivent être un objet JSON valide."
 }

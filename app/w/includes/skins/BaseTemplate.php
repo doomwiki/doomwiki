@@ -29,10 +29,11 @@ abstract class BaseTemplate extends QuickTemplate {
 	 * Get a Message object with its context set
 	 *
 	 * @param string $name Message name
+	 * @param ... $params Message params
 	 * @return Message
 	 */
-	public function getMsg( $name ) {
-		return $this->getSkin()->msg( $name );
+	public function getMsg( $name /* ... */ ) {
+		return call_user_func_array( [ $this->getSkin(), 'msg' ], func_get_args() );
 	}
 
 	function msg( $str ) {
@@ -55,7 +56,6 @@ abstract class BaseTemplate extends QuickTemplate {
 	 * @return array
 	 */
 	function getToolbox() {
-
 		$toolbox = [];
 		if ( isset( $this->data['nav_urls']['whatlinkshere'] )
 			&& $this->data['nav_urls']['whatlinkshere']
@@ -69,6 +69,7 @@ abstract class BaseTemplate extends QuickTemplate {
 			$toolbox['recentchangeslinked'] = $this->data['nav_urls']['recentchangeslinked'];
 			$toolbox['recentchangeslinked']['msg'] = 'recentchangeslinked-toolbox';
 			$toolbox['recentchangeslinked']['id'] = 't-recentchangeslinked';
+			$toolbox['recentchangeslinked']['rel'] = 'nofollow';
 		}
 		if ( isset( $this->data['feeds'] ) && $this->data['feeds'] ) {
 			$toolbox['feeds']['id'] = 'feedlinks';
@@ -142,7 +143,7 @@ abstract class BaseTemplate extends QuickTemplate {
 			if ( isset( $plink['active'] ) ) {
 				$ptool['active'] = $plink['active'];
 			}
-			foreach ( [ 'href', 'class', 'text', 'dir' ] as $k ) {
+			foreach ( [ 'href', 'class', 'text', 'dir', 'data' ] as $k ) {
 				if ( isset( $plink[$k] ) ) {
 					$ptool['links'][0][$k] = $plink[$k];
 				}
@@ -286,13 +287,31 @@ abstract class BaseTemplate extends QuickTemplate {
 	 * @param string $name
 	 */
 	protected function renderAfterPortlet( $name ) {
+		echo $this->getAfterPortlet( $name );
+	}
+
+	/**
+	 * Allows extensions to hook into known portlets and add stuff to them
+	 *
+	 * @param string $name
+	 *
+	 * @return string html
+	 * @since 1.29
+	 */
+	protected function getAfterPortlet( $name ) {
+		$html = '';
 		$content = '';
 		Hooks::run( 'BaseTemplateAfterPortlet', [ $this, $name, &$content ] );
 
 		if ( $content !== '' ) {
-			echo "<div class='after-portlet after-portlet-$name'>$content</div>";
+			$html = Html::rawElement(
+				'div',
+				[ 'class' => [ 'after-portlet', 'after-portlet-' . $name ] ],
+				$content
+			);
 		}
 
+		return $html;
 	}
 
 	/**
@@ -322,13 +341,22 @@ abstract class BaseTemplate extends QuickTemplate {
 	 *
 	 * If you don't want an accesskey, set $item['tooltiponly'] = true;
 	 *
+	 * If a "data" key is present, it must be an array, where the keys represent
+	 * the data-xxx properties with their provided values. For example,
+	 *     $item['data'] = [
+	 *       'foo' => 1,
+	 *       'bar' => 'baz',
+	 *     ];
+	 * will render as element properties:
+	 *     data-foo='1' data-bar='baz'
+	 *
 	 * @param array $options Can be used to affect the output of a link.
 	 * Possible options are:
 	 *   - 'text-wrapper' key to specify a list of elements to wrap the text of
 	 *   a link in. This should be an array of arrays containing a 'tag' and
 	 *   optionally an 'attributes' key. If you only have one element you don't
 	 *   need to wrap it in another array. eg: To use <a><span>...</span></a>
-	 *   in all links use array( 'text-wrapper' => array( 'tag' => 'span' ) )
+	 *   in all links use [ 'text-wrapper' => [ 'tag' => 'span' ] ]
 	 *   for your options.
 	 *   - 'link-class' key can be used to specify additional classes to apply
 	 *   to all links.
@@ -365,6 +393,13 @@ abstract class BaseTemplate extends QuickTemplate {
 			foreach ( [ 'single-id', 'text', 'msg', 'tooltiponly', 'context', 'primary',
 				'tooltip-params' ] as $k ) {
 				unset( $attrs[$k] );
+			}
+
+			if ( isset( $attrs['data'] ) ) {
+				foreach ( $attrs['data'] as $key => $value ) {
+					$attrs[ 'data-' . $key ] = $value;
+				}
+				unset( $attrs[ 'data' ] );
 			}
 
 			if ( isset( $item['id'] ) && !isset( $item['single-id'] ) ) {
@@ -429,7 +464,8 @@ abstract class BaseTemplate extends QuickTemplate {
 	 * list item directly so they will not be passed to makeLink
 	 * (however the link will still support a tooltip and accesskey from it)
 	 * If you need an id or class on a single link you should include a "links"
-	 * array with just one link item inside of it. If you want to add a title
+	 * array with just one link item inside of it. You can also set "link-class" in
+	 * $item to set a class on the link itself. If you want to add a title
 	 * to the list item itself, you can set "itemtitle" to the value.
 	 * $options is also passed on to makeLink calls
 	 *
@@ -453,6 +489,12 @@ abstract class BaseTemplate extends QuickTemplate {
 				// but makeSidebarLink still needs to know what id to use when
 				// generating tooltips and accesskeys.
 				$link['single-id'] = $item['id'];
+			}
+			if ( isset( $link['link-class'] ) ) {
+				// link-class should be set on the <a> itself,
+				// so pass it in as 'class'
+				$link['class'] = $link['link-class'];
+				unset( $link['link-class'] );
 			}
 			$html = $this->makeLink( $key, $link, $options );
 		}
@@ -610,6 +652,69 @@ abstract class BaseTemplate extends QuickTemplate {
 	}
 
 	/**
+	 * Renderer for getFooterIcons and getFooterLinks
+	 *
+	 * @param string $iconStyle $option for getFooterIcons: "icononly", "nocopyright"
+	 * @param string $linkStyle $option for getFooterLinks: "flat"
+	 *
+	 * @return string html
+	 * @since 1.29
+	 */
+	protected function getFooter( $iconStyle = 'icononly', $linkStyle = 'flat' ) {
+		$validFooterIcons = $this->getFooterIcons( $iconStyle );
+		$validFooterLinks = $this->getFooterLinks( $linkStyle );
+
+		$html = '';
+
+		if ( count( $validFooterIcons ) + count( $validFooterLinks ) > 0 ) {
+			$html .= Html::openElement( 'div', [
+				'id' => 'footer-bottom',
+				'role' => 'contentinfo',
+				'lang' => $this->get( 'userlang' ),
+				'dir' => $this->get( 'dir' )
+			] );
+			$footerEnd = Html::closeElement( 'div' );
+		} else {
+			$footerEnd = '';
+		}
+		foreach ( $validFooterIcons as $blockName => $footerIcons ) {
+			$html .= Html::openElement( 'div', [
+				'id' => 'f-' . Sanitizer::escapeId( $blockName ) . 'ico',
+				'class' => 'footer-icons'
+			] );
+			foreach ( $footerIcons as $icon ) {
+				$html .= $this->getSkin()->makeFooterIcon( $icon );
+			}
+			$html .= Html::closeElement( 'div' );
+		}
+		if ( count( $validFooterLinks ) > 0 ) {
+			$html .= Html::openElement( 'ul', [ 'id' => 'f-list', 'class' => 'footer-places' ] );
+			foreach ( $validFooterLinks as $aLink ) {
+				$html .= Html::rawElement(
+					'li',
+					[ 'id' => Sanitizer::escapeId( $aLink ) ],
+					$this->get( $aLink )
+				);
+			}
+			$html .= Html::closeElement( 'ul' );
+		}
+
+		$html .= $this->getClear() . $footerEnd;
+
+		return $html;
+	}
+
+	/**
+	 * Get a div with the core visualClear class, for clearing floats
+	 *
+	 * @return string html
+	 * @since 1.29
+	 */
+	protected function getClear() {
+		return Html::element( 'div', [ 'class' => 'visualClear' ] );
+	}
+
+	/**
 	 * Get the suggested HTML for page status indicators: icons (or short text snippets) usually
 	 * displayed in the top-right corner of the page, outside of the main content.
 	 *
@@ -625,7 +730,7 @@ abstract class BaseTemplate extends QuickTemplate {
 	 * @since 1.25
 	 */
 	public function getIndicators() {
-		$out = "<div class=\"mw-indicators\">\n";
+		$out = "<div class=\"mw-indicators mw-body-content\">\n";
 		foreach ( $this->data['indicators'] as $id => $content ) {
 			$out .= Html::rawElement(
 				'div',
@@ -641,15 +746,25 @@ abstract class BaseTemplate extends QuickTemplate {
 	}
 
 	/**
-	 * Output the basic end-page trail including bottomscripts, reporttime, and
-	 * debug stuff. This should be called right before outputting the closing
-	 * body and html tags.
+	 * Output getTrail
 	 */
 	function printTrail() {
-?>
-<?php echo MWDebug::getDebugHTML( $this->getSkin()->getContext() ); ?>
-<?php $this->html( 'bottomscripts' ); /* JS call to runBodyOnloadHook */ ?>
-<?php $this->html( 'reporttime' ) ?>
-<?php
+		echo $this->getTrail();
+	}
+
+	/**
+	 * Get the basic end-page trail including bottomscripts, reporttime, and
+	 * debug stuff. This should be called right before outputting the closing
+	 * body and html tags.
+	 *
+	 * @return string
+	 * @since 1.29
+	 */
+	function getTrail() {
+		$html = MWDebug::getDebugHTML( $this->getSkin()->getContext() );
+		$html .= $this->get( 'bottomscripts' );
+		$html .= $this->get( 'reporttime' );
+
+		return $html;
 	}
 }

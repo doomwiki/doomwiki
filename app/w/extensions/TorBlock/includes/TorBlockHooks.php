@@ -27,6 +27,12 @@
  */
 
 class TorBlockHooks {
+
+	public static function registerExtension() {
+		// Define new autopromote condition
+		define( 'APCOND_TOR', 'tor' ); // Numbers won't work, we'll get collisions
+	}
+
 	/**
 	 * Whether the given user is allowed to perform $action from its current IP
 	 *
@@ -244,7 +250,7 @@ class TorBlockHooks {
 		global $wgTorTagChanges;
 
 		if ( class_exists('ChangeTags') && $wgTorTagChanges && TorExitNodes::isExitNode() ) {
-			ChangeTags::addTags( 'tor', $recentChange->mAttribs['rc_id'], $recentChange->mAttribs['rc_this_oldid'], $recentChange->mAttribs['rc_logid'] );
+			$recentChange->addTags( 'tor' );
 		}
 		return true;
 	}

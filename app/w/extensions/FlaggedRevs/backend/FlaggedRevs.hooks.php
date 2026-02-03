@@ -12,8 +12,8 @@ class FlaggedRevsHooks {
 		# This hook is called after insertOn() however, in which case it is set
 		# as a new one.
 		$dbw->update( 'flaggedrevs',
-			array( 'fr_page_id' => $revision->getPage() ),
-			array( 'fr_page_id' => $oldPageID, 'fr_rev_id' => $revision->getID() ),
+			[ 'fr_page_id' => $revision->getPage() ],
+			[ 'fr_page_id' => $oldPageID, 'fr_rev_id' => $revision->getID() ],
 			__METHOD__
 		);
 		return true;
@@ -28,22 +28,22 @@ class FlaggedRevsHooks {
 		# Get flagged revisions from old page id that point to destination page
 		$dbw = wfGetDB( DB_MASTER );
 		$result = $dbw->select(
-			array( 'flaggedrevs', 'revision' ),
-			array( 'fr_rev_id' ),
-			array( 'fr_page_id' => $oldPageID,
+			[ 'flaggedrevs', 'revision' ],
+			[ 'fr_rev_id' ],
+			[ 'fr_page_id' => $oldPageID,
 				'fr_rev_id = rev_id',
-				'rev_page' => $newPageID ),
+				'rev_page' => $newPageID ],
 			__METHOD__
 		);
 		# Update these rows
-		$revIDs = array();
-		foreach( $result as $row ) {
+		$revIDs = [];
+		foreach ( $result as $row ) {
 			$revIDs[] = $row->fr_rev_id;
 		}
 		if ( !empty( $revIDs ) ) {
 			$dbw->update( 'flaggedrevs',
-				array( 'fr_page_id' => $newPageID ),
-				array( 'fr_page_id' => $oldPageID, 'fr_rev_id' => $revIDs ),
+				[ 'fr_page_id' => $newPageID ],
+				[ 'fr_page_id' => $oldPageID, 'fr_rev_id' => $revIDs ],
 				__METHOD__
 			);
 		}
@@ -60,20 +60,29 @@ class FlaggedRevsHooks {
 	 * (b) Autoreview pages moved into reviewable namespaces (bug 19379)
 	 */
 	public static function onTitleMoveComplete(
-		Title $otitle, Title $ntitle, $user, $pageId
+		Title $otitle, Title $ntitle, $user, $pageId, $redirid, $reason
 	) {
-		if ( !FlaggedRevs::inReviewNamespace( $otitle )
-			&& FlaggedRevs::inReviewNamespace( $ntitle )
-			&& FlaggedRevs::autoReviewNewPages()
-		) {
-			$fa = FlaggableWikiPage::getTitleInstance( $ntitle );
-			$fa->loadPageData( 'fromdbmaster' );
-			// Re-validate NS/config (new title may not be reviewable)
-			if ( $fa->isReviewable() && $ntitle->userCan( 'autoreview' ) ) {
-				// Auto-review such edits like new pages...
-				$rev = Revision::newFromTitle( $ntitle, false, Revision::READ_LATEST );
-				if ( $rev ) { // sanity
-					FlaggedRevs::autoReviewEdit( $fa, $user, $rev );
+		if ( FlaggedRevs::inReviewNamespace( $ntitle ) ) {
+			if ( !FlaggedRevs::inReviewNamespace( $otitle ) ) {
+				if ( FlaggedRevs::autoReviewNewPages() ) {
+					$fa = FlaggableWikiPage::getTitleInstance( $ntitle );
+					$fa->loadPageData( 'fromdbmaster' );
+					// Re-validate NS/config (new title may not be reviewable)
+					if ( $fa->isReviewable() && $ntitle->userCan( 'autoreview' ) ) {
+						// Auto-review such edits like new pages...
+						$rev = Revision::newFromTitle( $ntitle, false, Revision::READ_LATEST );
+						if ( $rev ) { // sanity
+							FlaggedRevs::autoReviewEdit( $fa, $user, $rev );
+						}
+					}
+				}
+			} else {
+				$fa = FlaggableWikiPage::getTitleInstance( $ntitle );
+				$fa->loadPageData( 'fromdbmaster' );
+				$config = $fa->getStabilitySettings();
+				// Insert a stable log entry if page doesn't have default wiki settings
+				if ( !FRPageConfig::configIsReset( $config ) ) {
+					FlaggedRevsLog::updateStabilityLogOnMove( $ntitle, $otitle, $reason, $user );
 				}
 			}
 		}
@@ -393,7 +402,7 @@ class FlaggedRevsHooks {
 		# Is the page manually checked off to be reviewed?
 		if ( $editTimestamp
 			&& $wgRequest->getCheck( 'wpReviewEdit' )
-			&& $title->getUserPermissionsErrors( 'review', $user ) === array() )
+			&& $title->getUserPermissionsErrors( 'review', $user ) === [] )
 		{
 			if ( self::editCheckReview( $fa, $rev, $user, $editTimestamp ) ) {
 				return true; // reviewed...done!
@@ -428,7 +437,7 @@ class FlaggedRevsHooks {
 		# Case A: this user can auto-review edits. Check if either:
 		# (a) this new revision creates a new page and new page autoreview is enabled
 		# (b) this new revision is based on an old, reviewed, revision
-		if ( $title->getUserPermissionsErrors( 'autoreview', $user ) === array() ) {
+		if ( $title->getUserPermissionsErrors( 'autoreview', $user ) === [] ) {
 			# For rollback/null edits, use the previous ID as the alternate base ID.
 			# Otherwise, use the 'altBaseRevId' parameter passed in by the request.
 			$altBaseRevId = $isOldRevCopy ? $prevRevId : $wgRequest->getInt( 'altBaseRevId' );
@@ -475,7 +484,7 @@ class FlaggedRevsHooks {
 				$isOldRevCopy && // rollback or null edit
 				$baseRevId != $prevRevId && // not a null edit
 				$baseRevId == $srev->getRevId() && // restored stable rev
-				$title->getUserPermissionsErrors( 'autoreviewrestore', $user ) === array()
+				$title->getUserPermissionsErrors( 'autoreviewrestore', $user ) === []
 			);
 			# Check for self-reversions (checks text hashes)...
 			if ( !$reviewableChange ) {
@@ -533,23 +542,23 @@ class FlaggedRevsHooks {
 		$dbw = wfGetDB( DB_MASTER );
 		# Such a revert requires 1+ revs between it and the stable
 		$revertedRevs = $dbw->selectField( 'revision', '1',
-			array(
+			[
 				'rev_page' => $rev->getPage(),
 				'rev_id > ' . intval( $baseRevId ), // stable rev
 				'rev_id < ' . intval( $rev->getId() ), // this rev
 				'rev_user_text' => $user->getName()
-			), __METHOD__
+			], __METHOD__
 		);
 		if ( !$revertedRevs ) {
 			return false; // can't be a revert
 		}
 		# Check that this user is ONLY reverting his/herself.
 		$otherUsers = $dbw->selectField( 'revision', '1',
-			array(
+			[
 				'rev_page' => $rev->getPage(),
 				'rev_id > ' . intval( $baseRevId ),
 				'rev_user_text != ' . $dbw->addQuotes( $user->getName() )
-			), __METHOD__
+			], __METHOD__
 		);
 		if ( $otherUsers ) {
 			return false; // only looking for self-reverts
@@ -565,7 +574,7 @@ class FlaggedRevsHooks {
 	 * Note: called after edit ops are finished
 	 */
 	public static function maybeNullEditReview(
-		Page $article, $user, $text, $s, $m, $a, $b, $flags, $rev, &$status, $baseId
+		Page $article, $user, $content, $s, $m, $a, $b, $flags, $rev, &$status, $baseId
 	) {
 		global $wgRequest;
 		# Revision must *be* null (null edit). We also need the user who made the edit.
@@ -637,6 +646,12 @@ class FlaggedRevsHooks {
 		if ( empty( $rc->mAttribs['rc_this_oldid'] ) ) {
 			return true;
 		}
+		// don't autopatrol autoreviewed edits when using pending changes,
+		// otherwise edits by autoreviewed users on pending changes protected pages would be
+		// autopatrolled and could not be checked through RC patrol as on regular pages
+		if ( FlaggedRevs::useOnlyIfProtected() ) {
+			return true;
+		}
 		$fa = FlaggableWikiPage::getTitleInstance( $rc->getTitle() );
 		$fa->loadPageData( 'fromdbmaster' );
 		// Is the page reviewable?
@@ -646,7 +661,9 @@ class FlaggedRevsHooks {
 			$frev = FlaggedRevision::newFromTitle( $rc->getTitle(), $revId, FR_MASTER );
 			// Reviewed => patrolled
 			if ( $frev ) {
-				RevisionReviewForm::updateRecentChanges( $rc, 'patrol', $frev );
+				DeferredUpdates::addCallableUpdate( function () use ( $rc, $frev ) {
+					RevisionReviewForm::updateRecentChanges( $rc, 'patrol', $frev );
+				} );
 				$rc->mAttribs['rc_patrolled'] = 1; // make sure irc/email notifs know status
 			}
 			return true;
@@ -655,21 +672,31 @@ class FlaggedRevsHooks {
 	}
 
 	public static function incrementRollbacks(
-		Page $article, $user, $goodRev, Revision $badRev
+		Page $article, User $user, $goodRev, Revision $badRev
 	) {
 		# Mark when a user reverts another user, but not self-reverts
-		$badUserId = $badRev->getRawUser();
+		$badUserId = $badRev->getUser( Revision::RAW );
 		if ( $badUserId && $user->getId() != $badUserId ) {
-			$p = FRUserCounters::getUserParams( $badUserId, FR_FOR_UPDATE );
-			if ( !isset( $p['revertedEdits'] ) ) {
-				$p['revertedEdits'] = 0;
-			}
-			$p['revertedEdits']++;
-			FRUserCounters::saveUserParams( $badUserId, $p );
+			DeferredUpdates::addCallableUpdate( function () use ( $badUserId ) {
+				$p = FRUserCounters::getUserParams( $badUserId, FR_FOR_UPDATE );
+				if ( !isset( $p['revertedEdits'] ) ) {
+					$p['revertedEdits'] = 0;
+				}
+				$p['revertedEdits']++;
+				FRUserCounters::saveUserParams( $badUserId, $p );
+			} );
 		}
+
 		return true;
 	}
 
+	/**
+	 * @param Page $article
+	 * @param Revision $rev
+	 * @param bool $baseRevId
+	 * @param null $user
+	 * @return bool
+	 */
 	public static function incrementReverts(
 		Page $article, $rev, $baseRevId = false, $user = null
 	) {
@@ -679,10 +706,10 @@ class FlaggedRevsHooks {
 		if ( $rev && $undid && $user->isAllowed( 'autoreview' ) ) {
 			// Note: $rev->getTitle() might be undefined (no rev id?)
 			$badRev = Revision::newFromTitle( $article->getTitle(), $undid );
-			if ( $badRev && $badRev->getRawUser() // by logged-in user
-				&& $badRev->getRawUser() != $rev->getRawUser() ) // no self-reverts
+			if ( $badRev && $badRev->getUser( Revision::RAW ) // by logged-in user
+				&& $badRev->getUser( Revision::RAW ) != $rev->getUser( Revision::RAW ) ) // no self-reverts
 			{
-				FRUserCounters::incCount( $badRev->getRawUser(), 'revertedEdits' );
+				FRUserCounters::incCount( $badRev->getUser( Revision::RAW ), 'revertedEdits' );
 			}
 		}
 		return true;
@@ -704,9 +731,9 @@ class FlaggedRevsHooks {
 		# Check the oldest edit
 		$dbr = wfGetDB( DB_SLAVE );
 		$lower = $dbr->selectField( 'revision', 'rev_timestamp',
-			array( 'rev_user' => $user->getId() ),
+			[ 'rev_user' => $user->getId() ],
 			__METHOD__,
-			array( 'ORDER BY' => 'rev_timestamp ASC', 'USE INDEX' => 'user_timestamp' )
+			[ 'ORDER BY' => 'rev_timestamp ASC', 'USE INDEX' => 'user_timestamp' ]
 		);
 		# Recursively check for an edit $spacingReq seconds later, until we are done.
 		if ( $lower ) {
@@ -714,10 +741,10 @@ class FlaggedRevsHooks {
 			while ( $lower && $benchmarks < $pointsReq ) {
 				$next = wfTimestamp( TS_UNIX, $lower ) + $spacingReq;
 				$lower = $dbr->selectField( 'revision', 'rev_timestamp',
-					array( 'rev_user' => $user->getId(),
-						'rev_timestamp > ' . $dbr->addQuotes( $dbr->timestamp( $next ) ) ),
+					[ 'rev_user' => $user->getId(),
+						'rev_timestamp > ' . $dbr->addQuotes( $dbr->timestamp( $next ) ) ],
 						__METHOD__,
-					array( 'ORDER BY' => 'rev_timestamp ASC', 'USE INDEX' => 'user_timestamp' )
+					[ 'ORDER BY' => 'rev_timestamp ASC', 'USE INDEX' => 'user_timestamp' ]
 				);
 				if ( $lower !== false ) {
 					$benchmarks++;
@@ -729,7 +756,7 @@ class FlaggedRevsHooks {
 		} else {
 			// Does not add time for the last required edit point; it could be a
 			// fraction of $spacingReq depending on the last actual edit point time.
-			return ( $spacingReq * ($pointsReq - $benchmarks - 1) );
+			return ( $spacingReq * ( $pointsReq - $benchmarks - 1 ) );
 		}
 	}
 
@@ -743,10 +770,10 @@ class FlaggedRevsHooks {
 	protected static function reviewedEditsCheck( User $user, $editsReq, $seconds = 0 ) {
 		$dbr = wfGetDB( DB_SLAVE );
 		// Get cutoff timestamp (excludes edits that are too recent)
-		$baseConds = array(
+		$baseConds = [
 			'rev_user' => $user->getId(),
 			'rev_timestamp < ' . $dbr->addQuotes( $dbr->timestamp( time() - $seconds ) )
-		);
+		];
 		// Get the lower cutoff to avoid scanning over many rows.
 		// Users with many revisions will only have the last 10k inspected.
 		$lowCutoff = false;
@@ -756,26 +783,26 @@ class FlaggedRevsHooks {
 				'rev_timestamp',
 				$baseConds,
 				__METHOD__,
-				array( 'ORDER BY' => 'rev_timestamp DESC', 'OFFSET' => 9999, 'LIMIT' => 1 )
+				[ 'ORDER BY' => 'rev_timestamp DESC', 'OFFSET' => 9999, 'LIMIT' => 1 ]
 			);
 		}
 		$lowCutoff = $lowCutoff ?: 1; // default to UNIX 1970
 		// Get revs from pages that have a reviewed rev of equal or higher timestamp
 		$res = $dbr->select(
-			array( 'revision', 'flaggedpages' ),
+			[ 'revision', 'flaggedpages' ],
 			'1',
 			array_merge(
 				$baseConds,
-				array(
+				[
 					'fp_page_id = rev_page',
 					// bug 15515
 					'fp_pending_since IS NULL OR fp_pending_since > rev_timestamp',
 					// Avoid too much scanning
 					'rev_timestamp > ' . $dbr->addQuotes( $dbr->timestamp( $lowCutoff ) )
-				)
+				]
 			),
 			__METHOD__,
-			array( 'LIMIT' => $editsReq )
+			[ 'LIMIT' => $editsReq ]
 		);
 
 		return ( $dbr->numRows( $res ) >= $editsReq );
@@ -786,18 +813,18 @@ class FlaggedRevsHooks {
 	 */
 	protected static function wasPreviouslyBlocked( User $user, $cutoff_unixtime = 0 ) {
 		$dbr = wfGetDB( DB_SLAVE );
-		$conds = array(
+		$conds = [
 			'log_namespace' => NS_USER,
 			'log_title'     => $user->getUserPage()->getDBkey(),
 			'log_type'      => 'block',
 			'log_action'    => 'block'
-		);
+		];
 		if ( $cutoff_unixtime > 0 ) {
 			# Hint to improve NS,title,timestamp INDEX use
 			$encCutoff = $dbr->addQuotes( $dbr->timestamp( $cutoff_unixtime ) );
 			$conds[] = "log_timestamp >= $encCutoff";
 		}
-		return (bool)$dbr->selectField( 'logging', '1', $conds, __METHOD__  );
+		return (bool)$dbr->selectField( 'logging', '1', $conds, __METHOD__ );
 	}
 
 	protected static function recentEditCount( $uid, $seconds, $limit ) {
@@ -806,9 +833,9 @@ class FlaggedRevsHooks {
 		$encCutoff = $dbr->addQuotes( $dbr->timestamp( time() - $seconds ) );
 		# Check all recent edits...
 		$res = $dbr->select( 'revision', '1',
-			array( 'rev_user' => $uid, "rev_timestamp > $encCutoff" ),
+			[ 'rev_user' => $uid, "rev_timestamp > $encCutoff" ],
 			__METHOD__,
-			array( 'LIMIT' => $limit + 1 ) // hit as few rows as possible
+			[ 'LIMIT' => $limit + 1 ] // hit as few rows as possible
 		);
 		return $dbr->numRows( $res );
 	}
@@ -818,14 +845,14 @@ class FlaggedRevsHooks {
 		# Get cutoff timestamp (edits that are too recent)
 		$encCutoff = $dbr->addQuotes( $dbr->timestamp( time() - $seconds ) );
 		# Check all recent content edits...
-		$res = $dbr->select( array( 'revision', 'page' ), '1',
-			array( 'rev_user' => $uid,
+		$res = $dbr->select( [ 'revision', 'page' ], '1',
+			[ 'rev_user' => $uid,
 				"rev_timestamp > $encCutoff",
 				'rev_page = page_id',
-				'page_namespace' => MWNamespace::getContentNamespaces() ),
+				'page_namespace' => MWNamespace::getContentNamespaces() ],
 			__METHOD__,
-			array( 'LIMIT' => $limit + 1,
-				'USE INDEX' => array( 'revision' => 'user_timestamp' ) )
+			[ 'LIMIT' => $limit + 1,
+				'USE INDEX' => [ 'revision' => 'user_timestamp' ] ]
 		);
 		return $dbr->numRows( $res );
 	}
@@ -845,8 +872,8 @@ class FlaggedRevsHooks {
 	 * Callback that autopromotes user according to the setting in
 	 * $wgFlaggedRevsAutopromote. This also handles user stats tallies.
 	 */
-	public static function onArticleSaveComplete(
-		Page $article, User $user, $text, $summary, $m, $a, $b, &$f, $rev
+	public static function onPageContentSaveComplete(
+		Page $article, User $user, $content, $summary, $m, $a, $b, &$f, $rev
 	) {
 		global $wgFlaggedRevsAutopromote, $wgFlaggedRevsAutoconfirm;
 		# Ignore NULL edits, edits by anon users, and MW role account edits
@@ -875,7 +902,7 @@ class FlaggedRevsHooks {
 	 */
 	public static function checkAutoPromoteCond( $cond, array $params, User $user, &$result ) {
 		global $wgMemc;
-		switch( $cond ) {
+		switch ( $cond ) {
 			case APCOND_FR_EDITSUMMARYCOUNT:
 				$p = FRUserCounters::getParams( $user );
 				$result = ( $p && $p['editComments'] >= $params[0] );
@@ -1004,12 +1031,12 @@ class FlaggedRevsHooks {
 		if ( $namespaces ) {
 			$tables[] = 'flaggedpages';
 			$opts['ORDER BY'] = 'fp_page_id ASC';
-			$opts['USE INDEX'] = array( 'flaggedpages' => 'PRIMARY' );
-			$join['page'] = array( 'INNER JOIN',
-				array( 'page_id = fp_page_id', 'page_namespace' => $namespaces )
-			);
-			$join['revision'] = array( 'INNER JOIN',
-				'rev_page = fp_page_id AND rev_id = fp_stable' );
+			$opts['USE INDEX'] = [ 'flaggedpages' => 'PRIMARY' ];
+			$join['page'] = [ 'INNER JOIN',
+				[ 'page_id = fp_page_id', 'page_namespace' => $namespaces ]
+			];
+			$join['revision'] = [ 'INNER JOIN',
+				'rev_page = fp_page_id AND rev_id = fp_stable' ];
 		}
 		return false; // final
 	}
@@ -1017,16 +1044,16 @@ class FlaggedRevsHooks {
 	public static function gnsmQueryModifier(
 		array $params, array &$joins, array &$conditions, array &$tables
 	) {
-		$filterSet = array( GoogleNewsSitemap::OPT_ONLY => true,
+		$filterSet = [ GoogleNewsSitemap::OPT_ONLY => true,
 			GoogleNewsSitemap::OPT_EXCLUDE => true
-		);
+		];
 		# Either involves the same JOIN here...
 		if ( isset( $filterSet[ $params['stable'] ] ) || isset( $filterSet[ $params['quality'] ] ) ) {
 			$tables[] = 'flaggedpages';
-			$joins['flaggedpages'] = array( 'LEFT JOIN', 'page_id = fp_page_id' );
+			$joins['flaggedpages'] = [ 'LEFT JOIN', 'page_id = fp_page_id' ];
 		}
 
-		switch( $params['stable'] ) {
+		switch ( $params['stable'] ) {
 			case GoogleNewsSitemap::OPT_ONLY:
 				$conditions[] = 'fp_stable IS NOT NULL ';
 				break;
@@ -1035,7 +1062,7 @@ class FlaggedRevsHooks {
 				break;
 		}
 
-		switch( $params['quality'] ) {
+		switch ( $params['quality'] ) {
 			case GoogleNewsSitemap::OPT_ONLY:
 				$conditions[] = 'fp_quality >= 1';
 				break;
@@ -1068,7 +1095,7 @@ class FlaggedRevsHooks {
 	 * @return bool
 	 */
 	public static function onUserMergeAccountFields( array &$updateFields ) {
-		$updateFields[] = array( 'flaggedrevs', 'fr_user' );
+		$updateFields[] = [ 'flaggedrevs', 'fr_user' ];
 
 		return true;
 	}
@@ -1085,6 +1112,13 @@ class FlaggedRevsHooks {
 	public static function onDeleteAccount( User $oldUser ) {
 		FRUserCounters::deleteUserParams( $oldUser );
 
+		return true;
+	}
+
+	public static function onScribuntoExternalLibraries( $engine, array &$extraLibraries ) {
+		if ( $engine == 'lua' ) {
+			$extraLibraries['mw.ext.FlaggedRevs'] = 'Scribunto_LuaFlaggedRevsLibrary';
+		}
 		return true;
 	}
 }

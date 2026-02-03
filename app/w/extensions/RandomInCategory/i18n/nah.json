@@ -2,13 +2,14 @@
 	"@metadata": {
 		"authors": [
 			"Fluence",
-			"Teòtlalili"
+			"Teòtlalili",
+			"Akapochtli"
 		]
 	},
-	"randomincategory": "Sâsaìntlèn tlaìxtlapalli ìpan tlaìxmatkàtlàlilòtl",
-	"randomincategory-desc": "[[Special:Randompageincategory|nonkuâkiski tlaìxtlapalli]] tlèn ìka mànas sè saìntlèn tlaìxtlapalli ìpan tlaìxmatkàtlàlilòtl",
-	"randomincategory-toolbox": "Sâsaìntlèn tlaìxtlapalli",
-	"randomincategory-nocategory": "Tlaìxmatkàtlàlilòtl $1 ayàk nòso ìyỏka kä",
-	"randomincategory-label": "Tlaìxmatkàtlàlilòtl:",
+	"randomincategory": "Zazaintlen tlahcuilolamatl ipan neneuhcayotl",
+	"randomincategory-desc": "[[Special:Randompageincategory|nonkuâkiski tlaìxtlapalli]] tlèn ìka mànas sè saìntlèn tlaìxtlapalli ìpan tlaìxmatkàyòtlàlilòtl",
+	"randomincategory-toolbox": "Zazaintlen tlahcuilolli",
+	"randomincategory-nocategory": "Tlaìxmatkàyòtlàlilòtl $1 ayàk nòso ìyỏka ka",
+	"randomincategory-label": "Neneuhcayotl:",
 	"randomincategory-submit": "Yāuh"
 }

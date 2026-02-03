@@ -8,12 +8,42 @@
 	"Hooks": {
 		"ParserFirstCallInit": [
 			"CharInsert::onParserFirstCallInit"
+		],
+		"BeforePageDisplay": [
+			"CharInsert::onBeforePageDisplay"
 		]
 	},
 	"MessagesDirs": {
 		"CharInsert": [
 			"i18n"
 		]
+	},
+	"ResourceModules": {
+		"ext.charinsert": {
+			"scripts": [
+				"ext.charinsert.js"
+			],
+			"dependencies": [
+				"mediawiki.toolbar"
+			],
+			"targets": [
+				"desktop"
+			]
+		},
+		"ext.charinsert.styles": {
+			"styles": [
+				"ext.charinsert.css"
+			],
+			"targets": [
+				"desktop"
+			],
+			"group": "noscript"
+		}
+
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "modules",
+		"remoteExtPath": "CharInsert/modules"
 	},
 	"AutoloadClasses": {
 		"CharInsert": "CharInsert.body.php"

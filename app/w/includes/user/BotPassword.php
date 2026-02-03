@@ -19,6 +19,7 @@
  */
 
 use MediaWiki\Session\BotPasswordSessionProvider;
+use Wikimedia\Rdbms\IMaintainableDatabase;
 
 /**
  * Utility class for bot passwords
@@ -67,8 +68,8 @@ class BotPassword implements IDBAccessObject {
 
 	/**
 	 * Get a database connection for the bot passwords database
-	 * @param int $db Index of the connection to get, e.g. DB_MASTER or DB_SLAVE.
-	 * @return DatabaseBase
+	 * @param int $db Index of the connection to get, e.g. DB_MASTER or DB_REPLICA.
+	 * @return IMaintainableDatabase
 	 */
 	public static function getDB( $db ) {
 		global $wgBotPasswordsCluster, $wgBotPasswordsDatabase;

@@ -1,65 +1,84 @@
-@import "minerva.variables";
-@import "minerva.mixins";
+@import 'minerva.variables';
+@import 'minerva.mixins';
 
-/* FOOTER
-initially moved from beta_common.css in
-Change-Id: I48bcdc43e72f2a9b60e6d1bfe877d79ad80b6d5d
-*/
+footer {
+	border-top: solid 1px @footerBorderColor;
+	overflow: auto;
+	padding-bottom: 6px;
 
-#footer {
-	padding: 2em @contentMargin 1.5em @contentMargin;
-	margin: 0 auto;
-	font-size: 0.9em;
-	clear: both;
+	.last-modified-bar {
+		border-bottom: solid 1px @footerBorderColor;
+		background-color: @lastModifiedBarBgColor;
+		display: block;
+		color: @lastModifiedBarTextColor;
+		line-height: 1.5em;
+		transition: background-color 0.2s ease, color 0.2s ease;
 
-	h2 {
-		display: inline;
-		font-weight: bold;
-		font-size: 1em;
-
-		img {
-			height: 1em;
+		&.active {
+			background-color: @lastModifiedBarActiveBackgroundColor;
+			color: #fff;
 		}
 	}
 
-	ul {
-		text-align: center;
+	.last-modifier-tagline {
+		display: block;
+		width: 100%;
+		font-size: 0.9em;
+		padding: 7px 2em 7px 0;
+	}
 
-		li {
-			line-height: 1.2;
-			padding: 0 0 .7em;
+	.indicator {
+		position: absolute;
+		right: -1em;
+
+		&:before {
+			.transform( rotate( -90deg ) );
 		}
 
-		ul {
-			display: inline
+		.client-nojs & {
+			// Certain browsers e.g. Opera Mini do not support css transforms
+			// We assume that we do not run JS on these browsers so hide the chevron
+			display: none;
+		}
+	}
+
+	> .post-content {
+		overflow: auto;
+		margin-top: 42px;
+
+		> * {
+			margin-bottom: 9px;
 		}
 
-		ul li,
-		&.footer-places li {
-			display: inline;
-			padding: 0 8px;
-			border-right: 1px solid @colorGray10;
+		> h2 {
+			border-bottom: solid 1px @footerBorderColor;
+			padding-bottom: 10px;
+			margin-top: 42px;
+			font-size: 1em;
+			font-weight: bold;
 
-			// A hack to avoid connecting letters in cursive scripts such as Arabic.
-			// See https://phabricator.wikimedia.org/T86281
-			&:after {
-				content: ' ';
-				font-size: 0;
+			&:first-child {
+				margin-top: 0;
 			}
+		}
 
-			&:last-child {
-				border: none;
-			}
+		.hlist,
+		.license {
+			font-size: 0.875em;
 		}
 	}
 }
 
-.mw-mf-special,
-.page-Main_Page {
-	#footer {
-		// same as in #footer (footer.less)
-		margin-top: 2em;
-		// same as in #footer (footer.less)
-		border-top: 1px solid @colorGray10;
+.rtl footer .indicator:before {
+	.transform( rotate( 90deg ) );
+}
+
+@media ( min-width: @deviceWidthTablet ) {
+	footer {
+		.last-modified-bar {
+			padding-left: 0;
+			padding-right: 0;
+			font-size: 1em;
+		}
 	}
 }

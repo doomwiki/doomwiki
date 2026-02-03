@@ -1,6 +1,6 @@
 ( function ( M, $ ) {
 
-	var Overlay = M.require( 'mobile.overlays/Overlay' ),
+	var Overlay = M.require( 'mobile.startup/Overlay' ),
 		util = M.require( 'mobile.languages.structured/util' );
 
 	/**
@@ -8,6 +8,12 @@
 	 *
 	 * @class LanguageOverlay
 	 * @extends Overlay
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
+	 * @param {Object[]} options.languages list of language objects as returned by the API
+	 * @param {Array|boolean} options.variants language variant objects or false if no variants exist
+	 * @param {string} [options.deviceLanguage] the device's primary language
 	 */
 	function LanguageOverlay( options ) {
 		var languages;
@@ -20,8 +26,8 @@
 		);
 		options.allLanguages = languages.all;
 		options.allLanguagesCount = languages.all.length;
-		options.preferredLanguages = languages.preferred;
-		options.preferredLanguagesCount = languages.preferred.length;
+		options.suggestedLanguages = languages.suggested;
+		options.suggestedLanguagesCount = languages.suggested.length;
 
 		Overlay.call( this, options );
 	}
@@ -29,12 +35,18 @@
 	OO.mfExtend( LanguageOverlay, Overlay, {
 		/** @inheritdoc */
 		className: Overlay.prototype.className + ' language-overlay',
+		/**
+		 * @inheritdoc
+		 * @cfg {Object} defaults
+		 * @cfg {Object[]} defaults.languages each object has keys as
+		 *  returned by the langlink API https://www.mediawiki.org/wiki/API:Langlinks
+		 */
 		defaults: $.extend( {}, Overlay.prototype.defaults, {
 			heading: mw.msg( 'mobile-frontend-language-heading' ),
 			inputPlaceholder: mw.msg( 'mobile-frontend-languages-structured-overlay-search-input-placeholder' ),
 			// we can't rely on CSS only to uppercase the headings. See https://stackoverflow.com/questions/3777443/css-text-transform-not-working-properly-for-turkish-characters
 			allLanguagesHeader: mw.msg( 'mobile-frontend-languages-structured-overlay-all-languages-header' ).toLocaleUpperCase(),
-			preferredLanguagesHeader: mw.msg( 'mobile-frontend-languages-structured-overlay-preferred-languages-header' ).toLocaleUpperCase()
+			suggestedLanguagesHeader: mw.msg( 'mobile-frontend-languages-structured-overlay-suggested-languages-header' ).toLocaleUpperCase()
 		} ),
 		/** @inheritdoc */
 		templatePartials: $.extend( {}, Overlay.prototype.templatePartials, {
@@ -50,27 +62,9 @@
 			Overlay.prototype.postRender.apply( this );
 
 			// cache
-			this.$searchInput = this.$( 'input.search' );
 			this.$siteLinksList = this.$( '.site-link-list' );
 			this.$languageItems = this.$siteLinksList.find( 'a' );
 			this.$subheaders = this.$( 'h3' );
-
-			mw.track( 'mf.schemaMobileWebLanguageSwitcher', {
-				event: 'languageListLoaded',
-				languageOverlayVersion: 'structured-overlay',
-				languageCount: this.$languageItems.length
-			} );
-		},
-		/** @inheritdoc */
-		onExit: function () {
-			mw.track( 'mf.schemaMobileWebLanguageSwitcher', {
-				event: 'exitModal',
-				exitModal: 'dismissed',
-				searchInputHasQuery: this.$searchInput.val().length > 0,
-				languageCount: this.$siteLinksList.children( ':visible' ).length
-			} );
-
-			Overlay.prototype.onExit.apply( this, arguments );
 		},
 		/**
 		 * Article link click event handler
@@ -79,27 +73,15 @@
 		onLinkClick: function ( ev ) {
 			var $link = this.$( ev.currentTarget ),
 				lang = $link.attr( 'lang' ),
-				searchInputHasQuery = this.$searchInput.val().length > 0,
-				$visibleLanguageLinks = this.$languageItems.filter( ':visible' ),
-				index;
+				$visibleLanguageLinks = this.$languageItems.filter( ':visible' );
 
 			util.saveLanguageUsageCount( lang, util.getFrequentlyUsedLanguages() );
 
 			// find the index of the clicked language in the list of visible results
-			$.each( $visibleLanguageLinks, function ( i, link ) {
-				index = i + 1;
+			$visibleLanguageLinks.each( function ( i, link ) {
 				if ( $( link ).hasClass( lang ) ) {
 					return false;
 				}
-			} );
-
-			mw.track( 'mf.schemaMobileWebLanguageSwitcher', {
-				event: 'exitModal',
-				exitModal: 'tapped-on-result',
-				languageTapped: lang,
-				positionOfLanguageTapped: index,
-				searchInputHasQuery: searchInputHasQuery,
-				languageCount: $visibleLanguageLinks.length
 			} );
 		},
 
@@ -109,28 +91,22 @@
 		 */
 		onSearchInput: function ( ev ) {
 			this.filterLanguages( $( ev.target ).val().toLowerCase() );
-
-			// log when the first search character is entered
-			if ( !this.hasFirstSearchBeenLogged ) {
-				mw.track( 'mf.schemaMobileWebLanguageSwitcher', {
-					event: 'startLanguageSearch'
-				} );
-				this.hasFirstSearchBeenLogged = true;
-			}
 		},
 
 		/**
 		 * Filter the language list to only show languages that match the current search term.
 		 *
-		 * @param {String} val of search term (lowercase).
+		 * @param {string} val of search term (lowercase).
 		 */
 		filterLanguages: function ( val ) {
 			var filteredList = [];
 
 			if ( val ) {
-				$.each( this.options.languages, function ( i, language ) {
+				this.options.languages.forEach( function ( language ) {
+					var langname = language.langname;
 					// search by language code or language name
 					if ( language.autonym.toLowerCase().indexOf( val ) > -1 ||
+							( langname && langname.toLowerCase().indexOf( val ) > -1 ) ||
 							language.lang.toLowerCase().indexOf( val ) > -1
 					) {
 						filteredList.push( language.lang );
@@ -138,7 +114,7 @@
 				} );
 
 				if ( this.options.variants ) {
-					$.each( this.options.variants, function ( i, variant ) {
+					this.options.variants.forEach( function ( variant ) {
 						// search by variant code or variant name
 						if ( variant.autonym.toLowerCase().indexOf( val ) > -1 ||
 							variant.lang.toLowerCase().indexOf( val ) > -1

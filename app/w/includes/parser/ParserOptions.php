@@ -20,6 +20,7 @@
  * @file
  * @ingroup Parser
  */
+use Wikimedia\ScopedCallback;
 
 /**
  * @brief Set options of the Parser
@@ -117,16 +118,21 @@ class ParserOptions {
 	private $mRemoveComments = true;
 
 	/**
-	 * Callback for current revision fetching. Used as first argument to call_user_func().
+	 * @var callable Callback for current revision fetching; first argument to call_user_func().
 	 */
 	private $mCurrentRevisionCallback =
 		[ 'Parser', 'statelessFetchRevision' ];
 
 	/**
-	 * Callback for template fetching. Used as first argument to call_user_func().
+	 * @var callable Callback for template fetching; first argument to call_user_func().
 	 */
 	private $mTemplateCallback =
 		[ 'Parser', 'statelessFetchTemplate' ];
+
+	/**
+	 * @var callable|null Callback to generate a guess for {{REVISIONID}}
+	 */
+	private $mSpeculativeRevIdCallback;
 
 	/**
 	 * Enable limit report in an HTML comment on output
@@ -209,6 +215,21 @@ class ParserOptions {
 	 * Extra key that should be present in the caching key.
 	 */
 	private $mExtraKey = '';
+
+	/**
+	 * Are magic ISBN links enabled?
+	 */
+	private $mMagicISBNLinks = true;
+
+	/**
+	 * Are magic PMID links enabled?
+	 */
+	private $mMagicPMIDLinks = true;
+
+	/**
+	 * Are magic RFC links enabled?
+	 */
+	private $mMagicRFCLinks = true;
 
 	/**
 	 * Function to be called when an option is accessed.
@@ -317,6 +338,11 @@ class ParserOptions {
 		return $this->mTemplateCallback;
 	}
 
+	/** @since 1.28 */
+	public function getSpeculativeRevIdCallback() {
+		return $this->mSpeculativeRevIdCallback;
+	}
+
 	public function getEnableLimitReport() {
 		return $this->mEnableLimitReport;
 	}
@@ -398,7 +424,7 @@ class ParserOptions {
 	 * when the page is rendered based on the language of the user.
 	 *
 	 * @note When saving, this will return the default language instead of the user's.
-	 * {{int: }} uses this which used to produce inconsistent link tables (bug 14404).
+	 * {{int: }} uses this which used to produce inconsistent link tables (T16404).
 	 *
 	 * @return Language
 	 * @since 1.19
@@ -422,6 +448,29 @@ class ParserOptions {
 	 */
 	public function getUserLang() {
 		return $this->getUserLangObj()->getCode();
+	}
+
+	/**
+	 * @since 1.28
+	 * @return bool
+	 */
+	public function getMagicISBNLinks() {
+		return $this->mMagicISBNLinks;
+	}
+
+	/**
+	 * @since 1.28
+	 * @return bool
+	 */
+	public function getMagicPMIDLinks() {
+		return $this->mMagicPMIDLinks;
+	}
+	/**
+	 * @since 1.28
+	 * @return bool
+	 */
+	public function getMagicRFCLinks() {
+		return $this->mMagicRFCLinks;
 	}
 
 	/**
@@ -504,6 +553,11 @@ class ParserOptions {
 	/* @since 1.24 */
 	public function setCurrentRevisionCallback( $x ) {
 		return wfSetVar( $this->mCurrentRevisionCallback, $x );
+	}
+
+	/** @since 1.28 */
+	public function setSpeculativeRevIdCallback( $x ) {
+		return wfSetVar( $this->mSpeculativeRevIdCallback, $x );
 	}
 
 	public function setTemplateCallback( $x ) {
@@ -684,7 +738,8 @@ class ParserOptions {
 			$wgAllowExternalImagesFrom, $wgEnableImageWhitelist, $wgAllowSpecialInclusion,
 			$wgMaxArticleSize, $wgMaxPPNodeCount, $wgMaxTemplateDepth, $wgMaxPPExpandDepth,
 			$wgCleanSignatures, $wgExternalLinkTarget, $wgExpensiveParserFunctionLimit,
-			$wgMaxGeneratedPPNodeCount, $wgDisableLangConversion, $wgDisableTitleConversion;
+			$wgMaxGeneratedPPNodeCount, $wgDisableLangConversion, $wgDisableTitleConversion,
+			$wgEnableMagicLinks;
 
 		// *UPDATE* ParserOptions::matches() if any of this changes as needed
 		$this->mInterwikiMagic = $wgInterwikiMagic;
@@ -702,13 +757,15 @@ class ParserOptions {
 		$this->mExternalLinkTarget = $wgExternalLinkTarget;
 		$this->mDisableContentConversion = $wgDisableLangConversion;
 		$this->mDisableTitleConversion = $wgDisableLangConversion || $wgDisableTitleConversion;
+		$this->mMagicISBNLinks = $wgEnableMagicLinks['ISBN'];
+		$this->mMagicPMIDLinks = $wgEnableMagicLinks['PMID'];
+		$this->mMagicRFCLinks = $wgEnableMagicLinks['RFC'];
 
 		$this->mUser = $user;
 		$this->mNumberHeadings = $user->getOption( 'numberheadings' );
 		$this->mThumbSize = $user->getOption( 'thumbsize' );
 		$this->mStubThreshold = $user->getStubThreshold();
 		$this->mUserLang = $lang;
-
 	}
 
 	/**
@@ -733,7 +790,7 @@ class ParserOptions {
 		}
 		// Check the object and lazy-loaded options
 		return (
-			$this->mUserLang->getCode() === $other->mUserLang->getCode() &&
+			$this->mUserLang->equals( $other->mUserLang ) &&
 			$this->getDateFormat() === $other->getDateFormat()
 		);
 	}

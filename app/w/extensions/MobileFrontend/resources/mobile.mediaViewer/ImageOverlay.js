@@ -1,5 +1,5 @@
 ( function ( M, $ ) {
-	var Overlay = M.require( 'mobile.overlays/Overlay' ),
+	var Overlay = M.require( 'mobile.startup/Overlay' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		Button = M.require( 'mobile.startup/Button' ),
 		ImageGateway = M.require( 'mobile.mediaViewer/ImageGateway' );
@@ -10,6 +10,9 @@
 	 * @extends Overlay
 	 * @uses Icon
 	 * @uses ImageGateway
+	 *
+	 * @constructor
+	 * @param {Object} options Configuration options
 	 */
 	function ImageOverlay( options ) {
 		this.gateway = new ImageGateway( {
@@ -28,16 +31,16 @@
 		 * @inheritdoc
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {mw.Api} defaults.api instance of API to use
-		 * @cfg {String} defaults.cancelButton HTML of the cancel button.
+		 * @cfg {string} defaults.cancelButton HTML of the cancel button.
 		 * @cfg {Object} defaults.detailsButton options for details button
-		 * @cfg {String} defaults.licenseLinkMsg Link to license information in media viewer.
+		 * @cfg {string} defaults.licenseLinkMsg Link to license information in media viewer.
 		 * @cfg {Thumbnail[]} defaults.thumbnails a list of thumbnails to browse
 		 */
 		defaults: $.extend( {}, Overlay.prototype.defaults, {
 			cancelButton: new Icon( {
 				tagName: 'button',
 				// Uses a dark theme so swap out the icon
-				name: 'close-gray',
+				name: 'overlay-close-gray',
 				additionalClassNames: 'cancel',
 				label: mw.msg( 'mobile-frontend-overlay-close' )
 			} ).toHtmlString(),
@@ -81,7 +84,7 @@
 		/** @inheritdoc */
 		preRender: function () {
 			var self = this;
-			$.each( this.options.thumbnails, function ( i, thumbnail ) {
+			this.options.thumbnails.forEach( function ( thumbnail, i ) {
 				if ( thumbnail.getFileName() === self.options.title ) {
 					self.options.caption = thumbnail.getDescription();
 					self.galleryOffset = i;
@@ -175,13 +178,14 @@
 				self.adjustDetails();
 			} );
 
-			$( window ).on( 'resize', $.proxy( this, '_positionImage' ) );
+			M.on( 'resize:throttled', $.proxy( this, '_positionImage' ) );
 		},
 
 		/**
 		 * Event handler that toggles the details bar.
 		 */
 		onToggleDetails: function () {
+			this.$( '.cancel, .slider-button' ).toggle();
 			this.$details.toggle();
 			this._positionImage();
 		},

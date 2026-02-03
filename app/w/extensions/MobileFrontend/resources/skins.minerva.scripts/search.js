@@ -1,12 +1,8 @@
 ( function ( M, $ ) {
-	var SearchOverlay, SearchGateway,
-		router = M.require( 'mobile.startup/router' ),
-		browser = M.require( 'mobile.browser/browser' ),
-		moduleConfig = {
-			modules: [ 'mobile.search.api', 'mobile.search' ],
-			api: 'mobile.search.api/SearchGateway',
-			overlay: 'mobile.search/SearchOverlay'
-		};
+	var SearchOverlay = M.require( 'mobile.search/SearchOverlay' ),
+		SearchGateway = M.require( 'mobile.search.api/SearchGateway' ),
+		router = require( 'mediawiki.router' ),
+		browser = M.require( 'mobile.startup/Browser' ).getSingleton();
 
 	/**
 	 * Reveal the search overlay
@@ -20,19 +16,17 @@
 			placeholder = $this.attr( 'placeholder' );
 
 		ev.preventDefault();
-
-		mw.loader.using( moduleConfig.modules ).done( function () {
-			SearchGateway = M.require( moduleConfig.api );
-			SearchOverlay = M.require( moduleConfig.overlay );
-
-			new SearchOverlay( {
-				gatewayClass: SearchGateway,
-				api: new mw.Api(),
-				searchTerm: searchTerm,
-				placeholderMsg: placeholder
-			} ).show();
-			router.navigate( '/search' );
-		} );
+		// The loading of SearchOverlay should never be done inside a callback
+		// as this will result in issues with input focus
+		// see https://phabricator.wikimedia.org/T156508#2977463
+		new SearchOverlay( {
+			router: router,
+			gatewayClass: SearchGateway,
+			api: new mw.Api(),
+			searchTerm: searchTerm,
+			placeholderMsg: placeholder
+		} ).show();
+		router.navigate( '/search' );
 	}
 
 	// Only continue on mobile devices as it breaks desktop search
@@ -50,7 +44,7 @@
 		// focus() (see SearchOverlay#show) opens virtual keyboard only if triggered
 		// from user context event, so using it in route callback won't work
 		// http://stackoverflow.com/questions/6837543/show-virtual-keyboard-on-mobile-phones-in-javascript
-		$( '#searchInput' ).on( 'click', openSearchOverlay )
+		$( '#searchInput, #searchIcon' ).on( 'click', openSearchOverlay )
 			// Apparently needed for main menu to work correctly.
 			.prop( 'readonly', true );
 	}

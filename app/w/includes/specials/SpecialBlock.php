@@ -28,7 +28,7 @@
  * @ingroup SpecialPage
  */
 class SpecialBlock extends FormSpecialPage {
-	/** @var User User to be blocked, as passed either by parameter (url?wpTarget=Foo)
+	/** @var User|string|null User to be blocked, as passed either by parameter (url?wpTarget=Foo)
 	 * or as subpage (Special:Block/Foo) */
 	protected $target;
 
@@ -64,7 +64,7 @@ class SpecialBlock extends FormSpecialPage {
 	protected function checkExecutePermissions( User $user ) {
 		parent::checkExecutePermissions( $user );
 
-		# bug 15810: blocked admins should have limited access here
+		# T17810: blocked admins should have limited access here
 		$status = self::checkUnblockSelf( $this->target, $user );
 		if ( $status !== true ) {
 			throw new ErrorPageError( 'badaccess', $status );
@@ -275,7 +275,7 @@ class SpecialBlock extends FormSpecialPage {
 			}
 
 			// If the username was hidden (ipb_deleted == 1), don't show the reason
-			// unless this user also has rights to hideuser: Bug 35839
+			// unless this user also has rights to hideuser: T37839
 			if ( !$block->mHideName || $this->getUser()->isAllowed( 'hideuser' ) ) {
 				$fields['Reason']['default'] = $block->mReason;
 			} else {
@@ -330,8 +330,12 @@ class SpecialBlock extends FormSpecialPage {
 
 		$otherBlockMessages = [];
 		if ( $this->target !== null ) {
+			$targetName = $this->target;
+			if ( $this->target instanceof User ) {
+				$targetName = $this->target->getName();
+			}
 			# Get other blocks, i.e. from GlobalBlocking or TorBlock extension
-			Hooks::run( 'OtherBlockLogLink', [ &$otherBlockMessages, $this->target ] );
+			Hooks::run( 'OtherBlockLogLink', [ &$otherBlockMessages, $targetName ] );
 
 			if ( count( $otherBlockMessages ) ) {
 				$s = Html::rawElement(
@@ -368,12 +372,13 @@ class SpecialBlock extends FormSpecialPage {
 
 		$this->getOutput()->addModuleStyles( 'mediawiki.special' );
 
+		$linkRenderer = $this->getLinkRenderer();
 		# Link to the user's contributions, if applicable
 		if ( $this->target instanceof User ) {
 			$contribsPage = SpecialPage::getTitleFor( 'Contributions', $this->target->getName() );
-			$links[] = Linker::link(
+			$links[] = $linkRenderer->makeLink(
 				$contribsPage,
-				$this->msg( 'ipb-blocklist-contribs', $this->target->getName() )->escaped()
+				$this->msg( 'ipb-blocklist-contribs', $this->target->getName() )->text()
 			);
 		}
 
@@ -388,21 +393,24 @@ class SpecialBlock extends FormSpecialPage {
 			$message = $this->msg( 'ipb-unblock' )->parse();
 			$list = SpecialPage::getTitleFor( 'Unblock' );
 		}
-		$links[] = Linker::linkKnown( $list, $message, [] );
+		$links[] = $linkRenderer->makeKnownLink(
+			$list,
+			new HtmlArmor( $message )
+		);
 
 		# Link to the block list
-		$links[] = Linker::linkKnown(
+		$links[] = $linkRenderer->makeKnownLink(
 			SpecialPage::getTitleFor( 'BlockList' ),
-			$this->msg( 'ipb-blocklist' )->escaped()
+			$this->msg( 'ipb-blocklist' )->text()
 		);
 
 		$user = $this->getUser();
 
 		# Link to edit the block dropdown reasons, if applicable
 		if ( $user->isAllowed( 'editinterface' ) ) {
-			$links[] = Linker::linkKnown(
+			$links[] = $linkRenderer->makeKnownLink(
 				$this->msg( 'ipbreason-dropdown' )->inContentLanguage()->getTitle(),
-				$this->msg( 'ipb-edit-dropdown' )->escaped(),
+				$this->msg( 'ipb-edit-dropdown' )->text(),
 				[],
 				[ 'action' => 'edit' ]
 			);
@@ -641,8 +649,10 @@ class SpecialBlock extends FormSpecialPage {
 				return [ 'ipb-blockingself', 'ipb-confirmaction' ];
 			}
 		} elseif ( $type == Block::TYPE_RANGE ) {
+			$user = null;
 			$userId = 0;
 		} elseif ( $type == Block::TYPE_IP ) {
+			$user = null;
 			$target = $target->getName();
 			$userId = 0;
 		} else {
@@ -725,6 +735,7 @@ class SpecialBlock extends FormSpecialPage {
 			return $reason;
 		}
 
+		$priorBlock = null;
 		# Try to insert block. Is there a conflicting block?
 		$status = $block->insert();
 		if ( !$status ) {
@@ -733,7 +744,7 @@ class SpecialBlock extends FormSpecialPage {
 			$blockNotConfirmed = !$data['Confirm'] || ( array_key_exists( 'PreviousTarget', $data )
 				&& $data['PreviousTarget'] !== $target );
 
-			# Special case for API - bug 32434
+			# Special case for API - T34434
 			$reblockNotAllowed = ( array_key_exists( 'Reblock', $data ) && !$data['Reblock'] );
 
 			# Show form unless the user is already aware of this...
@@ -744,17 +755,16 @@ class SpecialBlock extends FormSpecialPage {
 				# This returns direct blocks before autoblocks/rangeblocks, since we should
 				# be sure the user is blocked by now it should work for our purposes
 				$currentBlock = Block::newFromTarget( $target );
-
 				if ( $block->equals( $currentBlock ) ) {
 					return [ [ 'ipb_already_blocked', $block->getTarget() ] ];
 				}
-
 				# If the name was hidden and the blocking user cannot hide
 				# names, then don't allow any block changes...
 				if ( $currentBlock->mHideName && !$performer->isAllowed( 'hideuser' ) ) {
 					return [ 'cant-see-hidden-user' ];
 				}
 
+				$priorBlock = clone $currentBlock;
 				$currentBlock->isHardblock( $block->isHardblock() );
 				$currentBlock->prevents( 'createaccount', $block->prevents( 'createaccount' ) );
 				$currentBlock->mExpiry = $block->mExpiry;
@@ -782,7 +792,7 @@ class SpecialBlock extends FormSpecialPage {
 			$logaction = 'block';
 		}
 
-		Hooks::run( 'BlockIpComplete', [ $block, $performer ] );
+		Hooks::run( 'BlockIpComplete', [ $block, $performer, $priorBlock ] );
 
 		# Set *_deleted fields if requested
 		if ( $data['HideUser'] ) {
@@ -814,13 +824,17 @@ class SpecialBlock extends FormSpecialPage {
 		$logEntry->setComment( $data['Reason'][0] );
 		$logEntry->setPerformer( $performer );
 		$logEntry->setParameters( $logParams );
-		# Relate log ID to block IDs (bug 25763)
+		# Relate log ID to block IDs (T27763)
 		$blockIds = array_merge( [ $status['id'] ], $status['autoIds'] );
 		$logEntry->setRelations( [ 'ipb_id' => $blockIds ] );
 		$logId = $logEntry->insert();
+
+		if ( !empty( $data['Tags'] ) ) {
+			$logEntry->setTags( $data['Tags'] );
+		}
+
 		$logEntry->publish( $logId );
 
-		# Report to the user
 		return true;
 	}
 
@@ -888,7 +902,7 @@ class SpecialBlock extends FormSpecialPage {
 	}
 
 	/**
-	 * bug 15810: blocked admins should not be able to block/unblock
+	 * T17810: blocked admins should not be able to block/unblock
 	 * others, and probably shouldn't be able to unblock themselves
 	 * either.
 	 * @param User|int|string $user

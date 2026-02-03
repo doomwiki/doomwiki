@@ -4,20 +4,18 @@
  * @package SyntaxHighlight_GeSHi
  */
 
-/*jshint node:true */
+/* eslint-env node */
 module.exports = function ( grunt ) {
+	var conf = grunt.file.readJSON( 'extension.json' );
+
 	grunt.loadNpmTasks( 'grunt-banana-checker' );
-	grunt.loadNpmTasks( 'grunt-contrib-csslint' );
-	grunt.loadNpmTasks( 'grunt-contrib-jshint' );
 	grunt.loadNpmTasks( 'grunt-contrib-watch' );
-	grunt.loadNpmTasks( 'grunt-jscs' );
+	grunt.loadNpmTasks( 'grunt-eslint' );
 	grunt.loadNpmTasks( 'grunt-jsonlint' );
+	grunt.loadNpmTasks( 'grunt-stylelint' );
 
 	grunt.initConfig( {
-		jshint: {
-			options: {
-				jshintrc: true
-			},
+		eslint: {
 			all: [
 				'*.js',
 				'modules/**/*.js'
@@ -30,31 +28,25 @@ module.exports = function ( grunt ) {
 				'modules/**/*.json'
 			]
 		},
-		jscs: {
-			src: '<%= jshint.all %>'
+		stylelint: {
+			all: [
+				'**/*.css',
+				'!**/*.generated.css',
+				'!vendor/**',
+				'!node_modules/**'
+			]
 		},
-		csslint: {
-			options: {
-				csslintrc: '.csslintrc'
-			},
-			all: 'modules/**/*.css'
-		},
-		banana: {
-			options: {
-				disallowDuplicateTranslations: false
-			},
-			all: 'i18n/'
-		},
+		banana: conf.MessagesDirs,
 		watch: {
 			files: [
-				'.{csslintrc,jscsrc,jshintignore,jshintrc}',
-				'<%= jshint.all %>',
-				'<%= csslint.all %>'
+				'.{stylelintrc,jscsrc,jshintignore,jshintrc}',
+				'<%= eslint.all %>',
+				'<%= stylelint.all %>'
 			],
 			tasks: 'test'
 		}
 	} );
 
-	grunt.registerTask( 'test', [ 'jshint', 'jsonlint', 'jscs', 'csslint', 'banana' ] );
+	grunt.registerTask( 'test', [ 'eslint', 'jsonlint', 'stylelint', 'banana' ] );
 	grunt.registerTask( 'default', 'test' );
 };

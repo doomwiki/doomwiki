@@ -21,6 +21,9 @@
  * @ingroup SpecialPage
  */
 
+use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\IDatabase;
+
 /**
  * SpecialShortpages extends QueryPage. It is used to return the shortest
  * pages in the database.
@@ -71,19 +74,7 @@ class ShortPagesPage extends QueryPage {
 	 * @param ResultWrapper $res
 	 */
 	function preprocessResults( $db, $res ) {
-		# There's no point doing a batch check if we aren't caching results;
-		# the page must exist for it to have been pulled out of the table
-		if ( !$this->isCached() || !$res->numRows() ) {
-			return;
-		}
-
-		$batch = new LinkBatch();
-		foreach ( $res as $row ) {
-			$batch->add( $row->namespace, $row->title );
-		}
-		$batch->execute();
-
-		$res->seek( 0 );
+		$this->executeLBFromResultWrapper( $res );
 	}
 
 	function sortDescending() {
@@ -104,19 +95,20 @@ class ShortPagesPage extends QueryPage {
 				Linker::getInvalidTitleDescription( $this->getContext(), $result->namespace, $result->title ) );
 		}
 
-		$hlink = Linker::linkKnown(
+		$linkRenderer = $this->getLinkRenderer();
+		$hlink = $linkRenderer->makeKnownLink(
 			$title,
-			$this->msg( 'hist' )->escaped(),
+			$this->msg( 'hist' )->text(),
 			[],
 			[ 'action' => 'history' ]
 		);
 		$hlinkInParentheses = $this->msg( 'parentheses' )->rawParams( $hlink )->escaped();
 
 		if ( $this->isCached() ) {
-			$plink = Linker::link( $title );
+			$plink = $linkRenderer->makeLink( $title );
 			$exists = $title->exists();
 		} else {
-			$plink = Linker::linkKnown( $title );
+			$plink = $linkRenderer->makeKnownLink( $title );
 			$exists = true;
 		}
 
