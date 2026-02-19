@@ -55,16 +55,17 @@ class SpecialChangeEmail extends FormSpecialPage {
 	 * @param string $par
 	 */
 	function execute( $par ) {
-		$this->checkLoginSecurityLevel();
-
 		$out = $this->getOutput();
 		$out->disallowUserJs();
 
 		parent::execute( $par );
 	}
 
-	protected function checkExecutePermissions( User $user ) {
+        protected function getLoginSecurityLevel() {
+                return $this->getName();
+        }
 
+	protected function checkExecutePermissions( User $user ) {
 		if ( !AuthManager::singleton()->allowsPropertyChange( 'emailaddress' ) ) {
 			throw new ErrorPageError( 'changeemail', 'cannotchangeemail' );
 		}
@@ -75,6 +76,10 @@ class SpecialChangeEmail extends FormSpecialPage {
 		// require both permissions.
 		if ( !$this->getUser()->isAllowed( 'viewmyprivateinfo' ) ) {
 			throw new PermissionsError( 'viewmyprivateinfo' );
+		}
+
+		if ( $user->isBlockedFromEmailuser() ) {
+			throw new UserBlockedError( $user->getBlock() );
 		}
 
 		parent::checkExecutePermissions( $user );
@@ -161,6 +166,12 @@ class SpecialChangeEmail extends FormSpecialPage {
 
 		if ( $newaddr === $user->getEmail() ) {
 			return Status::newFatal( 'changeemail-nochange' );
+		}
+
+		// To prevent spam, rate limit adding a new address, but do
+		// not rate limit removing an address.
+		if ( $newaddr !== '' && $user->pingLimiter( 'changeemail' ) ) {
+			return Status::newFatal( 'actionthrottledtext' );
 		}
 
 		$oldaddr = $user->getEmail();

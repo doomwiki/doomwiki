@@ -32,7 +32,7 @@
 		 * @return {string} Description for file
 		 */
 		_getDescription: function ( title ) {
-			title = title.replace( /\.[^\. ]+$/, '' ); // replace filename suffix
+			title = title.replace( /\.[^. ]+$/, '' ); // replace filename suffix
 			// strip namespace: prefix and date suffix from remainder
 			return title.replace( /^[^:]*:/, '' )
 				.replace( / \d{4}-\d{1,2}-\d{1,2} \d{1,2}-\d{1,2}$/, '' );
@@ -113,7 +113,7 @@
 						// FIXME: [API] in an ideal world imageData would be a sorted array
 						// but it is a map of {[id]: page}
 						photos = Object.keys( resp.query.pages ).map( function ( id ) {
-							return self._getImageDataFromPage.call( self, resp.query.pages[id] );
+							return self._getImageDataFromPage( resp.query.pages[id] );
 						} ).sort( function ( a, b ) {
 							return a.timestamp < b.timestamp ? 1 : -1;
 						} );

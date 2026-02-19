@@ -25,6 +25,10 @@ class SpecialMobileContributions extends SpecialMobileHistory {
 	protected $showUsername = false;
 	/** @var array Lengths of previous revisions */
 	protected $prevLengths = [];
+	/** @var string a message key for the error message heading that should be shown on a 404 */
+	protected $errorNotFoundTitleMsg = 'mobile-frontend-contributions-404-title';
+	/** @var string a message key for the error message description that should be shown on a 404 */
+	protected $errorNotFoundDescriptionMsg = 'mobile-frontend-contributions-404-desc';
 
 	/**
 	 * Gets HTML to place in the header bar. Title should always refer to a logged in user
@@ -55,7 +59,7 @@ class SpecialMobileContributions extends SpecialMobileHistory {
 				$out = $this->getOutput();
 				$out->addModuleStyles( [
 					'mobile.pagelist.styles',
-					'skins.minerva.icons.images.scripts',
+					'mobile.special.user.icons',
 					'mobile.pagesummary.styles',
 				] );
 				$out->setHTMLTitle( $this->msg(
@@ -166,6 +170,7 @@ class SpecialMobileContributions extends SpecialMobileHistory {
 
 	/**
 	 * Returns a list of query conditions that should be run against the revision table
+	 * @return array
 	 */
 	protected function getQueryConditions() {
 		$conds = [];

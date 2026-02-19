@@ -1,12 +1,12 @@
 <?php
-/*
-* Page stability configuration functions
-*/
+/**
+ * Page stability configuration functions
+ */
 class FRPageConfig {
 	/**
 	 * Get visibility settings/restrictions for a page
-	 * @param Title $title, page title
-	 * @param int $flags, FR_MASTER
+	 * @param Title $title page title
+	 * @param int $flags FR_MASTER
 	 * @return array (associative) (select,override,autoreview,expiry)
 	 */
 	public static function getStabilitySettings( Title $title, $flags = 0 ) {
@@ -29,6 +29,7 @@ class FRPageConfig {
 
 	/**
 	 * Get page configuration settings from a DB row
+	 * @param stdClass $row
 	 */
 	public static function getVisibilitySettingsFromRow( $row ) {
 		if ( $row ) {
@@ -157,8 +158,8 @@ class FRPageConfig {
 		$defaultConfig = self::getDefaultVisibilitySettings();
 		# Check if the page is not protected at all...
 		if ( $config['override'] == $defaultConfig['override']
-			&& $config['autoreview'] == '' )
-		{
+			&& $config['autoreview'] == ''
+		) {
 			return "none"; // not protected
 		}
 		# All protection levels have 'override' on

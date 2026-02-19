@@ -1,5 +1,6 @@
 ( function ( M, $ ) {
-	var sectionTemplate = mw.template.get( 'mobile.startup', 'Section.hogan' );
+	var sectionTemplate = mw.template.get( 'mobile.startup', 'Section.hogan' ),
+		cache = {};
 
 	/**
 	 * Add child to listOfSections if the level of child is the same as the last
@@ -88,7 +89,6 @@
 	 */
 	function PageGateway( api ) {
 		this.api = api;
-		this.cache = {};
 	}
 
 	PageGateway.prototype = {
@@ -111,8 +111,8 @@
 					edit: [ '*' ]
 				};
 
-			if ( !this.cache[title] ) {
-				page = this.cache[title] = $.Deferred();
+			if ( !cache[title] ) {
+				page = cache[title] = $.Deferred();
 				this.api.get( {
 					action: 'mobileview',
 					page: title,
@@ -120,7 +120,6 @@
 					redirect: 'yes',
 					prop: 'id|sections|text|lastmodified|lastmodifiedby|languagecount|hasvariants|protection|displaytitle|revision',
 					noheadings: 'yes',
-					noimages: mw.config.get( 'wgImagesDisabled', false ) ? 1 : undefined,
 					sectionprop: 'level|line|anchor',
 					sections: leadOnly ? 0 : 'all'
 				}, options ).done( function ( resp ) {
@@ -149,7 +148,7 @@
 						// no protection level. When an array this means there is no protection level set.
 						// So to keep the data type consistent either use the predefined protection level, or
 						// extend it with what is returned by API.
-						protection = $.isArray( mv.protection ) ? protection : $.extend( protection, mv.protection );
+						protection = Array.isArray( mv.protection ) ? protection : $.extend( protection, mv.protection );
 						resolveObj = {
 							title: title,
 							id: mv.id,
@@ -179,7 +178,7 @@
 				} ).fail( $.proxy( page, 'reject' ) );
 			}
 
-			return this.cache[title];
+			return cache[title];
 		},
 
 		/**
@@ -189,7 +188,7 @@
 		 * @param {string} title the title of the page who's cache you want to invalidate
 		 */
 		invalidatePage: function ( title ) {
-			delete this.cache[title];
+			delete cache[title];
 		},
 
 		/**

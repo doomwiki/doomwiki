@@ -43,6 +43,27 @@ class ApiMobileView extends ApiBase {
 	}
 
 	/**
+	 * Obtain the requested page properties.
+	 * @param string $propNames requested list of pageprops separated by '|'. If '*'
+	 *  all page props will be returned.
+	 * @param array $data data available as returned by getData
+	 * @return Array associative
+	 */
+	public function getMobileViewPageProps( $propNames, $data ) {
+		if ( array_key_exists( 'pageprops', $data ) ) {
+			if ( $propNames == '*' ) {
+				$pageProps = $data['pageprops'];
+			} else {
+				$pageProps = array_intersect_key( $data['pageprops'],
+					array_flip( explode( '|', $propNames ) ) );
+			}
+		} else {
+			$pageProps = [];
+		}
+		return $pageProps;
+	}
+
+	/**
 	 * Execute the requested Api actions.
 	 * @todo: Write some unit tests for API results
 	 */
@@ -79,6 +100,7 @@ class ApiMobileView extends ApiBase {
 		}
 
 		$title = $this->makeTitle( $params['page'] );
+		RequestContext::getMain()->setTitle( $title );
 
 		$namespace = $title->getNamespace();
 		$this->addXAnalyticsItem( 'ns', (string)$namespace );
@@ -87,11 +109,8 @@ class ApiMobileView extends ApiBase {
 		$this->mainPage = $this->isMainPage( $title );
 		if ( $this->mainPage && $this->noHeadings ) {
 			$this->noHeadings = false;
-			if ( is_callable( [ $this, 'addWarning' ] ) ) {
-				$this->addWarning( 'apiwarn-mobilefrontend-ignoringnoheadings', 'ignoringnoheadings' );
-			} else {
-				$this->setWarning( "``noheadings'' makes no sense on the main page, ignoring" );
-			}
+			$this->addWarning( 'apiwarn-mobilefrontend-ignoringnoheadings', 'ignoringnoheadings' );
+
 		}
 		if ( isset( $prop['normalizedtitle'] ) && $title->getPrefixedText() != $params['page'] ) {
 			$resultObj->addValue( null, $moduleName,
@@ -121,18 +140,13 @@ class ApiMobileView extends ApiBase {
 			$this->addXAnalyticsItem( 'page_id', (string)$data['id'] );
 		}
 		if ( isset( $prop['pageprops'] ) ) {
-			$propNames = $params['pageprops'];
-			if ( $propNames == '*' && isset( $data['pageprops'] ) ) {
-				$pageProps = $data['pageprops'];
-			} else {
-				$propNames = explode( '|', $propNames );
-				$pageProps = array_intersect_key( $data['pageprops'], array_flip( $propNames ) );
-			}
-			ApiResult::setArrayType( $pageProps, 'assoc' );
+			$mvPageProps = $this->getMobileViewPageProps( $params['pageprops'], $data );
+			ApiResult::setArrayType( $mvPageProps, 'assoc' );
 			$resultObj->addValue( null, $moduleName,
-				[ 'pageprops' => $pageProps ]
+				[ 'pageprops' => $mvPageProps ]
 			);
 		}
+
 		if ( isset( $prop['description'] ) && isset( $data['pageprops']['wikibase_item'] ) ) {
 			$desc = ExtMobileFrontend::getWikibaseDescription(
 				$data['pageprops']['wikibase_item']
@@ -239,15 +253,11 @@ class ApiMobileView extends ApiBase {
 			);
 		}
 		if ( count( $missingSections ) && isset( $prop['text'] ) ) {
-			if ( is_callable( [ $this, 'addWarning' ] ) ) {
-				$this->addWarning( [
-					'apiwarn-mobilefrontend-sectionsnotfound',
-					Message::listParam( $missingSections ),
-					count( $missingSections )
-				], 'sectionsnotfound' );
-			} else {
-				$this->setWarning( 'Section(s) ' . implode( ', ', $missingSections ) . ' not found' );
-			}
+			$this->addWarning( [
+				'apiwarn-mobilefrontend-sectionsnotfound',
+				Message::listParam( $missingSections ),
+				count( $missingSections )
+			], 'sectionsnotfound' );
 		}
 		if ( $this->maxlen < 0 ) {
 			// There is more data available
@@ -278,21 +288,13 @@ class ApiMobileView extends ApiBase {
 	protected function makeTitle( $name ) {
 		$title = Title::newFromText( $name );
 		if ( !$title ) {
-			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
-				$this->dieWithError( [ 'apierror-invalidtitle', wfEscapeWikiText( $name ) ] );
-			} else {
-				$this->dieUsageMsg( [ 'invalidtitle', $name ] );
-			}
+			$this->dieWithError( [ 'apierror-invalidtitle', wfEscapeWikiText( $name ) ] );
 		}
 		if ( $title->inNamespace( NS_FILE ) ) {
 			$this->file = $this->findFile( $title );
 		}
 		if ( !$title->exists() && !$this->file ) {
-			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
-				$this->dieWithError( [ 'apierror-missingtitle' ] );
-			} else {
-				$this->dieUsageMsg( [ 'notanarticle' ] );
-			}
+			$this->dieWithError( [ 'apierror-missingtitle' ] );
 		}
 		return $title;
 	}
@@ -322,7 +324,7 @@ class ApiMobileView extends ApiBase {
 	 * Check if page is the main page after follow redirect when followRedirects is true.
 	 *
 	 * @param Title $title Title object to check
-	 * @return boolean
+	 * @return bool
 	 */
 	protected function isMainPage( $title ) {
 		if ( $title->isRedirect() && $this->followRedirects ) {
@@ -380,7 +382,7 @@ class ApiMobileView extends ApiBase {
 	 * Parses requested sections string into a list of sections
 	 * @param string $str String to parse
 	 * @param array $data Processed parser output
-	 * @param array $missingSections Upon return, contains the list of sections that were
+	 * @param array &$missingSections Upon return, contains the list of sections that were
 	 * requested but are not present in parser output (passed by reference)
 	 * @return array
 	 */
@@ -437,7 +439,7 @@ class ApiMobileView extends ApiBase {
 	 * Performs a page parse
 	 * @param WikiPage $wp
 	 * @param ParserOptions $parserOptions
-	 * @param null|int [$oldid] Revision ID to get the text from, passing null or 0 will
+	 * @param null|int $oldid Revision ID to get the text from, passing null or 0 will
 	 *   get the current revision (default value)
 	 * @return ParserOutput|null
 	 */
@@ -465,7 +467,12 @@ class ApiMobileView extends ApiBase {
 	 * @return ParserOptions
 	 */
 	protected function makeParserOptions( WikiPage $wp ) {
-		return $wp->makeParserOptions( $this );
+		$popt = $wp->makeParserOptions( $this );
+		if ( is_callable( [ $popt, 'setWrapOutputClass' ] ) ) {
+			// Let the client handle it.
+			$popt->setWrapOutputClass( false );
+		}
+		return $popt;
 	}
 
 	/**
@@ -473,8 +480,7 @@ class ApiMobileView extends ApiBase {
 	 * @param string $html representing the entire page
 	 * @param Title $title
 	 * @param ParserOutput $parserOutput
-	 * @param boolean $useTidy whether the provided HTML should be tidied (optional)
-	 * @param integer $revId this is a temporary parameter to avoid debug log warnings.
+	 * @param int $revId this is a temporary parameter to avoid debug log warnings.
 	 *  Long term the call to wfDebugLog should be moved outside this method (optional)
 	 * @return array structure representing the list of sections and their properties:
 	 *  - refsections: [] where all keys are section ids of sections with refs
@@ -483,8 +489,8 @@ class ApiMobileView extends ApiBase {
 	 *  - text: [] of the text of each individual section. length === same as sections
 	 *      or of length 1 when there is a mismatch.
 	 */
-	protected function parseSectionsData( $html, Title $title, ParserOutput $parserOutput,
-		$useTidy = false, $revId = null
+	protected function parseSectionsData( $html, Title $title,
+		ParserOutput $parserOutput, $revId = null
 	) {
 		$data = [];
 		$data['sections'] = $parserOutput->getSections();
@@ -506,9 +512,6 @@ class ApiMobileView extends ApiBase {
 		foreach ( $chunks as $chunk ) {
 			if ( count( $data['text'] ) ) {
 				$chunk = "<h$chunk";
-			}
-			if ( $useTidy && count( $chunks ) > 1 ) {
-				$chunk = MWTidy::tidy( $chunk );
 			}
 			if ( preg_match( '/<ol\b[^>]*?class="references"/', $chunk ) ) {
 				$data['refsections'][count( $data['text'] )] = true;
@@ -567,14 +570,11 @@ class ApiMobileView extends ApiBase {
 			if ( !$latest ) {
 				// https://bugzilla.wikimedia.org/show_bug.cgi?id=53378
 				// Title::exists() above doesn't seem to always catch recently deleted pages
-				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
-					$this->dieWithError( [ 'apierror-missingtitle' ] );
-				} else {
-					$this->dieUsageMsg( [ 'notanarticle' ] );
-				}
+				$this->dieWithError( [ 'apierror-missingtitle' ] );
 			}
 			$parserOptions = $this->makeParserOptions( $wp );
-			$parserCacheKey = ParserCache::singleton()->getKey( $wp, $parserOptions );
+			$parserCacheKey = \MediaWiki\MediaWikiServices::getInstance()->getParserCache()->getKey( $wp,
+					$parserOptions );
 			$key = wfMemcKey(
 				'mf',
 				'mobileview',
@@ -597,11 +597,7 @@ class ApiMobileView extends ApiBase {
 		} else {
 			$parserOutput = $this->getParserOutput( $wp, $parserOptions, $oldid );
 			if ( $parserOutput === false ) {
-				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
-					$this->dieWithError( 'apierror-mobilefrontend-badidtitle', 'invalidparams' );
-				} else {
-					$this->dieUsage( 'Bad revision id/title combination', 'invalidparams' );
-				}
+				$this->dieWithError( 'apierror-mobilefrontend-badidtitle', 'invalidparams' );
 				return;
 			}
 			$html = $parserOutput->getText();
@@ -623,8 +619,7 @@ class ApiMobileView extends ApiBase {
 				'refsections' => [],
 			];
 		} else {
-			$data = $this->parseSectionsData( $html, $title, $parserOutput,
-				$mfConfig->get( 'MFTidyMobileViewSections' ) && $this->getConfig()->get( 'UseTidy' ), $latest );
+			$data = $this->parseSectionsData( $html, $title, $parserOutput, $latest );
 			if ( $this->usePageImages ) {
 				$image = $this->getPageImage( $title );
 				if ( $image ) {
@@ -719,14 +714,7 @@ class ApiMobileView extends ApiBase {
 		if ( isset( $params['thumbsize'] )
 			&& ( isset( $params['thumbwidth'] ) || isset( $params['thumbheight'] ) )
 		) {
-			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
-				$this->dieWithError( 'apierror-mobilefrontend-toomanysizeparams', 'toomanysizeparams' );
-			} else {
-				$this->dieUsage(
-					"`thumbsize' is mutually exclusive with `thumbwidth' and `thumbheight'",
-					'toomanysizeparams'
-				);
-			}
+			$this->dieWithError( 'apierror-mobilefrontend-toomanysizeparams', 'toomanysizeparams' );
 		}
 
 		$file = $this->findFile( $data['image'] );
@@ -795,7 +783,7 @@ class ApiMobileView extends ApiBase {
 	 * @return int
 	 */
 	private function getScaledDimen( $srcX, $srcY, $dstX ) {
-		return $srcX === 0 ? 0 : (int) round( $srcY * $dstX / $srcX );
+		return $srcX === 0 ? 0 : (int)round( $srcY * $dstX / $srcX );
 	}
 
 	/**
@@ -918,6 +906,7 @@ class ApiMobileView extends ApiBase {
 	/**
 	 * Returns usage examples for this module.
 	 * @see ApiBase::getExamplesMessages()
+	 * @return array
 	 */
 	protected function getExamplesMessages() {
 		return [

@@ -28,7 +28,8 @@
 			"Jopparn",
 			"Marfuas",
 			"Josve05a",
-			"Matma Rex"
+			"Matma Rex",
+			"Matěj Suchánek"
 		]
 	},
 	"abusefilter-desc": "Tillämpar automatiska filter på redigeringar",
@@ -207,7 +208,7 @@
 	"abusefilter-edit-export": "Exportera det här filtret till en annan wiki",
 	"abusefilter-edit-syntaxok": "Inga syntaxfel upptäcktes.",
 	"abusefilter-edit-syntaxerr": "Syntaxfel uppstod: $1",
-	"abusefilter-edit-bad-tags": "En eller flera av de märken du angav är inte giltigt. Märken skall vara korta och de får inte innehålla några specialtecken.",
+	"abusefilter-edit-bad-tags": "En eller flera av de märken du angav är inte giltigt. Märken skall vara korta och de får inte innehålla några specialtecken och de bör inte reserveras av andra programvaror. Försök att välja ett nytt märkesnamn",
 	"abusefilter-edit-notallowed": "Du har inte tillåtelse att skapa eller ändra missbruksfilter",
 	"abusefilter-edit-notallowed-global": "Du har inte tillåtelse att skapa eller ändra globala missbruksfilter",
 	"abusefilter-edit-notallowed-global-custom-msg": "Anpassade varningsmeddelanden stöds inte för globala filter",
@@ -413,7 +414,7 @@
 	"abusefilter-topnav-import": "Importera filter",
 	"abusefilter-log-name": "Missbruksfilterändringar",
 	"abusefilter-log-header": "Denna logg visar en sammanfattning av ändringar som har gjorts i filtren.\nFör fullständiga detaljer, se [[Special:AbuseFilter/history|listan]] över de senaste filterändringarna.",
-	"abusefilter-log-entry-modify": "ändrade $1 ($2)",
+	"abusefilter-logentry-modify": "$1 {{GENDER:$2|ändrade}} $4 ($5)",
 	"abusefilter-log-noresults": "Inga resultat",
 	"abusefilter-diff-title": "Differenser mellan versioner",
 	"abusefilter-diff-item": "Element",

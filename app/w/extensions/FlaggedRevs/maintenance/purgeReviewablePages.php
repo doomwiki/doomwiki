@@ -5,17 +5,19 @@
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
-	$IP = dirname( __FILE__ ).'/../../..';
+	$IP = __DIR__ . '/../../..';
 }
 
-require_once ( "$IP/maintenance/Maintenance.php" );
+require_once "$IP/maintenance/Maintenance.php";
 
 class PurgeReviewablePages extends Maintenance {
 
 	public function __construct() {
 		$this->mDescription = "Use to purge squid/file cache for all reviewable pages";
-		$this->addOption( 'makelist', "Build the list of reviewable pages to pagesToPurge.list", false, false );
-		$this->addOption( 'purgelist', "Purge the list of pages in pagesToPurge.list", false, false );
+		$this->addOption( 'makelist',
+			"Build the list of reviewable pages to pagesToPurge.list", false, false );
+		$this->addOption( 'purgelist',
+			"Purge the list of pages in pagesToPurge.list", false, false );
 		$this->setBatchSize( 1000 );
 	}
 
@@ -127,4 +129,4 @@ class PurgeReviewablePages extends Maintenance {
 }
 
 $maintClass = "PurgeReviewablePages";
-require_once ( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

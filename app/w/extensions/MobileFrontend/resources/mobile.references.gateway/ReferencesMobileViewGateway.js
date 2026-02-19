@@ -1,7 +1,9 @@
 ( function ( M, $ ) {
-	var ReferencesHtmlScraperGateway =
+	var moduleName = 'mobile.references.gateway/ReferencesMobileViewGateway',
+		ReferencesHtmlScraperGateway =
 		M.require( 'mobile.references.gateway/ReferencesHtmlScraperGateway' ),
 		cache = M.require( 'mobile.startup/cache' ),
+		ReferencesGateway = M.require( 'mobile.references.gateway/ReferencesGateway' ),
 		MemoryCache = cache.MemoryCache,
 		NoCache = cache.NoCache,
 		referencesMobileViewGateway = null;
@@ -23,7 +25,6 @@
 	 * cache anything. The singleton instance exposed by this module uses
 	 * a MemoryCache which caches requests in-memory. Any other Cache class
 	 * compatible with mobile.cache's interface will actually work.
-	 *
 	 */
 	function ReferencesMobileViewGateway( api, cache ) {
 		ReferencesHtmlScraperGateway.call( this, api );
@@ -42,13 +43,14 @@
 		 */
 		getReferencesLists: function ( page ) {
 			var self = this,
+				result = $.Deferred(),
 				cachedReferencesSections = this.cache.get( page.id );
 
 			if ( cachedReferencesSections ) {
-				return $.Deferred().resolve( cachedReferencesSections ).promise();
+				return result.resolve( cachedReferencesSections ).promise();
 			}
 
-			return this.api.get( {
+			this.api.get( {
 				action: 'mobileview',
 				page: page.getTitle(),
 				sections: 'references',
@@ -65,8 +67,12 @@
 
 				self.cache.set( page.id, sections );
 
-				return sections;
+				result.resolve( sections );
+			} ).fail( function () {
+				result.reject( ReferencesGateway.ERROR_OTHER );
 			} );
+
+			return result.promise();
 		},
 		/**
 		 * Retrieve all the references lists for a given page and section ID.
@@ -115,9 +121,6 @@
 		return referencesMobileViewGateway;
 	};
 
-	M.define(
-		'mobile.references.gateway/ReferencesMobileViewGateway',
-		ReferencesMobileViewGateway
-	);
+	M.define( moduleName, ReferencesMobileViewGateway ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );

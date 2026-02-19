@@ -25,9 +25,7 @@ class UserTest extends MediaWikiTestCase {
 
 		$this->setUpPermissionGlobals();
 
-		$this->user = new User;
-		$this->user->addToDatabase();
-		$this->user->addGroup( 'unittesters' );
+		$this->user = $this->getTestUser( [ 'unittesters' ] )->getUser();
 	}
 
 	private function setUpPermissionGlobals() {
@@ -100,10 +98,7 @@ class UserTest extends MediaWikiTestCase {
 	 * @covers User::getRights
 	 */
 	public function testUserGetRightsHooks() {
-		$user = new User;
-		$user->addToDatabase();
-		$user->addGroup( 'unittesters' );
-		$user->addGroup( 'testwriters' );
+		$user = $this->getTestUser( [ 'unittesters', 'testwriters' ] )->getUser();
 		$userWrapper = TestingAccessWrapper::newFromObject( $user );
 
 		$rights = $user->getRights();
@@ -222,6 +217,8 @@ class UserTest extends MediaWikiTestCase {
 			[ 'Ab/cd', false, 'Contains slash' ],
 			[ 'Ab cd', true, 'Whitespace' ],
 			[ '192.168.1.1', false, 'IP' ],
+			[ '116.17.184.5/32', false, 'IP range' ],
+			[ '::e:f:2001/96', false, 'IPv6 range' ],
 			[ 'User:Abcd', false, 'Reserved Namespace' ],
 			[ '12abcd232', true, 'Starts with Numbers' ],
 			[ '?abcd', true, 'Start with ? mark' ],
@@ -759,30 +756,36 @@ class UserTest extends MediaWikiTestCase {
 	}
 
 	public function testSoftBlockRanges() {
-		global $wgUser;
-
-		$this->setMwGlobals( [
-			'wgSoftBlockRanges' => [ '10.0.0.0/8' ],
-			'wgUser' => null,
-		] );
+		$setSessionUser = function ( User $user, WebRequest $request ) {
+			$this->setMwGlobals( 'wgUser', $user );
+			RequestContext::getMain()->setUser( $user );
+			RequestContext::getMain()->setRequest( $request );
+			TestingAccessWrapper::newFromObject( $user )->mRequest = $request;
+			$request->getSession()->setUser( $user );
+		};
+		$this->setMwGlobals( 'wgSoftBlockRanges', [ '10.0.0.0/8' ] );
 
 		// IP isn't in $wgSoftBlockRanges
+		$wgUser = new User();
 		$request = new FauxRequest();
 		$request->setIP( '192.168.0.1' );
-		$wgUser = User::newFromSession( $request );
+		$setSessionUser( $wgUser, $request );
 		$this->assertNull( $wgUser->getBlock() );
 
 		// IP is in $wgSoftBlockRanges
+		$wgUser = new User();
 		$request = new FauxRequest();
 		$request->setIP( '10.20.30.40' );
-		$wgUser = User::newFromSession( $request );
+		$setSessionUser( $wgUser, $request );
 		$block = $wgUser->getBlock();
 		$this->assertInstanceOf( Block::class, $block );
 		$this->assertSame( 'wgSoftBlockRanges', $block->getSystemBlockType() );
 
 		// Make sure the block is really soft
-		$request->getSession()->setUser( $this->getTestUser()->getUser() );
-		$wgUser = User::newFromSession( $request );
+		$wgUser = $this->getTestUser()->getUser();
+		$request = new FauxRequest();
+		$request->setIP( '10.20.30.40' );
+		$setSessionUser( $wgUser, $request );
 		$this->assertFalse( $wgUser->isAnon(), 'sanity check' );
 		$this->assertNull( $wgUser->getBlock() );
 	}
@@ -933,5 +936,51 @@ class UserTest extends MediaWikiTestCase {
 		$user = User::newFromName( '10.11.12.13', false );
 
 		$this->assertFalse( $user->getExperienceLevel() );
+	}
+
+	public static function provideIsLocallBlockedProxy() {
+		return [
+			[ '1.2.3.4', '1.2.3.4' ],
+			[ '1.2.3.4', '1.2.3.0/16' ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideIsLocallBlockedProxy
+	 * @covers User::isLocallyBlockedProxy
+	 */
+	public function testIsLocallyBlockedProxy( $ip, $blockListEntry ) {
+		$this->setMwGlobals(
+			'wgProxyList', []
+		);
+		$this->assertFalse( User::isLocallyBlockedProxy( $ip ) );
+
+		$this->setMwGlobals(
+			'wgProxyList',
+			[
+				$blockListEntry
+			]
+		);
+		$this->assertTrue( User::isLocallyBlockedProxy( $ip ) );
+
+		$this->setMwGlobals(
+			'wgProxyList',
+			[
+				'test' => $blockListEntry
+			]
+		);
+		$this->assertTrue( User::isLocallyBlockedProxy( $ip ) );
+
+		$this->hideDeprecated(
+			'IP addresses in the keys of $wgProxyList (found the following IP ' .
+			'addresses in keys: ' . $blockListEntry . ', please move them to values)'
+		);
+		$this->setMwGlobals(
+			'wgProxyList',
+			[
+				$blockListEntry => 'test'
+			]
+		);
+		$this->assertTrue( User::isLocallyBlockedProxy( $ip ) );
 	}
 }

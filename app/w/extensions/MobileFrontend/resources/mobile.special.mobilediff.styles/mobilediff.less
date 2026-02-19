@@ -1,9 +1,5 @@
-@import 'minerva.variables';
-@import 'minerva.mixins';
+@import 'mobile.variables';
 
-@userinfoBackgroundColor: #f0f0f0;
-@userinfoBorderColor: #c0c0c0;
-@diffDateColor: #c6c6c6;
 // includes padding as well as enough space for 2 lines of user groups
 @userInfoHeight: 8em;
 @userInfoPadding: 1em;
@@ -22,18 +18,18 @@ footer {
 
 // FIXME: Overly specific selector
 #mw-mf-diffarea {
+	word-break: break-all;
 	padding: 1em 1em ( 2 * @userInfoHeight + 1em );
 }
 
 #mw-mf-diffview {
-
 	.meta {
 		font-size: 0.7em;
 		text-transform: uppercase;
 	}
 
 	.mw-mf-diff-date {
-		color: @colorGray9;
+		color: @colorGray7;
 	}
 
 	// FIXME: Overly specific selector
@@ -100,14 +96,14 @@ footer {
 			display: inline-block;
 			text-align: left;
 			margin-top: 1.2em;
-			color: @colorGray3;
+			color: @colorGray2;
 			line-height: 1;
 
 			/* the edit count number */
 			div {
 				text-align: center;
 				font-size: 1.85em;
-				color: @colorGray8;
+				color: @colorGray7;
 			}
 		}
 
@@ -123,6 +119,11 @@ footer {
 .revision-history-links {
 	font-size: 0.9em;
 	margin-top: 8px;
+	margin-bottom: 12px;
+
+	.revision-history-next {
+		float: right;
+	}
 }
 
 @media all and ( min-width: @wgMFDeviceWidthDesktop ) {

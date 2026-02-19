@@ -1,9 +1,4 @@
-@import 'minerva.variables';
-@import 'minerva.mixins';
-
-@pageHeaderBarBorderColor: #e2e2e2;
-@watchlistSelectorBorderColor: #e2e2e2;
-@watchlistSelectorLinkColor: #58595b;
+@import 'mobile.variables';
 
 // FIXME [mediawiki ui] These rules should not be needed and are specifically for Watchlist
 // This should use another MediaWiki UI widget
@@ -26,9 +21,9 @@
 .page-header-bar {
 	li,
 	div {
-		line-height: 1.5;
+		border-bottom: 1px solid @colorGray12;
 		padding: 5px 0 0;
-		border-bottom: 1px solid @colorGray13;
+		line-height: 1.5;
 		text-align: center;
 	}
 }
@@ -38,9 +33,9 @@
 
 	li {
 		display: inline-block;
-		border-left: 1px solid @colorGray13;
 		width: 25%;
 		margin: 0 0 0 -1px;
+		border-left: 1px solid @colorGray12;
 		border-bottom: 0;
 
 		&:first-child {
@@ -56,7 +51,7 @@
 		}
 
 		&.selected a {
-			border-bottom: solid 3px @colorProgressive;
+			border-bottom-color: @colorProgressive;
 			font-weight: bold;
 		}
 		/* stylelint-enable no-descending-specificity */
@@ -67,7 +62,7 @@
 // FIXME: Can we generalise these rules into a common design pattern?
 .empty-page {
 	margin: 3em;
-	color: @infoColor;
+	color: @colorGray7;
 	text-align: center;
 	img {
 		width: 100%;

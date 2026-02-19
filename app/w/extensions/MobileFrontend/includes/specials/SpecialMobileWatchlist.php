@@ -58,19 +58,23 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 		$this->requireLogin( 'mobile-frontend-watchlist-purpose' );
 
 		$ctx = MobileContext::singleton();
-		$this->usePageImages = !$ctx->imagesDisabled() && defined( 'PAGE_IMAGES_INSTALLED' );
+		$this->usePageImages = defined( 'PAGE_IMAGES_INSTALLED' );
 
 		$user = $this->getUser();
 		$output = $this->getOutput();
-		$output->addModules( 'skins.minerva.special.watchlist.scripts' );
-		// FIXME: Loads twice with JS enabled (T87871)
+		$output->addModules( 'mobile.special.watchlist.scripts' );
 		$output->addModuleStyles( [
-			'skins.minerva.special.watchlist.styles',
+			'mobile.special.watchlist.styles',
 			'mobile.pagelist.styles',
 			'mobile.pagesummary.styles',
 		] );
 		$req = $this->getRequest();
-		$this->view = $req->getVal( 'watchlistview', 'a-z' );
+
+		# Show watchlist feed if that person is an editor
+		$watchlistEditCountThreshold = $this->getConfig()->get( 'MFWatchlistEditCountThreshold' );
+		$defaultView = $this->getUser()->getEditCount() > $watchlistEditCountThreshold ? 'feed' : 'a-z';
+		$this->view = $req->getVal( 'watchlistview', $defaultView );
+
 		$this->filter = $req->getVal( 'filter', 'all' );
 		$this->fromPageTitle = Title::newFromText( $req->getVal( 'from', false ) );
 
@@ -79,7 +83,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 		// This needs to be done before calling getWatchlistHeader
 		$this->updateStickyTabs();
 		if ( $this->optionsChanged ) {
-			DeferredUpdates::addCallableUpdate( function() use ( $user ) {
+			DeferredUpdates::addCallableUpdate( function () use ( $user ) {
 				$user->saveSettings();
 			} );
 		}
@@ -145,9 +149,9 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 		$attrsList = $attrsFeed = [];
 		// https://phabricator.wikimedia.org/T150650
 		if ( $view === null ) {
-			$view = $user->getOption( SpecialMobileWatchlist::VIEW_OPTION_NAME, 'a-z' );
+			$view = $user->getOption( self::VIEW_OPTION_NAME, 'a-z' );
 		}
-		$filter = $user->getOption( SpecialMobileWatchlist::FILTER_OPTION_NAME, 'all' );
+		$filter = $user->getOption( self::FILTER_OPTION_NAME, 'all' );
 
 		if ( $view === 'feed' ) {
 			$attrsList[ 'class' ] = MobileUI::buttonClass();
@@ -269,6 +273,15 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 			}
 		}
 
+		// FIXME: This check can removed when MobileFrontend drops compatibility
+		// The CommentStore introduced was Ic3a434c
+		if ( class_exists( \CommentStore::class ) ) {
+			$commentQuery = \CommentStore::newKey( 'rc_comment' )->getJoin();
+			$tables += $commentQuery['tables'];
+			$fields += $commentQuery['fields'];
+			$join_conds += $commentQuery['joins'];
+		}
+
 		ChangeTags::modifyDisplayQuery( $tables, $fields, $conds, $join_conds, $options, '' );
 		// Until 1.22, MediaWiki used an array here. Since 1.23 (Iec4aab87), it uses a FormOptions
 		// object (which implements array-like interface ArrayAccess).
@@ -298,7 +311,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 	 * Render the Watchlist items.
 	 * When ?from not set, adds a link "more" to see the other watchlist items.
 	 * @param ResultWrapper $res ResultWrapper from db
-	 * @param boolean $feed Render as feed (true) or list (false) view?
+	 * @param bool $feed Render as feed (true) or list (false) view?
 	 * @todo FIXME: use templates/PageList.html when server side templates
 	 * are available to keep consistent with nearby view
 	 */
@@ -316,7 +329,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 
 	/**
 	 * If the user doesn't watch any page, show information how to watch some.
-	 * @param boolean $feed Render as feed (true) or list (false) view?
+	 * @param bool $feed Render as feed (true) or list (false) view?
 	 */
 	function showEmptyList( $feed ) {
 		$this->getOutput()->addHtml( self::getEmptyListHtml( $feed, $this->getLanguage() ) );
@@ -325,7 +338,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 	/**
 	 * Get the HTML needed to show if a user doesn't watch any page, show information
 	 * how to watch pages where no pages have been watched.
-	 * @param boolean $feed Render as feed (true) or list (false) view?
+	 * @param bool $feed Render as feed (true) or list (false) view?
 	 * @param Language $lang The language of the current mode
 	 * @return string
 	 */
@@ -372,7 +385,13 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 		$this->renderListHeaderWhereNeeded( $date );
 
 		$title = Title::makeTitle( $row->rc_namespace, $row->rc_title );
-		$comment = $this->formatComment( $row->rc_comment, $title );
+		if ( class_exists( \CommentStore::class ) ) {
+			$comment = $this->formatComment(
+				CommentStore::newKey( 'rc_comment' )->getComment( $row )->text, $title
+			);
+		} else {
+			$comment = $this->formatComment( $row->rc_comment, $title );
+		}
 		$ts = new MWTimestamp( $row->rc_timestamp );
 		$username = $row->rc_user != 0
 			? htmlspecialchars( $row->rc_user_text )

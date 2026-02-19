@@ -52,10 +52,14 @@
 			licenseLinkMsg: mw.msg( 'mobile-frontend-media-license-link' ),
 			thumbnails: [],
 			slideLeftButton: new Icon( {
-				name: 'previous-invert'
+				isSmall: true,
+				rotation: 90,
+				name: 'arrow-invert'
 			} ).toHtmlString(),
 			slideRightButton: new Icon( {
-				name: 'next-invert'
+				isSmall: true,
+				rotation: -90,
+				name: 'arrow-invert'
 			} ).toHtmlString()
 		} ),
 
@@ -71,7 +75,7 @@
 		 */
 		onSlide: function ( ev ) {
 			this.setNewImage(
-				$( ev.target ).closest( '.slider-button' ).data( 'thumbnail' )
+				this.$( ev.target ).closest( '.slider-button' ).data( 'thumbnail' )
 			);
 		},
 		/**
@@ -239,7 +243,7 @@
 					} );
 				}
 			}
-			$( '.image-wrapper' ).css( 'bottom', detailsHeight );
+			this.$( '.image-wrapper' ).css( 'bottom', detailsHeight );
 		},
 
 		/**
@@ -253,6 +257,6 @@
 			}
 		}
 	} );
-	M.define( 'mobile.mediaViewer/ImageOverlay', ImageOverlay );
+	M.define( 'mobile.mediaViewer/ImageOverlay', ImageOverlay ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );

@@ -127,6 +127,7 @@ class ValidationStatistics extends IncludableSpecialPage {
 			$unreviewed = intval( $total ) - intval( $reviewed );
 			$unreviewed = $lang->formatnum( max( 0, $unreviewed ) ); // lag between queries
 
+			$linkRenderer = $this->getLinkRenderer();
 			$out->addHTML(
 				"<tr style='text-align: center;'>
 					<td>" .
@@ -147,8 +148,9 @@ class ValidationStatistics extends IncludableSpecialPage {
 						$percSynced .
 					"</td>
 					<td>" .
-						Linker::linkKnown( SpecialPage::getTitleFor( 'PendingChanges' ),
-							htmlspecialchars( $outdated ),
+						$linkRenderer->makeKnownLink(
+							SpecialPage::getTitleFor( 'PendingChanges' ),
+							$outdated,
 							[],
 							[ 'namespace' => $namespace ]
 						) .
@@ -157,8 +159,9 @@ class ValidationStatistics extends IncludableSpecialPage {
 			if ( !$wgFlaggedRevsProtection ) {
 				$out->addHTML( "
 					<td>" .
-						Linker::linkKnown( SpecialPage::getTitleFor( 'UnreviewedPages' ),
-							htmlspecialchars( $unreviewed ),
+						$linkRenderer->makeKnownLink(
+							SpecialPage::getTitleFor( 'UnreviewedPages' ),
+							$unreviewed,
 							[],
 							[ 'namespace' => $namespace ]
 						) .
@@ -211,7 +214,7 @@ class ValidationStatistics extends IncludableSpecialPage {
 		} else {
 			global $wgPhpCli;
 			$ext = !empty( $wgPhpCli ) ? $wgPhpCli : 'php';
-			$path = wfEscapeShellArg( dirname( __FILE__ ) . '/../maintenance/updateStats.php' );
+			$path = wfEscapeShellArg( __DIR__ . '/../maintenance/updateStats.php' );
 			$wiki = wfEscapeShellArg( wfWikiId() );
 			$devNull = wfIsWindows() ? "NUL:" : "/dev/null";
 			$commandLine = "$ext $path --wiki=$wiki > $devNull &";
@@ -314,7 +317,7 @@ class ValidationStatistics extends IncludableSpecialPage {
 
 		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
 		$limit = (int)$wgFlaggedRevsStats['topReviewersCount'];
-		$seconds = 3600*$wgFlaggedRevsStats['topReviewersHours'];
+		$seconds = 3600 * $wgFlaggedRevsStats['topReviewersHours'];
 		$cutoff = $dbr->timestamp( time() - $seconds );
 		$res = $dbr->select( 'logging',
 			[ 'log_user', 'COUNT(*) AS reviews' ],

@@ -19,7 +19,9 @@ class RevisionReviewFormUI {
 	 * @param FlaggableWikiPage $article
 	 * @param Revision $rev
 	 */
-	public function __construct( IContextSource $context, FlaggableWikiPage $article, Revision $rev ) {
+	public function __construct(
+		IContextSource $context, FlaggableWikiPage $article, Revision $rev
+	) {
 		$this->user = $context->getUser();
 		$this->request = $context->getRequest();
 		$this->article = $article;
@@ -115,8 +117,8 @@ class RevisionReviewFormUI {
 		# Disable form for unprivileged users
 		$disabled = [];
 		if ( !$article->getTitle()->quickUserCan( 'review' ) ||
-			!FlaggedRevs::userCanSetFlags( $this->user, $flags ) )
-		{
+			!FlaggedRevs::userCanSetFlags( $this->user, $flags )
+		) {
 			$disabled = [ 'disabled' => 'disabled' ];
 		}
 
@@ -251,7 +253,9 @@ class RevisionReviewFormUI {
 		if ( $this->refRev ) {
 			$priorId = $this->refRev->getId();
 			if ( $priorId == $this->article->getStable() && $priorId != $this->rev->getId() ) {
-				if ( $this->rev->getContent( Revision::RAW ) != $this->refRev->getContent( Revision::RAW ) ) {
+				if ( $this->rev->getContent( Revision::RAW ) !=
+					$this->refRev->getContent( Revision::RAW )
+				) {
 					return $priorId; // left rev must be stable and right one newer
 				}
 			}
@@ -261,9 +265,9 @@ class RevisionReviewFormUI {
 
 	/**
 	 * @param User $user
-	 * @param array $flags, selected flags
-	 * @param bool $disabled, form disabled
-	 * @param bool $reviewed, rev already reviewed
+	 * @param array $flags selected flags
+	 * @param bool $disabled form disabled
+	 * @param bool $reviewed rev already reviewed
 	 * @return string
 	 * Generates a main tag inputs (checkboxes/radios/selects) for review form
 	 */
@@ -341,8 +345,8 @@ class RevisionReviewFormUI {
 		# Build up all levels available to user
 		foreach ( FlaggedRevs::getDimensions() as $tag => $levels ) {
 			if ( isset( $selected[$tag] ) &&
-				!FlaggedRevs::userCanSetTag( $user, $tag, $selected[$tag] ) )
-			{
+				!FlaggedRevs::userCanSetTag( $user, $tag, $selected[$tag] )
+			) {
 				return [ false, false ]; // form will have to be disabled
 			}
 			$labels[$tag] = []; // applicable tag levels
@@ -366,9 +370,9 @@ class RevisionReviewFormUI {
 	/**
 	 * Generates review form submit buttons
 	 * @param int $rejectId left rev ID for "reject" on diffs
-	 * @param FlaggedRevision $frev, the flagged revision, if any
-	 * @param bool $disabled, is the form disabled?
-	 * @param bool $reviewIncludes, force the review button to be usable?
+	 * @param FlaggedRevision $frev the flagged revision, if any
+	 * @param bool $disabled is the form disabled?
+	 * @param bool $reviewIncludes force the review button to be usable?
 	 * @return string
 	 */
 	protected static function submitButtons(
@@ -424,14 +428,18 @@ class RevisionReviewFormUI {
 
 	protected function getFileVersion() {
 		if ( $this->fileVersion === null ) {
-			throw new Exception( "File page file version not provided to review form; call setFileVersion()." );
+			throw new Exception(
+				"File page file version not provided to review form; call setFileVersion()."
+			);
 		}
 		return $this->fileVersion;
 	}
 
 	protected function getIncludeVersions() {
 		if ( $this->templateIDs === null || $this->imageSHA1Keys === null ) {
-			throw new Exception( "Template or file versions not provided to review form; call setIncludeVersions()." );
+			throw new Exception(
+				"Template or file versions not provided to review form; call setIncludeVersions()."
+			);
 		}
 		return [ $this->templateIDs, $this->imageSHA1Keys ];
 	}

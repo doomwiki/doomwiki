@@ -245,6 +245,8 @@ class MobileContextTest extends MediaWikiTestCase {
 
 	/**
 	 * A null title shouldn't result in a fatal exception - bug T142914
+	 * @covers MobileContext::shouldDisplayMobileView
+	 * @covers MobileContext::useFormat
 	 */
 	public function testRedirectMobileEnabledPages() {
 		$this->setMwGlobals( [
@@ -550,6 +552,9 @@ class MobileContextTest extends MediaWikiTestCase {
 		];
 	}
 
+	/**
+	 * @codeCoverageIgnore
+	 */
 	public function testBug71329() {
 		SpecialPageFactory::resetList();
 		RequestContext::resetMain();
@@ -602,6 +607,38 @@ class MobileContextTest extends MediaWikiTestCase {
 			// When the config variable isn't an array, then its value is returned
 			// regardless of whether the user is a member of the beta group.
 			[ true, true ],
+		];
+	}
+
+	/**
+	 * @dataProvider provideShouldStripResponsiveImages
+	 * @covers MobileContext::shouldStripResponsiveImages
+	 */
+	public function testShouldStripResponsiveImages(
+		$expected,
+		$forceMobileView,
+		$wgMFStripResponsiveImages,
+		$stripResponsiveImages = null
+	) {
+		$context = MobileContext::singleton();
+		$context->setForceMobileView( $forceMobileView );
+
+		$this->setMwGlobals(
+			'wgMFStripResponsiveImages',
+			$wgMFStripResponsiveImages
+		);
+
+		$context->setStripResponsiveImages( $stripResponsiveImages );
+
+		$this->assertEquals( $expected, $context->shouldStripResponsiveImages() );
+	}
+
+	public static function provideShouldStripResponsiveImages() {
+		return [
+			[ true, true, true ],
+			[ false, true, false ],
+			[ false, false, true ],
+			[ false, true, true, false ],
 		];
 	}
 }

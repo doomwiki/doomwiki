@@ -22,6 +22,37 @@
 
 	OO.mfExtend( Icon, View, {
 		/** @inheritdoc */
+		preRender: function () {
+			this.setRotationClass();
+		},
+		/**
+		 * Internal method that sets the correct rotation class for the icon
+		 * based on the value of rotation
+		 * @method
+		 * @private
+		 */
+		setRotationClass: function () {
+			var options = this.options;
+			if ( options.rotation ) {
+				switch ( options.rotation ) {
+					case -180:
+					case 180:
+						options._rotationClass = 'mf-mw-ui-icon-rotate-flip';
+						break;
+					case -90:
+						options._rotationClass = 'mf-mw-ui-icon-rotate-anti-clockwise';
+						break;
+					case 90:
+						options._rotationClass = 'mf-mw-ui-icon-rotate-clockwise';
+						break;
+					case 0:
+						break;
+					default:
+						throw new Error( 'Bad value for rotation given. Must be ±90, 0 or ±180.' );
+				}
+			}
+		},
+		/** @inheritdoc */
 		isTemplateMode: true,
 		/**
 		 * @cfg {Object} defaults Default options hash.
@@ -35,8 +66,11 @@
 		 * @cfg {string} defaults.modifier Additional class name.
 		 * Defaults to 'mw-ui-icon-element'.
 		 * @cfg {string} defaults.title Tooltip text.
+		 * @cfg {boolean} defaults.rotation will rotate the icon by a certain number of degrees.
+		 *  Must be ±90, 0 or ±180 or will throw exception.
 		 */
 		defaults: {
+			rotation: 0,
 			hasText: false,
 			href: undefined,
 			tagName: 'div',

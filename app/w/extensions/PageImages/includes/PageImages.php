@@ -42,7 +42,7 @@ class PageImages {
 	/**
 	 * Returns page image for a given title
 	 *
-	 * @param Title $title: Title to get page image for
+	 * @param Title $title Title to get page image for
 	 *
 	 * @return File|bool
 	 */
@@ -50,7 +50,10 @@ class PageImages {
 		$dbr = wfGetDB( DB_SLAVE );
 		$fileName = $dbr->selectField( 'page_props',
 			[ 'pp_value' ],
-			[ 'pp_page' => $title->getArticleID(), 'pp_propname' => [ self::PROP_NAME, self::PROP_NAME_FREE ] ],
+			[
+				'pp_page' => $title->getArticleID(),
+				'pp_propname' => [ self::PROP_NAME, self::PROP_NAME_FREE ]
+			],
 			__METHOD__,
 			[ 'ORDER BY' => 'pp_propname' ]
 		);
@@ -163,32 +166,35 @@ class PageImages {
 	 * @return array[]
 	 */
 	private static function getImages( array $pageIds, $size = 0 ) {
-		$request = [
-			'action' => 'query',
-			'prop' => 'pageimages',
-			'piprop' => 'name',
-			'pageids' => implode( '|', $pageIds ),
-			'pilimit' => 'max',
-		];
+		$ret = [];
+		foreach ( array_chunk( $pageIds, ApiBase::LIMIT_SML1 ) as $chunk ) {
+			$request = [
+				'action' => 'query',
+				'prop' => 'pageimages',
+				'piprop' => 'name',
+				'pageids' => implode( '|', $chunk ),
+				'pilimit' => 'max',
+			];
 
-		if ( $size ) {
-			$request['piprop'] = 'thumbnail';
-			$request['pithumbsize'] = $size;
-		}
-
-		$api = new ApiMain( new FauxRequest( $request ) );
-		$api->execute();
-
-		if ( defined( 'ApiResult::META_CONTENT' ) ) {
-			return (array)$api->getResult()->getResultData( [ 'query', 'pages' ],
-				[ 'Strip' => 'base' ] );
-		} else {
-			$data = $api->getResultData();
-			if ( isset( $data['query']['pages'] ) ) {
-				return $data['query']['pages'];
+			if ( $size ) {
+				$request['piprop'] = 'thumbnail';
+				$request['pithumbsize'] = $size;
 			}
-			return [];
+
+			$api = new ApiMain( new FauxRequest( $request ) );
+			$api->execute();
+
+			if ( defined( 'ApiResult::META_CONTENT' ) ) {
+				$ret += (array)$api->getResult()->getResultData( [ 'query', 'pages' ],
+					[ 'Strip' => 'base' ] );
+			} else {
+				$data = $api->getResultData();
+				if ( isset( $data['query']['pages'] ) ) {
+					$ret += $data['query']['pages'];
+				}
+			}
 		}
+		return $ret;
 	}
 
 	public static function onRegistration() {

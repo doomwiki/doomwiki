@@ -1,6 +1,6 @@
 RANDOM IMAGE EXTENSION
 
-	Version 1.4
+	Version 1.5
 	© 2006-2007 Rob Church
 
 This is free software licenced under the GNU General Public Licence. Please
@@ -19,7 +19,7 @@ from the image description page.
 
 == Requirements ==
 
-This version of the RandomImage extension requires MediaWiki 1.10.0 or above.
+This version of the RandomImage extension requires MediaWiki 1.25.0 or above.
 
 == Installation ==
 
@@ -27,7 +27,7 @@ To install the extension, place all extension files into a `RandomImage`
 directory within your MediaWiki `extensions` directory, then edit
 `LocalSettings.php` and add the following line
 
-	require_once( "{$IP}/extensions/RandomImage/RandomImage.php" );
+	wfLoadExtension( 'RandomImage' );
 
 Installation can be verified through the Special:Version page on the wiki.
 
@@ -39,7 +39,7 @@ The tag can be used in two forms:
 		Produces an image using an automatic caption (see below)
 	<randomimage></randomimage>
 		Produces an image with a preset caption (text inside the tags)
-		
+
 The tag also supports the following attributes:
 
 	size
@@ -48,7 +48,7 @@ The tag also supports the following attributes:
 		Float the image; valid values are 'left', 'center' and 'right'
 	choices
 		Confines image selection to a pipe-delimited list of images
-		
+
 For example:
 
 	<randomimage size="100" float="left" choices="Apple.jpg|Pear.jpg" />
@@ -88,6 +88,12 @@ the extension file). This will affect all users, and might incur additional
 overhead on pageviews.
 
 == Change log ==
+10 June 2017
+Version 1.5
+	Added version number to the extension credits displayed on Special:Version
+	Extension registration support added
+	MediaWiki 1.25.0 or newer is now explicitly required
+	General code cleanup
 
 August 20, 2007
 Version 1.4
@@ -115,7 +121,7 @@ Version 1.1
 June 9, 2006
 Version 1.0
 	Initial release
-	
+
 == Feedback ==
 
 All feedback, bug reports, etc. welcome via robchur {at} gmail {dot} com.

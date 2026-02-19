@@ -5,6 +5,7 @@
 
 use MediaWiki\Auth\AuthManager;
 use MediaWiki\MediaWikiServices;
+use MediaWiki\Logger\LoggerFactory;
 
 /**
  * Hook handlers for MobileFrontend extension
@@ -14,7 +15,7 @@ use MediaWiki\MediaWikiServices;
  * For intance, the hook handler for the 'RequestContextCreateSkin' would be called:
  *	onRequestContextCreateSkin()
  *
- * If you're hook changes the behaviour of the Minerva skin you are in the wrong place.
+ * If your hook changes the behaviour of the Minerva skin, you are in the wrong place.
  * Any changes relating to Minerva should go into Minerva.hooks.php
  */
 class MobileFrontendHooks {
@@ -49,12 +50,15 @@ class MobileFrontendHooks {
 		MobileContext $mobileContext
 	) {
 		$skinName = $mobileContext->getMFConfig()->get( 'MFDefaultSkinClass' );
-		$betaSkinName = $skinName . 'Beta';
-		// Force beta for test mode to sure all modules can run
-		if ( $mobileContext->isBetaGroupMember() && class_exists( $betaSkinName ) ) {
-			$skinName = $betaSkinName;
+
+		if ( class_exists( $skinName ) ) {
+			$skin = new $skinName( $context );
+		} else {
+			throw new \RuntimeException(
+				'wgMFDefaultSkinClass is not setup correctly. '.
+				'It should point to the class name of a valid skin e.g. SkinMinerva, SkinVector'
+			);
 		}
-		$skin = new $skinName( $context );
 		return $skin;
 	}
 
@@ -63,7 +67,7 @@ class MobileFrontendHooks {
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/RequestContextCreateSkin
 	 *
 	 * @param IContextSource $context
-	 * @param Skin|null|string $skin
+	 * @param Skin|null|string &$skin
 	 * @return bool
 	 */
 	public static function onRequestContextCreateSkin( $context, &$skin ) {
@@ -113,7 +117,7 @@ class MobileFrontendHooks {
 		if ( $userSkin ) {
 			// Normalize the key in case the user is passing gibberish or has old preferences
 			$normalizedSkin = Skin::normalizeKey( $userSkin );
-			// If the skin has been normalized and is different from user input use it
+			// If the skin has been normalized and is different from user input, use it
 			if ( $normalizedSkin === $userSkin ) {
 				$skin = $normalizedSkin;
 				return false;
@@ -152,8 +156,8 @@ class MobileFrontendHooks {
 	 *
 	 * Adds a link to view the current page in 'mobile view' to the desktop footer.
 	 *
-	 * @param SkinTemplate $skin
-	 * @param QuickTemplate $tpl
+	 * @param SkinTemplate &$skin
+	 * @param QuickTemplate &$tpl
 	 * @return bool
 	 */
 	public static function onSkinTemplateOutputPageBeforeExec( &$skin, &$tpl ) {
@@ -182,20 +186,21 @@ class MobileFrontendHooks {
 	 * Also enables Related Articles in the footer in the beta mode.
 	 * Adds inline script to allow opening of sections while JS is still loading
 	 *
-	 * @param OutputPage $out
-	 * @param string $text the HTML to be wrapped inside the #mw-content-text element
+	 * @param OutputPage &$out
+	 * @param string &$text the HTML to be wrapped inside the #mw-content-text element
 	 * @return bool
 	 */
 	public static function onOutputPageBeforeHTML( &$out, &$text ) {
 		$context = MobileContext::singleton();
 		$title = $context->getTitle();
+		$config = $context->getMFConfig();
 
 		if ( !$title ) {
 			return true;
 		}
 
 		// Perform a few extra changes if we are in mobile mode
-		if ( $context->shouldDisplayMobileView() ) {
+		if ( $context->shouldDisplayMobileView() || $config->get( 'MFAlwaysUseMobileFormatter' ) ) {
 			$text = ExtMobileFrontend::DOMParse( $out, $text );
 		}
 
@@ -211,8 +216,8 @@ class MobileFrontendHooks {
 	 *
 	 * Ensures URLs are handled properly for select special pages.
 	 * @param OutputPage $out
-	 * @param string $redirect
-	 * @param string $code
+	 * @param string &$redirect
+	 * @param string &$code
 	 * @return bool
 	 */
 	public static function onBeforePageRedirect( $out, &$redirect, &$code ) {
@@ -277,8 +282,8 @@ class MobileFrontendHooks {
 	 * ResourceLoaderTestModules hook handler
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ResourceLoaderTestModules
 	 *
-	 * @param array $testModules
-	 * @param ResourceLoader $resourceLoader
+	 * @param array &$testModules
+	 * @param ResourceLoader &$resourceLoader
 	 * @return bool
 	 */
 	public static function onResourceLoaderTestModules( array &$testModules,
@@ -340,7 +345,7 @@ class MobileFrontendHooks {
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/GetCacheVaryCookies
 	 *
 	 * @param OutputPage $out
-	 * @param array $cookies
+	 * @param array &$cookies
 	 * @return bool
 	 */
 	public static function onGetCacheVaryCookies( $out, &$cookies ) {
@@ -362,20 +367,22 @@ class MobileFrontendHooks {
 	}
 
 	/**
-	 * PageRenderingHash hook handler
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/PageRenderingHash
+	 * Varies the parser cache if responsive images should have their variants
+	 * stripped from the parser output, since the transformation happens during
+	 * the parse.
 	 *
-	 * @param string &$confstr Reference to a hash key string which can be modified
-	 * @param User $user User object that is requesting the page
-	 * @param array &$forOptions Array of options used to generate the $confstr hash key
+	 * See `$wgMFStripResponsiveImages` and `$wgMFResponsiveImageWhitelist` for
+	 * more detail about the stripping of responsive images.
+	 *
+	 * See https://www.mediawiki.org/wiki/Manual:Hooks/PageRenderingHash for more
+	 * detail about the `PageRenderingHash` hook.
+	 *
+	 * @param string &$confstr Reference to the parser cache key
+	 * @param User $user The user that is requesting the page
+	 * @param array &$forOptions The options used to generate the parser cache key
 	 */
 	public static function onPageRenderingHash( &$confstr, User $user, &$forOptions ) {
-		$context = MobileContext::singleton();
-
-		if (
-			$context->shouldDisplayMobileView()
-			&& $context->shouldStripResponsiveImages()
-		) {
+		if ( MobileContext::singleton()->shouldStripResponsiveImages() ) {
 			$confstr .= '!responsiveimages=0';
 		}
 	}
@@ -390,8 +397,8 @@ class MobileFrontendHooks {
 	 *
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ResourceLoaderGetConfigVars
 	 *
-	 * @param array $vars
-	 * @return boolean
+	 * @param array &$vars
+	 * @return bool
 	 */
 	public static function onResourceLoaderGetConfigVars( &$vars ) {
 		$context = MobileContext::singleton();
@@ -417,10 +424,9 @@ class MobileFrontendHooks {
 			'wgMFSearchGenerator' => $config->get( 'MFSearchGenerator' ),
 			'wgMFNearbyEndpoint' => $config->get( 'MFNearbyEndpoint' ),
 			'wgMFThumbnailSizes' => [
-				'tiny' =>  MobilePage::TINY_IMAGE_WIDTH,
-				'small' =>  MobilePage::SMALL_IMAGE_WIDTH,
+				'tiny' => MobilePage::TINY_IMAGE_WIDTH,
+				'small' => MobilePage::SMALL_IMAGE_WIDTH,
 			],
-			'wgMFContentNamespace' => $config->get( 'MFContentNamespace' ),
 			'wgMFEditorOptions' => $config->get( 'MFEditorOptions' ),
 			'wgMFLicense' => MobileFrontendSkinHooks::getLicense( 'editor' ),
 			'wgMFSchemaEditSampleRate' => $config->get( 'MFSchemaEditSampleRate' ),
@@ -428,13 +434,11 @@ class MobileFrontendHooks {
 			'wgMFEnableJSConsoleRecruitment' => $config->get( 'MFEnableJSConsoleRecruitment' ),
 			'wgMFPhotoUploadEndpoint' =>
 				$config->get( 'MFPhotoUploadEndpoint' ) ? $config->get( 'MFPhotoUploadEndpoint' ) : '',
+			// Expose the threshold as defined in core to JS clients so they can tell whether
+			// they are in tablet or mobile mode.
 			'wgMFDeviceWidthTablet' => $lessVars['deviceWidthTablet'],
 			'wgMFCollapseSectionsByDefault' => $config->get( 'MFCollapseSectionsByDefault' ),
 		];
-
-		if ( $context->shouldDisplayMobileView() ) {
-			$vars['wgImagesDisabled'] = $context->imagesDisabled();
-		}
 
 		return true;
 	}
@@ -459,7 +463,7 @@ class MobileFrontendHooks {
 	/**
 	 * Hook for SpecialPage_initList in SpecialPageFactory.
 	 *
-	 * @param array $list list of special page classes
+	 * @param array &$list list of special page classes
 	 * @return bool hook return value
 	 */
 	public static function onSpecialPage_initList( &$list ) {
@@ -492,7 +496,7 @@ class MobileFrontendHooks {
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ListDefinedTags
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/ChangeTagsListActive
 	 *
-	 * @param array $tags
+	 * @param array &$tags
 	 * @return bool
 	 */
 	public static function onListDefinedTags( &$tags ) {
@@ -548,7 +552,7 @@ class MobileFrontendHooks {
 	 * AbuseFilter-builder hook handler that adds user_mobile variable to list
 	 *  of valid vars
 	 *
-	 * @param array $builder Array in AbuseFilter::getBuilderValues to add to.
+	 * @param array &$builder Array in AbuseFilter::getBuilderValues to add to.
 	 * @return bool
 	 */
 	public static function onAbuseFilterBuilder( &$builder ) {
@@ -572,8 +576,13 @@ class MobileFrontendHooks {
 		$isMobileView = MobileContext::singleton()->shouldDisplayMobileView();
 		$name = $special->getName();
 
-		if ( $isMobileView && ( $name === 'Userlogin' || $name === 'CreateAccount' ) ) {
-			$special->getOutput()->addModules( 'mobile.special.userlogin.scripts' );
+		if ( $isMobileView ) {
+			$special->getOutput()->addModuleStyles(
+				[ 'mobile.special.styles', 'mobile.messageBox.styles' ]
+			);
+			if ( $name === 'Userlogin' || $name === 'CreateAccount' ) {
+				$special->getOutput()->addModules( 'mobile.special.userlogin.scripts' );
+			}
 		}
 
 		return true;
@@ -586,8 +595,8 @@ class MobileFrontendHooks {
 	 * Used here to handle watchlist actions made by anons to be handled after
 	 * login or account creation.
 	 *
-	 * @param User $currentUser
-	 * @param string $injected_html
+	 * @param User &$currentUser
+	 * @param string &$injected_html
 	 * @return bool
 	 */
 	public static function onUserLoginComplete( &$currentUser, &$injected_html ) {
@@ -612,7 +621,7 @@ class MobileFrontendHooks {
 	 * Decide if the login/usercreate page should be overwritten by a mobile only
 	 * special specialpage. If not, do some changes to the template.
 	 *
-	 * @param QuickTemplate $tpl Login or Usercreate template
+	 * @param QuickTemplate &$tpl Login or Usercreate template
 	 */
 	public static function changeUserLoginCreateForm( &$tpl ) {
 		$context = MobileContext::singleton();
@@ -643,7 +652,7 @@ class MobileFrontendHooks {
 	 * UserLoginForm hook handler
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/UserLoginForm
 	 *
-	 * @param QuickTemplate $template Login form template object
+	 * @param QuickTemplate &$template Login form template object
 	 * @return bool
 	 */
 	public static function onUserLoginForm( &$template ) {
@@ -655,7 +664,7 @@ class MobileFrontendHooks {
 	 * UserCreateForm hook handler
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/UserCreateForm
 	 *
-	 * @param QuickTemplate $template Account creation form template object
+	 * @param QuickTemplate &$template Account creation form template object
 	 * @return bool
 	 */
 	public static function onUserCreateForm( &$template ) {
@@ -667,8 +676,8 @@ class MobileFrontendHooks {
 	 * BeforePageDisplay hook handler
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/BeforePageDisplay
 	 *
-	 * @param OutputPage $out
-	 * @param Skin $sk
+	 * @param OutputPage &$out
+	 * @param Skin &$sk
 	 * @return bool
 	 */
 	public static function onBeforePageDisplay( &$out, &$sk ) {
@@ -680,19 +689,9 @@ class MobileFrontendHooks {
 		$mfNoIndexPages = $config->get( 'MFNoindexPages' );
 		$mfMobileUrlTemplate = $context->getMobileUrlTemplate();
 		$lessVars = $config->get( 'ResourceLoaderLESSVars' );
-		$noJsEditing = $config->get( 'MFAllowNonJavaScriptEditing' );
 
 		$title = $sk->getTitle();
 		$request = $context->getRequest();
-
-		// Migrate prefixed disableImages cookie to unprefixed cookie.
-		$rawCookie = $config->get( 'CookiePrefix' ) . MobileContext::DISABLE_IMAGES_COOKIE_NAME;
-		if ( isset( $_COOKIE[ $rawCookie ] ) ) {
-			if ( (bool)$request->getCookie( MobileContext::DISABLE_IMAGES_COOKIE_NAME ) ) {
-				$context->setDisableImagesCookie( true );
-			}
-			$request->response()->clearCookie( MobileContext::DISABLE_IMAGES_COOKIE_NAME );
-		}
 
 		// Add deep link to a mobile app specified by $wgMFAppScheme
 		if ( ( $mfAppPackageId !== false ) && ( $title->isContentPage() )
@@ -770,14 +769,34 @@ class MobileFrontendHooks {
 				$out->setTarget( 'mobile' );
 			}
 
+			if ( $config->get( 'MFEnableManifest' ) ) {
+				$out->addLink(
+					[
+						'rel' => 'manifest',
+						'href' => wfAppendQuery(
+							wfScript( 'api' ),
+							[ 'action' => 'webapp-manifest' ]
+						)
+					]
+				);
+			}
+
+			// In mobile mode, MediaWiki:Common.css/MediaWiki:Common.js is not loaded.
+			// We load MediaWiki:Mobile.css/js instead
+			$out->addModules( [ 'mobile.site' ] );
+
+			if ( $out->getRequest()->getText( 'oldid' ) ) {
+				$styles[] = 'mobile.messageBox.styles';
+			}
+
 			// Allow modifications in mobile only mode
 			Hooks::run( 'BeforePageDisplayMobile', [ &$out, &$sk ] );
 
 			// add fallback editor styles to action=edit page
 			$requestAction = $out->getRequest()->getVal( 'action' );
-			if ( $noJsEditing && ( $requestAction === 'edit' || $requestAction === 'submit' ) ) {
+			if ( $requestAction === 'edit' || $requestAction === 'submit' ) {
 				$out->addModuleStyles( [
-					'mobile.fallbackeditor.styles', 'mobile.messageBox'
+					'mobile.messageBox.styles'
 				] );
 			}
 		}
@@ -798,59 +817,11 @@ class MobileFrontendHooks {
 	}
 
 	/**
-	 * CustomEditor hook handler
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/CustomEditor
-	 *
-	 * @param Article $article
-	 * @param User $user
-	 * @return bool
-	 */
-	public static function onCustomEditor( $article, $user ) {
-		$context = MobileContext::singleton();
-
-		// redirect to Special:MobileEditor if no-JS editing disabled
-		if ( !$context->getMFConfig()->get( 'MFAllowNonJavaScriptEditing' ) ) {
-
-			// redirect to mobile editor instead of showing desktop editor
-			if ( $context->shouldDisplayMobileView() && !$context->getRequest()->wasPosted() ) {
-				$output = $context->getOutput();
-				$data = $output->getRequest()->getValues();
-				// Unset these to avoid a redirect loop but make sure we pass other
-				// parameters to edit e.g. undo actions
-				unset( $data['action'] );
-				unset( $data['title'] );
-
-				$output->redirect( SpecialPage::getTitleFor( 'MobileEditor', $article->getTitle() )
-					->getFullURL( $data ) );
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * Check whether Minerva has been enabled as a desktop skin via the Minerva
-	 * beta feature.
-	 *
-	 * @param User $user
-	 *
-	 * @return bool
-	 */
-	private static function hasEnabledMinervaBetaFeature( $user ) {
-		$config = MobileContext::singleton()->getMFConfig();
-		$mfEnableMinervaBetaFeature = $config->get( 'MFEnableMinervaBetaFeature' );
-		$canEnableMinervaFeature = class_exists( 'BetaFeatures' ) && $mfEnableMinervaBetaFeature;
-
-		return $canEnableMinervaFeature &&
-			BetaFeatures::isFeatureEnabled( $user, 'betafeatures-minerva' );
-	}
-
-	/**
 	 * GetPreferences hook handler
 	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/GetPreferences
 	 *
 	 * @param User $user
-	 * @param array $preferences
+	 * @param array &$preferences
 	 *
 	 * @return bool
 	 */
@@ -864,9 +835,9 @@ class MobileFrontendHooks {
 		$preferences[SpecialMobileWatchlist::FILTER_OPTION_NAME] = $definition;
 		$preferences[SpecialMobileWatchlist::VIEW_OPTION_NAME] = $definition;
 
-		// Remove the Minerva skin from the preferences unless Minerva has been enabled in
-		// BetaFeatures provided that the user has not set it as the default skin.
-		if ( $defaultSkin !== 'minerva' && !self::hasEnabledMinervaBetaFeature( $user ) ) {
+		// Remove the Minerva skin from the preferences page
+		// FIXME: This can be removed when T171644 has been resolved.
+		if ( $defaultSkin !== 'minerva' ) {
 			// Preference key/values are backwards. The value is the name of the skin. The
 			// key is the text+links to display.
 			if ( !empty( $preferences['skin']['options'] ) ) {
@@ -880,37 +851,6 @@ class MobileFrontendHooks {
 			'type' => 'api',
 			'default' => '',
 		];
-
-		return true;
-	}
-
-	/**
-	 * GetBetaFeaturePreferences hook handler
-	 * @see https://www.mediawiki.org/wiki/Manual:Hooks/GetPreferences
-	 *
-	 * @param User $user
-	 * @param array $preferences
-	 *
-	 * @return bool
-	 */
-	public static function onGetBetaFeaturePreferences( $user, &$preferences ) {
-		$context = MobileContext::singleton();
-		$extensionAssetsPath = $context->getConfig()->get( 'ExtensionAssetsPath' );
-		$mfEnableMinervaBetaFeature = $context->getMFConfig()->get( 'MFEnableMinervaBetaFeature' );
-
-		if ( $mfEnableMinervaBetaFeature ) {
-			// Enable the mobile skin on desktop
-			$preferences['betafeatures-minerva'] = [
-				'label-message' => 'beta-feature-minerva',
-				'desc-message' => 'beta-feature-minerva-description',
-				'info-link' => '//www.mediawiki.org/wiki/Beta_Features/Minerva',
-				'discussion-link' => '//www.mediawiki.org/wiki/Talk:Beta_Features/Minerva',
-				'screenshot' => [
-					'ltr' => "$extensionAssetsPath/MobileFrontend/images/BetaFeatures/minerva-ltr.svg",
-					'rtl' => "$extensionAssetsPath/MobileFrontend/images/BetaFeatures/minerva-rtl.svg",
-				],
-			];
-		}
 
 		return true;
 	}
@@ -930,7 +870,7 @@ class MobileFrontendHooks {
 	 *
 	 * @see CentralAuthHooks::doCentralLoginRedirect in CentralAuth extension
 	 * @param CentralAuthUser $centralUser
-	 * @param array $data
+	 * @param array &$data
 	 *
 	 * @return bool
 	 */
@@ -948,7 +888,7 @@ class MobileFrontendHooks {
 	 * Points redirects from CentralAuth wiki to mobile domain if user has logged in from it
 	 * @see SpecialCentralLogin in CentralAuth extension
 	 * @param CentralAuthUser $centralUser
-	 * @param string $url to redirect to
+	 * @param string &$url to redirect to
 	 * @param array $info token information
 	 *
 	 * @return bool
@@ -993,8 +933,8 @@ class MobileFrontendHooks {
 						'mobile.editor.common',
 						'mobile.startup',
 					],
-					'styles' => [
-						'resources/mobile.editor.ve/VisualEditorOverlay.less',
+					'skinStyles' => [
+						'minerva' => 'skinStyles/mobile.editor.ve/minerva.less'
 					],
 					'scripts' => [
 						'resources/mobile.editor.ve/ve.init.mw.MobileFrontendArticleTarget.js',
@@ -1016,20 +956,8 @@ class MobileFrontendHooks {
 		}
 
 		// add Echo, if it's installed
-		if ( class_exists( 'MWEchoNotifUser' ) ) {
+		if ( ExtensionRegistry::getInstance()->isLoaded( 'Echo' ) ) {
 			$resourceLoader->register( [
-				'skins.minerva.notifications' => $resourceBoilerplate + [
-					'dependencies' => [
-						'mobile.startup',
-						'mediawiki.router',
-						'skins.minerva.scripts',
-						'mediawiki.ui.anchor'
-					],
-					'scripts' => [
-						'resources/skins.minerva.notifications/init.js',
-					],
-					'targets' => [ 'mobile', 'desktop' ],
-				],
 				'mobile.notifications.overlay' => $resourceBoilerplate + [
 					'dependencies' => [
 						'mediawiki.util',
@@ -1043,12 +971,31 @@ class MobileFrontendHooks {
 					'styles' => [
 						'resources/mobile.notifications.overlay/NotificationsOverlay.less',
 					],
+					'skinStyles' => [
+						'minerva' => 'skinStyles/mobile.notifications.overlay/minerva.less',
+					],
 					'messages' => [
 						// defined in Echo
 						'echo-none',
 						'notifications',
 						'echo-overlay-link',
 						'echo-mark-all-as-read-confirmation',
+					],
+					'targets' => [ 'mobile', 'desktop' ],
+				],
+				'mobile.notifications.filter.overlay' => $resourceBoilerplate + [
+					'dependencies' => [
+						'mobile.startup',
+						'ext.echo.ui',
+					],
+					'scripts' => [
+						'resources/mobile.notifications.filter.overlay/NotificationsFilterOverlay.js',
+					],
+					'styles' => [
+						'resources/mobile.notifications.filter.overlay/NotificationsFilterOverlay.less',
+					],
+					'messages' => [
+						'mobile-frontend-notifications-filter-title',
 					],
 					'targets' => [ 'mobile', 'desktop' ],
 				],
@@ -1071,9 +1018,6 @@ class MobileFrontendHooks {
 		$lessVars = array_merge( $lessVars,
 			[
 				'wgMFDeviceWidthMobileSmall' => "{$config->get( 'MFDeviceWidthMobileSmall' )}px",
-				'wgMinervaApplyKnownTemplateHacks' => "{$config->get( 'MinervaApplyKnownTemplateHacks' )}",
-				'wgMFThumbnailTiny' =>  MobilePage::TINY_IMAGE_WIDTH . 'px',
-				'wgMFThumbnailSmall' =>  MobilePage::SMALL_IMAGE_WIDTH . 'px'
 			]
 		);
 	}
@@ -1087,7 +1031,7 @@ class MobileFrontendHooks {
 	 * If the module has already been registered in
 	 * onResourceLoaderRegisterModules, then it is overwritten.
 	 *
-	 * @param array $schemas The schemas currently registered with the EventLogging
+	 * @param array &$schemas The schemas currently registered with the EventLogging
 	 *  extension
 	 * @return bool Always true
 	 */
@@ -1107,7 +1051,7 @@ class MobileFrontendHooks {
 	 * that no additional assets are requested by the ResourceLoader, i.e. they are stub
 	 * modules.
 	 *
-	 * @param ResourceLoader &$resourceLoader The ResourceLoader object
+	 * @param ResourceLoader $resourceLoader The ResourceLoader object
 	 */
 	private static function registerMobileLoggingSchemasModule( $resourceLoader ) {
 		$mfResourceFileModuleBoilerplate = [
@@ -1174,7 +1118,7 @@ class MobileFrontendHooks {
 		$context = MobileContext::singleton();
 
 		if ( $context->shouldDisplayMobileView() ) {
-			$outputPage->enableTOC( false );
+			$po->setTOCEnabled( false );
 			$outputPage->setProperty( 'MFTOC', $po->getTOCHTML() !== '' );
 
 			if ( $context->shouldShowWikibaseDescriptions( 'tagline' ) ) {
@@ -1202,22 +1146,25 @@ class MobileFrontendHooks {
 	}
 
 	/**
-	 * Omit srcset attributes from thumbnail image tags, to conserve bandwidth.
+	 * Removes the responsive image's variants from the parser output if
+	 * configured to do so and the thumbnail's MIME type isn't whitelisted.
 	 *
-	 * @param ThumbnailImage $thumbnail
-	 * @param array &$attribs
-	 * @param array &$linkAttribs
+	 * See https://www.mediawiki.org/wiki/Manual:Hooks/ThumbnailBeforeProduceHTML
+	 * for more detail about the `ThumbnailBeforeProduceHTML` hook.
+	 *
+	 * @param ThumbnailImage $thumbnail The thumbnail
+	 * @param array &$attribs The attributes of the DOMElement being contructed
+	 *  to represent the thumbnail
+	 * @param array &$linkAttribs The attributes of the DOMElement being
+	 *  constructed to represent the link to original file
 	 */
 	public static function onThumbnailBeforeProduceHTML( $thumbnail, &$attribs, &$linkAttribs ) {
 		$context = MobileContext::singleton();
 		$config = $context->getMFConfig();
-		if (
-			$context->shouldDisplayMobileView() &&
-			$context->shouldStripResponsiveImages()
-		) {
+		if ( $context->shouldStripResponsiveImages() ) {
 			$file = $thumbnail->getFile();
 			if ( !$file || !in_array( $file->getMimeType(),
-			                          $config->get( 'MFResponsiveImageWhitelist' ) ) ) {
+					$config->get( 'MFResponsiveImageWhitelist' ) ) ) {
 				// Remove all responsive image 'srcset' attributes, except
 				// from SVG->PNG renderings which usually aren't too huge,
 				// or other whitelisted types.
@@ -1232,7 +1179,7 @@ class MobileFrontendHooks {
 	/**
 	 * LoginFormValidErrorMessages hook handler to promote MF specific error message be valid.
 	 *
-	 * @param array $messages Array of already added messages
+	 * @param array &$messages Array of already added messages
 	 */
 	public static function onLoginFormValidErrorMessages( &$messages ) {
 		$messages = array_merge( $messages,
@@ -1253,14 +1200,14 @@ class MobileFrontendHooks {
 	 * For values that depend on the current page, user or request state.
 	 *
 	 * @see http://www.mediawiki.org/wiki/Manual:Hooks/MakeGlobalVariablesScript
-	 * @param &$vars array Variables to be added into the output
-	 * @param $out OutputPage instance calling the hook
+	 * @param array &$vars Variables to be added into the output
+	 * @param OutputPage $out OutputPage instance calling the hook
 	 * @return bool true in all cases
 	 */
 	public static function onMakeGlobalVariablesScript( array &$vars, OutputPage $out ) {
 		// If the device is a mobile, Remove the category entry.
 		$context = MobileContext::singleton();
-		if ( $context->shouldDisplayMobileView() ){
+		if ( $context->shouldDisplayMobileView() ) {
 			unset( $vars['wgCategories'] );
 			$vars['wgMFMode'] = $context->isBetaGroupMember() ? 'beta' : 'stable';
 			$vars['wgMFLazyLoadImages'] = $context->isLazyLoadImagesEnabled();
@@ -1268,6 +1215,10 @@ class MobileFrontendHooks {
 		}
 		$title = $out->getTitle();
 		$vars['wgPreferredVariant'] = $title->getPageLanguage()->getPreferredVariant();
+
+		// Accesses getBetaGroupMember so does not belong in onResourceLoaderGetConfigVars
+		$vars['wgMFExpandAllSectionsUserOption'] =
+			$context->getConfigVariable( 'MFExpandAllSectionsUserOption' );
 
 		$vars += self::getWikibaseStaticConfigVars( $context );
 
@@ -1298,7 +1249,7 @@ class MobileFrontendHooks {
 	 * the login screen. This is the AuthManager equivalent of changeUserLoginCreateForm.
 	 * @param AuthenticationRequest[] $requests
 	 * @param array $fieldInfo Field description as given by AuthenticationRequest::mergeFieldInfo
-	 * @param array $formDescriptor A form descriptor suitable for the HTMLForm constructor
+	 * @param array &$formDescriptor A form descriptor suitable for the HTMLForm constructor
 	 * @param string $action One of the AuthManager::ACTION_* constants
 	 */
 	public static function onAuthChangeFormFields(
@@ -1335,6 +1286,7 @@ class MobileFrontendHooks {
 	 */
 	public static function onRegistration() {
 		global $wgResourceLoaderLESSImportPaths, $wgDisableAuthManager;
+		$wgResourceLoaderLESSImportPaths[] = dirname( __DIR__ ) . "/mobile.less/";
 
 		// modify login/registration form
 		if ( class_exists( AuthManager::class ) && !$wgDisableAuthManager ) {
@@ -1343,22 +1295,5 @@ class MobileFrontendHooks {
 			Hooks::register( 'UserLoginForm', 'MobileFrontendHooks::onUserLoginForm' );
 			Hooks::register( 'UserCreateForm', 'MobileFrontendHooks::onUserCreateForm' );
 		}
-
-		// Set LESS importpath
-		$wgResourceLoaderLESSImportPaths[] = dirname( __DIR__ ) . "/minerva.less/";
-	}
-
-	/**
-	 * MediaWikiServices hook handler.
-	 *
-	 * For now, loads the <code>ServiceWiring.php</code> service wiring file. As we add more
-	 * top-level services, that file may need to be split up.
-	 *
-	 * @param MediaWikiServices $services
-	 */
-	public static function onMediaWikiServices( MediaWikiServices $services ) {
-		$services->loadWiringFiles( [
-			__DIR__ . '/ServiceWiring.php',
-		] );
 	}
 }

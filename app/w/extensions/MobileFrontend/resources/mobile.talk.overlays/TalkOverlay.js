@@ -5,7 +5,7 @@
 		user = M.require( 'mobile.startup/user' );
 	/**
 	 * Overlay for talk page
-	 * @extends Overlay
+	 * @extends TalkOverlayBase
 	 * @class TalkOverlay
 	 * @uses Page
 	 * @uses TalkSectionOverlay
@@ -153,6 +153,6 @@
 		}
 	} );
 
-	M.define( 'mobile.talk.overlays/TalkOverlay', TalkOverlay );
+	M.define( 'mobile.talk.overlays/TalkOverlay', TalkOverlay ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );

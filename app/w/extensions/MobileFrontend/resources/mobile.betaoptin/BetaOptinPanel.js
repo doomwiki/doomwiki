@@ -20,7 +20,6 @@
 		defaults: $.extend( {}, Panel.prototype.defaults, {
 			postUrl: undefined,
 			editToken: mw.user.tokens.get( 'editToken' ),
-			enableImages: mw.config.get( 'wgImagesDisabled' ) ? 0 : 1,
 			text: mw.msg( 'mobile-frontend-panel-betaoptin-msg' ),
 			buttons: [
 				new Button( {
@@ -42,10 +41,10 @@
 		 * @param {jQuery.Event} ev
 		 */
 		onOptin: function ( ev ) {
-			$( ev.currentTarget ).closest( 'form' ).submit();
+			this.$( ev.currentTarget ).closest( 'form' ).submit();
 		}
 	} );
 
-	M.define( 'mobile.betaoptin/BetaOptinPanel', BetaOptinPanel );
+	M.define( 'mobile.betaoptin/BetaOptinPanel', BetaOptinPanel ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );

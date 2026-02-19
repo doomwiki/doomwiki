@@ -32,7 +32,7 @@ use WebRequest;
 class UADeviceDetector implements DeviceDetector {
 
 	/**
-	 * @inheritdoc
+	 * @inheritDoc
 	 */
 	public function detectDeviceProperties( WebRequest $request, array $server ) {
 		$userAgent = $request->getHeader( 'User-Agent' );
@@ -127,7 +127,6 @@ class UADeviceDetector implements DeviceDetector {
 	 * @return bool
 	 */
 	private function detectTabletDevice( $userAgent ) {
-
 		// The only way to distinguish Android browsers on tablet from Android
 		// browsers on mobile is that Android browsers on tablet usually don't
 		// include the word "mobile". We look for "mobi" instead of "mobile" due to

@@ -11,14 +11,6 @@ module.exports = function ( grunt ) {
 
 	grunt.initConfig( {
 		eslint: {
-			fix: {
-				options: {
-					fix: true
-				},
-				src: [
-					'<%= eslint.all %>'
-				]
-			},
 			all: [
 				'**/*.js',
 				'!libs/**',
@@ -32,7 +24,7 @@ module.exports = function ( grunt ) {
 				syntax: 'less'
 			},
 			all: [
-				'minerva.less/**/*.less',
+				'mobile.less/**/*.less',
 				'resources/**/*.less'
 			]
 		},
@@ -62,7 +54,7 @@ module.exports = function ( grunt ) {
 		}
 	} );
 
-	grunt.registerTask( 'lint', [ 'eslint:all', 'jsonlint', 'stylelint', 'banana' ] );
+	grunt.registerTask( 'lint', [ 'eslint', 'jsonlint', 'stylelint', 'banana' ] );
 	grunt.registerTask( 'test', [ 'lint' ] );
 
 	grunt.registerTask( 'default', [ 'test' ] );

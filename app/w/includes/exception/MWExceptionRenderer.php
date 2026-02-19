@@ -16,7 +16,6 @@
  * http://www.gnu.org/copyleft/gpl.html
  *
  * @file
- * @author Aaron Schulz
  */
 
 use Wikimedia\Rdbms\DBConnectionError;
@@ -34,7 +33,7 @@ class MWExceptionRenderer {
 
 	/**
 	 * @param Exception|Throwable $e Original exception
-	 * @param integer $mode MWExceptionExposer::AS_* constant
+	 * @param int $mode MWExceptionExposer::AS_* constant
 	 * @param Exception|Throwable|null $eNew New exception from attempting to show the first
 	 */
 	public static function output( $e, $mode, $eNew = null ) {
@@ -48,13 +47,15 @@ class MWExceptionRenderer {
 			self::printError( self::getText( $e ) );
 		} elseif ( $mode === self::AS_PRETTY ) {
 			self::statusHeader( 500 );
+			self::header( "Content-Type: $wgMimeType; charset=utf-8" );
 			if ( $e instanceof DBConnectionError ) {
 				self::reportOutageHTML( $e );
 			} else {
-				self::header( "Content-Type: $wgMimeType; charset=utf-8" );
 				self::reportHTML( $e );
 			}
 		} else {
+			self::statusHeader( 500 );
+			self::header( "Content-Type: $wgMimeType; charset=utf-8" );
 			if ( $eNew ) {
 				$message = "MediaWiki internal error.\n\n";
 				if ( self::showBackTrace( $e ) ) {
@@ -82,51 +83,6 @@ class MWExceptionRenderer {
 			}
 			echo nl2br( htmlspecialchars( $message ) ) . "\n";
 		}
-	}
-
-	/**
-	 * Run hook to allow extensions to modify the text of the exception
-	 *
-	 * Called by MWException for b/c
-	 *
-	 * @param Exception|Throwable $e
-	 * @param string $name Class name of the exception
-	 * @param array $args Arguments to pass to the callback functions
-	 * @return string|null String to output or null if any hook has been called
-	 */
-	public static function runHooks( $e, $name, $args = [] ) {
-		global $wgExceptionHooks;
-
-		if ( !isset( $wgExceptionHooks ) || !is_array( $wgExceptionHooks ) ) {
-			return null; // Just silently ignore
-		}
-
-		if ( !array_key_exists( $name, $wgExceptionHooks ) ||
-			!is_array( $wgExceptionHooks[$name] )
-		) {
-			return null;
-		}
-
-		$hooks = $wgExceptionHooks[$name];
-		$callargs = array_merge( [ $e ], $args );
-
-		foreach ( $hooks as $hook ) {
-			if (
-				is_string( $hook ) ||
-				( is_array( $hook ) && count( $hook ) >= 2 && is_string( $hook[0] ) )
-			) {
-				// 'function' or [ 'class', 'hook' ]
-				$result = call_user_func_array( $hook, $callargs );
-			} else {
-				$result = null;
-			}
-
-			if ( is_string( $result ) ) {
-				return $result;
-			}
-		}
-
-		return null;
 	}
 
 	/**
@@ -172,16 +128,11 @@ class MWExceptionRenderer {
 				$wgOut->prepareErrorPage( self::msg( 'internalerror', 'Internal error' ) );
 			}
 
-			$hookResult = self::runHooks( $e, get_class( $e ) );
-			if ( $hookResult ) {
-				$wgOut->addHTML( $hookResult );
-			} else {
-				// Show any custom GUI message before the details
-				if ( $e instanceof MessageSpecifier ) {
-					$wgOut->addHTML( Message::newFromSpecifier( $e )->escaped() );
-				}
-				$wgOut->addHTML( self::getHTML( $e ) );
+			// Show any custom GUI message before the details
+			if ( $e instanceof MessageSpecifier ) {
+				$wgOut->addHTML( Message::newFromSpecifier( $e )->escaped() );
 			}
+			$wgOut->addHTML( self::getHTML( $e ) );
 
 			$wgOut->output();
 		} else {
@@ -196,12 +147,7 @@ class MWExceptionRenderer {
 				'<style>body { font-family: sans-serif; margin: 0; padding: 0.5em 2em; }</style>' .
 				"</head><body>\n";
 
-			$hookResult = self::runHooks( $e, get_class( $e ) . 'Raw' );
-			if ( $hookResult ) {
-				echo $hookResult;
-			} else {
-				echo self::getHTML( $e );
-			}
+			echo self::getHTML( $e );
 
 			echo "</body></html>\n";
 		}
@@ -225,13 +171,15 @@ class MWExceptionRenderer {
 		} else {
 			$logId = WebRequest::getRequestId();
 			$html = "<div class=\"errorbox mw-content-ltr\">" .
-				'[' . $logId . '] ' .
-				gmdate( 'Y-m-d H:i:s' ) . ": " .
-				self::msg( "internalerror-fatal-exception",
-					"Fatal exception of type $1",
-					get_class( $e ),
-					$logId,
-					MWExceptionHandler::getURL()
+				htmlspecialchars(
+					'[' . $logId . '] ' .
+					gmdate( 'Y-m-d H:i:s' ) . ": " .
+					self::msg( "internalerror-fatal-exception",
+						"Fatal exception of type $1",
+						get_class( $e ),
+						$logId,
+						MWExceptionHandler::getURL()
+					)
 				) . "</div>\n" .
 				"<!-- " . wordwrap( self::getShowBacktraceError( $e ), 50 ) . " -->";
 		}
@@ -267,7 +215,7 @@ class MWExceptionRenderer {
 				"\nBacktrace:\n" .
 				MWExceptionHandler::getRedactedTraceAsString( $e ) . "\n";
 		} else {
-			return self::getShowBacktraceError( $e );
+			return self::getShowBacktraceError( $e ) . "\n";
 		}
 	}
 
@@ -298,7 +246,7 @@ class MWExceptionRenderer {
 			$vars[] = '$wgShowDBErrorBacktrace = true;';
 		}
 		$vars = implode( ' and ', $vars );
-		return "Set $vars at the bottom of LocalSettings.php to show detailed debugging information\n";
+		return "Set $vars at the bottom of LocalSettings.php to show detailed debugging information.";
 	}
 
 	/**
@@ -318,7 +266,7 @@ class MWExceptionRenderer {
 	}
 
 	/**
-	 * @param integer $code
+	 * @param int $code
 	 */
 	private static function statusHeader( $code ) {
 		if ( !headers_sent() ) {
@@ -347,7 +295,7 @@ class MWExceptionRenderer {
 	 * @param Exception|Throwable $e
 	 */
 	private static function reportOutageHTML( $e ) {
-		global $wgShowDBErrorBacktrace, $wgShowHostnames, $wgShowSQLErrors;
+		global $wgShowDBErrorBacktrace, $wgShowHostnames, $wgShowSQLErrors, $wgSitename;
 
 		$sorry = htmlspecialchars( self::msg(
 			'dberr-problems',
@@ -361,7 +309,7 @@ class MWExceptionRenderer {
 		if ( $wgShowHostnames || $wgShowSQLErrors ) {
 			$info = str_replace(
 				'$1',
-				Html::element( 'span', [ 'dir' => 'ltr' ], htmlspecialchars( $e->getMessage() ) ),
+				Html::element( 'span', [ 'dir' => 'ltr' ], $e->getMessage() ),
 				htmlspecialchars( self::msg( 'dberr-info', '($1)' ) )
 			);
 		} else {
@@ -372,55 +320,20 @@ class MWExceptionRenderer {
 		}
 
 		MessageCache::singleton()->disable(); // no DB access
-
-		$html = "<h1>$sorry</h1><p>$again</p><p><small>$info</small></p>";
+		$html = "<!DOCTYPE html>\n" .
+				'<html><head>' .
+				'<title>' .
+				htmlspecialchars( $wgSitename ) .
+				'</title>' .
+				'<style>body { font-family: sans-serif; margin: 0; padding: 0.5em 2em; }</style>' .
+				"</head><body><h1>$sorry</h1><p>$again</p><p><small>$info</small></p>";
 
 		if ( $wgShowDBErrorBacktrace ) {
 			$html .= '<p>Backtrace:</p><pre>' .
 				htmlspecialchars( $e->getTraceAsString() ) . '</pre>';
 		}
 
-		$html .= '<hr />';
-		$html .= self::googleSearchForm();
-
+		$html .= '</body></html>';
 		echo $html;
-	}
-
-	/**
-	 * @return string
-	 */
-	private static function googleSearchForm() {
-		global $wgSitename, $wgCanonicalServer, $wgRequest;
-
-		$usegoogle = htmlspecialchars( self::msg(
-			'dberr-usegoogle',
-			'You can try searching via Google in the meantime.'
-		) );
-		$outofdate = htmlspecialchars( self::msg(
-			'dberr-outofdate',
-			'Note that their indexes of our content may be out of date.'
-		) );
-		$googlesearch = htmlspecialchars( self::msg( 'searchbutton', 'Search' ) );
-		$search = htmlspecialchars( $wgRequest->getVal( 'search' ) );
-		$server = htmlspecialchars( $wgCanonicalServer );
-		$sitename = htmlspecialchars( $wgSitename );
-		$trygoogle = <<<EOT
-<div style="margin: 1.5em">$usegoogle<br />
-<small>$outofdate</small>
-</div>
-<form method="get" action="//www.google.com/search" id="googlesearch">
-	<input type="hidden" name="domains" value="$server" />
-	<input type="hidden" name="num" value="50" />
-	<input type="hidden" name="ie" value="UTF-8" />
-	<input type="hidden" name="oe" value="UTF-8" />
-	<input type="text" name="q" size="31" maxlength="255" value="$search" />
-	<input type="submit" name="btnG" value="$googlesearch" />
-	<p>
-		<label><input type="radio" name="sitesearch" value="$server" checked="checked" />$sitename</label>
-		<label><input type="radio" name="sitesearch" value="" />WWW</label>
-	</p>
-</form>
-EOT;
-		return $trygoogle;
 	}
 }

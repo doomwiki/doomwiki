@@ -135,7 +135,7 @@
 		onCatlinkClick: function ( ev ) {
 			ev.preventDefault();
 			// change view only, if the user clicked another view
-			if ( !$( ev.target ).parent().hasClass( 'selected' ) ) {
+			if ( !this.$( ev.target ).parent().hasClass( 'selected' ) ) {
 				this._changeView();
 			}
 		},
@@ -149,6 +149,6 @@
 		}
 	} );
 
-	M.define( 'mobile.categories.overlays/CategoryOverlay', CategoryOverlay );
+	M.define( 'mobile.categories.overlays/CategoryOverlay', CategoryOverlay ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );

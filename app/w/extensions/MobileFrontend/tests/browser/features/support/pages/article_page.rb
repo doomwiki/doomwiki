@@ -31,11 +31,13 @@ class ArticlePage
   end
   li(:upload_page_action, id: 'ca-upload')
 
+  div(:signup_edit_tutorial, class: 'pointer-overlay-tutorial')
+
   a(:edit_link, text: 'Edit')
   div(:anon_editor_warning, css: '.anon-msg')
   div(:editor_overlay, class: 'editor-overlay')
   button(:editor_overlay_close_button) do |page|
-    page.editor_overlay_element.button_element(css: '.back')
+    page.editor_overlay_element.button_element(css: '.cancel')
   end
 
   ## upload
@@ -60,6 +62,7 @@ class ArticlePage
   # search
   button(:search_icon, css: '#searchIcon')
   p(:search_within_pages, css: '.without-results')
+  div(:search_content_header, css: '.search-content')
   text_field(:search_box_placeholder, name: 'search', index: 0)
   text_field(:search_box2, name: 'search', index: 1)
   li(:search_results, css: '.search-overlay .page-list li')
@@ -187,4 +190,9 @@ class ArticlePage
 
   # talk overlay
   a(:talkadd, css: '.add.continue')
+  p(:talk_overlay_content_header, css: '.talk-overlay .content-header')
+  li(:talk_overlay_first_topic_title, css: '.talk-overlay .topic-title-list li:first-child')
+  text_field(:talk_overlay_summary, css: '.talk-overlay .summary')
+  text_area(:talk_overlay_wikitext_editor, css: '.talk-overlay .wikitext-editor')
+  button(:talk_overlay_save_button, css: '.talk-overlay .confirm-save')
 end

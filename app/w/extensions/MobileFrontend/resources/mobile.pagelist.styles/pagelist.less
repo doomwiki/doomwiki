@@ -1,14 +1,10 @@
-@import 'minerva.variables';
-@import 'minerva.mixins';
+@import 'mobile.variables';
 
 @itemPaddingV: 0.8em;
 @titleMarginV: 0.5em;
 @thumbGap: 15px;
 @thumbWidth: 70px;
 @thumbSpace: @thumbWidth + @thumbGap;
-@thumbOverlayWidth: 40px;
-@thumbOverlaySpace: @thumbOverlayWidth + @thumbGap;
-@pageSummaryHeaderColor: #404040;
 
 // Pages
 //
@@ -40,10 +36,11 @@
 	overflow: hidden;
 
 	li {
-		color: @colorGray6;
+		color: @colorGray5;
 		position: relative;
-		border-bottom: solid 1px @grayLightest;
-		padding: @itemPaddingV @contentMargin;
+		border-bottom: 1px solid @grayLightest;
+		padding-top: @itemPaddingV;
+		padding-bottom: @itemPaddingV;
 		// avoid the gap between thumbnails
 		margin: -1px 0 0;
 		line-height: 1;
@@ -59,19 +56,19 @@
 			button {
 				position: absolute;
 				text-indent: inherit;
-				outline: none;
+				outline: 0;
 			}
 		}
 
 		> a {
 			display: block;
-			color: @colorGray6;
+			color: @colorGray5;
 
 			&:active,
 			&:hover,
 			&:visited {
 				text-decoration: none;
-				color: @colorGray6;
+				color: @colorGray5;
 			}
 		}
 	}
@@ -96,7 +93,6 @@
 	}
 
 	.title {
-
 		h3,
 		.mw-mf-user,
 		.component,
@@ -128,7 +124,8 @@
 	}
 
 	&.side-list .list-thumb {
-		padding: @itemPaddingV @contentMargin;
+		padding-top: @itemPaddingV;
+		padding-bottom: @itemPaddingV;
 		color: @colorGray2;
 
 		p {
@@ -141,11 +138,6 @@
 			margin-bottom: 0.65em;
 		}
 	}
-
-	// something on watchlist that doesn't exist
-	.title.new h3 {
-		color: @redBase;
-	}
 }
 
 // FIXME: combine with a similar pattern in modules/NotificationsOverlay.less
@@ -154,6 +146,7 @@
 	.page-summary-list,
 	.topic-title-list,
 	.site-link-list {
-		padding: 0 @contentPaddingTablet;
+		padding-top: 0;
+		padding-bottom: 0;
 	}
 }

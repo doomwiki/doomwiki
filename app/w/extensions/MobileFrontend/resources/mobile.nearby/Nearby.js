@@ -36,22 +36,27 @@
 		errorMessages: {
 			empty: {
 				heading: mw.msg( 'mobile-frontend-nearby-noresults' ),
+				hasHeading: true,
 				msg: mw.msg( 'mobile-frontend-nearby-noresults-guidance' )
 			},
 			locating: {
 				heading: mw.msg( 'mobile-frontend-nearby-lookup-ui-error' ),
+				hasHeading: true,
 				msg: mw.msg( 'mobile-frontend-nearby-lookup-ui-error-guidance' )
 			},
 			permission: {
 				heading: mw.msg( 'mobile-frontend-nearby-permission' ),
+				hasHeading: true,
 				msg: mw.msg( 'mobile-frontend-nearby-permission-guidance' )
 			},
 			http: {
 				heading: mw.msg( 'mobile-frontend-nearby-error' ),
+				hasHeading: true,
 				msg: mw.msg( 'mobile-frontend-nearby-error-guidance' )
 			},
 			incompatible: {
 				heading: mw.msg( 'mobile-frontend-nearby-requirements' ),
+				hasHeading: true,
 				msg: mw.msg( 'mobile-frontend-nearby-requirements-guidance' )
 			}
 		},
@@ -85,12 +90,13 @@
 		getCurrentPosition: function () {
 			var result = $.Deferred();
 			if ( browser.supportsGeoLocation() ) {
-				navigator.geolocation.getCurrentPosition( function ( geo ) {
-					result.resolve( {
-						latitude: geo.coords.latitude,
-						longitude: geo.coords.longitude
-					} );
-				},
+				navigator.geolocation.getCurrentPosition(
+					function ( geo ) {
+						result.resolve( {
+							latitude: geo.coords.latitude,
+							longitude: geo.coords.longitude
+						} );
+					},
 					function ( err ) {
 						// see https://developer.mozilla.org/en-US/docs/Web/API/PositionError
 						if ( err.code === 1 ) {
@@ -103,7 +109,8 @@
 					{
 						timeout: 10000,
 						enableHighAccuracy: true
-					} );
+					}
+				);
 			} else {
 				result.reject( 'incompatible' );
 			}
@@ -150,12 +157,13 @@
 			}
 
 			if ( options.latitude && options.longitude ) {
-				this.nearbyApi.getPages( {
-					latitude: options.latitude,
-					longitude: options.longitude
-				},
-						this.range, options.exclude
-					)
+				this.nearbyApi.getPages(
+					{
+						latitude: options.latitude,
+						longitude: options.longitude
+					},
+					this.range, options.exclude
+				)
 					.done( pagesSuccess )
 					.fail( pagesError );
 			} else if ( options.pageTitle ) {

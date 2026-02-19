@@ -1,4 +1,5 @@
 <?php
+use MediaWiki\MediaWikiServices;
 
 class MockApiMobileView extends ApiMobileView {
 	/** @var PHPUnit_Framework_MockObject_MockObject */
@@ -32,7 +33,12 @@ class MockApiMobileView extends ApiMobileView {
 	}
 
 	protected function makeParserOptions( WikiPage $wp ) {
-		return new ParserOptions( $this->getUser() );
+		$popt = new ParserOptions( $this->getUser() );
+		if ( is_callable( [ $popt, 'setWrapOutputClass' ] ) ) {
+			// Let the client handle it.
+			$popt->setWrapOutputClass( false );
+		}
+		return $popt;
 	}
 
 	public function getAllowedParams() {
@@ -69,6 +75,12 @@ class MockWikiPage extends WikiPage {
  * @group MobileFrontend
  */
 class ApiMobileViewTest extends MediaWikiTestCase {
+
+	public function setUp() {
+		parent::setUp();
+
+		$this->setMwGlobals( 'wgAPIModules', [ 'mobileview' => 'MockApiMobileView' ] );
+	}
 
 	/**
 	 * @dataProvider provideGetRequestedSectionIds
@@ -113,15 +125,16 @@ class ApiMobileViewTest extends MediaWikiTestCase {
 		];
 	}
 
-	public function setUp() {
-		parent::setUp();
-
-		$this->setMwGlobals( 'wgAPIModules', [ 'mobileview' => 'MockApiMobileView' ] );
-	}
-
 	private function getMobileViewApi( $input ) {
 		$request = new FauxRequest( $input );
-		$context = new RequestContext();
+		$context = RequestContext::getMain();
+		$skinFactory = MediaWikiServices::getInstance()->getSkinFactory();
+		// to test this is working we force the fallback skin which makes zero changes to the
+		// parser result. This means tests will reliably pass no matter what the default skin is
+		// T170624 has the background
+		$context->setSkin( $skinFactory->makeSkin( 'fallback' ) );
+		$context->setOutput( new OutputPage( $context ) );
+		$this->setMwGlobals( 'wgOut', $context->getOutput() );
 		$context->setRequest( $request );
 
 		if ( !defined( 'PAGE_IMAGES_INSTALLED' ) ) {
@@ -148,6 +161,20 @@ class ApiMobileViewTest extends MediaWikiTestCase {
 	/**
 	 * @dataProvider provideView
 	 * @covers ApiMobileView::execute
+	 * @covers ApiMobileView::makeTitle
+	 * @covers ApiMobileView::getPageImage
+	 * @covers ApiMobileView::isMainPage
+	 * @covers ApiMobileView::stringSplitter
+	 * @covers ApiMobileView::prepareSection
+	 * @covers ApiMobileView::getRequestedSectionIds
+	 * @covers ApiMobileView::getParserOutput
+	 * @covers ApiMobileView::parseSectionsData
+	 * @covers ApiMobileView::getData
+	 * @covers ApiMobileView::getFilePage
+	 * @covers ApiMobileView::addPageImage
+	 * @covers ApiMobileView::addProtection
+	 * @covers ApiMobileView::getAllowedParams
+	 * @covers ApiMobileView::getResult
 	 */
 	public function testView( array $input, array $expected ) {
 		$api = $this->getMobileViewApi( $input );
@@ -157,6 +184,20 @@ class ApiMobileViewTest extends MediaWikiTestCase {
 	/**
 	 * @dataProvider provideViewWithTransforms
 	 * @covers ApiMobileView::execute
+	 * @covers ApiMobileView::makeTitle
+	 * @covers ApiMobileView::getPageImage
+	 * @covers ApiMobileView::isMainPage
+	 * @covers ApiMobileView::stringSplitter
+	 * @covers ApiMobileView::prepareSection
+	 * @covers ApiMobileView::getRequestedSectionIds
+	 * @covers ApiMobileView::getParserOutput
+	 * @covers ApiMobileView::parseSectionsData
+	 * @covers ApiMobileView::getData
+	 * @covers ApiMobileView::getFilePage
+	 * @covers ApiMobileView::addPageImage
+	 * @covers ApiMobileView::addProtection
+	 * @covers ApiMobileView::getAllowedParams
+	 * @covers ApiMobileView::getResult
 	 */
 	public function testViewWithTransforms( array $input, array $expected ) {
 		if ( version_compare(
@@ -307,7 +348,6 @@ Text 2
 	}
 
 	public function provideViewWithTransforms() {
-
 		// Note that the dimensions are values passed to #transform, not actual
 		// thumbnail dimensions.
 		return [
@@ -445,6 +485,10 @@ Text 2
 		];
 	}
 
+	/**
+	 * @covers ApiMobileView::execute
+	 * @covers ApiMobileView::getResult
+	 */
 	public function testRedirectToSpecialPageDoesntTriggerNotices() {
 		$props = [
 			'lastmodified',
@@ -489,6 +533,23 @@ Text 2
 		}
 	}
 
+	/**
+	 * @covers ApiMobileView::execute
+	 * @covers ApiMobileView::makeTitle
+	 * @covers ApiMobileView::getPageImage
+	 * @covers ApiMobileView::isMainPage
+	 * @covers ApiMobileView::stringSplitter
+	 * @covers ApiMobileView::prepareSection
+	 * @covers ApiMobileView::getRequestedSectionIds
+	 * @covers ApiMobileView::getParserOutput
+	 * @covers ApiMobileView::parseSectionsData
+	 * @covers ApiMobileView::getData
+	 * @covers ApiMobileView::getFilePage
+	 * @covers ApiMobileView::addPageImage
+	 * @covers ApiMobileView::addProtection
+	 * @covers ApiMobileView::getAllowedParams
+	 * @covers ApiMobileView::getResult
+	 */
 	public function testEmptyResultArraysAreAssociative() {
 		$this->setMwGlobals( 'wgAPIModules', [ 'mobileview' => 'MockApiMobileView' ] );
 
@@ -519,6 +580,9 @@ Text 2
 		$this->assertTrue( count( $pageprops ) === 1 ); // the only element is the array type flag
 	}
 
+	/**
+	 * @covers ApiMobileView::getScaledDimen
+	 */
 	public function testImageScaling() {
 		$api = new ApiMobileView( new ApiMain( new RequestContext() ), 'mobileview' );
 		$scale = $this->getNonPublicMethod( 'ApiMobileView', 'getScaledDimen' );
@@ -529,6 +593,9 @@ Text 2
 		$this->assertEquals( $scale->invokeArgs( $api, [ 0, 1, 2 ] ), 0, 'Check divide by zero' );
 	}
 
+	/**
+	 * @covers ApiMobileView::isSVG
+	 */
 	public function testIsSVG() {
 		$api = new ApiMobileView( new ApiMain( new RequestContext() ), 'mobileview' );
 		$isSVG = $this->getNonPublicMethod( 'ApiMobileView', 'isSVG' );
@@ -537,6 +604,68 @@ Text 2
 		$this->assertFalse( $isSVG->invokeArgs( $api, [ ' image/svg' ] ) );
 		$this->assertFalse( $isSVG->invokeArgs( $api, [ 'image/png' ] ) );
 		$this->assertFalse( $isSVG->invokeArgs( $api, [ null ] ) );
+	}
+
+	public function provideGetMobileViewPageProps() {
+		return [
+			// Request all available page properties
+			[
+				'*',
+				[
+					'pageprops' => [ 'wikibase_item' => 'Q76', 'notoc' => true ],
+				],
+				[ 'wikibase_item' => 'Q76', 'notoc' => true ],
+			],
+			// Request non-existent property
+			[
+				'monkey',
+				[
+					'pageprops' => [ 'wikibase_item' => 'Q76', 'notoc' => true ],
+				],
+				[],
+			],
+			// Filter out available page properties with '|'
+			[
+				'wikibase_item|notoc',
+				[
+					'pageprops' => [ 'wikibase_item' => 'Q76', 'notoc' => true ],
+				],
+				[ 'wikibase_item' => 'Q76', 'notoc' => true ],
+			],
+			// Filter out available page properties without '|'
+			[
+				'wikibase_item',
+				[
+					'pageprops' => [ 'wikibase_item' => 'Q76', 'notoc' => true ],
+				],
+				[ 'wikibase_item' => 'Q76' ],
+			],
+			// When no page properties available (T161026)
+			[
+				'wikibase_item',
+				[
+					'title' => 'Foo'
+				],
+				[],
+			],
+			// Request all from nothing
+			[
+				'*',
+				[],
+				[],
+			]
+		];
+	}
+	/**
+	 * @dataProvider provideGetMobileViewPageProps
+	 * @covers ApiMobileView::getMobileViewPageProps
+	 */
+	public function testGetMobileViewPageProps( $requested, $available, $returned ) {
+		$context = new RequestContext();
+		$api = new ApiMobileView( new ApiMain( $context ), 'mobileview' );
+		$actual = $api->getMobileViewPageProps( $requested, $available );
+
+		$this->assertEquals( $returned, $actual );
 	}
 
 	private static function getNonPublicMethod( $className, $methodName ) {

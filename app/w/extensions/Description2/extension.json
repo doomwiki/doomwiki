@@ -1,0 +1,31 @@
+{
+	"name": "Description2",
+	"version": "0.4.0",
+	"author": [
+		"[http://danf.ca/mw/ Daniel Friesen]"
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:Description2",
+	"descriptionmsg": "description2-desc",
+	"license-name": "GPL-2.0+",
+	"type": "other",
+	"config": {
+		"EnableMetaDescriptionFunctions": false
+	},
+	"AutoloadClasses": {
+		"Description2": "Description2.class.php"
+	},
+	"ExtensionMessagesFiles": {
+		"Description2Magic": "Description2.i18n.magic.php"
+	},
+	"MessagesDirs": {
+		"Description2": [
+			"i18n"
+		]
+	},
+	"Hooks": {
+		"OutputPageParserOutput": "Description2::onOutputPageParserOutput",
+		"ParserAfterTidy": "Description2::onParserAfterTidy",
+		"ParserFirstCallInit": "Description2::onParserFirstCallInit"
+	},
+	"manifest_version": 1
+}

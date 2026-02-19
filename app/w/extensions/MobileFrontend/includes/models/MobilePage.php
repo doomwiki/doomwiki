@@ -75,7 +75,7 @@ class MobilePage {
 
 	/**
 	 * Set rev_timestamp of latest edit to this page
-	 * @param string Timestamp (MW format)
+	 * @param string $timestamp Timestamp (MW format)
 	 */
 	public function setLatestTimestamp( $timestamp ) {
 		$this->revisionTimestamp = $timestamp;
@@ -119,10 +119,10 @@ class MobilePage {
 	/**
 	 * Get a placeholder div container for thumbnails
 	 * @param string $className
-	 * @param string $iconClassName controls size of thumbnail, defaults to icon-32px
+	 * @param string $iconClassName controls size of thumbnail, defaults to empty string
 	 * @return string
 	 */
-	public static function getPlaceHolderThumbnailHtml( $className, $iconClassName = 'icon-32px' ) {
+	public static function getPlaceHolderThumbnailHtml( $className, $iconClassName = '' ) {
 		return Html::element( 'div', [
 			'class' => 'list-thumb list-thumb-placeholder ' . $iconClassName . ' ' . $className,
 		] );
@@ -140,7 +140,7 @@ class MobilePage {
 	/**
 	 * Get a small sized thumbnail in div container.
 	 *
-	 * @param boolean $useBackgroundImage Whether the thumbnail should have a background image
+	 * @param bool $useBackgroundImage Whether the thumbnail should have a background image
 	 * @return string
 	 */
 	public function getSmallThumbnailHtml( $useBackgroundImage = false ) {

@@ -38,8 +38,9 @@ class ApiCategoryTree extends ApiBase {
 			} else {
 				$this->getMain()->setCacheMaxAge( $config->get( 'SquidMaxage' ) );
 			}
-			$this->getRequest()->response()->header( 'Vary: Accept-Encoding, Cookie' ); # cache for anons only
-			# TODO: purge the squid cache when a category page is invalidated
+			// cache for anons only
+			$this->getRequest()->response()->header( 'Vary: Accept-Encoding, Cookie' );
+			// TODO: purge the squid cache when a category page is invalidated
 		}
 
 		$this->getResult()->addContentValue( $this->getModuleName(), 'html', $html );
@@ -49,7 +50,7 @@ class ApiCategoryTree extends ApiBase {
 		if ( $condition === 'last-modified' ) {
 			$params = $this->extractRequestParams();
 			$title = CategoryTree::makeTitle( $params['category'] );
-			return wfGetDB( DB_SLAVE )->selectField( 'page', 'page_touched',
+			return wfGetDB( DB_REPLICA )->selectField( 'page', 'page_touched',
 				[
 					'page_namespace' => NS_CATEGORY,
 					'page_title' => $title->getDBkey(),

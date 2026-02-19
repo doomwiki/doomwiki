@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Sp5uhe"
+			"Sp5uhe",
+			"Woytecr"
 		]
 	},
 	"replaceset-desc": "Dodaje funkcję parsera <nowiki>{{#replaceset}}</nowiki> wykorzystywaną do zastępowania części tekstu sformatowanymi danymi",
-	"replaceset-error-calllimit": "Został osiągnięty limit liczby wywołań ReplaceSet.",
+	"replaceset-error-calllimit": "Został osiągnięty limit ($1) liczby wywołań ReplaceSet.",
 	"replaceset-error-regexnoend": "Brak końcowego separatora '$2' w wyrażeniu regularnym wzorca „$1”",
 	"replaceset-error-regexbadmodifier": "Nieprawidłowy modyfikator '$1' wyrażenia regularnego."
 }

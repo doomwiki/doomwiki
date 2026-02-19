@@ -487,7 +487,7 @@ $wgAbuseFilterEmergencyDisableThreshold['default'] = 0.30;
 $wgAbuseFilterEmergencyDisableCount['default'] = 25;
 
 // Monaco Skin
-require_once("$IP/skins/monaco/monaco.php");
+wfLoadSkin($wgDefaultSkin);
 require_once("$IP/skins/monaco/ExtendedBodyAttributes.php");
 require_once("$IP/skins/monaco/ContentRightSidebar.php");
 

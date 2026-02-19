@@ -113,15 +113,19 @@ class ProblemChanges extends SpecialPage {
 		$bits = preg_split( '/\s*,\s*/', trim( $par ) );
 		$limit = false;
 		foreach ( $bits as $bit ) {
-			if ( is_numeric( $bit ) )
+			if ( is_numeric( $bit ) ) {
 				$limit = intval( $bit );
+			}
 			$m = [];
-			if ( preg_match( '/^limit=(\d+)$/', $bit, $m ) )
+			if ( preg_match( '/^limit=(\d+)$/', $bit, $m ) ) {
 				$limit = intval( $m[1] );
-			if ( preg_match( '/^category=(.+)$/', $bit, $m ) )
+			}
+			if ( preg_match( '/^category=(.+)$/', $bit, $m ) ) {
 				$this->category = $m[1];
-			if ( preg_match( '/^tagfilter=(.+)$/', $bit, $m ) )
+			}
+			if ( preg_match( '/^tagfilter=(.+)$/', $bit, $m ) ) {
 				$this->tag = $m[1];
+			}
 		}
 		return $limit;
 	}
@@ -189,9 +193,11 @@ class ProblemChanges extends SpecialPage {
 		$css = $quality = $tags = $underReview = '';
 
 		$title = Title::newFromRow( $row );
-		$link = Linker::link( $title );
-		$review = Linker::linkKnown( $title,
-			$this->msg( 'pendingchanges-diff' )->escaped(),
+		$linkRenderer = $this->getLinkRenderer();
+		$link = $linkRenderer->makeLink( $title );
+		$review = $linkRenderer->makeKnownLink(
+			$title,
+			$this->msg( 'pendingchanges-diff' )->text(),
 			[],
 			[ 'diff' => 'cur', 'oldid' => $row->stable ] + FlaggedRevs::diffOnlyCGI()
 		);
@@ -253,8 +259,8 @@ class ProblemChanges extends SpecialPage {
 
 	/**
 	 * Get the tags of the revisions of a page after a certain rev
-	 * @param integer $pageId, page ID
-	 * @param integer $revId, rev ID
+	 * @param int $pageId page ID
+	 * @param int $revId rev ID
 	 * @return Array
 	 */
 	protected static function getChangeTags( $pageId, $revId ) {
@@ -297,7 +303,6 @@ class ProblemChangesPager extends AlphabeticPager {
 	const PAGE_LIMIT = 100; // Don't get too expensive
 
 	function __construct( $form, $level = - 1, $category = '', $tag = '' ) {
-
 		$this->mForm = $form;
 		# Must be a content page...
 		$this->namespace = FlaggedRevs::getReviewNamespaces();

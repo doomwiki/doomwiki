@@ -10,22 +10,23 @@
 			"Nemo bis",
 			"Araceletorres",
 			"Opraco",
-			"!Silent"
+			"!Silent",
+			"Felipe L. Ewald"
 		]
 	},
 	"usermerge": "Fusão e eliminação de utilizadores",
 	"usermerge-desc": "[[Special:UserMerge|Unifica as referências de um usuário em outro usuário]] no banco de dados da wiki - também apagará o antigo usuário após a fusão. Requer privilégio ''usermerge''",
-	"usermerge-badolduser": "Nome antigo inválido",
-	"usermerge-badnewuser": "Nome novo inválido",
+	"usermerge-badolduser": "Nome antigo inválido.",
+	"usermerge-badnewuser": "Nome novo inválido.",
 	"usermerge-nonewuser": "Novo nome de usuário vazio. Assumida fusão com \"{{GENDER:$1|$1}}\".<br />\nClique \"{{int:usermerge-submit}}\" para aceitar.",
-	"usermerge-noolduser": "Limpar nome antigo",
+	"usermerge-noolduser": "Limpar nome antigo.",
 	"usermerge-same-old-and-new-user": "O antigo e o novo nome de usuário necessitam devem ser distintos.",
 	"usermerge-fieldset": "Nomes de usuário a unificar",
 	"usermerge-olduser": "Usuário antigo (fundir de):",
 	"usermerge-newuser": "Usuário novo (fundir para):",
 	"usermerge-deleteolduser": "Apagar usuário antigo",
 	"usermerge-submit": "Fundir usuário",
-	"usermerge-badtoken": "Token de edição inválida",
+	"usermerge-badtoken": "Token de edição inválido.",
 	"usermerge-userdeleted": "$1 ($2) foi eliminado.",
 	"usermerge-userdeleted-log": "Usuário apagado: $2 ($3)",
 	"usermerge-success": "Fusão de $1 ($2) para $3 ($4) está completa.",
@@ -37,6 +38,6 @@
 	"right-usermerge": "Fundir usuários",
 	"action-usermerge": "fundir usuários",
 	"usermerge-autopagedelete": "Excluída automaticamente ao fundir usuários",
-	"usermerge-page-unmoved": "Não foi possível mover a página $1 para $2.",
+	"usermerge-page-unmoved": "A página $1 não pode ser movida para $2.",
 	"usermerge-move-log": "Página movida automaticamente ao fundir {{GENDER:$1|o usuário|os usuários}} \"[[User:$1|$1]]\" com \"[[User:$2|$2]]\""
 }

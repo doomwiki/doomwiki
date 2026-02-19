@@ -2,7 +2,8 @@
 
 	var browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		View = M.require( 'mobile.startup/View' ),
-		icons = M.require( 'mobile.startup/icons' );
+		icons = M.require( 'mobile.startup/icons' ),
+		spinner = icons.spinner();
 
 	/**
 	 * Get the id of the section $el belongs to.
@@ -50,7 +51,10 @@
 
 		this.page = options.page;
 		this.name = options.name;
-		this.mainMenu = options.mainMenu;
+		if ( options.mainMenu ) {
+			this.mainMenu = options.mainMenu;
+			mw.log.warn( 'Skin: Use of mainMenu is deprecated.' );
+		}
 		View.call( this, options );
 		// Must be run after merging with defaults as must be defined.
 		this.tabletModules = options.tabletModules;
@@ -68,7 +72,7 @@
 				if ( self.page.inNamespace( '' ) ) {
 					mw.loader.using( self.tabletModules ).always( function () {
 						self.off( '_resize' );
-						self.emit.call( self, 'changed' );
+						self.emit( 'changed' );
 					} );
 				}
 			}
@@ -78,7 +82,6 @@
 		this.emit( '_resize' );
 
 		if (
-			!mw.config.get( 'wgImagesDisabled' ) &&
 			mw.config.get( 'wgMFLazyLoadImages' )
 		) {
 			$( function () {
@@ -102,37 +105,17 @@
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {Page} defaults.page page the skin is currently rendering
 		 * @cfg {Array} defaults.tabletModules modules to load when in tablet
-		 * @cfg {MainMenu} defaults.mainMenu instance of the mainMenu
 		 * @cfg {ReferencesGateway} defaults.referencesGateway instance of references gateway
 		 */
 		defaults: {
 			page: undefined,
-			tabletModules: [],
-			mainMenu: undefined
+			tabletModules: []
 		},
 
 		/**
 		 * @inheritdoc
 		 */
 		events: {},
-
-		/**
-		 * Close navigation if content tapped
-		 * @param {jQuery.Event} ev
-		 * @private
-		 */
-		_onPageCenterClick: function ( ev ) {
-			var $target = $( ev.target );
-
-			// Make sure the menu is open and we are not clicking on the menu button
-			if (
-				this.mainMenu.isOpen() &&
-				!$target.hasClass( 'main-menu-button' )
-			) {
-				this.mainMenu.closeNavigationDrawers();
-				ev.preventDefault();
-			}
-		},
 
 		/**
 		 * @inheritdoc
@@ -151,17 +134,12 @@
 			 * Fired when appearance of skin changes.
 			 */
 			this.emit( 'changed' );
-			// FIXME: Move back into events when T98200 resolved
-			this.$( '#mw-mf-page-center' ).on( 'click',
-				$.proxy( this, '_onPageCenterClick' ) );
-		},
 
-		/**
-		 * Return the instance of MainMenu
-		 * @return {MainMenu}
-		 */
-		getMainMenu: function () {
-			return this.mainMenu;
+			/**
+			 * @event click
+			 * Fired when the skin is clicked.
+			 */
+			this.$( '#mw-mf-page-center' ).on( 'click', this.emit.bind( this, 'click' ) );
 		},
 
 		/**
@@ -183,7 +161,7 @@
 			function _loadImages() {
 
 				imagePlaceholders = $.grep( imagePlaceholders, function ( placeholder ) {
-					var $placeholder = $( placeholder );
+					var $placeholder = self.$( placeholder );
 
 					if (
 						mw.viewport.isElementCloseToViewport( placeholder, offset ) &&
@@ -224,7 +202,7 @@
 				width = $placeholder.attr( 'data-width' ),
 				height = $placeholder.attr( 'data-height' ),
 				// Image will start downloading
-				$downloadingImage = $( '<img/>' );
+				$downloadingImage = $( '<img>' );
 
 			// When the image has loaded
 			$downloadingImage.on( 'load', function () {
@@ -280,7 +258,7 @@
 
 			if ( !$content.data( 'are-references-loaded' ) ) {
 				$content.children().addClass( 'hidden' );
-				$spinner = $( icons.spinner().toHtmlString() ).prependTo( $content );
+				$spinner = spinner.$el.prependTo( $content );
 
 				// First ensure we retrieve all of the possible lists
 				return gateway.getReferencesLists( data.page )
@@ -348,12 +326,12 @@
 				licensePlural = mw.language.convertNumber( mfLicense.plural );
 
 			if ( mfLicense.link ) {
-				if ( $( '#footer-places-terms-use' ).length > 0 ) {
+				if ( this.$( '#footer-places-terms-use' ).length > 0 ) {
 					licenseMsg = mw.msg(
 						'mobile-frontend-editor-licensing-with-terms',
 						mw.message(
 							'mobile-frontend-editor-terms-link',
-							$( '#footer-places-terms-use a' ).attr( 'href' )
+							this.$( '#footer-places-terms-use a' ).attr( 'href' )
 						).parse(),
 						mfLicense.link,
 						licensePlural
@@ -371,6 +349,6 @@
 	} );
 
 	Skin.getSectionId = getSectionId;
-	M.define( 'mobile.startup/Skin', Skin );
+	M.define( 'mobile.startup/Skin', Skin ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );

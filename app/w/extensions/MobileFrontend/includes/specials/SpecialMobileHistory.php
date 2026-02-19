@@ -20,6 +20,11 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 	/** @var Title|null $title Null if no title passed */
 	protected $title;
 
+	/** @var string a message key for the error message heading that should be shown on a 404 */
+	protected $errorNotFoundTitleMsg = 'mobile-frontend-history-404-title';
+	/** @var string a message key for the error message description that should be shown on a 404 */
+	protected $errorNotFoundDescriptionMsg = 'mobile-frontend-history-404-desc';
+
 	/**
 	 * Construct function
 	 */
@@ -66,7 +71,7 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 			// manually style it as a userlink
 			$headerTitle = Html::element(
 				'span',
-				[ 'class' => MobileUI::iconClass( 'user', 'before', 'mw-mf-user icon-16px' ) ],
+				[ 'class' => MobileUI::iconClass( 'user', 'before', 'mw-mf-user' ) ],
 				$title
 			);
 		}
@@ -80,19 +85,10 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 	}
 
 	/**
-	 * Show an error page, if page not found
-	 */
-	protected function showPageNotFound() {
-		wfHttpError( 404, $this->msg( 'mobile-frontend-history-404-title' )->text(),
-			$this->msg( 'mobile-frontend-history-404-desc' )->text()
-		);
-	}
-
-	/**
 	 * Checks, if the given title supports the use of SpecialMobileHistory.
 	 *
 	 * @param Title $title The title to check
-	 * @return boolean True, if SpecialMobileHistory can be used, false otherwise
+	 * @return bool True, if SpecialMobileHistory can be used, false otherwise
 	 */
 	public static function shouldUseSpecialHistory( Title $title ) {
 		$contentHandler = ContentHandler::getForTitle( $title );
@@ -161,7 +157,7 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 		$options['LIMIT'] = self::LIMIT + 1;
 
 		$tables = [ self::DB_REVISIONS_TABLE ];
-		$fields = [ '*' ];
+		$fields = Revision::selectFields();
 
 		$res = $dbr->select( $tables, $fields, $conds, __METHOD__, $options );
 
@@ -231,7 +227,7 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 
 	/**
 	 * Get a button to show more entries of history
-	 * @param integer $ts The offset to start the history list from
+	 * @param int $ts The offset to start the history list from
 	 * @return string
 	 */
 	protected function getMoreButton( $ts ) {
@@ -258,7 +254,6 @@ class SpecialMobileHistory extends MobileSpecialPageFeed {
 		$rev1 = $rev2 = null;
 		$out = $this->getOutput();
 		if ( $numRows > 0 ) {
-
 			foreach ( $res as $row ) {
 				$rev1 = new Revision( $row );
 				if ( $rev2 ) {

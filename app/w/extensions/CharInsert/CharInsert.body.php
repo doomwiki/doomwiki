@@ -10,6 +10,7 @@ class CharInsert {
 	 * Things like edittools message are added to output directly,
 	 * instead of using something like OutputPage::addWikiText.
 	 * As a result, modules sometimes aren't transferred over.
+	 * @param OutputPage $out OutputPage to work on
 	 */
 	public static function onBeforePageDisplay( $out ) {
 		$addModules = false;
@@ -85,8 +86,8 @@ class CharInsert {
 	}
 
 	public static function charInsertDisplay( $text ) {
-		static $invisibles = [     '&nbsp;',     '&#160;' ];
-		static $visibles   = [ '&amp;nbsp;', '&amp;#160;' ];
+		static $invisibles = [ '&nbsp;', '&#160;' ];
+		static $visibles = [ '&amp;nbsp;', '&amp;#160;' ];
 		return Sanitizer::decodeCharReferences(
 			str_replace( $invisibles, $visibles, $text ) );
 	}

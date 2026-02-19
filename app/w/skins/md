@@ -1,0 +1,15 @@
+	"name": "Modern",
+	"author": [
+	"url": "https://www.mediawiki.org/wiki/Skin:Modern",
+	"descriptionmsg": "modern-desc",
+	"namemsg": "skinname-modern",
+	"license-name": "GPL-2.0+",
+	"type": "skin",
+	"requires": {
+	"ValidSkinNames": {
+	"MessagesDirs": {
+	"ResourceModules": {
+	"ResourceFileModulePaths": {
+	"AutoloadClasses": {
+	"ResourceModuleSkinStyles": {
+	"manifest_version": 1

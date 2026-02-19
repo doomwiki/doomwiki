@@ -36,6 +36,8 @@ class ApiQueryRecentChanges extends ApiQueryGeneratorBase {
 		parent::__construct( $query, $moduleName, 'rc' );
 	}
 
+	private $commentStore;
+
 	private $fld_comment = false, $fld_parsedcomment = false, $fld_user = false, $fld_userid = false,
 		$fld_flags = false, $fld_timestamp = false, $fld_title = false, $fld_ids = false,
 		$fld_sizes = false, $fld_redirect = false, $fld_patrolled = false, $fld_loginfo = false,
@@ -199,10 +201,7 @@ class ApiQueryRecentChanges extends ApiQueryGeneratorBase {
 			}
 
 			// Check permissions
-			if ( isset( $show['patrolled'] )
-				|| isset( $show['!patrolled'] )
-				|| isset( $show['unpatrolled'] )
-			) {
+			if ( $this->includesPatrollingFlags( $show ) ) {
 				if ( !$user->useRCPatrol() && !$user->useNPPatrol() ) {
 					$this->dieWithError( 'apierror-permissiondenied-patrolflag', 'permissiondenied' );
 				}
@@ -274,7 +273,6 @@ class ApiQueryRecentChanges extends ApiQueryGeneratorBase {
 
 			/* Add fields to our query if they are specified as a needed parameter. */
 			$this->addFieldsIf( [ 'rc_this_oldid', 'rc_last_oldid' ], $this->fld_ids );
-			$this->addFieldsIf( 'rc_comment', $this->fld_comment || $this->fld_parsedcomment );
 			$this->addFieldsIf( 'rc_user', $this->fld_user || $this->fld_userid );
 			$this->addFieldsIf( 'rc_user_text', $this->fld_user );
 			$this->addFieldsIf( [ 'rc_minor', 'rc_type', 'rc_bot' ], $this->fld_flags );
@@ -351,6 +349,15 @@ class ApiQueryRecentChanges extends ApiQueryGeneratorBase {
 		}
 
 		$this->token = $params['token'];
+
+		if ( $this->fld_comment || $this->fld_parsedcomment || $this->token ) {
+			$this->commentStore = new CommentStore( 'rc_comment' );
+			$commentQuery = $this->commentStore->getJoin();
+			$this->addTables( $commentQuery['tables'] );
+			$this->addFields( $commentQuery['fields'] );
+			$this->addJoinConds( $commentQuery['joins'] );
+		}
+
 		$this->addOption( 'LIMIT', $params['limit'] + 1 );
 
 		$hookData = [];
@@ -500,12 +507,13 @@ class ApiQueryRecentChanges extends ApiQueryGeneratorBase {
 				$anyHidden = true;
 			}
 			if ( Revision::userCanBitfield( $row->rc_deleted, Revision::DELETED_COMMENT, $user ) ) {
-				if ( $this->fld_comment && isset( $row->rc_comment ) ) {
-					$vals['comment'] = $row->rc_comment;
+				$comment = $this->commentStore->getComment( $row )->text;
+				if ( $this->fld_comment ) {
+					$vals['comment'] = $comment;
 				}
 
-				if ( $this->fld_parsedcomment && isset( $row->rc_comment ) ) {
-					$vals['parsedcomment'] = Linker::formatComment( $row->rc_comment, $title );
+				if ( $this->fld_parsedcomment ) {
+					$vals['parsedcomment'] = Linker::formatComment( $comment, $title );
 				}
 			}
 		}
@@ -577,13 +585,23 @@ class ApiQueryRecentChanges extends ApiQueryGeneratorBase {
 		return $vals;
 	}
 
+	/**
+	 * @param array $flagsArray flipped array (string flags are keys)
+	 * @return bool
+	 */
+	private function includesPatrollingFlags( array $flagsArray ) {
+		return isset( $flagsArray['patrolled'] ) ||
+			isset( $flagsArray['!patrolled'] ) ||
+			isset( $flagsArray['unpatrolled'] ) ||
+			isset( $flagsArray['autopatrolled'] ) ||
+			isset( $flagsArray['!autopatrolled'] );
+	}
+
 	public function getCacheMode( $params ) {
-		if ( isset( $params['show'] ) ) {
-			foreach ( $params['show'] as $show ) {
-				if ( $show === 'patrolled' || $show === '!patrolled' ) {
-					return 'private';
-				}
-			}
+		if ( isset( $params['show'] ) &&
+			$this->includesPatrollingFlags( array_flip( $params['show'] ) )
+		) {
+			return 'private';
 		}
 		if ( isset( $params['token'] ) ) {
 			return 'private';

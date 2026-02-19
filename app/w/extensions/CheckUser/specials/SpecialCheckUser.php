@@ -160,7 +160,8 @@ class CheckUser extends SpecialPage {
 		$form .= ' ' . Xml::label( $this->msg( 'checkuser-edits' )->text(), 'subedits' ) . '</td>';
 		$form .= '<td>' .
 			Xml::radio( 'checktype', 'subipusers', $encipusers, [ 'id' => 'subipusers' ] );
-		$form .= ' ' . Xml::label( $this->msg( 'checkuser-users' )->text(), 'subipusers' ) . '</td>';
+		$form .= ' ' .
+			Xml::label( $this->msg( 'checkuser-users' )->text(), 'subipusers' ) . '</td>';
 		$form .= '</tr>';
 		$form .= Xml::closeElement( 'table' );
 		$form .= Xml::closeElement( 'td' );
@@ -185,7 +186,8 @@ class CheckUser extends SpecialPage {
 	 * @return string
 	 */
 	protected function getPeriodMenu( $selected ) {
-		$s = '<label for="period">' . $this->msg( 'checkuser-period' )->escaped() . '</label>&#160;';
+		$s = '<label for="period">' .
+			$this->msg( 'checkuser-period' )->escaped() . '</label>&#160;';
 		$s .= Xml::openElement(
 			'select',
 			[ 'name' => 'period', 'id' => 'period', 'style' => 'margin-top:.2em;' ]
@@ -398,13 +400,13 @@ class CheckUser extends SpecialPage {
 	 * Give a "no matches found for X" message.
 	 * If $checkLast, then mention the last edit by this user or IP.
 	 *
-	 * @param $userName
+	 * @param string $userName
 	 * @param bool $checkLast
 	 * @return string
 	 */
 	protected function noMatchesMessage( $userName, $checkLast = true ) {
 		if ( $checkLast ) {
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			$user_id = User::idFromName( $userName );
 			if ( $user_id ) {
 				$revEdit = $dbr->selectField( 'revision',
@@ -474,7 +476,7 @@ class CheckUser extends SpecialPage {
 		// Record check...
 		self::addLogEntry( 'userips', 'user', $user, $reason, $user_id );
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$time_conds = $this->getTimeConds( $period );
 		// Ordering by the latest timestamp makes a small filesort on the IP list
 
@@ -556,7 +558,8 @@ class CheckUser extends SpecialPage {
 				// If this IP is blocked, give a link to the block log
 				$s .= $this->getIPBlockInfo( $ip );
 				$s .= '<div style="margin-left:5%">';
-				$s .= '<small>' . $this->msg( 'checkuser-toollinks', urlencode( $ip ) )->parse() . '</small>';
+				$s .= '<small>' . $this->msg( 'checkuser-toollinks', urlencode( $ip ) )->parse() .
+					'</small>';
 				$s .= '</div>';
 				$s .= "</li>\n";
 			}
@@ -620,7 +623,7 @@ class CheckUser extends SpecialPage {
 	 */
 	protected function doIPEditsRequest( $ip, $xfor = false, $reason = '', $period = 0 ) {
 		$out = $this->getOutput();
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 
 		// Invalid IPs are passed in as a blank string
 		$ip_conds = self::getIpConds( $dbr, $ip, $xfor );
@@ -720,9 +723,9 @@ class CheckUser extends SpecialPage {
 		$ret = $dbr->select(
 			'cu_changes',
 			[
-				'cuc_namespace', 'cuc_title', 'cuc_user', 'cuc_user_text', 'cuc_comment', 'cuc_actiontext',
-				'cuc_timestamp', 'cuc_minor', 'cuc_page_id', 'cuc_type', 'cuc_this_oldid',
-				'cuc_last_oldid', 'cuc_ip', 'cuc_xff', 'cuc_agent'
+				'cuc_namespace', 'cuc_title', 'cuc_user', 'cuc_user_text', 'cuc_comment',
+				'cuc_actiontext', 'cuc_timestamp', 'cuc_minor', 'cuc_page_id', 'cuc_type',
+				'cuc_this_oldid', 'cuc_last_oldid', 'cuc_ip', 'cuc_xff', 'cuc_agent'
 			],
 			[ $ip_conds, $time_conds ],
 			__METHOD__,
@@ -814,7 +817,7 @@ class CheckUser extends SpecialPage {
 		// Record check...
 		self::addLogEntry( 'useredits', 'user', $user, $reason, $user_id );
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$user_cond = "cuc_user = '$user_id'";
 		$time_conds = $this->getTimeConds( $period );
 		// Ordered in descent by timestamp. Causes large filesorts if there are many edits.
@@ -916,10 +919,12 @@ class CheckUser extends SpecialPage {
 	 * @param string $tag
 	 * @param string $talkTag
 	 */
-	protected function doIPUsersRequest( $ip, $xfor = false, $reason = '', $period = 0, $tag = '', $talkTag = '' ) {
+	protected function doIPUsersRequest(
+		$ip, $xfor = false, $reason = '', $period = 0, $tag = '', $talkTag = ''
+	) {
 		global $wgMemc;
 		$out = $this->getOutput();
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 
 		// Invalid IPs are passed in as a blank string
 		$ip_conds = self::getIpConds( $dbr, $ip, $xfor );
@@ -1027,7 +1032,12 @@ class CheckUser extends SpecialPage {
 			]
 		);
 
-		$users_first = $users_last = $users_edits = $users_ids = $users_agentsets = $users_infosets = [];
+		$users_first = [];
+		$users_last = [];
+		$users_edits = [];
+		$users_ids = [];
+		$users_agentsets = [];
+		$users_infosets = [];
 		if ( !$dbr->numRows( $ret ) ) {
 			$s = $this->noMatchesMessage( $ip, !$xfor ) . "\n";
 		} else {
@@ -1093,7 +1103,9 @@ class CheckUser extends SpecialPage {
 					$count = intval( $wgMemc->get( $key ) );
 					if ( $count ) {
 						// @todo FIXME: i18n issue: Hard coded brackets.
-						$flags[] = '<strong>[' . $this->msg( 'checkuser-accounts' )->numParams( $count )->escaped() . ']</strong>';
+						$flags[] = '<strong>[' .
+							$this->msg( 'checkuser-accounts' )->numParams( $count )->escaped() .
+							']</strong>';
 					}
 				}
 				$s .= implode( ' ', $flags );
@@ -1111,8 +1123,10 @@ class CheckUser extends SpecialPage {
 						// XFF was trusted if client came from it
 						$trusted = ( $client === $row->cuc_ip );
 						$c = $trusted ? '#F0FFF0' : '#FFFFCC';
-						$s .= '&#160;&#160;&#160;<span style="background-color: ' . $c . '"><strong>XFF</strong>: ';
-						$s .= $this->getSelfLink( $set[1], [ 'user' => $client . '/xff' ] ) . '</span>';
+						$s .= '&#160;&#160;&#160;<span style="background-color: ' . $c .
+							'"><strong>XFF</strong>: ';
+						$s .= $this->getSelfLink( $set[1], [ 'user' => $client . '/xff' ] ) .
+							'</span>';
 					}
 					$s .= "</li>\n";
 				}
@@ -1160,10 +1174,12 @@ class CheckUser extends SpecialPage {
 					$wgCheckUserCAMultiLock['centralDB'],
 					// Use canonical name instead of local name so that it works
 					// even if the local language is different from central wiki
-					Title::makeTitle( NS_SPECIAL, 'MultiLock' )->getPrefixedText()
+					'Special:MultiLock'
 				);
 				if ( $centralMLUrl === false ) {
-					throw new Exception( "Could not retrieve URL for {$wgCheckUserCAMultiLock['centralDB']}" );
+					throw new Exception(
+						"Could not retrieve URL for {$wgCheckUserCAMultiLock['centralDB']}"
+					);
 				}
 				$out->addJsConfigVars( 'wgCUCAMultiLockCentral', $centralMLUrl );
 			}
@@ -1174,21 +1190,25 @@ class CheckUser extends SpecialPage {
 		$s .= $this->msg( 'checkuser-massblock-text' )->parseAsBlock() . "\n";
 		$s .= '<table><tr>' .
 			'<td>' . Xml::check( 'usetag', false, [ 'id' => 'usetag' ] ) . '</td>' .
-			'<td>' . Xml::label( $this->msg( 'checkuser-blocktag' )->escaped(), 'usetag' ) . '</td>' .
+			'<td>' . Xml::label( $this->msg( 'checkuser-blocktag' )->escaped(), 'usetag' ) .
+			'</td>' .
 			'<td>' . Xml::input( 'tag', 46, $tag, [ 'id' => 'blocktag' ] ) . '</td>' .
 			'</tr><tr>' .
 			'<td>' . Xml::check( 'usettag', false, [ 'id' => 'usettag' ] ) . '</td>' .
-			'<td>' . Xml::label( $this->msg( 'checkuser-blocktag-talk' )->escaped(), 'usettag' ) . '</td>' .
+			'<td>' . Xml::label( $this->msg( 'checkuser-blocktag-talk' )->escaped(), 'usettag' ) .
+			'</td>' .
 			'<td>' . Xml::input( 'talktag', 46, $talkTag, [ 'id' => 'talktag' ] ) . '</td>';
 		if ( $wgBlockAllowsUTEdit ) {
 			$s .= '</tr><tr>' .
 				'<td>' . Xml::check( 'blocktalk', false, [ 'id' => 'blocktalk' ] ) . '</td>' .
-				'<td>' . Xml::label( $this->msg( 'checkuser-blocktalk' )->escaped(), 'blocktalk' ) . '</td>';
+				'<td>' . Xml::label( $this->msg( 'checkuser-blocktalk' )->escaped(), 'blocktalk' ) .
+				'</td>';
 		}
 		if ( SpecialBlock::canBlockEmail( $this->getUser() ) ) {
 			$s .= '</tr><tr>' .
 				'<td>' . Xml::check( 'blockemail', false, [ 'id' => 'blockemail' ] ) . '</td>' .
-				'<td>' . Xml::label( $this->msg( 'checkuser-blockemail' )->escaped(), 'blockemail' ) . '</td>';
+				'<td>' . Xml::label( $this->msg( 'checkuser-blockemail' )->escaped(), 'blockemail' )
+				. '</td>';
 		}
 		$s .= '</tr></table>';
 		$s .= '<p>' . $this->msg( 'checkuser-reason' )->escaped() . '&#160;';
@@ -1221,8 +1241,8 @@ class CheckUser extends SpecialPage {
 	}
 
 	/**
-	 * @param $ip
-	 * @param $userId
+	 * @param string $ip
+	 * @param int $userId
 	 * @param User $user
 	 * @return array
 	 */
@@ -1254,7 +1274,8 @@ class CheckUser extends SpecialPage {
 
 		// Show if account is local only
 		if ( $user->getId() &&
-			CentralIdLookup::factory()->centralIdFromLocalUser( $user, CentralIdLookup::AUDIENCE_RAW ) === 0
+			CentralIdLookup::factory()
+				->centralIdFromLocalUser( $user, CentralIdLookup::AUDIENCE_RAW ) === 0
 		) {
 			// @todo FIXME: i18n issue: Hard coded parentheses.
 			$flags[] = '<strong>(' . $this->msg( 'checkuser-localonly' )->escaped() . ')</strong>';
@@ -1442,10 +1463,12 @@ class CheckUser extends SpecialPage {
 			) . ') . . ';
 			// Some basic flags
 			if ( $row->cuc_type == RC_NEW ) {
-				$links['newpage'] = '<span class="newpage">' . $this->message['newpageletter'] . '</span>';
+				$links['newpage'] = '<span class="newpage">' . $this->message['newpageletter'] .
+					'</span>';
 			}
 			if ( $row->cuc_minor ) {
-				$links['minor'] = '<span class="minor">' . $this->message['minoreditletter'] . '</span>';
+				$links['minor'] = '<span class="minor">' . $this->message['minoreditletter'] .
+					'</span>';
 			}
 			// Page link
 			$links['title'] = $this->getLinkRenderer()->makeLink( $title );
@@ -1465,7 +1488,7 @@ class CheckUser extends SpecialPage {
 
 	protected static function userWasBlocked( $name ) {
 		$userpage = Title::makeTitle( NS_USER, $name );
-		return (bool)wfGetDB( DB_SLAVE )->selectField( 'logging', '1',
+		return (bool)wfGetDB( DB_REPLICA )->selectField( 'logging', '1',
 			[
 				'log_type' => [ 'block', 'suppress' ],
 				'log_action' => 'block',
@@ -1486,52 +1509,42 @@ class CheckUser extends SpecialPage {
 	protected static function buildGroupLink( $group, $username ) {
 		static $cache = [];
 		if ( !isset( $cache[$group] ) ) {
-			$cache[$group] = User::makeGroupLinkHTML( $group, User::getGroupMember( $group, $username ) );
+			$cache[$group] = UserGroupMembership::getLink(
+				$group, RequestContext::getMain(), 'html'
+			);
 		}
 		return $cache[$group];
 	}
 
 	/**
 	 * @param IDatabase $db
-	 * @param string $ip
+	 * @param string $target an IP address or CIDR range
 	 * @param string|bool $xfor
 	 * @return array|false array for valid conditions, false if invalid
 	 */
-	public static function getIpConds( $db, $ip, $xfor = false ) {
+	public static function getIpConds( $db, $target, $xfor = false ) {
 		global $wgCheckUserCIDRLimit;
 		$type = $xfor ? 'xff' : 'ip';
-		$matches = [];
-		if ( preg_match( '#^(\d+\.\d+\.\d+\.\d+)/(\d+)$#', $ip, $matches ) ) {
-			// IPv4 CIDR, 16-32 bits
-			if ( $matches[2] < $wgCheckUserCIDRLimit['IPv4'] || $matches[2] > 32 ) {
-				return false; // invalid
+		if ( IP::isValidRange( $target ) ) {
+			list( $ip, $range ) = explode( '/', $target, 2 );
+			list( $start, $end ) = IP::parseRange( $target );
+			if ( ( IP::isIPv4( $ip ) && $range < $wgCheckUserCIDRLimit['IPv4'] ) ||
+				( IP::isIPv6( $ip ) && $range < $wgCheckUserCIDRLimit['IPv6'] ) ) {
+					return false; // range is too wide
 			}
-			list( $start, $end ) = IP::parseRange( $ip );
-			return [ 'cuc_' . $type . '_hex BETWEEN ' . $db->addQuotes( $start ) . ' AND ' . $db->addQuotes( $end ) ];
-		} elseif ( preg_match( '#^\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}/(\d+)$#', $ip, $matches ) ) {
-			// IPv6 CIDR, 32-128 bits
-			if ( $matches[1] < $wgCheckUserCIDRLimit['IPv6'] || $matches[1] > 128 ) {
-				return false; // invalid
-			}
-			list( $start, $end ) = IP::parseRange( $ip );
-			return [ 'cuc_' . $type . '_hex BETWEEN ' . $db->addQuotes( $start ) . ' AND ' . $db->addQuotes( $end ) ];
-		} elseif (
-			// 32 bit IPv4
-			preg_match( '#^(\d+)\.(\d+)\.(\d+)\.(\d+)$#', $ip ) ||
-			// 128 bit IPv6
-			preg_match( '#^\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}:\w{1,4}$#', $ip )
-		) {
-			return [ "cuc_{$type}_hex" => IP::toHex( $ip ) ];
+			return [ 'cuc_' . $type . '_hex BETWEEN ' . $db->addQuotes( $start ) .
+				' AND ' . $db->addQuotes( $end ) ];
+		} elseif ( IP::isValid( $target ) ) {
+				return [ "cuc_{$type}_hex" => IP::toHex( $target ) ];
 		}
-		// Throw away this query, incomplete IP, these don't get through the entry point anyway
-		return false;
+		return false; // invalid IP
 	}
 
 	protected function getTimeConds( $period ) {
 		if ( !$period ) {
 			return '1 = 1';
 		}
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$cutoff_unixtime = time() - ( $period * 24 * 3600 );
 		$cutoff_unixtime = $cutoff_unixtime - ( $cutoff_unixtime % 86400 );
 		$cutoff = $dbr->addQuotes( $dbr->timestamp( $cutoff_unixtime ) );
@@ -1570,7 +1583,6 @@ class CheckUser extends SpecialPage {
 				$dbw->insert(
 					'cu_log',
 					[
-						'cul_id' => $dbw->nextSequenceValue( 'cu_log_cul_id_seq' ),
 						'cul_timestamp' => $dbw->timestamp( $timestamp )
 					] + $data,
 					__METHOD__

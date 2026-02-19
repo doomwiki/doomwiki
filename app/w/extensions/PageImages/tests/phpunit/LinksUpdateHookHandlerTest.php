@@ -115,11 +115,12 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 	/**
 	 * @dataProvider provideDoLinksUpdate
 	 * @covers LinksUpdateHookHandler::doLinksUpdate
-	 * @param $images
-	 * @param $expectedFreeFileName
-	 * @param $expectedNonFreeFileName
 	 */
-	public function testDoLinksUpdate( $images, $expectedFreeFileName, $expectedNonFreeFileName ) {
+	public function testDoLinksUpdate(
+		array $images,
+		$expectedFreeFileName,
+		$expectedNonFreeFileName
+	) {
 		$linksUpdate = $this->getLinksUpdate( $images );
 		$mock = TestingAccessWrapper::newFromObject(
 				$this->getMockBuilder( LinksUpdateHookHandler::class )
@@ -147,12 +148,13 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 
 		$this->assertTrue( property_exists( $linksUpdate, 'mProperties' ), 'precondition' );
 		if ( is_null( $expectedFreeFileName ) ) {
-			$this->assertFalse( isset( $linksUpdate->mProperties[PageImages::PROP_NAME_FREE] ) );
+			$this->assertArrayNotHasKey( PageImages::PROP_NAME_FREE, $linksUpdate->mProperties );
 		} else {
-			$this->assertSame( $expectedFreeFileName, $linksUpdate->mProperties[PageImages::PROP_NAME_FREE] );
+			$this->assertSame( $expectedFreeFileName,
+				$linksUpdate->mProperties[PageImages::PROP_NAME_FREE] );
 		}
 		if ( is_null( $expectedNonFreeFileName ) ) {
-			$this->assertFalse( isset( $linksUpdate->mProperties[PageImages::PROP_NAME] ) );
+			$this->assertArrayNotHasKey( PageImages::PROP_NAME, $linksUpdate->mProperties );
 		} else {
 			$this->assertSame( $expectedNonFreeFileName, $linksUpdate->mProperties[PageImages::PROP_NAME] );
 		}
@@ -231,7 +233,7 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 		);
 		$mock->expects( $this->any() )
 			->method( 'scoreFromTable' )
-	        ->will( $this->returnValue( $scoreFromTable ) );
+			->will( $this->returnValue( $scoreFromTable ) );
 		$mock->expects( $this->any() )
 			->method( 'getRatio' )
 			->will( $this->returnValue( 0 ) );
@@ -278,7 +280,7 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 				50,
 				3,
 				// blacklist score
-				-1000
+				- 1000
 			],
 		];
 	}
@@ -324,8 +326,6 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsFreeImage
-	 * @param $fileName
-	 * @param $metadata
 	 * @covers LinksUpdateHookHandler::isImageFree
 	 */
 	public function testIsFreeImage( $fileName, $metadata, $expected ) {

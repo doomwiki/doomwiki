@@ -1,14 +1,10 @@
-@import 'minerva.mixins';
-@import 'minerva.variables';
+@import 'mobile.variables';
+@import 'mediawiki.mixins.animation';
 
 @thumbGap: 15px;
 @thumbWidth: 70px;
 @colorSpinnerOverlayBackground: #fff;
 @clearIconRightGutterWidth: 0.5em;
-
-.mw-ui-icon-search-content {
-	.m-background-image( 'search-content.png' );
-}
 
 .search-overlay {
 	background: #fff;
@@ -20,7 +16,6 @@
 		left: 0;
 		opacity: 0.7;
 		right: 0;
-		top: @headerHeight;
 		z-index: @z-indexOverOverlay;
 
 		.spinner {
@@ -60,12 +55,6 @@
 			display: none;
 		}
 	}
-	.clear {
-		position: absolute;
-		top: ( @headerHeight / 2 ) - ( @iconSize / 2 );
-		right: 0;
-		margin-top: @headerMarginTop;
-	}
 
 	.overlay-content {
 		position: relative;
@@ -92,15 +81,6 @@
 	.results {
 		box-shadow: 0 3px 3px 0 rgba( 117, 117, 117, 0.3 );
 
-		// Since search results only contain one line, shrink the space taken up by the thumbnails
-		li {
-			padding-left: @headerHeight;
-
-			.list-thumb {
-				width: @headerHeight;
-			}
-		}
-
 		li:last-child {
 			border-bottom: 0;
 		}
@@ -113,18 +93,21 @@
 	li.page-summary {
 		display: table;
 		height: @thumbWidth;
-		padding-left: @thumbWidth + @thumbGap;
 		width: 100%;
-		.list-thumb {
-			width: @thumbWidth;
-		}
+
 		.title {
 			display: table-cell;
 			vertical-align: middle;
 		}
 		h3 {
 			margin: 0;
+			font-weight: normal;
+
+			strong {
+				text-decoration: none;
+			}
 		}
+
 		.wikidata-description {
 			font-size: 0.8em;
 			margin-top: 0.5em;
@@ -191,44 +174,6 @@
 		// see T156509
 		&.overlay-ios {
 			.animation( none );
-		}
-	}
-}
-
-@media all and ( min-width: @deviceWidthTablet ) {
-	.search-overlay {
-		.search-box {
-			display: table-cell;
-		}
-		.spinner-container,
-		.search-content,
-		.results {
-			width: @searchBoxWidth;
-			margin-left: (@iconSize + 2 * @iconGutterWidth) + @brandingBoxWidth;
-		}
-
-		.overlay-title {
-			width: @searchBoxWidth;
-			padding-left: (@iconSize + 2 * @iconGutterWidth) + @brandingBoxWidth;
-		}
-
-		.spinner-container {
-			left: auto;
-			right: auto;
-		}
-
-		ul {
-			width: auto;
-		}
-	}
-
-}
-
-@media all and ( min-width: @wgMFDeviceWidthDesktop ) {
-	.search-overlay {
-		.overlay-content {
-			// align with the search form
-			max-width: @contentMaxWidthTablet + ( 2 * @iconGutterWidth );
 		}
 	}
 }

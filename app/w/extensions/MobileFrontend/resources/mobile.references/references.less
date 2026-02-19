@@ -1,5 +1,4 @@
-@import 'minerva.variables';
-@import 'minerva.mixins';
+@import 'mobile.variables';
 
 @drawerPadding: 20px;
 
@@ -15,19 +14,16 @@
 	max-height: 400px;  // or half of window height, whichever is smaller (see ReferencesDrawerBeta.js)
 	overflow-y: auto;
 	padding: @drawerPadding;
+
 	&.text {
 		font-size: 1em;
 	}
 
 	a {
+		// Removing external images here
 		background-image: none;
-		color: #5880c0;
-	}
-
-	.error {
-		.background-image( 'images/error.png' );
-		padding-left: 20px;
-		background-repeat: no-repeat;
+		color: @colorProgressive;
+		padding-right: 0;
 	}
 
 	.cite {
@@ -40,7 +36,7 @@
 		}
 
 		.text {
-			color: @colorGray8;
+			color: @colorGray7;
 			cursor: default;
 			letter-spacing: 0.2em;
 			float: left;
@@ -55,7 +51,7 @@
 			// Compensate for the padding.
 			// Top and bottom margins are for the padding we're adding below.
 			// The right margin is for the 1em margin of icon:before
-			margin: -@extraPadding -@extraPadding -@extraPadding 0;
+			margin: -@extraPadding -@extraPadding -@extraPadding 0; /* stylelint-disable-line value-keyword-case */
 			// Make the tappable area bigger. No need to add left and right paddings because
 			// the icon:before already has 1em margin on both sides
 			padding: @extraPadding 0;

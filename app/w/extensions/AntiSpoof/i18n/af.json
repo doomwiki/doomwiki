@@ -2,12 +2,14 @@
 	"@metadata": {
 		"authors": [
 			"Naudefj",
-			"පසිඳු කාවින්ද"
+			"පසිඳු කාවින්ද",
+			"Biggs ZA"
 		]
 	},
 	"antispoof-desc": "Blokke van die skepping van rekeninge met gemengde-script, verwarrend en soortgelyke gebruikersname",
-	"antispoof-conflict-top": "Die naam \"$1\" lyk te soortgelyk aan die van die volgende bestaande {{PLURAL:$2|gebruiker|$2 gebruikers}}:",
-	"antispoof-conflict-bottom": "Kies asseblief 'n ander naam.",
+	"antispoof-conflict-top": "Die gebruikernaam \"$1\" en {{PLURAL:$2|username|usernames}} lyk te eenders:",
+	"antispoof-conflict-bottom": "Kies 'n ander gebruikersnaam.",
+	"antispoof-name-illegal": "Die gebruikersnaam \"$1\" is ontoelaatbaar ten einde verwarrende of spottende gebruikersname te voorkom: $2. Kies 'n ander gebruikersnaam.",
 	"antispoof-badtype": "Verkeerde datatipe",
 	"antispoof-empty": "Leë string",
 	"antispoof-blacklisted": "Bevat verbode karakter $1",
@@ -16,7 +18,7 @@
 	"antispoof-deprecated": "Bevat verouderde karakter $1",
 	"antispoof-noletters": "Bevat geen letters nie",
 	"antispoof-mixedscripts": "Bevat onverenigbaar gemengde skrifte",
-	"antispoof-tooshort": "Afgekorte naam te kort",
+	"antispoof-tooshort": "Genormaliseerde naam te kort",
 	"antispoof-ignore": "Ignoreer spoofing tjeks",
 	"right-override-antispoof": "Ignoreer die spoofing tjeks"
 }

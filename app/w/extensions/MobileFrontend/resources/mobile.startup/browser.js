@@ -36,9 +36,6 @@
 	function Browser( ua, $container ) {
 		this.userAgent = ua;
 		this.$el = $container;
-		if ( this.isAndroid2() ) {
-			this.lockViewport();
-		}
 		this._fixIosLandscapeBug();
 	}
 
@@ -97,14 +94,6 @@
 			}
 		},
 		/**
-		 * Determine if a device is Android 2.
-		 * @method
-		 * @return {boolean}
-		 */
-		isAndroid2: memoize( function () {
-			return /Android 2/.test( this.userAgent );
-		} ),
-		/**
 		 * Determine if a device has a widescreen.
 		 * @method
 		 * @return {boolean}
@@ -138,13 +127,6 @@
 		 * @return {boolean}
 		 */
 		supportsAnimations: memoize( function () {
-			// don't trust Android 2.x, really
-			// animations cause textareas to misbehave on it
-			// (http://stackoverflow.com/a/5734984/365238)
-			if ( this.isAndroid2() ) {
-				return false;
-			}
-
 			return this.supportsCSSProperty( 'animationName' ) &&
 				this.supportsCSSProperty( 'transform' ) &&
 				this.supportsCSSProperty( 'transition' );
@@ -165,32 +147,6 @@
 		 */
 		supportsGeoLocation: memoize( function () {
 			return 'geolocation' in navigator;
-		} ),
-		/**
-		 * Detect if we support file input uploads
-		 * @return {boolean}
-		 */
-		supportsFileUploads: memoize( function () {
-			var browserSupported;
-			// If already calculated, just return it
-			if ( this._fileUploads !== undefined ) {
-				return this._fileUploads;
-			}
-
-			// deal with known false positives which don't support file input (bug 47374)
-			if ( this.userAgent.match( /Windows Phone (OS 7|8.0)/ ) ) {
-				this._fileUploads = false;
-			} else {
-				browserSupported = (
-					typeof FileReader !== 'undefined' &&
-					typeof FormData !== 'undefined' &&
-					// Firefox OS 1.0 turns <input type="file"> into <input type="text">
-					( $( '<input type="file"/>' ).prop( 'type' ) === 'file' )
-				);
-				this._fileUploads = browserSupported &&
-					!mw.config.get( 'wgImagesDisabled', false );
-			}
-			return this._fileUploads;
 		} )
 	};
 

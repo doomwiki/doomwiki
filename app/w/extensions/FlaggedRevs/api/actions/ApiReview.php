@@ -33,21 +33,20 @@ class ApiReview extends ApiBase {
 	 * except that it generates the template and image parameters itself.
 	 */
 	public function execute() {
-		global $wgUser;
 		$params = $this->extractRequestParams();
 		// Check basic permissions
 		if ( is_callable( [ $this, 'checkUserRightsAny' ] ) ) {
 			$this->checkUserRightsAny( 'review' );
 		} else {
-			if ( !$wgUser->isAllowed( 'review' ) ) {
+			if ( !$this->getUser()->isAllowed( 'review' ) ) {
 				$this->dieUsage( "You don't have the right to review revisions.",
 					'permissiondenied' );
 			}
 		}
 
-		if ( $wgUser->isBlocked( false ) ) {
+		if ( $this->getUser()->isBlocked( false ) ) {
 			if ( is_callable( [ $this, 'dieBlocked' ] ) ) {
-				$this->dieBlocked( $wgUser->getBlock() );
+				$this->dieBlocked( $this->getUser()->getBlock() );
 			} else {
 				$this->dieUsageMsg( [ 'blockedtext' ] );
 			}
@@ -66,7 +65,7 @@ class ApiReview extends ApiBase {
 		$title = $rev->getTitle();
 
 		// Construct submit form...
-		$form = new RevisionReviewForm( $wgUser );
+		$form = new RevisionReviewForm( $this->getUser() );
 		$form->setPage( $title );
 		$form->setOldId( $revid );
 		$form->setApprove( empty( $params['unapprove'] ) );
@@ -94,7 +93,7 @@ class ApiReview extends ApiBase {
 			}
 			// Now get the template and image parameters needed
 			list( $templateIds, $fileTimeKeys ) =
-				FRInclusionCache::getRevIncludes( $article, $rev, $wgUser );
+				FRInclusionCache::getRevIncludes( $article, $rev, $this->getUser() );
 			// Get version parameters for review submission (flat strings)
 			list( $templateParams, $imageParams, $fileParam ) =
 				RevisionReviewForm::getIncludeParams( $templateIds, $fileTimeKeys, $fileVer );
@@ -132,8 +131,10 @@ class ApiReview extends ApiBase {
 				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
 					$this->dieWithError( 'apierror-flaggedrevs-cantreview', 'permissiondenied' );
 				} else {
-					$this->dieUsage( "You don't have the necessary rights to set the specified flags.",
-						'permissiondenied' );
+					$this->dieUsage(
+						"You don't have the necessary rights to set the specified flags.",
+						'permissiondenied'
+					);
 				}
 			} elseif ( $status === 'review_too_low' ) {
 				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
@@ -146,8 +147,10 @@ class ApiReview extends ApiBase {
 				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
 					$this->dieWithError( 'apierror-flaggedrevs-cantreview', 'permissiondenied' );
 				} else {
-					$this->dieUsage( "You don't have the necessary rights to set the specified flags.",
-						'permissiondenied' );
+					$this->dieUsage(
+						"You don't have the necessary rights to set the specified flags.",
+						'permissiondenied'
+					);
 				}
 			} elseif ( $status === 'review_bad_tags' ) {
 				if ( is_callable( [ $this, 'dieWithError' ] ) ) {
@@ -211,7 +214,8 @@ class ApiReview extends ApiBase {
 			'unapprove' => false
 		];
 		if ( !FlaggedRevs::binaryFlagging() ) {
-			/** @todo Once support for MediaWiki < 1.25 is dropped, just use ApiBase::PARAM_HELP_MSG directly */
+			/** @todo Once support for MediaWiki < 1.25 is dropped,
+			 * just use ApiBase::PARAM_HELP_MSG directly */
 			$key = constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '';
 			foreach ( FlaggedRevs::getDimensions() as $flagname => $levels ) {
 				$pars['flag_' . $flagname] = [

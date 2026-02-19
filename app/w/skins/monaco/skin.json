@@ -1,0 +1,115 @@
+{
+	"name": "Monaco",
+	"author": [
+		"Inez Korczyński",
+		"Christian Williams",
+		"[http://mediawiki.org/wiki/User:Dantman Daniel Friesen]",
+		"[http://doomwiki.org/wiki/User:Quasar James Haley]"
+	],
+	"url": "https://github.com/haleyjd/monaco-port",
+	"descriptionmsg": "monaco-desc",
+	"license-name": "GPLv2",
+	"type": "skin",
+	"requires": {
+		"MediaWiki": ">= 1.27.0"
+	},
+	"ConfigRegistry": {
+		"monaco": "GlobalVarConfig::newInstance"
+	},
+	"ValidSkinNames": {
+		"monaco": "Monaco"
+	},
+	"AutoloadClasses": {
+		"SkinMonaco": "Monaco.skin.php",
+		"MonacoTemplate": "Monaco.skin.php",
+		"MonacoSidebar": "MonacoSidebar.class.php"
+	},
+	"MessagesDirs": {
+		"SkinMonaco": [
+			"i18n"
+		]
+	},
+	"Hooks": {
+		"MessageCacheReplace": [
+			"MonacoSidebar::invalidateCache"
+		]
+	},
+	"ResourceModules": {
+		"skins.monaco": {
+			"position": "top",
+			"targets": [ "desktop", "mobile" ],
+			"class": "ResourceLoaderSkinModule",
+			"styles": {
+				"style/css/print.css": {
+					"media": "print"
+				},
+				"style/css/monobook_modified.css": {
+					"media": "screen"
+				},
+				"style/css/reset_modified.css": {
+					"media": "screen"
+				},
+				"style/css/root.css": {
+					"media": "screen"
+				},
+				"style/css/header.css": {
+					"media": "screen"
+				},
+				"style/css/article.css": {
+					"media": "screen"
+				},
+				"style/css/widgets.css": {
+					"media": "screen"
+				},
+				"style/css/footer.css": {
+					"media": "screen"
+				},
+				"style/css/ny.css": {
+					"media": "screen"
+				},
+				"style/css/buttons.css": {
+					"media": "screen"
+				},
+				"style/css/sprite.css": {
+					"media": "screen"
+				},
+				"style/css/modal.css": {
+					"media": "screen"
+				},
+				"style/css/star_rating.css": {
+					"media": "screen"
+				}
+			}
+		},
+		"skins.monaco.scripts": {
+			"scripts": "style/js/monaco.js"
+		},
+		"ext.monacoWidget": {
+			"position" : "bottom",
+			"scripts": "ext/ext.monacoWidget.js",
+			"styles": {
+				"ext/ext.monacoWidget.css": {
+					"media": "screen"
+				}
+			}
+		}
+	},
+	"ResourceFileModulePaths": {
+		"localBasePath": "",
+		"remoteSkinPath": "monaco"
+	},
+	"config": {
+		"MonacoAllowusetheme": true,
+		"MonacoTheme" : "sapphire",
+		"MonacoDynamicCreateOverride" : false,
+		"MonacoUseMoreButton" : true,
+		"MonacoUseSitenoticeIsland" : false,
+		"MonacoUseMasthead" : true,
+		"MonacoCompactSpecialPages" : false,
+		"MonacoEnablePaypal" : false,
+		"MonacoPaypalID" : "",
+		"MonacoEnablePatreon" : false,
+		"MonacoPatreonURL" : ""
+	},
+	"manifest_version": 1
+}
