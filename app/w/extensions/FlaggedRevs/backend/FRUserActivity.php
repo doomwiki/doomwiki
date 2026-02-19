@@ -1,7 +1,7 @@
 <?php
-/*
-* Class of utility functions for getting/tracking user activity
-*/
+/**
+ * Class of utility functions for getting/tracking user activity
+ */
 class FRUserActivity {
 	const PAGE_REVIEW_SEC = 1200; // 20*60
 	const CHANGE_REVIEW_SEC = 360; // 6*60
@@ -41,7 +41,7 @@ class FRUserActivity {
 		);
 
 		# Save new value to cache (more aggresive for larger counts)
-		$wgMemc->set( $key, $count, ( $count > 100 ) ? 30*60 : 5*60 );
+		$wgMemc->set( $key, $count, ( $count > 100 ) ? 30 * 60 : 5 * 60 );
 
 		return $count;
 	}
@@ -55,7 +55,7 @@ class FRUserActivity {
 		$key = wfMemcKey( 'flaggedrevs', 'userReviewingPage', $pageId );
 		$val = ObjectCache::getMainStashInstance()->get( $key );
 
-		return ( count( $val ) == 3 )
+		return is_array( $val ) && count( $val ) == 3
 			? [ $val[0], $val[1] ]
 			: [ null, null ];
 	}
@@ -116,7 +116,7 @@ class FRUserActivity {
 		$key = wfMemcKey( 'flaggedrevs', 'userReviewingDiff', $oldId, $newId );
 		$val = ObjectCache::getMainStashInstance()->get( $key );
 
-		return ( count( $val ) == 3 )
+		return is_array( $val ) && count( $val ) == 3
 			? [ $val[0], $val[1] ]
 			: [ null, null ];
 	}
@@ -176,7 +176,7 @@ class FRUserActivity {
 	/**
 	 * @param string $key
 	 * @param User $user
-	 * @param integer $ttlSec
+	 * @param int $ttlSec
 	 * @return bool
 	 */
 	protected static function incUserReviewingItem( $key, User $user, $ttlSec ) {
@@ -184,7 +184,7 @@ class FRUserActivity {
 
 		ObjectCache::getMainStashInstance()->merge(
 			$key,
-			function( BagOStuff $stash, $key, $oldVal ) use ( $user, &$wasSet ) {
+			function ( BagOStuff $stash, $key, $oldVal ) use ( $user, &$wasSet ) {
 				if ( count( $oldVal ) == 3 ) { // flag set
 					list( $u, $ts, $cnt ) = $oldVal;
 					if ( $u === $user->getName() ) { // by this user
@@ -207,7 +207,7 @@ class FRUserActivity {
 	/**
 	 * @param string $key
 	 * @param User $user
-	 * @param integer $ttlSec
+	 * @param int $ttlSec
 	 * @return bool
 	 */
 	protected static function decUserReviewingItem( $key, User $user, $ttlSec ) {
@@ -215,7 +215,7 @@ class FRUserActivity {
 
 		ObjectCache::getMainStashInstance()->merge(
 			$key,
-			function( BagOStuff $stash, $key, $oldVal ) use ( $user, &$wasSet ) {
+			function ( BagOStuff $stash, $key, $oldVal ) use ( $user, &$wasSet ) {
 				if ( count( $oldVal ) != 3 ) {
 					return false; // flag not set
 				}

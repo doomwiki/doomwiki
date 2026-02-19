@@ -29,7 +29,7 @@
 		}
 	} );
 
-	QUnit.test( '#TalkOverlay (new page; anonymous)', 4, function ( assert ) {
+	QUnit.test( '#TalkOverlay (new page; anonymous)', function ( assert ) {
 		var options = {
 				api: this.api,
 				title: 'Talk:No exist'
@@ -49,7 +49,7 @@
 		assert.strictEqual( overlay.$( '.add' ).length, 0, 'There is no "Add discussion" button' );
 	} );
 
-	QUnit.test( '#TalkOverlay (logged in)', 2, function ( assert ) {
+	QUnit.test( '#TalkOverlay (logged in)', function ( assert ) {
 		var overlay;
 
 		mw.config.set( 'wgUserName', 'FlorianSW' );
@@ -59,12 +59,12 @@
 		} );
 
 		assert.ok( overlay.$( '.add' ).length > 0, 'There is an "Add discussion" button' );
-		assert.strictEqual( $.trim( overlay.$( '.content-header' ).text() ),
+		assert.strictEqual( overlay.$( '.content-header' ).text().trim(),
 			mw.msg( 'mobile-frontend-talk-explained-empty' ),
 			'Check the header knows it is empty.' );
 	} );
 
-	QUnit.test( '#TalkOverlay (existing page lists section headings)', 4, function ( assert ) {
+	QUnit.test( '#TalkOverlay (existing page lists section headings)', function ( assert ) {
 		var overlay = new TalkOverlay( {
 			api: this.api,
 			title: 'Talk:Topic'
@@ -75,7 +75,7 @@
 			'The text of the second item is the section heading.' );
 		assert.strictEqual( overlay.$( '.topic-title-list li a' ).data( 'id' ), 50,
 			'The data id is set.' );
-		assert.strictEqual( $.trim( overlay.$( '.content-header' ).text() ),
+		assert.strictEqual( overlay.$( '.content-header' ).text().trim(),
 			mw.msg( 'mobile-frontend-talk-explained' ),
 			'Check the header knows it is not empty.' );
 	} );

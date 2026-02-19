@@ -1,8 +1,25 @@
-@import 'minerva.variables';
-@import 'minerva.mixins';
+@import 'mobile.variables';
+@import 'mediawiki.mixins.less';
 
 .editor-overlay {
 	.box-sizing( border-box );
+
+	.anonwarning {
+		margin-top: 16px;
+
+		.anonmsg {
+			margin-bottom: 19px;
+		}
+
+		.mw-ui-button {
+			margin-bottom: 15px;
+		}
+		> p {
+			text-align: center;
+			font-style: italic;
+			font-size: 0.875em;
+		}
+	}
 
 	.preview {
 		display: none;
@@ -10,7 +27,8 @@
 
 	.wikitext-editor {
 		.box-sizing( border-box );
-		padding: 10px @contentMargin;
+		padding-top: 10px;
+		padding-bottom: 10px;
 	}
 
 	.summary-request {
@@ -36,7 +54,8 @@
 	}
 
 	.editor-switcher {
-		border-left: 1px solid #ddd;
+		border-left: 1px solid @colorGray12;
+
 		.oo-ui-toolbar-bar {
 			font-size: unit( 0.8 * @targetIconSize / @baseIconSize, em );
 			border-collapse: separate;
@@ -55,10 +74,4 @@
 	.mbox-image {
 		min-width: 30px;
 	}
-}
-
-// FIXME: high line-height (1.5) causes weird behavior in textareas on
-// Android 2.x, remove this if we don't want to support editor there
-.android2.editor-overlay textarea {
-	line-height: 1.2;
 }

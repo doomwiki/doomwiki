@@ -1,7 +1,6 @@
 ( function ( M, $ ) {
 	var Overlay = M.require( 'mobile.startup/Overlay' ),
 		PageGateway = M.require( 'mobile.startup/PageGateway' ),
-		browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		toast = M.require( 'mobile.startup/toast' ),
 		user = M.require( 'mobile.startup/user' );
@@ -138,7 +137,6 @@
 		/** @inheritdoc **/
 		className: 'overlay editor-overlay',
 		events: $.extend( {}, Overlay.prototype.events, {
-			// FIXME: This should be .close (see bug 71203)
 			'click .back': 'onClickBack',
 			'click .continue': 'onClickContinue',
 			'click .submit': 'onClickSubmit'
@@ -161,6 +159,8 @@
 		 */
 		confirmSave: function () {
 			if ( this.isNewPage &&
+				// TODO: Replace with an OOUI dialog
+				// eslint-disable-next-line no-alert
 				!window.confirm( mw.msg( 'mobile-frontend-editor-new-page-confirm', mw.user ) )
 			) {
 				return false;
@@ -180,6 +180,9 @@
 
 			// FIXME: use generic method for following 3 lines
 			this.pageGateway.invalidatePage( title );
+			// Close the overlay to cancel the hash fragment
+			// otherwise clicking back will take you back to the editor.
+			self.hide();
 
 			if ( this.isNewPage ) {
 				msg = mw.msg( 'mobile-frontend-editor-success-new-page' );
@@ -254,10 +257,6 @@
 		},
 		/** @inheritdoc **/
 		postRender: function () {
-			// Add a class so editor can make some Android 2 specific customisations.
-			if ( browser.isAndroid2() ) {
-				this.$el.addClass( 'android-2' );
-			}
 			// log edit attempt
 			this.log( {
 				action: 'ready'
@@ -318,7 +317,7 @@
 				} );
 			} else {
 				this.allowCloseWindow.release();
-				Overlay.prototype.hide.call( this );
+				return Overlay.prototype.hide.call( self );
 			}
 		},
 		/**

@@ -67,20 +67,23 @@ class StablePages extends SpecialPage {
 
 	public function formatRow( $row ) {
 		$title = Title::makeTitle( $row->page_namespace, $row->page_title );
+		$linkRenderer = $this->getLinkRenderer();
 		// Link to page
-		$link = Linker::link( $title );
+		$link = $linkRenderer->makeLink( $title );
 		// Helpful utility links
 		$utilLinks = [];
-		$utilLinks[] = Linker::link(
+		$utilLinks[] = $linkRenderer->makeKnownLink(
 			$title,
-			$this->msg( 'stablepages-config' )->escaped(),
-			[], [ 'action' => 'protect' ], 'known' );
-		$utilLinks[] = Linker::link( $title,
-			$this->msg( 'history' )->escaped(),
-			[], [ 'action' => 'history' ], 'known' );
-		$utilLinks[] = Linker::link( SpecialPage::getTitleFor( 'Log', 'stable' ),
-			$this->msg( 'stable-logpage' )->escaped(),
-			[], [ 'page' => $title->getPrefixedText() ], 'known' );
+			$this->msg( 'stablepages-config' )->text(),
+			[], [ 'action' => 'protect' ] );
+		$utilLinks[] = $linkRenderer->makeKnownLink(
+			$title,
+			$this->msg( 'history' )->text(),
+			[], [ 'action' => 'history' ] );
+		$utilLinks[] = $linkRenderer->makeKnownLink(
+			SpecialPage::getTitleFor( 'Log', 'stable' ),
+			$this->msg( 'stable-logpage' )->text(),
+			[], [ 'page' => $title->getPrefixedText() ] );
 		// Autoreview/review restriction level
 		$restr = '';
 		if ( $row->fpc_level != '' ) {

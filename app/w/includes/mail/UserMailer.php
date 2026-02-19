@@ -102,7 +102,7 @@ class UserMailer {
 	 * @param MailAddress $from Sender's email
 	 * @param string $subject Email's subject.
 	 * @param string $body Email's text or Array of two strings to be the text and html bodies
-	 * @param array $options:
+	 * @param array $options Keys:
 	 *     'replyTo' MailAddress
 	 *     'contentType' string default 'text/plain; charset=UTF-8'
 	 *     'headers' array Extra headers to set
@@ -175,18 +175,58 @@ class UserMailer {
 				// first send to non-split address list, then to split addresses one by one
 				$status = Status::newGood();
 				if ( $to ) {
-					$status->merge( UserMailer::sendInternal(
+					$status->merge( self::sendInternal(
 						$to, $from, $subject, $body, $options ) );
 				}
 				foreach ( $splitTo as $newTo ) {
-					$status->merge( UserMailer::sendInternal(
+					$status->merge( self::sendInternal(
 						[ $newTo ], $from, $subject, $body, $options ) );
 				}
 				return $status;
 			}
 		}
 
-		return UserMailer::sendInternal( $to, $from, $subject, $body, $options );
+		return self::sendInternal( $to, $from, $subject, $body, $options );
+	}
+
+	/**
+	 * Whether the PEAR Mail_mime library is usable. This will
+	 * try and load it if it is not already.
+	 *
+	 * @return bool
+	 */
+	private static function isMailMimeUsable() {
+		static $usable = null;
+		if ( $usable === null ) {
+			// If the class is not already loaded, and it's in the include path,
+			// try requiring it.
+			if ( !class_exists( 'Mail_mime' ) && stream_resolve_include_path( 'Mail/mime.php' ) ) {
+				require_once 'Mail/mime.php';
+			}
+			$usable = class_exists( 'Mail_mime' );
+		}
+
+		return $usable;
+	}
+
+	/**
+	 * Whether the PEAR Mail library is usable. This will
+	 * try and load it if it is not already.
+	 *
+	 * @return bool
+	 */
+	private static function isMailUsable() {
+		static $usable = null;
+		if ( $usable === null ) {
+			// If the class is not already loaded, and it's in the include path,
+			// try requiring it.
+			if ( !class_exists( 'Mail' ) && stream_resolve_include_path( 'Mail.php' ) ) {
+				require_once 'Mail.php';
+			}
+			$usable = class_exists( 'Mail' );
+		}
+
+		return $usable;
 	}
 
 	/**
@@ -196,7 +236,7 @@ class UserMailer {
 	 * @param MailAddress $from Sender's email
 	 * @param string $subject Email's subject.
 	 * @param string $body Email's text or Array of two strings to be the text and html bodies
-	 * @param array $options:
+	 * @param array $options Keys:
 	 *     'replyTo' MailAddress
 	 *     'contentType' string default 'text/plain; charset=UTF-8'
 	 *     'headers' array Extra headers to set
@@ -296,15 +336,12 @@ class UserMailer {
 		if ( is_array( $body ) ) {
 			// we are sending a multipart message
 			wfDebug( "Assembling multipart mime email\n" );
-			if ( !stream_resolve_include_path( 'Mail/mime.php' ) ) {
+			if ( !self::isMailMimeUsable() ) {
 				wfDebug( "PEAR Mail_Mime package is not installed. Falling back to text email.\n" );
 				// remove the html body for text email fall back
 				$body = $body['text'];
 			} else {
-				// Check if pear/mail_mime is already loaded (via composer)
-				if ( !class_exists( 'Mail_mime' ) ) {
-					require_once 'Mail/mime.php';
-				}
+				// pear/mail_mime is already loaded by this point
 				if ( wfIsWindows() ) {
 					$body['text'] = str_replace( "\n", "\r\n", $body['text'] );
 					$body['html'] = str_replace( "\n", "\r\n", $body['html'] );
@@ -352,12 +389,8 @@ class UserMailer {
 
 		if ( is_array( $wgSMTP ) ) {
 			// Check if pear/mail is already loaded (via composer)
-			if ( !class_exists( 'Mail' ) ) {
-				// PEAR MAILER
-				if ( !stream_resolve_include_path( 'Mail.php' ) ) {
-					throw new MWException( 'PEAR mail package is not installed' );
-				}
-				require_once 'Mail.php';
+			if ( !self::isMailUsable() ) {
+				throw new MWException( 'PEAR mail package is not installed' );
 			}
 
 			MediaWiki\suppressWarnings();
@@ -409,7 +442,7 @@ class UserMailer {
 			try {
 				foreach ( $to as $recip ) {
 					$sent = mail(
-						$recip,
+						$recip->toString(),
 						self::quotedPrintable( $subject ),
 						$body,
 						$headers,

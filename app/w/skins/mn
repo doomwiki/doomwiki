@@ -1,0 +1,16 @@
+	"name": "Monaco",
+	"version": "0.0.1",
+	"author": [
+	"url": "https://github.com/haleyjd/monaco-port",
+	"descriptionmsg": "monaco-desc",
+	"license-name": "GPLv2",
+	"type": "skin",
+	"ConfigRegistry": {
+	"ValidSkinNames": {
+	"AutoloadClasses": {
+	"MessagesDirs": {
+	"config": {
+	"Hooks": {
+	"ResourceModules": {
+	"ResourceFileModulePaths": {
+	"manifest_version": 1

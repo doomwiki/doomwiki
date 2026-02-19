@@ -18,7 +18,7 @@ class PendingChanges extends SpecialPage {
 		$this->currentUnixTS = wfTimestamp( TS_UNIX ); // now
 
 		$this->namespace = $request->getIntOrNull( 'namespace' );
-		$this->level = $request->getInt( 'level', - 1 );
+		$this->level = $request->getInt( 'level', -1 );
 		$category = trim( $request->getVal( 'category' ) );
 		$catTitle = Title::makeTitleSafe( NS_CATEGORY, $category );
 		$this->category = is_null( $catTitle ) ? '' : $catTitle->getText();
@@ -225,14 +225,17 @@ class PendingChanges extends SpecialPage {
 		$title = Title::newFromRow( $row );
 		$stxt = ChangesList::showCharacterDifference( $row->rev_len, $row->page_len );
 		# Page links...
-		$link = Linker::link( $title );
-		$hist = Linker::linkKnown( $title,
-			$this->msg( 'hist' )->escaped(),
+		$linkRenderer = $this->getLinkRenderer();
+		$link = $linkRenderer->makeLink( $title );
+		$hist = $linkRenderer->makeKnownLink(
+			$title,
+			$this->msg( 'hist' )->text(),
 			[],
 			[ 'action' => 'history' ]
 		);
-		$review = Linker::linkKnown( $title,
-			$this->msg( 'pendingchanges-diff' )->escaped(),
+		$review = $linkRenderer->makeKnownLink(
+			$title,
+			$this->msg( 'pendingchanges-diff' )->text(),
 			[],
 			[ 'diff' => 'cur', 'oldid' => $row->stable ] + FlaggedRevs::diffOnlyCGI()
 		);
@@ -251,7 +254,7 @@ class PendingChanges extends SpecialPage {
 				: $this->msg( 'pendingchanges-unwatched' )->escaped();
 			$watching = " {$watching}";
 		} else {
-			$uw = - 1;
+			$uw = -1;
 			$watching = ''; // leave out data
 		}
 		# Get how long the first unreviewed edit has been waiting...
@@ -308,9 +311,9 @@ class PendingChangesPager extends AlphabeticPager {
 
 	const PAGE_LIMIT = 100; // Don't get too expensive
 
-	function __construct( $form, $namespace, $level = - 1, $category = '',
-		$size = null, $watched = false, $stable = false ) {
-
+	function __construct( $form, $namespace, $level = -1, $category = '',
+		$size = null, $watched = false, $stable = false
+	) {
 		$this->mForm = $form;
 		# Must be a content page...
 		$vnamespaces = FlaggedRevs::getReviewNamespaces();
@@ -325,7 +328,7 @@ class PendingChangesPager extends AlphabeticPager {
 		}
 		$this->namespace = $namespace;
 		# Sanity check level: 0 = checked; 1 = quality; 2 = pristine
-		$this->level = ( $level >= 0 && $level <= 2 ) ? $level : - 1;
+		$this->level = ( $level >= 0 && $level <= 2 ) ? $level : -1;
 		$this->category = $category ? str_replace( ' ', '_', $category ) : null;
 		$this->size = ( $size !== null ) ? intval( $size ) : null;
 		$this->watched = (bool)$watched;

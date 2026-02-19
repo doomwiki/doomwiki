@@ -1,6 +1,7 @@
 // FIXME: some of this could be removed if we reused .page-list styling
-@import 'minerva.variables';
-@import 'minerva.mixins';
+@import 'mobile.variables';
+@import 'mediawiki.ui/variables';
+@import 'mediawiki.mixins.less';
 
 .notifications-overlay {
 	// position: fixed + sliding drawer causes weird rendering bugs in Android
@@ -26,7 +27,7 @@
 			padding: 0.5em;
 			font-size: 1.5em;
 			box-shadow: none;
-			border: 1px solid @colorGray6;
+			border: 1px solid @colorGray10;
 			// Override the positioning of the menu
 			// so it is "stuck" on the bottom of the
 			// notification overlay panel
@@ -44,14 +45,11 @@
 		// it's in Overlay.less too
 		overflow-y: scroll; // has to be scroll, not auto
 		position: absolute;
-		top: @headerHeight;
-		bottom: @headerHeight;
 		width: 100%;
 		margin-top: 1px;
 		padding-bottom: 0;
 
 		.mw-echo-ui-notificationsWidget {
-			top: @headerHeight;
 			height: 100%;
 		}
 	}
@@ -62,29 +60,5 @@
 		top: 0;
 		padding-right: 0;
 		z-index: @z-indexOverOverlay;
-	}
-}
-
-@media all and ( min-width: @deviceWidthTablet ) {
-	.notifications-overlay {
-		.mw-echo-notification {
-			padding: 1.75em @contentPaddingTablet;
-		}
-		.overlay-header .cancel {
-			// 0 because we want to have some tappable area to the left of the icon
-			left: 0;
-		}
-		.overlay-header {
-			padding-left: 0;
-			padding-right: 0;
-		}
-
-		.overlay-header,
-		.overlay-content {
-			max-width: none;
-			.content {
-				margin: 0 @contentMargin;
-			}
-		}
 	}
 }

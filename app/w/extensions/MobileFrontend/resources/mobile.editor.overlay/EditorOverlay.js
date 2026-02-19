@@ -1,9 +1,9 @@
+/* global $ */
 ( function ( M, $ ) {
 	var EditorOverlayBase = M.require( 'mobile.editor.common/EditorOverlayBase' ),
 		Section = M.require( 'mobile.startup/Section' ),
 		EditorGateway = M.require( 'mobile.editor.api/EditorGateway' ),
 		AbuseFilterPanel = M.require( 'mobile.abusefilter/AbuseFilterPanel' ),
-		settings = M.require( 'mobile.startup/settings' ),
 		Button = M.require( 'mobile.startup/Button' ),
 		toast = M.require( 'mobile.startup/toast' ),
 		MessageBox = M.require( 'mobile.messageBox/MessageBox' );
@@ -67,6 +67,7 @@
 		 * @cfg {mw.Api} defaults.api an api module to retrieve pages
 		 */
 		defaults: $.extend( {}, EditorOverlayBase.prototype.defaults, {
+			ctaMessage: mw.msg( 'mobile-frontend-editor-anon-cta-message' ),
 			loginButton: new Button( {
 				block: true,
 				label: mw.msg( 'mobile-frontend-watchlist-cta-button-login' )
@@ -95,8 +96,13 @@
 		 * @return {boolean}
 		 */
 		isVisualEditorEnabled: function () {
-			return mw.config.get( 'wgVisualEditorConfig' ) &&
-				$.inArray( mw.config.get( 'wgNamespaceNumber' ), mw.config.get( 'wgVisualEditorConfig' ).namespaces ) > -1 &&
+			var ns = mw.config.get( 'wgVisualEditorConfig' ) &&
+				mw.config.get( 'wgVisualEditorConfig' ).namespaces;
+
+			return ns &&
+				ns.indexOf(
+					mw.config.get( 'wgNamespaceNumber' )
+				) > -1 &&
 				mw.config.get( 'wgTranslatePageTranslation' ) !== 'translation' &&
 				mw.config.get( 'wgPageContentModel' ) === 'wikitext';
 		},
@@ -115,7 +121,7 @@
 		 */
 		onClickContinue: function ( ev ) {
 			// handle the click on "Edit without logging in"
-			if ( this.options.isAnon && $( ev.target ).hasClass( 'anonymous' ) ) {
+			if ( this.options.isAnon && this.$( ev.target ).hasClass( 'anonymous' ) ) {
 				this._showEditorAfterWarning();
 				return false;
 			}
@@ -151,6 +157,8 @@
 							if ( !self.gateway.hasChanged ) {
 								self._switchToVisualEditor( self.options );
 							} else {
+								// TODO: Replace with an OOUI dialog
+								// eslint-disable-next-line no-alert
 								if ( window.confirm( mw.msg( 'mobile-frontend-editor-switch-confirm' ) ) ) {
 									self.onStageChanges();
 								}
@@ -264,13 +272,11 @@
 			}
 			this.gateway.getPreview( params ).done( function ( parsedText, parsedSectionLine ) {
 				// On desktop edit summaries strip tags. Mimic this behavior on mobile devices
-				self.sectionLine = $( '<div/>' ).html( parsedSectionLine ).text();
+				self.sectionLine = $( '<div>' ).html( parsedSectionLine ).text();
 				new Section( {
 					el: self.$preview,
 					text: parsedText
 				} ).$( 'a' ).on( 'click', false );
-				// Emit event so we can perform enhancements to page
-				M.emit( 'edit-preview', self );
 			} ).fail( function () {
 				self.$preview.addClass( 'error' ).text( mw.msg( 'mobile-frontend-editor-error-preview' ) );
 			} ).always( function () {
@@ -303,6 +309,8 @@
 			var scrollTop;
 
 			if ( !this.$scrollContainer ) {
+				// FIXME: We are using global jQuery here which suggests this should be passed as an option to the
+				// View or should make use of an event.
 				this.$scrollContainer = $( OO.ui.Element.static.getClosestScrollableContainer( this.$content[ 0 ] ) );
 				this.$content.css( 'padding-bottom', this.$scrollContainer.height() * 0.6 );
 			}
@@ -390,7 +398,7 @@
 				mechanism: 'navigate'
 			} );
 			// Save a user setting indicating that this user prefers using the VisualEditor
-			settings.save( 'preferredEditor', 'VisualEditor', true );
+			mw.storage.set( 'preferredEditor', 'VisualEditor' );
 			// Load the VisualEditor and replace the SourceEditor overlay with it
 			this.showSpinner();
 			this.$content.hide();
@@ -490,7 +498,7 @@
 					} else {
 						if ( key === 'editconflict' ) {
 							msg = mw.msg( 'mobile-frontend-editor-error-conflict' );
-						} else if ( $.inArray( key, whitelistedErrorInfo ) > -1 ) {
+						} else if ( whitelistedErrorInfo.indexOf( key ) > -1 ) {
 							msg = response.error.info;
 						} else {
 							msg = mw.msg( 'mobile-frontend-editor-error' );

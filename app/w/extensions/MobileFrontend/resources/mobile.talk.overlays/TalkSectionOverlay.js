@@ -54,7 +54,7 @@
 		 */
 		postRender: function () {
 			TalkOverlayBase.prototype.postRender.apply( this );
-			this.$saveButton = $( '.save-button' );
+			this.$saveButton = this.$( '.save-button' );
 			if ( !this.options.section ) {
 				this.renderFromApi( this.options );
 			} else {
@@ -134,7 +134,7 @@
 
 					if (
 						response.error &&
-						$.inArray( response.error.code, whitelistedErrorInfo ) > -1
+						whitelistedErrorInfo.indexOf( response.error.code ) > -1
 					) {
 						msg = response.error.info;
 					} else {
@@ -152,5 +152,5 @@
 		}
 	} );
 
-	M.define( 'mobile.talk.overlays/TalkSectionOverlay', TalkSectionOverlay );
+	M.define( 'mobile.talk.overlays/TalkSectionOverlay', TalkSectionOverlay ); // resource-modules-disable-line
 }( mw.mobileFrontend, jQuery ) );

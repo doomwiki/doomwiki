@@ -182,14 +182,12 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 
 		// Begin rendering of watchlist.
 		$watchlist = [ $ns => $allPages ];
-		if ( !MobileContext::singleton()->imagesDisabled() ) {
-			Hooks::run( 'SpecialMobileEditWatchlist::images', [
-					$this->getContext(),
-					&$watchlist,
-					&$images
-				]
-			);
-		}
+		Hooks::run( 'SpecialMobileEditWatchlist::images', [
+				$this->getContext(),
+				&$watchlist,
+				&$images
+			]
+		);
 
 		// create list of pages
 		$mobilePages = new MobileCollection();
@@ -223,12 +221,10 @@ class SpecialMobileEditWatchlist extends SpecialEditWatchlist {
 		}
 		$out = $this->getOutput();
 		$out->addHtml( $html );
-		$out->addModules( 'skins.minerva.special.watchlist.scripts' );
+		$out->addModules( 'mobile.special.watchlist.scripts' );
 		$out->addModuleStyles(
 			[
-				'skins.minerva.special.styles',
-				'skins.minerva.special.watchlist.styles',
-				// Note: This could result in this module loading twice due to T87871
+				'mobile.special.watchlist.styles',
 				'mobile.pagelist.styles',
 				'mobile.pagesummary.styles',
 				'mobile.special.pagefeed.styles'

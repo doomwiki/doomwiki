@@ -107,7 +107,9 @@ class FlaggedRevision {
 		# User master/slave as appropriate...
 		if ( $flags & FR_FOR_UPDATE || $flags & FR_MASTER ) {
 			$db = wfGetDB( DB_MASTER );
-			if ( $flags & FR_FOR_UPDATE ) $options[] = 'FOR UPDATE';
+			if ( $flags & FR_FOR_UPDATE ) {
+				$options[] = 'FOR UPDATE';
+			}
 			$pageId = $title->getArticleID( Title::GAID_FOR_UPDATE );
 		} else {
 			$db = wfGetDB( DB_SLAVE );
@@ -143,7 +145,7 @@ class FlaggedRevision {
 	 * Get a FlaggedRevision of the stable version of a title.
 	 * Note: will return NULL if the revision is deleted, though this
 	 * should never happen as fp_stable is updated as revs are deleted.
-	 * @param Title $title, page title
+	 * @param Title $title page title
 	 * @param int $flags (FR_MASTER, FR_FOR_UPDATE)
 	 * @return FlaggedRevision|null (null on failure)
 	 */
@@ -155,7 +157,9 @@ class FlaggedRevision {
 		# User master/slave as appropriate...
 		if ( $flags & FR_FOR_UPDATE || $flags & FR_MASTER ) {
 			$db = wfGetDB( DB_MASTER );
-			if ( $flags & FR_FOR_UPDATE ) $options[] = 'FOR UPDATE';
+			if ( $flags & FR_FOR_UPDATE ) {
+				$options[] = 'FOR UPDATE';
+			}
 			$pageId = $title->getArticleID( Title::GAID_FOR_UPDATE );
 		} else {
 			$db = wfGetDB( DB_SLAVE );
@@ -198,7 +202,9 @@ class FlaggedRevision {
 		# User master/slave as appropriate...
 		if ( $flags & FR_FOR_UPDATE || $flags & FR_MASTER ) {
 			$db = wfGetDB( DB_MASTER );
-			if ( $flags & FR_FOR_UPDATE ) $options[] = 'FOR UPDATE';
+			if ( $flags & FR_FOR_UPDATE ) {
+				$options[] = 'FOR UPDATE';
+			}
 		} else {
 			$db = wfGetDB( DB_SLAVE );
 		}
@@ -229,7 +235,7 @@ class FlaggedRevision {
 
 	/**
 	 * Get the ID of the stable version of a title.
-	 * @param Title $title, page title
+	 * @param Title $title page title
 	 * @param int $flags (FR_MASTER, FR_FOR_UPDATE)
 	 * @return int (0 on failure)
 	 */
@@ -241,9 +247,9 @@ class FlaggedRevision {
 	/**
 	 * Get a FlaggedRevision of the stable version of a title.
 	 * Skips tracking tables to figure out new stable version.
-	 * @param Title $title, page title
+	 * @param Title $title page title
 	 * @param int $flags (FR_MASTER, FR_FOR_UPDATE)
-	 * @param array $config, optional page config (use to skip queries)
+	 * @param array $config optional page config (use to skip queries)
 	 * @param string $precedence (latest,quality,pristine)
 	 * @return FlaggedRevision|null (null on failure)
 	 */
@@ -257,7 +263,9 @@ class FlaggedRevision {
 		# User master/slave as appropriate...
 		if ( $flags & FR_FOR_UPDATE || $flags & FR_MASTER ) {
 			$db = wfGetDB( DB_MASTER );
-			if ( $flags & FR_FOR_UPDATE ) $options[] = 'FOR UPDATE';
+			if ( $flags & FR_FOR_UPDATE ) {
+				$options[] = 'FOR UPDATE';
+			}
 			$pageId = $title->getArticleID( Title::GAID_FOR_UPDATE );
 		} else {
 			$db = wfGetDB( DB_SLAVE );
@@ -433,14 +441,14 @@ class FlaggedRevision {
 	}
 
 	/**
-	 * @return integer revision ID
+	 * @return int revision ID
 	 */
 	public function getRevId() {
 		return $this->mRevision->getId();
 	}
 
 	/**
-	 * @return integer page ID
+	 * @return int page ID
 	 */
 	public function getPage() {
 		return $this->mRevision->getPage();
@@ -500,14 +508,14 @@ class FlaggedRevision {
 	}
 
 	/**
-	 * @return integer the user ID of the reviewer
+	 * @return int the user ID of the reviewer
 	 */
 	public function getUser() {
 		return $this->mUser;
 	}
 
 	/**
-	 * @return integer quality level (FR_CHECKED,FR_QUALITY,FR_PRISTINE)
+	 * @return int quality level (FR_CHECKED,FR_QUALITY,FR_PRISTINE)
 	 */
 	public function getQuality() {
 		return $this->mQuality;
@@ -521,7 +529,7 @@ class FlaggedRevision {
 	}
 
 	/**
-	 * @return string, filename accosciated with this revision.
+	 * @return string filename accosciated with this revision.
 	 * This returns NULL for non-image page revisions.
 	 */
 	public function getFileName() {
@@ -529,7 +537,7 @@ class FlaggedRevision {
 	}
 
 	/**
-	 * @return string, sha1 key accosciated with this revision.
+	 * @return string sha1 key accosciated with this revision.
 	 * This returns NULL for non-image page revisions.
 	 */
 	public function getFileSha1() {
@@ -537,7 +545,7 @@ class FlaggedRevision {
 	}
 
 	/**
-	 * @return string, timestamp accosciated with this revision.
+	 * @return string timestamp accosciated with this revision.
 	 * This returns NULL for non-image page revisions.
 	 */
 	public function getFileTimestamp() {

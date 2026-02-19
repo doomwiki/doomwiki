@@ -103,10 +103,7 @@ class SpecialMobileOptions extends MobileSpecialPage {
 
 		$betaEnabled = $context->isBetaGroupMember();
 
-		$imagesChecked = $context->imagesDisabled() ? '' : 'checked'; // images are off when disabled
 		$imagesBeta = $betaEnabled ? 'checked' : '';
-		$imagesDescriptionMsg = $this->msg( 'mobile-frontend-settings-images-explain' )->parse();
-		$disableMsg = $this->msg( 'mobile-frontend-images-status' )->parse();
 		$betaEnableMsg = $this->msg( 'mobile-frontend-settings-beta' )->parse();
 		$betaDescriptionMsg = $this->msg( 'mobile-frontend-opt-in-explain' )->parse();
 
@@ -120,15 +117,6 @@ class SpecialMobileOptions extends MobileSpecialPage {
 
 		// array to save the data of options, which should be displayed here
 		$options = [];
-
-		// image settings
-		$options['images'] = [
-			'checked' => $imagesChecked,
-			'label' => $disableMsg,
-			'description' => $imagesDescriptionMsg,
-			'name' => 'enableImages',
-			'id' => 'enable-images-toggle',
-		];
 
 		// beta settings
 		if ( $this->getMFConfig()->get( 'MFEnableBeta' ) ) {
@@ -181,7 +169,8 @@ HTML;
 		$selector = '';
 		$count = 0;
 		$language = $this->getLanguage();
-		foreach ( Interwiki::getAllPrefixes( true ) as $interwiki ) {
+		$interwikiLookup = \MediaWiki\MediaWikiServices::getInstance()->getInterwikiLookup();
+		foreach ( $interwikiLookup->getAllPrefixes( true ) as $interwiki ) {
 			$code = $interwiki['iw_prefix'];
 			$name = Language::fetchLanguageName( $code, $language->getCode() );
 			if ( !$name ) {
@@ -231,10 +220,9 @@ HTML;
 	 */
 	private function submitSettingsForm() {
 		$schema = 'MobileOptionsTracking';
-		$schemaRevision = 14003392;
+		$schemaRevision = 16934032;
 		$schemaData = [
 			'action' => 'success',
-			'images' => "nochange",
 			'beta' => "nochange",
 		];
 		$context = MobileContext::singleton();
@@ -269,20 +257,12 @@ HTML;
 			}
 		}
 		$context->setMobileMode( $group );
-		$imagesDisabled = !$request->getBool( 'enableImages' );
-		if ( $context->imagesDisabled() !== $imagesDisabled ) {
-			// Only record when the state has changed
-			$schemaData['images'] = $imagesDisabled ? "off" : "on";
-		}
-		$context->setDisableImagesCookie( $imagesDisabled );
-
 		$returnToTitle = Title::newFromText( $request->getText( 'returnto' ) );
 		if ( $returnToTitle ) {
 			$url = $returnToTitle->getFullURL();
 		} else {
 			$url = $this->getPageTitle()->getFullURL( 'success' );
 		}
-		ExtMobileFrontend::eventLog( $schema, $schemaRevision, $schemaData );
 		$context->getOutput()->redirect( MobileContext::singleton()->getMobileUrl( $url ) );
 	}
 
@@ -290,7 +270,7 @@ HTML;
 	 * Get the URL of this special page
 	 * @param string|null $option Subpage string, or false to not use a subpage
 	 * @param Title $returnTo Destination to returnto after successfully action on the page returned
-	 * @param boolean $fullUrl Whether to get the local url, or the full url
+	 * @param bool $fullUrl Whether to get the local url, or the full url
 	 *
 	 * @return string
 	 */

@@ -37,7 +37,7 @@ class FRUserCounters {
 
 	/**
 	 * Initializes unset param fields to their starting values
-	 * @param array $p
+	 * @param array &$p
 	 */
 	protected static function setUnitializedFields( array &$p ) {
 		if ( !isset( $p['uniqueContentPages'] ) ) {
@@ -65,7 +65,9 @@ class FRUserCounters {
 		$options = [];
 		if ( $flags & FR_MASTER || $flags & FR_FOR_UPDATE ) {
 			$db = wfGetDB( DB_MASTER, [], $dBName );
-			if ( $flags & FR_FOR_UPDATE ) $options[] = 'FOR UPDATE';
+			if ( $flags & FR_FOR_UPDATE ) {
+				$options[] = 'FOR UPDATE';
+			}
 		} else {
 			$db = wfGetDB( DB_SLAVE, [], $dBName );
 		}
@@ -131,7 +133,7 @@ class FRUserCounters {
 			$p[$param] = 0;
 		}
 		$p[$param]++;
-		FRUserCounters::saveUserParams( $uid, $p );
+		self::saveUserParams( $uid, $p );
 	}
 
 	/**
@@ -183,7 +185,7 @@ class FRUserCounters {
 
 	/**
 	 * Update users params array for a user on edit
-	 * @param array $p user params
+	 * @param array &$p user params
 	 * @param Page $article the article just edited
 	 * @param string $summary edit summary
 	 * @return bool anything changed
@@ -197,13 +199,13 @@ class FRUserCounters {
 			# Don't let this get bloated for no reason
 			$maxUniquePages = 50; // some flexibility
 			if ( is_array( $wgFlaggedRevsAutoconfirm ) &&
-				$wgFlaggedRevsAutoconfirm['uniqueContentPages'] > $maxUniquePages )
-			{
+				$wgFlaggedRevsAutoconfirm['uniqueContentPages'] > $maxUniquePages
+			) {
 				$maxUniquePages = $wgFlaggedRevsAutoconfirm['uniqueContentPages'];
 			}
 			if ( is_array( $wgFlaggedRevsAutopromote ) &&
-				$wgFlaggedRevsAutopromote['uniqueContentPages'] > $maxUniquePages )
-			{
+				$wgFlaggedRevsAutopromote['uniqueContentPages'] > $maxUniquePages
+			) {
 				$maxUniquePages = $wgFlaggedRevsAutopromote['uniqueContentPages'];
 			}
 			if ( count( $pages ) < $maxUniquePages // limit the size of this

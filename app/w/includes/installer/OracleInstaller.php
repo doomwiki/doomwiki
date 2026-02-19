@@ -46,7 +46,8 @@ class OracleInstaller extends DatabaseInstaller {
 		'_InstallUser' => 'SYSTEM',
 	];
 
-	public $minimumVersion = '9.0.1'; // 9iR1
+	public static $minimumVersion = '9.0.1'; // 9iR1
+	protected static $notMiniumumVerisonMessage = 'config-oracle-old';
 
 	protected $connError = null;
 
@@ -153,15 +154,12 @@ class OracleInstaller extends DatabaseInstaller {
 		}
 
 		/**
-		 * @var $conn Database
+		 * @var Database $conn
 		 */
 		$conn = $status->value;
 
 		// Check version
-		$version = $conn->getServerVersion();
-		if ( version_compare( $version, $this->minimumVersion ) < 0 ) {
-			return Status::newFatal( 'config-oracle-old', $this->minimumVersion, $version );
-		}
+		$status->merge( static::meetsMinimumRequirement( $conn->getServerVersion() ) );
 
 		return $status;
 	}

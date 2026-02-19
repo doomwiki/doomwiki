@@ -145,7 +145,8 @@ class ApiQueryConfiguredpages extends ApiQueryGeneratorBase {
 			'dir' => [
 				ApiBase::PARAM_DFLT 	=> 'newer',
 				ApiBase::PARAM_TYPE 	=> [ 'newer', 'older' ],
-				/** @todo Once support for MediaWiki < 1.25 is dropped, just use ApiBase::PARAM_HELP_MSG directly */
+				/** @todo Once support for MediaWiki < 1.25 is dropped,
+				 * just use ApiBase::PARAM_HELP_MSG directly */
 				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'api-help-param-direction',
 			],
 			'namespace' => [
@@ -154,12 +155,12 @@ class ApiQueryConfiguredpages extends ApiQueryGeneratorBase {
 				ApiBase::PARAM_ISMULTI 	=> true,
 			],
 			'default' => [
-				ApiBase :: PARAM_DFLT 	=> null,
-				ApiBase :: PARAM_TYPE 	=> [ 'latest', 'stable' ],
+				ApiBase::PARAM_DFLT 	=> null,
+				ApiBase::PARAM_TYPE 	=> [ 'latest', 'stable' ],
 			],
 			'autoreview' => [
-				ApiBase :: PARAM_DFLT 	=> null,
-				ApiBase :: PARAM_TYPE 	=> $autoreviewLevels,
+				ApiBase::PARAM_DFLT 	=> null,
+				ApiBase::PARAM_TYPE 	=> $autoreviewLevels,
 			],
 			'limit' => [
 				ApiBase::PARAM_DFLT 	=> 10,

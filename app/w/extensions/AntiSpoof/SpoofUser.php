@@ -1,20 +1,33 @@
 <?php
 
+use Wikimedia\Rdbms\IDatabase;
+
 class SpoofUser {
+	/** @var bool */
+	private $legal;
+
+	/** @var string */
+	private $name;
+
+	/** @var string */
+	private $normalized;
+
+	/** @var null|string */
+	private $error;
 
 	/**
 	 * @param $name string
 	 */
 	public function __construct( $name ) {
-		$this->mName = strval( $name );
-		list( $ok, $normalized ) = AntiSpoof::checkUnicodeString( $this->mName );
-		$this->mLegal = ( $ok == 'OK' );
-		if ( $this->mLegal ) {
-			$this->mNormalized = $normalized;
-			$this->mError = null;
+		$this->name = strval( $name );
+		list( $ok, $normalized ) = AntiSpoof::checkUnicodeString( $this->name );
+		$this->legal = ( $ok == 'OK' );
+		if ( $this->legal ) {
+			$this->normalized = $normalized;
+			$this->error = null;
 		} else {
-			$this->mNormalized = null;
-			$this->mError = $normalized;
+			$this->normalized = null;
+			$this->error = $normalized;
 		}
 	}
 
@@ -23,7 +36,7 @@ class SpoofUser {
 	 * @return bool
 	 */
 	public function isLegal() {
-		return $this->mLegal;
+		return $this->legal;
 	}
 
 	/**
@@ -31,7 +44,7 @@ class SpoofUser {
 	 * @return null|string
 	 */
 	public function getError() {
-		return $this->mError;
+		return $this->error;
 	}
 
 	/**
@@ -39,7 +52,7 @@ class SpoofUser {
 	 * @return string|null
 	 */
 	public function getNormalized() {
-		return $this->mNormalized;
+		return $this->normalized;
 	}
 
 	/**
@@ -67,18 +80,18 @@ class SpoofUser {
 		// Join against the user table to ensure that we skip stray
 		// entries left after an account is renamed or otherwise munged.
 		$spoofedUsers = $dbr->select(
-			array( 'spoofuser', $this->getTableName() ),
-			array( 'su_name' ), // Same thing due to the join. Saves extra variableness
-			array(
-				'su_normalized' => $this->mNormalized,
+			[ 'spoofuser', $this->getTableName() ],
+			[ 'su_name' ], // Same thing due to the join. Saves extra variableness
+			[
+				'su_normalized' => $this->normalized,
 				'su_name = ' . $this->getUserColumn(),
-			),
+			],
 			__METHOD__,
-			array(
+			[
 				'LIMIT' => 5
-			) );
+			] );
 
-		$spoofs = array();
+		$spoofs = [];
 		foreach ( $spoofedUsers as $row ) {
 			array_push( $spoofs, $row->su_name );
 		}
@@ -91,32 +104,32 @@ class SpoofUser {
 	 * @return bool
 	 */
 	public function record() {
-		return self::batchRecord( $this->getDBMaster(), array( $this ) );
+		return self::batchRecord( $this->getDBMaster(), [ $this ] );
 	}
 
 	/**
 	 * @return array
 	 */
 	private function insertFields() {
-		return array(
-			'su_name'       => $this->mName,
-			'su_normalized' => $this->mNormalized,
-			'su_legal'      => $this->mLegal ? 1 : 0,
-			'su_error'      => $this->mError,
-		);
+		return [
+			'su_name'       => $this->name,
+			'su_normalized' => $this->normalized,
+			'su_legal'      => $this->legal ? 1 : 0,
+			'su_error'      => $this->error,
+		];
 	}
 
 	/**
 	 * Insert a batch of spoof normalization records into the database.
-	 * @param $dbw DatabaseBase
-	 * @param $items array of SpoofUser
+	 * @param IDatabase $dbw
+	 * @param SpoofUser[] $items
 	 * @return bool
 	 */
-	public static function batchRecord( $dbw, $items ) {
+	public static function batchRecord( IDatabase $dbw, $items ) {
 		if ( !count( $items ) ) {
 			return false;
 		}
-		$fields = array();
+		$fields = [];
 		/**
 		 * @var $item SpoofUser
 		 */
@@ -125,14 +138,14 @@ class SpoofUser {
 		}
 		$dbw->replace(
 			'spoofuser',
-			array( 'su_name' ),
+			[ 'su_name' ],
 			$fields,
 			__METHOD__ );
 		return true;
 	}
 
 	/**
-	 * @param $oldName
+	 * @param string $oldName
 	 */
 	public function update( $oldName ) {
 		$that = $this;
@@ -140,11 +153,11 @@ class SpoofUser {
 		$dbw = $this->getDBMaster();
 		// Avoid user rename triggered deadlocks
 		$dbw->onTransactionPreCommitOrIdle(
-			function() use ( $dbw, $that, $method, $oldName ) {
-				if( $that->record() ) {
+			function () use ( $dbw, $that, $method, $oldName ) {
+				if ( $that->record() ) {
 					$dbw->delete(
 						'spoofuser',
-						array( 'su_name' => $oldName ),
+						[ 'su_name' => $oldName ],
 						$method
 					);
 				}
@@ -158,20 +171,20 @@ class SpoofUser {
 	public function remove() {
 		$this->getDBMaster()->delete(
 			'spoofuser',
-			array( 'su_name' => $this->mName ),
+			[ 'su_name' => $this->name ],
 			__METHOD__
 		);
 	}
 
 	/**
-	 * @return DatabaseBase
+	 * @return IDatabase
 	 */
 	protected function getDBSlave() {
-		return wfGetDB( DB_SLAVE );
+		return wfGetDB( DB_REPLICA );
 	}
 
 	/**
-	 * @return DatabaseBase
+	 * @return IDatabase
 	 */
 	protected function getDBMaster() {
 		return wfGetDB( DB_MASTER );

@@ -36,7 +36,9 @@ abstract class ApiStabilize extends ApiBase {
 		$this->title = Title::newFromText( $params['title'] );
 		if ( $this->title == null ) {
 			if ( is_callable( [ $this, 'dieWithError' ] ) ) {
-				$this->dieWithError( [ 'apierror-invelidtitle', wfEscapeWikiText( $params['title'] ) ] );
+				$this->dieWithError(
+					[ 'apierror-invelidtitle', wfEscapeWikiText( $params['title'] ) ]
+				);
 			} else {
 				$this->dieUsage( "Invalid title given.", "invalidtitle" );
 			}
@@ -55,7 +57,7 @@ abstract class ApiStabilize extends ApiBase {
 		$this->doExecute(); // child class
 	}
 
-	public abstract function doExecute();
+	abstract public function doExecute();
 
 	public function mustBePosted() {
 		return true;
@@ -137,16 +139,18 @@ class ApiStabilizeGeneral extends ApiStabilize {
 		$pars = [
 			'default'     => [
 				ApiBase::PARAM_REQUIRED => true,
-				ApiBase :: PARAM_TYPE => [ 'latest', 'stable' ],
+				ApiBase::PARAM_TYPE => [ 'latest', 'stable' ],
 			],
 			'autoreview'  => [
-				ApiBase :: PARAM_TYPE => $autoreviewLevels,
-				ApiBase :: PARAM_DFLT => 'none',
+				ApiBase::PARAM_TYPE => $autoreviewLevels,
+				ApiBase::PARAM_DFLT => 'none',
 			],
 			'expiry'      => [
 				ApiBase::PARAM_DFLT => 'infinite',
-				/** @todo Once support for MediaWiki < 1.25 is dropped, just use ApiBase::PARAM_HELP_MSG directly */
-				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'apihelp-stabilize-param-expiry-general',
+				/** @todo Once support for MediaWiki < 1.25 is dropped,
+				 * just use ApiBase::PARAM_HELP_MSG directly */
+				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' =>
+					'apihelp-stabilize-param-expiry-general',
 			],
 			'reason'      => '',
 			'review'      => false,
@@ -156,8 +160,10 @@ class ApiStabilizeGeneral extends ApiStabilize {
 			],
 			'title'       => [
 				ApiBase::PARAM_REQUIRED => true,
-				/** @todo Once support for MediaWiki < 1.25 is dropped, just use ApiBase::PARAM_HELP_MSG directly */
-				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'apihelp-stabilize-param-title-general',
+				/** @todo Once support for MediaWiki < 1.25 is dropped,
+				 * just use ApiBase::PARAM_HELP_MSG directly */
+				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' =>
+					'apihelp-stabilize-param-title-general',
 			],
 		];
 		return $pars;
@@ -186,8 +192,25 @@ class ApiStabilizeGeneral extends ApiStabilize {
 		return 'Change page stability settings';
 	}
 
+	/**
+	 * @deprecated since MediaWiki core 1.30
+	 */
 	protected function getDescriptionMessage() {
-		return parent::getDescriptionMessage() . '-general';
+		return [ [
+			"apihelp-{$this->getModulePath()}-description-general",
+			"apihelp-{$this->getModulePath()}-summary-general",
+		] ];
+	}
+
+	protected function getSummaryMessage() {
+		return "apihelp-{$this->getModulePath()}-summary-general";
+	}
+
+	protected function getExtendedDescription() {
+		return [ [
+			"apihelp-{$this->getModulePath()}-extended-description-general",
+			'api-help-no-extended-description',
+		] ];
 	}
 
 	/**
@@ -253,13 +276,15 @@ class ApiStabilizeProtect extends ApiStabilize {
 		$autoreviewLevels[] = 'none';
 		return [
 			'protectlevel' => [
-				ApiBase :: PARAM_TYPE => $autoreviewLevels,
-				ApiBase :: PARAM_DFLT => 'none',
+				ApiBase::PARAM_TYPE => $autoreviewLevels,
+				ApiBase::PARAM_DFLT => 'none',
 			],
 			'expiry'      => [
 				ApiBase::PARAM_DFLT => 'infinite',
-				/** @todo Once support for MediaWiki < 1.25 is dropped, just use ApiBase::PARAM_HELP_MSG directly */
-				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'apihelp-stabilize-param-expiry-protect',
+				/** @todo Once support for MediaWiki < 1.25 is dropped,
+				 * just use ApiBase::PARAM_HELP_MSG directly */
+				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' =>
+					'apihelp-stabilize-param-expiry-protect',
 			],
 			'reason'    => '',
 			'watch'     => null,
@@ -268,8 +293,10 @@ class ApiStabilizeProtect extends ApiStabilize {
 			],
 			'title'       => [
 				ApiBase::PARAM_REQUIRED => true,
-				/** @todo Once support for MediaWiki < 1.25 is dropped, just use ApiBase::PARAM_HELP_MSG directly */
-				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' => 'apihelp-stabilize-param-title-protect',
+				/** @todo Once support for MediaWiki < 1.25 is dropped,
+				 * just use ApiBase::PARAM_HELP_MSG directly */
+				constant( 'ApiBase::PARAM_HELP_MSG' ) ?: '' =>
+					'apihelp-stabilize-param-title-protect',
 			],
 		];
 	}
@@ -295,8 +322,25 @@ class ApiStabilizeProtect extends ApiStabilize {
 		return 'Configure review-protection settings for a page';
 	}
 
+	/**
+	 * @deprecated since MediaWiki core 1.30
+	 */
 	protected function getDescriptionMessage() {
-		return parent::getDescriptionMessage() . '-protect';
+		return [ [
+			"apihelp-{$this->getModulePath()}-description-protect",
+			"apihelp-{$this->getModulePath()}-summary-protect",
+		] ];
+	}
+
+	protected function getSummaryMessage() {
+		return "apihelp-{$this->getModulePath()}-summary-protect";
+	}
+
+	protected function getExtendedDescription() {
+		return [ [
+			"apihelp-{$this->getModulePath()}-extended-description-protect",
+			'api-help-no-extended-description',
+		] ];
 	}
 
 	/**

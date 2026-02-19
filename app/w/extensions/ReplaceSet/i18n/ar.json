@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Meno25"
+			"Meno25",
+			"ديفيد"
 		]
 	},
 	"replaceset-desc": "يضيف وظيفة محلل <nowiki>{{#replaceset}}</nowiki> تستخدم لاستبدال أقسام من النصوص ببيانات مهيئة",
-	"replaceset-error-calllimit": "حد استدعاء ReplaceSet تم الوصول إليه.",
+	"replaceset-error-calllimit": "حد استدعاء ReplaceSet تم الوصول إليه ($1).",
 	"replaceset-error-regexnoend": "نمط الريجيكس \"$1\" يفقد فاصل النهاية '$2'",
 	"replaceset-error-regexbadmodifier": "معدل الريجيكس '$1' غير صحيح."
 }

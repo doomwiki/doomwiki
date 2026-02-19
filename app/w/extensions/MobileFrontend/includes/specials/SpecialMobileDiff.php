@@ -34,7 +34,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 
 	/**
 	 * Get the revision object from ID
-	 * @param integer $id ID of the wanted revision
+	 * @param int $id ID of the wanted revision
 	 * @return Revision
 	 */
 	public static function getRevision( $id ) {
@@ -62,8 +62,8 @@ class SpecialMobileDiff extends MobileSpecialPage {
 
 		// check 2 parameters are passed and are numbers
 		if ( count( $revids ) === 2 && $revids[0] && $revids[1] ) {
-			$id = intval( $revids[1] );
-			$prevId = intval( $revids[0] );
+			$id = (int)$revids[1];
+			$prevId = (int)$revids[0];
 			if ( $id && $prevId ) {
 				$rev = static::getRevision( $id );
 				// deal with identical ids
@@ -79,7 +79,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 				}
 			}
 		} elseif ( count( $revids ) === 1 ) {
-			$id = intval( $revids[0] );
+			$id = (int)$revids[0];
 			if ( $id ) {
 				$rev = static::getRevision( $id );
 				if ( $rev ) {
@@ -92,10 +92,10 @@ class SpecialMobileDiff extends MobileSpecialPage {
 
 	/**
 	 * Render the diff page
-	 * @return boolean false when revision not exist
+	 * @return bool false when revision not exist
 	 * @param string $par Revision IDs separated by three points (e.g. 123...124)
 	 */
-	function executeWhenAvailable( $par ) {
+	public function executeWhenAvailable( $par ) {
 		$ctx = MobileContext::singleton();
 		$this->setHeaders();
 		$output = $this->getOutput();
@@ -105,7 +105,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		$rev = $revisions[1];
 		$prev = $revisions[0];
 
-		if ( is_null( $rev ) ) {
+		if ( $rev === null ) {
 			$this->executeBadQuery();
 			return false;
 		}
@@ -113,6 +113,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		$this->rev = $rev;
 		$this->prevRev = $prev;
 		$this->targetTitle = $this->rev->getTitle();
+		$this->getSkin()->setRelevantTitle( $this->targetTitle );
 
 		$output->setPageTitle( $this->msg(
 			'mobile-frontend-diffview-title',
@@ -120,39 +121,106 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		) );
 
 		$output->addModuleStyles( [
-			'skins.minerva.icons.images.scripts',
+			'mobile.special.user.icons',
 			'mobile.pagesummary.styles',
 			// @todo FIXME: Don't add these styles. This is only needed for the user
 			// icon to the left of the username
 			'mobile.special.pagefeed.styles'
 		] );
+		$output->addModules( 'mobile.special.mobilediff.images' );
 
 		// Allow other extensions to load more stuff here
 		Hooks::run( 'BeforeSpecialMobileDiffDisplay', [ &$output, $ctx, $revisions ] );
 
-		$output->addHtml( '<div id="mw-mf-diffview" class="content-unstyled"><div id="mw-mf-diffarea">' );
+		$output->addHTML( '<div id="mw-mf-diffview" class="content-unstyled"><div id="mw-mf-diffarea">' );
 
-		$this->showHeader();
-		$this->showDiff();
-		$output->addHtml( '</div>' );
+		$this->displayDiffPage();
+		$output->addHTML( '</div>' );
 
 		$this->showFooter( $ctx );
 
-		$output->addHtml( '</div>' );
+		$output->addHTML( '</div>' );
 
 		return true;
 	}
 
 	/**
+	 * Returns the ID of the previous Revision, if it is set, otherwise 0.
+	 *
+	 * @return int|null
+	 */
+	protected function getPrevId() {
+		return $this->prevRev ? $this->prevRev->getId() : 0;
+	}
+
+	/**
+	 * Setups the mobile DifferenceEngine and displays a mobile optimised diff.
+	 */
+	protected function displayDiffPage() {
+		$contentHandler = $this->rev->getContentHandler();
+		$this->mDiffEngine = $contentHandler->createDifferenceEngine( $this->getContext(),
+			$this->getPrevId(), $this->revId );
+
+		if ( get_class( $this->mDiffEngine ) == 'DifferenceEngine' ) {
+			$this->mDiffEngine = new $this->diffClass(
+				$this->getContext(),
+				$this->getPrevId(),
+				$this->revId,
+				0,
+				false,
+				(bool)$this->getRequest()->getVal( 'unhide' )
+			);
+		}
+
+		$this->showHeader();
+		$this->mDiffEngine->showDiffPage();
+	}
+
+	/**
 	 * Render the header of a diff page including:
+	 * Navigation links
 	 * Name with url to page
 	 * Bytes added/removed
 	 * Day and time of edit
 	 * Edit Comment
 	 */
-	function showHeader() {
-		$title = $this->targetTitle;
+	private function showHeader() {
+		if ( $this->rev->isMinor() ) {
+			$minor = ChangesList::flag( 'minor' );
+		} else {
+			$minor = '';
+		}
+		$this->getOutput()->addHTML(
+			$this->getRevisionNavigationLinksHTML() .
+			$this->getIntroHTML() .
+			$minor .
+			$this->getCommentHTML()
+		);
+	}
 
+	/**
+	 * Get the edit comment
+	 * @return string Build HTML for edit comment section
+	 */
+	private function getCommentHTML() {
+		if ( $this->rev->getComment() !== '' ) {
+			$comment = Linker::formatComment( $this->rev->getComment(), $this->targetTitle );
+		} else {
+			$comment = $this->msg( 'mobile-frontend-changeslist-nocomment' )->escaped();
+		}
+
+		return Html::rawElement(
+			'div',
+			[ 'id' => 'mw-mf-diff-comment' ],
+			$comment
+		);
+	}
+
+	/**
+	 * Get the intro HTML
+	 * @return string Built HTML for intro section
+	 */
+	private function getIntroHTML() {
 		if ( $this->prevRev ) {
 			$bytesChanged = $this->rev->getSize() - $this->prevRev->getSize();
 		} else {
@@ -160,137 +228,69 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		}
 		if ( $bytesChanged > 0 ) {
 			$changeMsg = 'mobile-frontend-diffview-bytesadded';
-			$sizeClass = MobileUI::iconClass( 'bytesadded', 'before', 'icon-12px meta mw-mf-bytesadded' );
+			$sizeClass = MobileUI::iconClass( 'bytesadded', 'before',
+				'meta mw-mf-bytesadded mw-ui-icon-small' );
 		} elseif ( $bytesChanged === 0 ) {
 			$changeMsg = 'mobile-frontend-diffview-bytesnochange';
 			$sizeClass = MobileUI::iconClass( 'bytesneutral', 'before',
-				'icon-12px meta mw-mf-bytesneutral' );
+				'meta mw-mf-bytesneutral mw-ui-icon-small' );
 		} else {
 			$changeMsg = 'mobile-frontend-diffview-bytesremoved';
 			$sizeClass = MobileUI::iconClass( 'bytesremoved', 'before',
-				'icon-12px meta mw-mf-bytesremoved' );
+				'meta mw-mf-bytesremoved mw-ui-icon-small' );
 			$bytesChanged = abs( $bytesChanged );
 		}
-
-		if ( $this->rev->isMinor() ) {
-			$minor = ChangesList::flag( 'minor' );
-		} else {
-			$minor = '';
-		}
-		if ( $this->rev->getComment() !== '' ) {
-			$comment = Linker::formatComment( $this->rev->getComment(), $title );
-		} else {
-			$comment = $this->msg( 'mobile-frontend-changeslist-nocomment' )->escaped();
-		}
-
 		$ts = new MWTimestamp( $this->rev->getTimestamp() );
-		$this->getOutput()->addHtml(
-			Html::openElement( 'div', [ 'id' => 'mw-mf-diff-info', 'class' => 'page-summary' ] )
-				. Html::openElement( 'h2', [] )
+
+		return Html::openElement( 'div', [ 'id' => 'mw-mf-diff-info', 'class' => 'page-summary' ] )
+			. Html::openElement( 'h2' )
 				. Html::element( 'a',
 					[
-						'href' => $title->getLocalURL(),
+						'href' => $this->targetTitle->getLocalURL()
 					],
-					$title->getPrefixedText()
+					$this->targetTitle->getPrefixedText()
 				)
-				. Html::closeElement( 'h2' )
-				. $this->msg( 'mobile-frontend-diffview-comma' )->rawParams(
-					Html::element( 'span', [ 'class' => $sizeClass ],
-						$this->msg( $changeMsg )->numParams( $bytesChanged )->text()
-					),
-					Html::element(
-						'span', [ 'class' => 'mw-mf-diff-date meta' ],
-						$this->getLanguage()->getHumanTimestamp( $ts )
-					)
-				)->text()
-			. Html::closeElement( 'div' )
-			. $minor
-			. Html::rawElement(
-				'div',
-				[ 'id' => 'mw-mf-diff-comment' ],
-				$comment
-			)
-		);
+			. Html::closeElement( 'h2' )
+			. $this->msg( 'mobile-frontend-diffview-comma' )->rawParams(
+				Html::element( 'span', [ 'class' => $sizeClass ],
+					$this->msg( $changeMsg )->numParams( $bytesChanged )->text()
+				),
+				Html::element(
+					'span', [ 'class' => 'mw-mf-diff-date meta' ],
+					$this->getLanguage()->getHumanTimestamp( $ts )
+				)
+			)->text()
+		. Html::closeElement( 'div' );
 	}
 
 	/**
-	 * Render the inline difference between two revisions
-	 * using InlineDiffEngine
+	 * Render the revision navigation links
+	 * @return string built HTML for Revision navigation links
 	 */
-	function showDiff() {
-		$output = $this->getOutput();
-
-		$prevId = $this->prevRev ? $this->prevRev->getId() : 0;
-		$unhide = (bool)$this->getRequest()->getVal( 'unhide' );
-		$contentHandler = $this->rev->getContentHandler();
-		$de = $contentHandler->createDifferenceEngine( $this->getContext(), $prevId, $this->revId );
-		// HACK:
-		if ( get_class( $de ) == 'DifferenceEngine' ) {
-			$de = new $this->diffClass(
-				$this->getContext(),
-				$prevId,
-				$this->revId,
-				0,
-				false,
-				$unhide
-			);
-		} else {
-			$de->showDiffPage();
-			return;
-		}
-		$this->mDiffEngine = $de;
-		$diff = $de->getDiffBody();
-		if ( !$prevId ) {
-			$audience = $unhide ? Revision::FOR_THIS_USER : Revision::FOR_PUBLIC;
-			$diff = '<ins>'
-				. nl2br(
-					htmlspecialchars(
-						ContentHandler::getContentText( $this->rev->getContent( $audience ) )
-					)
-				)
-				. '</ins>';
-		}
-
-		$warnings = $de->getWarningMessageText();
-		if ( $warnings ) {
-			$warnings = MobileUI::warningBox( $warnings );
-		}
-		$output->addHtml(
-			$warnings .
-			'<div id="mw-mf-minidiff">' .
-			$diff .
-			'</div>'
-		);
+	private function getRevisionNavigationLinksHTML() {
 		$prev = $this->rev->getPrevious();
 		$next = $this->rev->getNext();
+		$history = '';
+
 		if ( $prev || $next ) {
 			$history = Html::openElement( 'ul', [ 'class' => 'hlist revision-history-links' ] );
 			if ( $prev ) {
-				$history .= Html::openElement( 'li' ) .
-					Html::element( 'a', [
-						'href' => SpecialPage::getTitleFor( 'MobileDiff', $prev->getId() )->getLocalUrl()
+				$history .= Html::openElement( 'li', [ 'class' => 'revision-history-prev' ] )
+					. Html::element( 'a', [
+						'href' => SpecialPage::getTitleFor( 'MobileDiff', $prev->getId() )
+							->getLocalURL()
 					], $this->msg( 'previousdiff' ) ) . Html::closeElement( 'li' );
 			}
 			if ( $next ) {
-				$history .= Html::openElement( 'li' ) .
-					Html::element( 'a', [
-						'href' => SpecialPage::getTitleFor( 'MobileDiff', $next->getId() )->getLocalUrl()
+				$history .= Html::openElement( 'li', [ 'class' => 'revision-history-next' ] )
+					. Html::element( 'a', [
+						'href' => SpecialPage::getTitleFor( 'MobileDiff', $next->getId() )
+							->getLocalURL()
 					], $this->msg( 'nextdiff' ) ) . Html::closeElement( 'li' );
 			}
 			$history .= Html::closeElement( 'ul' );
-			$output->addHtml( $history );
 		}
-
-		$diffEngine = $this->mDiffEngine;
-		if ( $diffEngine instanceof InlineDifferenceEngine ) {
-			$output->addHtml( Html::rawElement(
-				'div',
-				[
-					'class' => 'patrollink'
-				],
-				$diffEngine->getPatrolledLink()
-			) );
-		}
+		return $history;
 	}
 
 	/**
@@ -301,7 +301,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	private function showFooter( IContextSource $context ) {
 		$output = $this->getOutput();
 
-		$output->addHtml(
+		$output->addHTML(
 			Html::openElement( 'div', [ 'id' => 'mw-mf-userinfo',
 				'class' => 'position-fixed' ] ) .
 			Html::openElement( 'div', [ 'class' => 'post-content' ] )
@@ -312,12 +312,12 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			$user = User::newFromId( $userId );
 			$edits = $user->getEditCount();
 			$attrs = [
-				'class' => MobileUI::iconClass( 'user', 'before', 'mw-mf-user icon-16px' ),
+				'class' => MobileUI::iconClass( 'user', 'before', 'mw-mf-user' ),
 				'data-revision-id' => $this->revId,
 				'data-user-name' => $user->getName(),
 				'data-user-gender' => $user->getOption( 'gender' ),
 			];
-			$output->addHtml(
+			$output->addHTML(
 				Html::openElement( 'div', $attrs ) .
 				$this->getLinkRenderer()->makeLink(
 					$user->getUserPage(),
@@ -338,9 +338,9 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		} else {
 			$ipAddr = $this->rev->getUserText();
 			$userPage = SpecialPage::getTitleFor( 'Contributions', $ipAddr );
-			$output->addHtml(
+			$output->addHTML(
 				Html::element( 'div', [
-					'class' =>  MobileUI::iconClass( 'anonymous', 'before', 'mw-mf-user icon-16px mw-mf-anon' ),
+					'class' => MobileUI::iconClass( 'anonymous', 'before', 'mw-mf-user mw-mf-anon' ),
 				], $this->msg( 'mobile-frontend-diffview-anonymous' ) ) .
 				'<div>' .
 					$this->getLinkRenderer()->makeLink( $userPage, $ipAddr ) .
@@ -348,7 +348,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			);
 		}
 
-		$output->addHtml(
+		$output->addHTML(
 			Html::closeElement( 'div' ) .
 			Html::closeElement( 'div' )
 		);
@@ -374,7 +374,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 
 	/**
 	 * Get the url for the mobile diff special page to use in Desktop footer
-	 * @return boolean|string Return URL or false when revision id's not set
+	 * @return bool|string Return URL or false when revision id's not set
 	 */
 	public static function getMobileUrlFromDesktop() {
 		$req = MobileContext::singleton()->getRequest();

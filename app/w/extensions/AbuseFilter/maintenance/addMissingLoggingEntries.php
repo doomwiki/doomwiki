@@ -17,21 +17,21 @@ class AddMissingLoggingEntries extends Maintenance {
 	}
 
 	public function execute() {
-		$logParams = array();
-		$afhRows = array();
+		$logParams = [];
+		$afhRows = [];
 
 		// Find all entries in abuse_filter_history without logging entry of same timestamp
-		$afhResult = wfGetDB( DB_SLAVE, 'vslow' )->select(
-			array( 'abuse_filter_history', 'logging' ),
-			array( 'afh_id', 'afh_filter', 'afh_timestamp', 'afh_user', 'afh_deleted', 'afh_user_text' ),
-			array( 'log_id IS NULL' ),
+		$afhResult = wfGetDB( DB_REPLICA, 'vslow' )->select(
+			[ 'abuse_filter_history', 'logging' ],
+			[ 'afh_id', 'afh_filter', 'afh_timestamp', 'afh_user', 'afh_deleted', 'afh_user_text' ],
+			[ 'log_id IS NULL' ],
 			__METHOD__,
-			array(),
-			array( 'logging' => array(
+			[],
+			[ 'logging' => [
 				'LEFT JOIN',
 				'afh_timestamp = log_timestamp AND ' .
 					'SUBSTRING_INDEX(log_params, \'\n\', 1) = afh_id AND log_type = \'abusefilter\''
-			) )
+			] ]
 		);
 
 		// Because the timestamp matches aren't exact (sometimes a couple of
@@ -46,10 +46,10 @@ class AddMissingLoggingEntries extends Maintenance {
 			$this->error( "Nothing to do.", 1 );
 		}
 
-		$logResult = wfGetDB( DB_SLAVE )->select(
+		$logResult = wfGetDB( DB_REPLICA )->select(
 			'logging',
-			array( 'log_params' ),
-			array( 'log_type' => 'abusefilter', 'log_params' => $logParams ),
+			[ 'log_params' ],
+			[ 'log_type' => 'abusefilter', 'log_params' => $logParams ],
 			__METHOD__
 		);
 
@@ -65,6 +65,13 @@ class AddMissingLoggingEntries extends Maintenance {
 		}
 
 		$dbw = wfGetDB( DB_MASTER );
+
+		if ( class_exists( CommentStore::class ) ) {
+			$commentFields = CommentStore::newKey( 'log_comment' )->insert( $dbw, '' );
+		} else {
+			$commentFields = [ 'log_comment' => '' ];
+		}
+
 		$count = 0;
 		foreach ( $afhRows as $row ) {
 			if ( $count % 100 == 0 ) {
@@ -72,7 +79,7 @@ class AddMissingLoggingEntries extends Maintenance {
 			}
 			$dbw->insert(
 				'logging',
-				array(
+				[
 					'log_type' => 'abusefilter',
 					'log_action' => 'modify',
 					'log_timestamp' => $row->afh_timestamp,
@@ -82,8 +89,7 @@ class AddMissingLoggingEntries extends Maintenance {
 					'log_params' => $row->afh_id . '\n' . $row->afh_filter,
 					'log_deleted' => $row->afh_deleted,
 					'log_user_text' => $row->afh_user_text,
-					'log_comment' => ''
-				),
+				] + $commentFields,
 				__METHOD__
 			);
 			$count++;

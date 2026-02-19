@@ -6,10 +6,10 @@
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( strval( $IP ) == '' ) {
-	$IP = dirname( __FILE__ ) . '/../../..';
+	$IP = __DIR__ . '/../../..';
 }
 $optionsWithArgs = [ 'backup' ];
-require ( "$IP/maintenance/commandLine.inc" );
+require "$IP/maintenance/commandLine.inc";
 
 $pageId = 0;
 $revId = 0;
@@ -62,4 +62,3 @@ while ( true ) {
 	wfWaitForSlaves( 5 );
 	echo "$pageId / $maxPage\n";
 }
-

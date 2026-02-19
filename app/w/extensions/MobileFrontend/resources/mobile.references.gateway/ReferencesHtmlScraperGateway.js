@@ -19,21 +19,23 @@
 		 * @return {jQuery.Promise} that can be used by getReference
 		 */
 		getReferenceFromContainer: function ( id, $container ) {
-			var $el, ref,
+			var $el,
+				result = $.Deferred(),
 				// Escape (almost) all CSS selector meta characters
 				// see http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
-				meta = /[!"$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g;
+				meta = /[!"$%&'()*+,./:;<=>?@[\\\]^`{|}~]/g;
 
 			id = id.replace( meta, '\\$&' );
 			id = id.substr( 1, id.length );
 
 			$el = $container.find( '#' + id );
-			ref = $el.length ?
-			{
-				text: $el.html()
-			} : false;
+			if ( $el.length ) {
+				result.resolve( { text: $el.html() } );
+			} else {
+				result.reject( ReferencesGateway.ERROR_NOT_EXIST );
+			}
 
-			return $.Deferred().resolve( ref ).promise();
+			return result.promise();
 		},
 		/**
 		 * @inheritdoc

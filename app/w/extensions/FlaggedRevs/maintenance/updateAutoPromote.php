@@ -5,10 +5,10 @@
 if ( getenv( 'MW_INSTALL_PATH' ) ) {
 	$IP = getenv( 'MW_INSTALL_PATH' );
 } else {
-	$IP = dirname( __FILE__ ).'/../../..';
+	$IP = __DIR__ . '/../../..';
 }
 
-require_once ( "$IP/maintenance/Maintenance.php" );
+require_once "$IP/maintenance/Maintenance.php";
 
 class UpdateFRAutoPromote extends Maintenance {
 
@@ -22,11 +22,12 @@ class UpdateFRAutoPromote extends Maintenance {
 		global $wgFlaggedRevsAutopromote;
 		$this->output( "Populating and updating flaggedrevs_promote table\n" );
 
+		$commentQuery = CommentStore::newKey( 'rev_comment' )->getJoin();
 		$dbr = wfGetDB( DB_SLAVE );
 		$dbw = wfGetDB( DB_MASTER );
 		$start = $dbr->selectField( 'user', 'MIN(user_id)', false, __METHOD__ );
 		$end = $dbr->selectField( 'user', 'MAX(user_id)', false, __METHOD__ );
-		if ( is_null( $start ) || is_null( $end ) ){
+		if ( is_null( $start ) || is_null( $end ) ) {
 			$this->output( "...user table seems to be empty.\n" );
 			return;
 		}
@@ -44,11 +45,17 @@ class UpdateFRAutoPromote extends Maintenance {
 				$p = FRUserCounters::getUserParams( $user->getId(), FR_FOR_UPDATE );
 				$oldp = $p;
 				# Get edit comments used
-				$sres = $dbr->select( 'revision', '1',
-					[ 'rev_user' => $user->getID(),
-						"rev_comment NOT LIKE '/*%*/'" ], // manual comments only
+				$sres = $dbr->select(
+					[ 'revision' ] + $commentQuery['tables'],
+					'1',
+					[
+						'rev_user' => $user->getID(),
+						// @todo Should there be a "rev_comment != ''" here too?
+						$commentQuery['fields']['rev_comment_text'] . " NOT LIKE '/*%*/'", // manual comments only
+					],
 					__METHOD__,
-					[ 'LIMIT' => max( $wgFlaggedRevsAutopromote['editComments'], 500 ) ]
+					[ 'LIMIT' => max( $wgFlaggedRevsAutopromote['editComments'], 500 ) ],
+					$commentQuery['joins']
 				);
 				$p['editComments'] = $dbr->numRows( $sres );
 				# Get content page edits
@@ -89,4 +96,4 @@ class UpdateFRAutoPromote extends Maintenance {
 }
 
 $maintClass = "UpdateFRAutoPromote";
-require_once ( RUN_MAINTENANCE_IF_MAIN );
+require_once RUN_MAINTENANCE_IF_MAIN;

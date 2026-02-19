@@ -1,16 +1,18 @@
 <?php
 
+use UtfNormal\Utils;
+
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
 	$IP = __DIR__ . '/../../..';
 }
-require_once( "$IP/maintenance/Maintenance.php" );
+require_once "$IP/maintenance/Maintenance.php";
 
 class GenerateEquivset extends Maintenance {
 	public function __construct() {
 		parent::__construct();
 
-		$this->requireExtension('AntiSpoof');
+		$this->requireExtension( 'AntiSpoof' );
 	}
 
 	public function execute() {
@@ -63,13 +65,12 @@ EOT
 		$sp = '[\ \t]';
 
 		$lineNum = 0;
-		$setsByChar = array();
+		$setsByChar = [];
 		$sets = array();
 		$exitStatus = 0;
 
 		foreach ( $lines as $line ) {
 			++$lineNum;
-			$mapToEmpty = false;
 
 			# Whether the line ends with a nul character
 			$mapToEmpty = ( strpos( $line, "\0" ) === strlen( $line ) - 2 );
@@ -83,35 +84,42 @@ EOT
 
 			# Process line
 			if ( !preg_match(
-				"/^(?P<hexleft> [A-F0-9]+) $sp+ (?P<charleft> .+?) $sp+ => $sp+ (?:(?P<hexright> [A-F0-9]+) $sp+|) (?P<charright> .+?) $sp* (?: \#.*|) $ /x", $line, $m ) )
-			{
+				"/^(?P<hexleft> [A-F0-9]+) $sp+ (?P<charleft> .+?) $sp+ => $sp+ " .
+					"(?:(?P<hexright> [A-F0-9]+) $sp+|) (?P<charright> .+?) $sp* (?: \#.*|) $ /x",
+					$line, $m
+				)
+			) {
 				$this->output( "Error: invalid entry at line $lineNum: $line\n" );
 				$exitStatus = 1;
 				continue;
 			}
 			$error = false;
 
-			if ( codepointToUtf8( hexdec( $m['hexleft'] ) ) != $m['charleft'] ) {
-				$actual = utf8ToCodepoint( $m['charleft'] );
+			if ( Utils::codepointToUtf8( hexdec( $m['hexleft'] ) ) != $m['charleft'] ) {
+				$actual = Utils::utf8ToCodepoint( $m['charleft'] );
 				if ( $actual === false ) {
 					$this->output( "Bytes: " . strlen( $m['charleft'] ) . "\n" );
 					$this->output( bin2hex( $line ) . "\n" );
 					$hexForm = bin2hex( $m['charleft'] );
-					$this->output( "Invalid UTF-8 character \"{$m['charleft']}\" ($hexForm) at line $lineNum: $line\n" );
+					$this->output( "Invalid UTF-8 character \"{$m['charleft']}\" ($hexForm) at " .
+						"line $lineNum: $line\n" );
 				} else {
-					$this->output( "Error: left number ({$m['hexleft']}) does not match left character ($actual) " .
-							"at line $lineNum: $line\n" );
+					$this->output( "Error: left number ({$m['hexleft']}) does not match left " .
+						"character ($actual) at line $lineNum: $line\n" );
 				}
 				$error = true;
 			}
-			if ( !empty( $m['hexright'] ) && codepointToUtf8( hexdec( $m['hexright'] ) ) != $m['charright'] ) {
-				$actual = utf8ToCodepoint( $m['charright'] );
+			if ( !empty( $m['hexright'] )
+				&& Utils::codepointToUtf8( hexdec( $m['hexright'] ) ) != $m['charright']
+			) {
+				$actual = Utils::utf8ToCodepoint( $m['charright'] );
 				if ( $actual === false ) {
 					$hexForm = bin2hex( $m['charright'] );
-					$this->output( "Invalid UTF-8 character \"{$m['charleft']}\" ($hexForm) at line $lineNum: $line\n" );
+					$this->output( "Invalid UTF-8 character \"{$m['charleft']}\" ($hexForm) at " .
+						"line $lineNum: $line\n" );
 				} else {
-					$this->output( "Error: right number ({$m['hexright']}) does not match right character ($actual) " .
-							"at line $lineNum: $line\n" );
+					$this->output( "Error: right number ({$m['hexright']}) does not match right " .
+						"character ($actual) at line $lineNum: $line\n" );
 				}
 				$error = true;
 			}
@@ -124,19 +132,19 @@ EOT
 			}
 
 			# Find the set for the right character, add a new one if necessary
-			# FIXME: Don't create mappings of characters to themselves
 			if ( isset( $setsByChar[$m['charright']] ) ) {
 				$setName = $setsByChar[$m['charright']];
+				$setsByChar[$m['charleft']] = $setsByChar[$m['charright']];
 			} else {
-				# New set
 				$setName = $m['charright'];
-				$sets[$setName] = array( $m['charright'] );
-				$setsByChar[$setName] = $setName;
+				$setsByChar[$m['charleft']] = $m['charright'];
 			}
 
-			# Add the left character to the set
+			if ( !isset( $sets[$setName] ) ) {
+				$sets[$setName] = [ $setName ];
+			}
+
 			$sets[$setName][] = $m['charleft'];
-			$setsByChar[$m['charleft']] = $setName;
 		}
 
 		# Sets output
@@ -149,15 +157,8 @@ EOT
 		$output = str_replace( "\n", $endl, $output );
 		fwrite( $outputFile, '$equivset = ' . "$output;$endl" );
 
-		# Serialized codepoint map
-		$codepointMap = array();
-		foreach ( $setsByChar as $char => $setName ) {
-			$key = $char === '' ? '' : utf8ToCodepoint( $char );
-			$value = $setName === '' ? '' : utf8ToCodepoint( $setName );
-
-			$codepointMap[ $key ] = $value;
-		}
-		fwrite( $serializedFile, serialize( $codepointMap ) );
+		# Serialized file
+		fwrite( $serializedFile, serialize( $setsByChar ) );
 
 		fclose( $setsFile );
 		fclose( $outputFile );
@@ -172,5 +173,5 @@ EOT
 }
 
 $maintClass = "GenerateEquivset";
-require_once( DO_MAINTENANCE );
+require_once DO_MAINTENANCE;
 

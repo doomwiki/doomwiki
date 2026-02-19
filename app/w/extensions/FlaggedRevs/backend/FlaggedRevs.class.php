@@ -483,8 +483,8 @@ class FlaggedRevs {
 	 * Returns true if a user can set $flags for a revision via review.
 	 * Requires the same for $oldflags if given.
 	 * @param User $user
-	 * @param array $flags, suggested flags
-	 * @param array $oldflags, pre-existing flags
+	 * @param array $flags suggested flags
+	 * @param array $oldflags pre-existing flags
 	 * @return bool
 	 */
 	public static function userCanSetFlags( $user, array $flags, $oldflags = [] ) {
@@ -499,8 +499,8 @@ class FlaggedRevs {
 			} elseif ( !self::userCanSetTag( $user, $qal, $flags[$qal] ) ) {
 				return false; // user cannot set proposed flag
 			} elseif ( isset( $oldflags[$qal] )
-				&& !self::userCanSetTag( $user, $qal, $oldflags[$qal] ) )
-			{
+				&& !self::userCanSetTag( $user, $qal, $oldflags[$qal] )
+			) {
 				return false; // user cannot change old flag
 			}
 		}
@@ -517,7 +517,7 @@ class FlaggedRevs {
 		if ( $right == '' ) {
 			return true; // no restrictions (none)
 		}
-		if ( !in_array( $right, FlaggedRevs::getRestrictionLevels() ) ) {
+		if ( !in_array( $right, self::getRestrictionLevels() ) ) {
 			return false; // invalid restriction level
 		}
 		# Don't let them choose levels above their own rights
@@ -615,9 +615,9 @@ class FlaggedRevs {
 	/**
 	 * Update the page tables with a new stable version.
 	 * @param WikiPage|Title $page
-	 * @param FlaggedRevision|null $sv, the new stable version (optional)
-	 * @param FlaggedRevision|null $oldSv, the old stable version (optional)
-	 * @param Object editInfo Article edit info about the current revision (optional)
+	 * @param FlaggedRevision|null $sv the new stable version (optional)
+	 * @param FlaggedRevision|null $oldSv the old stable version (optional)
+	 * @param Object $editInfo Article edit info about the current revision (optional)
 	 * @return bool stable version text/file changed and FR_INCLUDES_STABLE
 	 * @throws Exception
 	 */
@@ -647,14 +647,14 @@ class FlaggedRevs {
 			# Empty flaggedrevs data for this page if there is no stable version
 			$article->clearStableVersion();
 			# Check if pages using this need to be refreshed...
-			if ( FlaggedRevs::inclusionSetting() == FR_INCLUDES_STABLE ) {
+			if ( self::inclusionSetting() == FR_INCLUDES_STABLE ) {
 				$changed = (bool)$oldSv;
 			}
 		} else {
 			# Update flagged page related fields
 			$article->updateStableVersion( $sv, $editInfo ? $editInfo->revid : null );
 			# Check if pages using this need to be invalidated/purged...
-			if ( FlaggedRevs::inclusionSetting() == FR_INCLUDES_STABLE ) {
+			if ( self::inclusionSetting() == FR_INCLUDES_STABLE ) {
 				$changed = (
 					!$oldSv ||
 					$sv->getRevId() != $oldSv->getRevId() ||
@@ -668,7 +668,7 @@ class FlaggedRevs {
 			}
 		}
 		# Lazily rebuild dependancies on next parse (we invalidate below)
-		FlaggedRevs::clearStableOnlyDeps( $title->getArticleID() );
+		self::clearStableOnlyDeps( $title->getArticleID() );
 		# Clear page cache unless this is hooked via ArticleEditUpdates, in
 		# which case these updates will happen already with tuned timestamps
 		if ( !$editInfo ) {
@@ -693,7 +693,7 @@ class FlaggedRevs {
 	/**
 	 * @param Page $article
 	 * @param ParserOutput $stableOut
-	 * @param integer $mode FRDependencyUpdate::DEFERRED/FRDependencyUpdate::IMMEDIATE
+	 * @param int $mode FRDependencyUpdate::DEFERRED/FRDependencyUpdate::IMMEDIATE
 	 * Updates the stable-only cache dependency table
 	 */
 	public static function updateStableOnlyDeps( Page $article, ParserOutput $stableOut, $mode ) {
@@ -715,7 +715,7 @@ class FlaggedRevs {
 	 * Updates squid cache for a title. Defers till after main commit().
 	 */
 	public static function purgeSquid( Title $title ) {
-		DeferredUpdates::addCallableUpdate( function() use ( $title ) {
+		DeferredUpdates::addCallableUpdate( function () use ( $title ) {
 			$title->purgeSquid();
 			HTMLFileCache::clearFileCache( $title );
 		} );
@@ -773,7 +773,7 @@ class FlaggedRevs {
 	 * @return Object (val,time) tuple
 	 */
 	public static function makeMemcObj( $val ) {
-		$data = (object) [];
+		$data = (object)[];
 		$data->value = $val;
 		$data->time = wfTimestampNow();
 		return $data;
@@ -797,7 +797,7 @@ class FlaggedRevs {
 
 	/**
 	 * @param array $flags
-	 * @return bool, is this revision at basic review condition?
+	 * @return bool is this revision at basic review condition?
 	 */
 	public static function isChecked( array $flags ) {
 		self::load();
@@ -806,7 +806,7 @@ class FlaggedRevs {
 
 	/**
 	 * @param array $flags
-	 * @return bool, is this revision at quality review condition?
+	 * @return bool is this revision at quality review condition?
 	 */
 	public static function isQuality( array $flags ) {
 		self::load();
@@ -815,7 +815,7 @@ class FlaggedRevs {
 
 	/**
 	 * @param array $flags
-	 * @return bool, is this revision at pristine review condition?
+	 * @return bool is this revision at pristine review condition?
 	 */
 	public static function isPristine( array $flags ) {
 		self::load();
@@ -969,7 +969,7 @@ class FlaggedRevs {
 				}
 			}
 
-			$quality = FlaggedRevs::getQualityTier( $flags, FR_CHECKED /* sanity */ );
+			$quality = self::getQualityTier( $flags, FR_CHECKED /* sanity */ );
 			$tags = FlaggedRevision::flattenRevisionTags( $flags );
 		}
 
@@ -985,7 +985,7 @@ class FlaggedRevs {
 		# version of this page. If a pending version of a template/file is currently vandalism,
 		# we try to avoid storing its ID as the "review time" version so it won't show up when
 		# someone views the page. If not possible, this stores the current template/file.
-		if ( FlaggedRevs::inclusionSetting() === FR_INCLUDES_CURRENT ) {
+		if ( self::inclusionSetting() === FR_INCLUDES_CURRENT ) {
 			$tVersions = $poutput->getTemplateIds();
 			$fVersions = $poutput->getFileSearchOptions();
 		} else {
@@ -1051,7 +1051,7 @@ class FlaggedRevs {
 			$flags, [], '', $rev->getId(), $oldSvId, true, $auto, $user );
 
 		# Update page and tracking tables and clear cache
-		FlaggedRevs::stableVersionUpdates( $article );
+		self::stableVersionUpdates( $article );
 
 		return true;
 	}

@@ -1,22 +1,22 @@
 <?php
-/*
- (c) Aaron Schulz, Joerg Baach, 2007-2008 GPL
-
- This program is free software; you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation; either version 2 of the License, or
- (at your option) any later version.
-
- This program is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU General Public License for more details.
-
- You should have received a copy of the GNU General Public License along
- with this program; if not, write to the Free Software Foundation, Inc.,
- 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
- http://www.gnu.org/copyleft/gpl.html
-*/
+/**
+ * (c) Aaron Schulz, Joerg Baach, 2007-2008 GPL
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ */
 
 if ( !defined( 'MEDIAWIKI' ) ) {
 	echo "FlaggedRevs extension\n";
@@ -36,7 +36,7 @@ $wgExtensionCredits['specialpage'][] = [
 ];
 
 # Load global constants
-require ( dirname( __FILE__ ) . '/FlaggedRevs.defines.php' );
+require __DIR__ . '/FlaggedRevs.defines.php';
 
 # This will only distinguish "checked", "quality", and unreviewed
 # A small icon will show in the upper right hand corner
@@ -140,29 +140,31 @@ $wgFlaggedRevsAutopromote = [
 	'editComments'          => 50, # number of manual edit summaries used
 	'userpageBytes'         => 0, # size of userpage (use 0 to not require a userpage)
 	'neverBlocked'          => true, # username was never blocked before?
-	'maxRevertedEditRatio'  => .03, # max fraction of edits reverted via "rollback"/"undo"
+	'maxRevertedEditRatio'  => 0.03, # max fraction of edits reverted via "rollback"/"undo"
 ];
 
 # Define when users get to have their own edits auto-reviewed. Set to false to disable.
 # This can be used for newer, semi-trusted users to improve workflow.
 # It is done by granting some users the implicit 'autoreview' group.
 $wgFlaggedRevsAutoconfirm = false;
-/* (example usage)
-$wgFlaggedRevsAutoconfirm = [
-	'days'                  => 30, # days since registration
-	'edits'                 => 50, # total edit count
-	'excludeLastDays'       => 2, # exclude the last X days of edits from below edit counts
-	'benchmarks'            => 7, # number of "spread out" edits
-	'spacing'               => 3, # number of days between these edits (the "spread")
-	// Either totalContentEdits reqs OR totalCheckedEdits requirements needed
-	'totalContentEdits'     => 150, # $wgContentNamespaces edits OR...
-	'totalCheckedEdits'     => 50, # ...Edits before the stable version of pages
-	'uniqueContentPages'    => 8, # $wgContentNamespaces unique pages edited
-	'editComments'          => 20, # how many edit comments used?
-	'email'                 => false, # user must be emailconfirmed?
-	'neverBlocked'          => true, # Can users that were blocked be promoted?
-];
-*/
+
+/**
+ * @example
+ * $wgFlaggedRevsAutoconfirm = [
+ * 	'days'                  => 30, # days since registration
+ * 	'edits'                 => 50, # total edit count
+ * 	'excludeLastDays'       => 2, # exclude the last X days of edits from below edit counts
+ * 	'benchmarks'            => 7, # number of "spread out" edits
+ * 	'spacing'               => 3, # number of days between these edits (the "spread")
+ * 	// Either totalContentEdits reqs OR totalCheckedEdits requirements needed
+ * 	'totalContentEdits'     => 150, # $wgContentNamespaces edits OR...
+ * 	'totalCheckedEdits'     => 50, # ...Edits before the stable version of pages
+ * 	'uniqueContentPages'    => 8, # $wgContentNamespaces unique pages edited
+ * 	'editComments'          => 20, # how many edit comments used?
+ * 	'email'                 => false, # user must be emailconfirmed?
+ * 	'neverBlocked'          => true, # Can users that were blocked be promoted?
+ * ];
+ */
 
 # Defines extra rights for advanced reviewer class (Reviewers)
 $wgGroupPermissions['reviewer']['validate'] = true;
@@ -217,7 +219,7 @@ $wgFlaggedRevsStats = [
 # In such cases, we select the current (unreviewed) revision. Likewise for files.
 $wgFlaggedRevsHandleIncludes = FR_INCLUDES_STABLE;
 
-$dir = dirname( __FILE__ );
+$dir = __DIR__;
 
 # Basic directory layout
 $backendDir       = "$dir/backend";
@@ -265,68 +267,58 @@ $wgAutoloadClasses['PageStabilityProtectForm'] = "$businessDir/PageStabilityForm
 ### Presentation classes ###
 # Main i18n file and special page alias file
 $wgMessagesDirs['FlaggedRevs'] = __DIR__ . '/i18n/flaggedrevs';
-$wgExtensionMessagesFiles['FlaggedRevs'] = "$langDir/FlaggedRevs.i18n.php";
 $wgExtensionMessagesFiles['FlaggedRevsMagic'] = "$langDir/FlaggedRevs.i18n.magic.php";
 $wgExtensionMessagesFiles['FlaggedRevsAliases'] = "$langDir/FlaggedRevs.alias.php";
 # UI setup, forms, and HTML elements
 $wgAutoloadClasses['FlaggedRevsUISetup'] = "$frontendDir/FlaggedRevsUI.setup.php";
 $wgAutoloadClasses['FlaggablePageView'] = "$frontendDir/FlaggablePageView.php";
-$wgAutoloadClasses['FlaggedRevsReviewLogFormatter'] = "$frontendDir/FlaggedRevsReviewLogFormatter.php";
-$wgAutoloadClasses['FlaggedRevsStableLogFormatter'] = "$frontendDir/FlaggedRevsStableLogFormatter.php";
+$wgAutoloadClasses['FlaggedRevsReviewLogFormatter'] =
+	"$frontendDir/FlaggedRevsReviewLogFormatter.php";
+$wgAutoloadClasses['FlaggedRevsStableLogFormatter'] =
+	"$frontendDir/FlaggedRevsStableLogFormatter.php";
 $wgAutoloadClasses['FlaggedRevsXML'] = "$frontendDir/FlaggedRevsXML.php";
 $wgAutoloadClasses['RevisionReviewFormUI'] = "$frontendDir/RevisionReviewFormUI.php";
 $wgAutoloadClasses['RejectConfirmationFormUI'] = "$frontendDir/RejectConfirmationFormUI.php";
 # Revision review UI
 $wgAutoloadClasses['RevisionReview'] = "$spActionDir/RevisionReview_body.php";
 $wgMessagesDirs['RevisionReview'] = __DIR__ . '/i18n/revisionreview';
-$wgExtensionMessagesFiles['RevisionReview'] = "$langDir/RevisionReview.i18n.php";
 # Stable version config UI
 $wgAutoloadClasses['Stabilization'] = "$spActionDir/Stabilization_body.php";
 $wgMessagesDirs['Stabilization'] = __DIR__ . '/i18n/stabilization';
-$wgExtensionMessagesFiles['Stabilization'] = "$langDir/Stabilization.i18n.php";
 # Reviewed versions list
 $wgAutoloadClasses['ReviewedVersions'] = "$spReportDir/ReviewedVersions_body.php";
 $wgAutoloadClasses['ReviewedVersionsPager'] = "$spReportDir/ReviewedVersions_body.php";
 $wgMessagesDirs['ReviewedVersions'] = __DIR__ . '/i18n/reviewedversions';
-$wgExtensionMessagesFiles['ReviewedVersions'] = "$langDir/ReviewedVersions.i18n.php";
 # Unreviewed pages list
 $wgAutoloadClasses['UnreviewedPages'] = "$spReportDir/UnreviewedPages_body.php";
 $wgAutoloadClasses['UnreviewedPagesPager'] = "$spReportDir/UnreviewedPages_body.php";
 $wgMessagesDirs['UnreviewedPages'] = __DIR__ . '/i18n/unreviewedpages';
-$wgExtensionMessagesFiles['UnreviewedPages'] = "$langDir/UnreviewedPages.i18n.php";
 # Pages with pending changes list
 $wgAutoloadClasses['PendingChanges'] = "$spReportDir/PendingChanges_body.php";
 $wgAutoloadClasses['PendingChangesPager'] = "$spReportDir/PendingChanges_body.php";
 $wgMessagesDirs['PendingChanges'] = __DIR__ . '/i18n/pendingchanges';
-$wgExtensionMessagesFiles['PendingChanges'] = "$langDir/PendingChanges.i18n.php";
 # Pages with tagged pending changes list
 $wgAutoloadClasses['ProblemChanges'] = "$spReportDir/ProblemChanges_body.php";
 $wgAutoloadClasses['ProblemChangesPager'] = "$spReportDir/ProblemChanges_body.php";
 $wgMessagesDirs['ProblemChanges'] = __DIR__ . '/i18n/problemchanges';
-$wgExtensionMessagesFiles['ProblemChanges'] = "$langDir/ProblemChanges.i18n.php";
 # Reviewed pages list
 $wgAutoloadClasses['ReviewedPages'] = "$spReportDir/ReviewedPages_body.php";
 $wgAutoloadClasses['ReviewedPagesPager'] = "$spReportDir/ReviewedPages_body.php";
 $wgMessagesDirs['ReviewedPages'] = __DIR__ . '/i18n/reviewedpages';
-$wgExtensionMessagesFiles['ReviewedPages'] = "$langDir/ReviewedPages.i18n.php";
 # Stable pages list (for protection config)
 $wgAutoloadClasses['StablePages'] = "$spReportDir/StablePages_body.php";
 $wgAutoloadClasses['StablePagesPager'] = "$spReportDir/StablePages_body.php";
 $wgMessagesDirs['StablePages'] = __DIR__ . '/i18n/stablepages';
-$wgExtensionMessagesFiles['StablePages'] = "$langDir/StablePages.i18n.php";
 # Configured pages list (non-protection config)
 $wgAutoloadClasses['ConfiguredPages'] = "$spReportDir/ConfiguredPages_body.php";
 $wgAutoloadClasses['ConfiguredPagesPager'] = "$spReportDir/ConfiguredPages_body.php";
 $wgMessagesDirs['ConfiguredPages'] = __DIR__ . '/i18n/configuredpages';
-$wgExtensionMessagesFiles['ConfiguredPages'] = "$langDir/ConfiguredPages.i18n.php";
 # Filterable review log page to oversee reviews
 $wgAutoloadClasses['QualityOversight'] = "$spReportDir/QualityOversight_body.php";
 $wgMessagesDirs['QualityOversight'] = __DIR__ . '/i18n/qualityoversight';
-$wgExtensionMessagesFiles['QualityOversight'] = "$langDir/QualityOversight.i18n.php";
 # Review statistics
 $wgAutoloadClasses['ValidationStatistics'] = "$spReportDir/ValidationStatistics_body.php";
 $wgMessagesDirs['ValidationStatistics'] = __DIR__ . '/i18n/validationstatistics';
-$wgExtensionMessagesFiles['ValidationStatistics'] = "$langDir/ValidationStatistics.i18n.php";
 ### End ###
 
 ### API classes ###
@@ -367,7 +359,7 @@ $wgAutoloadClasses['FlaggedRevsTestHooks'] = "$testDir/FlaggedRevsTest.hooks.php
 ### End ###
 
 # Define JS/CSS modules and file locations
-$localModulePath = dirname( __FILE__ ) . '/frontend/modules/';
+$localModulePath = __DIR__ . '/frontend/modules/';
 $remoteModulePath = 'FlaggedRevs/frontend/modules';
 $wgResourceModules['ext.flaggedRevs.basic'] = [
 	'position'		=> 'top',
@@ -399,7 +391,9 @@ $wgResourceModules['ext.flaggedRevs.review'] = [
 		'revreview-sadv-reviewing-p', 'revreview-sadv-reviewing-c',
 		'revreview-adv-start-link', 'revreview-adv-stop-link'
 	],
-	'dependencies'  => [ 'mediawiki.util', 'mediawiki.notify', 'mediawiki.user', 'mediawiki.jqueryMsg' ],
+	'dependencies'  => [
+		'mediawiki.util', 'mediawiki.notify', 'mediawiki.user', 'mediawiki.jqueryMsg'
+	],
 	'localBasePath' => $localModulePath,
 	'remoteExtPath' => $remoteModulePath,
 ];
@@ -456,12 +450,16 @@ $wgFilterLogTypes['review'] = true;
 # Various actions are used for log filtering ...
 $wgLogActionsHandlers['review/approve']  = 'FlaggedRevsReviewLogFormatter'; // checked (again)
 $wgLogActionsHandlers['review/approve2']  = 'FlaggedRevsReviewLogFormatter'; // quality (again)
-$wgLogActionsHandlers['review/approve-i']  = 'FlaggedRevsReviewLogFormatter'; // checked (first time)
-$wgLogActionsHandlers['review/approve2-i']  = 'FlaggedRevsReviewLogFormatter'; // quality (first time)
+$wgLogActionsHandlers['review/approve-i']  =
+	'FlaggedRevsReviewLogFormatter'; // checked (first time)
+$wgLogActionsHandlers['review/approve2-i']  =
+	'FlaggedRevsReviewLogFormatter'; // quality (first time)
 $wgLogActionsHandlers['review/approve-a']  = 'FlaggedRevsReviewLogFormatter'; // checked (auto)
 $wgLogActionsHandlers['review/approve2-a']  = 'FlaggedRevsReviewLogFormatter'; // quality (auto)
-$wgLogActionsHandlers['review/approve-ia']  = 'FlaggedRevsReviewLogFormatter'; // checked (initial & auto)
-$wgLogActionsHandlers['review/approve2-ia']  = 'FlaggedRevsReviewLogFormatter'; // quality (initial & auto)
+$wgLogActionsHandlers['review/approve-ia']  =
+	'FlaggedRevsReviewLogFormatter'; // checked (initial & auto)
+$wgLogActionsHandlers['review/approve2-ia']  =
+	'FlaggedRevsReviewLogFormatter'; // quality (initial & auto)
 $wgLogActionsHandlers['review/unapprove'] = 'FlaggedRevsReviewLogFormatter'; // was checked
 $wgLogActionsHandlers['review/unapprove2'] = 'FlaggedRevsReviewLogFormatter'; // was quality
 
@@ -479,6 +477,9 @@ $wgAjaxExportList[] = 'FlaggablePageView::AjaxBuildDiffHeaderItems';
 
 # Special case page cache invalidations
 $wgJobClasses['flaggedrevs_CacheUpdate'] = 'FRExtraCacheUpdateJob';
+
+# Register our special pages
+$wgHooks['SpecialPage_initList'][] = 'FlaggedRevsUIHooks::onSpecialPage_initList';
 
 # Add flagging data to ApiQueryRevisions
 $wgHooks['APIGetAllowedParams'][] = 'FlaggedRevsApiHooks::addApiRevisionParams';
@@ -561,7 +562,8 @@ $wgHooks['EditPageBeforeEditButtons'][] = 'FlaggedRevsUIHooks::onBeforeEditButto
 if ( version_compare( $wgVersion, '1.29', '<' ) ) {
 	$wgHooks['EditPageBeforeEditChecks'][] = 'FlaggedRevsUIHooks::onEditPageBeforeEditChecks';
 } else {
-	$wgHooks['EditPageGetCheckboxesDefinition'][] = 'FlaggedRevsUIHooks::onEditPageGetCheckboxesDefinition';
+	$wgHooks['EditPageGetCheckboxesDefinition'][] =
+		'FlaggedRevsUIHooks::onEditPageGetCheckboxesDefinition';
 }
 $wgHooks['EditPage::showEditForm:fields'][] = 'FlaggedRevsUIHooks::addRevisionIDField';
 # Add draft link to section edit error
@@ -573,14 +575,12 @@ $wgHooks['ArticleUpdateBeforeRedirect'][] = 'FlaggedRevsUIHooks::injectPostEditU
 $wgHooks['PageHistoryPager::getQueryInfo'][] = 'FlaggedRevsUIHooks::addToHistQuery';
 $wgHooks['PageHistoryLineEnding'][] = 'FlaggedRevsUIHooks::addToHistLine';
 # Select extra info & filter items on Special:NewPages
-$wgHooks['ChangesListSpecialPageQuery'][] = 'FlaggedRevsUIHooks::modifyChangesListSpecialPageQuery'; // backported fix
+$wgHooks['ChangesListSpecialPageQuery'][] = 'FlaggedRevsUIHooks::modifyChangesListSpecialPageQuery';
 $wgHooks['SpecialNewpagesConditions'][] = 'FlaggedRevsUIHooks::modifyNewPagesQuery';
 # Mark items in RC
 $wgHooks['ChangesListInsertArticleLink'][] = 'FlaggedRevsUIHooks::addToChangeListLine';
 
 # RC filter UIs
-// update per https://gerrit.wikimedia.org/r/c/mediawiki/extensions/FlaggedRevs/+/350664
-//$wgHooks['SpecialNewPagesFilters'][] = 'FlaggedRevsUIHooks::addHideReviewedFilter';
 $wgHooks['SpecialNewPagesFilters'][] = 'FlaggedRevsUIHooks::addHideReviewedUnstructuredFilter';
 $wgHooks['ChangesListSpecialPageStructuredFilters'][] = 'FlaggedRevsUIHooks::addHideReviewedFilter';
 # Add notice tags to history
@@ -611,7 +611,7 @@ $wgAPIModules['flagconfig'] = 'ApiFlagConfig';
  * Note: avoid calls to FlaggedRevs class here for performance.
  * @return void
  */
-$wgExtensionFunctions[] = function() {
+$wgExtensionFunctions[] = function () {
 	# LocalSettings.php loaded, safe to load config
 	FlaggedRevsSetup::setReady();
 
@@ -619,7 +619,7 @@ $wgExtensionFunctions[] = function() {
 	FlaggedRevsSetup::setAutopromoteConfig();
 
 	# Register special pages (some are conditional)
-	FlaggedRevsSetup::setSpecialPages();
+	FlaggedRevsSetup::setSpecialPageCacheUpdates();
 	# Conditional API modules
 	FlaggedRevsSetup::setAPIModules();
 	# Load hooks that aren't always set

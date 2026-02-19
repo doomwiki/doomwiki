@@ -49,6 +49,10 @@ if ( !isset( $wgVersion ) ) {
 
 mb_internal_encoding( 'UTF-8' );
 
+// Set the configured locale on all requests for consisteny
+putenv( "LC_ALL=$wgShellLocale" );
+setlocale( LC_ALL, $wgShellLocale );
+
 // Set various default paths sensibly...
 $ps_default = Profiler::instance()->scopedProfileIn( $fname . '-defaults' );
 
@@ -178,6 +182,20 @@ $wgLockManagers[] = [
 ];
 
 /**
+ * Default parameters for the "<gallery>" tag.
+ * @see DefaultSettings.php for description of the fields.
+ */
+$wgGalleryOptions += [
+	'imagesPerRow' => 0,
+	'imageWidth' => 120,
+	'imageHeight' => 120,
+	'captionLength' => true,
+	'showBytes' => true,
+	'showDimensions' => true,
+	'mode' => 'traditional',
+];
+
+/**
  * Initialise $wgLocalFileRepo from backwards-compatible settings
  */
 if ( !$wgLocalFileRepo ) {
@@ -263,6 +281,11 @@ foreach ( $wgForeignFileRepos as &$repo ) {
 	}
 }
 unset( $repo ); // no global pollution; destroy reference
+
+// Convert this deprecated setting to modern system
+if ( $wgExperimentalHtmlIds ) {
+	$wgFragmentMode = [ 'html5-legacy', 'legacy' ];
+}
 
 $rcMaxAgeDays = $wgRCMaxAge / ( 3600 * 24 );
 if ( $wgRCFilterByAge ) {
@@ -665,14 +688,19 @@ $ps_memcached = Profiler::instance()->scopedProfileIn( $fname . '-memcached' );
 
 $wgMemc = wfGetMainCache();
 $messageMemc = wfGetMessageCacheStorage();
-$parserMemc = wfGetParserCacheStorage();
+
+/**
+ * @deprecated since 1.30
+ */
+$parserMemc = new DeprecatedGlobal( 'parserMemc', function () {
+	return MediaWikiServices::getInstance()->getParserCache()->getCacheStorage();
+}, '1.30' );
 
 wfDebugLog( 'caches',
 	'cluster: ' . get_class( $wgMemc ) .
 	', WAN: ' . ( $wgMainWANCache === CACHE_NONE ? 'CACHE_NONE' : $wgMainWANCache ) .
 	', stash: ' . $wgMainStash .
 	', message: ' . get_class( $messageMemc ) .
-	', parser: ' . get_class( $parserMemc ) .
 	', session: ' . get_class( ObjectCache::getInstance( $wgSessionCacheType ) )
 );
 
@@ -756,11 +784,19 @@ if ( !defined( 'MW_NO_SESSION' ) && !$wgCommandLineMode ) {
 
 	$session->renew();
 	if ( MediaWiki\Session\PHPSessionHandler::isEnabled() &&
-		( $session->isPersistent() || $session->shouldRememberUser() )
+		( $session->isPersistent() || $session->shouldRememberUser() ) &&
+		session_id() !== $session->getId()
 	) {
 		// Start the PHP-session for backwards compatibility
+		if ( session_id() !== '' ) {
+			wfDebugLog( 'session', 'PHP session {old_id} was already started, changing to {new_id}', 'all', [
+				'old_id' => session_id(),
+				'new_id' => $session->getId(),
+			] );
+			session_write_close();
+		}
 		session_id( $session->getId() );
-		MediaWiki\quietCall( 'session_start' );
+		session_start();
 	}
 
 	unset( $session );

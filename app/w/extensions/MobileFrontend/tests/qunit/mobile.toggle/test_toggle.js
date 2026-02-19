@@ -2,16 +2,13 @@
 
 	var toggle,
 		sectionHtml = mw.template.get( 'tests.mobilefrontend', 'section.hogan' ).render(),
-		settings = M.require( 'mobile.startup/settings' ),
 		browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		page = { title: 'Toggle test' },
 		Toggler = M.require( 'mobile.toggle/Toggler' );
 
 	/**
 	 * Mobile toggling
-	 *
-	 *
-	 **/
+	 */
 	QUnit.module( 'MobileFrontend toggle.js: Mobile mode.', {
 		setup: function () {
 			this.sandbox.stub( mw.config, 'get' ).withArgs( 'wgMFCollapseSectionsByDefault' ).returns( true );
@@ -23,11 +20,11 @@
 		},
 		teardown: function () {
 			window.location.hash = '#';
-			settings.remove( 'expandedSections', false );
+			mw.storage.remove( 'expandedSections' );
 		}
 	} );
 
-	QUnit.test( 'Toggle section', 5, function ( assert ) {
+	QUnit.test( 'Toggle section', function ( assert ) {
 		var $section = this.$section0,
 			$content = this.$container.find( '.collapsible-block' ).eq( 0 );
 
@@ -42,25 +39,25 @@
 		assert.strictEqual( $section.hasClass( 'open-block' ), true, 'check section has reopened' );
 	} );
 
-	QUnit.test( 'Clicking a hash link to reveal an already open section', 2, function ( assert ) {
+	QUnit.test( 'Clicking a hash link to reveal an already open section', function ( assert ) {
 		assert.strictEqual( this.$section0.hasClass( 'open-block' ), true, 'check section is open' );
 		toggle.reveal( 'First_Section', this.$container );
 		assert.strictEqual( this.$section0.hasClass( 'open-block' ), true, 'check section is still open' );
 	} );
 
-	QUnit.test( 'Reveal element', 2, function ( assert ) {
+	QUnit.test( 'Reveal element', function ( assert ) {
 		toggle.reveal( 'First_Section' );
 		assert.strictEqual( this.$container.find( '.collapsible-block' ).eq( 0 ).hasClass( 'open-block' ), true, 'check content is visible' );
 		assert.strictEqual( this.$section0.hasClass( 'open-block' ), true, 'check section is open' );
 	} );
 
-	QUnit.test( 'Clicking hash links', 2, function ( assert ) {
+	QUnit.test( 'Clicking hash links', function ( assert ) {
 		this.$container.find( '[href="#First_Section"]' ).trigger( 'click' );
 		assert.strictEqual( this.$container.find( '.collapsible-block' ).eq( 0 ).hasClass( 'open-block' ), true, 'check content is visible' );
 		assert.strictEqual( this.$section0.hasClass( 'open-block' ), true, 'check section is open' );
 	} );
 
-	QUnit.test( 'Tap event toggles section', 2, function ( assert ) {
+	QUnit.test( 'Tap event toggles section', function ( assert ) {
 		var $content = this.$container.find( '.collapsible-block' ).eq( 1 );
 
 		assert.strictEqual( $content.hasClass( 'open-block' ), false, 'check content is hidden at start' );
@@ -70,7 +67,7 @@
 		assert.strictEqual( $content.hasClass( 'open-block' ), true, 'check content is shown on a toggle' );
 	} );
 
-	QUnit.test( 'Verify aria attributes', 9, function ( assert ) {
+	QUnit.test( 'Verify aria attributes', function ( assert ) {
 		var $section = this.$container.find( '#section_1' ),
 			$content = this.$container.find( '.collapsible-block' ).eq( 1 );
 
@@ -94,9 +91,7 @@
 
 	/**
 	 * Tablet toggling
-	 *
-	 *
-	 **/
+	 */
 	QUnit.module( 'MobileFrontend toggle.js: tablet mode', {
 		setup: function () {
 			this.$container = $( '<div>' ).html( sectionHtml );
@@ -105,11 +100,11 @@
 		},
 		teardown: function () {
 			window.location.hash = '#';
-			settings.remove( 'expandedSections', false );
+			mw.storage.remove( 'expandedSections' );
 		}
 	} );
 
-	QUnit.test( 'Open by default', 2, function ( assert ) {
+	QUnit.test( 'Open by default', function ( assert ) {
 		assert.strictEqual( this.$container.find( '.collapsible-block' ).eq( 1 ).hasClass( 'open-block' ),
 			true, 'check section is visible at start' );
 		assert.strictEqual( this.$container.find( '.collapsible-block' ).eq( 2 ).hasClass( 'open-block' ),
@@ -118,34 +113,28 @@
 
 	/**
 	 * Expand sections user setting
-	 *
-	 *
-	 **/
-
+	 */
 	QUnit.module( 'MobileFrontend toggle.js: user setting', {
 		setup: function () {
 			this.sandbox.stub( mw.config, 'get' ).withArgs( 'wgMFCollapseSectionsByDefault' ).returns( false );
-			settings.save( 'expandSections', 'true', true );
+			mw.storage.set( 'expandSections', 'true' );
 			this.$container = $( '<div>' ).html( sectionHtml );
 			toggle = new Toggler( this.$container, '', page );
 		},
 		teardown: function () {
 			window.location.hash = '#';
-			settings.save( 'expandSections', '', true );
-			settings.remove( 'expandedSections', false );
+			mw.storage.set( 'expandSections', '' );
+			mw.storage.remove( 'expandedSections' );
 		}
 	} );
 
-	QUnit.test( 'Open by default 2', 1, function ( assert ) {
+	QUnit.test( 'Open by default 2', function ( assert ) {
 		assert.strictEqual( this.$container.find( '.collapsible-block' ).eq( 1 ).hasClass( 'open-block' ), true, 'check section is visible at start' );
 	} );
 
 	/**
 	 * Accessibility
-	 *
-	 *
-	 **/
-
+	 */
 	QUnit.module( 'MobileFrontend toggle.js: accessibility', {
 		setup: function () {
 			this.sandbox.stub( mw.config, 'get' ).withArgs( 'wgMFCollapseSectionsByDefault' ).returns( true );
@@ -155,12 +144,12 @@
 		},
 		teardown: function () {
 			window.location.hash = '#';
-			settings.remove( 'expandSections', true );
-			settings.remove( 'expandedSections', false );
+			mw.storage.remove( 'expandSections' );
+			mw.storage.remove( 'expandedSections' );
 		}
 	} );
 
-	QUnit.test( 'Pressing space/ enter toggles a heading', 3, function ( assert ) {
+	QUnit.test( 'Pressing space/ enter toggles a heading', function ( assert ) {
 		var $section = this.$container.find( '#section_1' ),
 			$content = this.$container.find( '.collapsible-block' ).eq( 1 ),
 			ev = jQuery.Event( 'keypress' );
@@ -178,7 +167,7 @@
 		assert.strictEqual( $content.hasClass( 'open-block' ), false, 'check content is hidden after pressing enter' );
 	} );
 
-	QUnit.test( 'Clicking a link within a heading isn\'t triggering a toggle', 2, function ( assert ) {
+	QUnit.test( 'Clicking a link within a heading isn\'t triggering a toggle', function ( assert ) {
 		var $section = $( '#section_1' ),
 			$content = $( '.collapsible-block' ).eq( 1 );
 
@@ -201,12 +190,12 @@
 		},
 		teardown: function () {
 			window.location.hash = '#';
-			settings.remove( 'expandedSections', false );
-			settings.remove( 'expandSections', true );
+			mw.storage.remove( 'expandedSections' );
+			mw.storage.remove( 'expandSections' );
 		}
 	} );
 
-	QUnit.test( 'Toggling a section stores its state.', 3, function ( assert ) {
+	QUnit.test( 'Toggling a section stores its state.', function ( assert ) {
 		assert.strictEqual( $.isEmptyObject( this.expandedSections[ this.pageTitle ] ),
 			true,
 			'no user setting about an expanded section exists already'
@@ -227,9 +216,9 @@
 		);
 	} );
 
-	QUnit.test( 'Check for and remove obsolete stored sections.', 2, function ( assert ) {
+	QUnit.test( 'Check for and remove obsolete stored sections.', function ( assert ) {
 		this.expandedSections[ this.pageTitle ][ this.headline ] = ( new Date( 1990, 1, 1 ) ).getTime();
-		settings.save( 'expandedSections',
+		mw.storage.set( 'expandedSections',
 			JSON.stringify( this.expandedSections )
 		);
 		this.expandedSections = Toggler._getExpandedSections( page );
@@ -247,7 +236,7 @@
 		);
 	} );
 
-	QUnit.test( 'Expanding already expanded section does not toggle it.', 5, function ( assert ) {
+	QUnit.test( 'Expanding already expanded section does not toggle it.', function ( assert ) {
 		this.expandedSections = Toggler._getExpandedSections( page );
 		assert.strictEqual( $.isEmptyObject( this.expandedSections[ this.pageTitle ] ),
 			true,
@@ -298,12 +287,12 @@
 		},
 		teardown: function () {
 			window.location.hash = '#';
-			settings.remove( 'expandedSections', false );
-			settings.remove( 'expandSections', true );
+			mw.storage.remove( 'expandedSections' );
+			mw.storage.remove( 'expandSections' );
 		}
 	} );
 
-	QUnit.test( 'Expand stored sections.', 5, function ( assert ) {
+	QUnit.test( 'Expand stored sections.', function ( assert ) {
 		assert.strictEqual( this.$section.hasClass( 'open-block' ), false, 'Section is collapsed.' );
 
 		assert.strictEqual( $.isEmptyObject( this.expandedSections[ this.pageTitle ] ),
@@ -313,7 +302,7 @@
 
 		// save a toggle state manually
 		this.expandedSections[ this.pageTitle ][ this.headline ] = ( new Date() ).getTime();
-		settings.save( 'expandedSections', JSON.stringify( this.expandedSections ), false );
+		mw.storage.set( 'expandedSections', JSON.stringify( this.expandedSections ) );
 		this.expandedSections = Toggler._getExpandedSections( page );
 		assert.strictEqual( typeof this.expandedSections[ this.pageTitle ][ this.headline ],
 			'number',

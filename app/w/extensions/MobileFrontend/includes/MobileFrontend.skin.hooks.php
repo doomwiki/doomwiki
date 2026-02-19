@@ -36,13 +36,13 @@ JAVASCRIPT;
 	public static function gradeCImageSupport() {
 		// Notes:
 		// * Document#getElementsByClassName is supported by IE9+ and #querySelectorAll is
-		//   supported by IE8+. To gain the widest possible browser support we scan for
-		//   noscript tags using #getElementsByTagName and look at the next sibling.
-		//   If the next sibling has the lazy-image-placeholder class then it will be assumed
-		//   to be a placeholder and replace with an img tag.
+		// supported by IE8+. To gain the widest possible browser support we scan for
+		// noscript tags using #getElementsByTagName and look at the next sibling.
+		// If the next sibling has the lazy-image-placeholder class then it will be assumed
+		// to be a placeholder and replace with an img tag.
 		// * Iterating over the live NodeList from getElementsByTagName() is suboptimal
-		//   but in IE < 9, Array#slice() throws when given a NodeList. It also requires
-		//   the 2nd argument ('end').
+		// but in IE < 9, Array#slice() throws when given a NodeList. It also requires
+		// the 2nd argument ('end').
 		$js = <<<JAVASCRIPT
 (window.NORLQ = window.NORLQ || []).push( function () {
 	var ns, i, p, img;
@@ -92,7 +92,7 @@ JAVASCRIPT;
 	 *
 	 * @param string $license
 	 * @param Message $msgObj delimiter (optional)
-	 * @return integer Returns 2, if there are multiple licenses, 1 otherwise.
+	 * @return int Returns 2, if there are multiple licenses, 1 otherwise.
 	 */
 	public static function getPluralLicenseInfo( $license, $msgObj = null ) {
 		// for plural support we need the info, if there is one or more licenses used in the license text
@@ -186,9 +186,9 @@ JAVASCRIPT;
 		// Certain pages might be blacklisted and not have a mobile equivalent.
 		if ( !$ctx->isBlacklistedPage() ) {
 			if ( $ctx->shouldDisplayMobileView() ) {
-				MobileFrontendSkinHooks::mobileFooter( $skin, $tpl, $ctx, $title, $req );
+				self::mobileFooter( $skin, $tpl, $ctx, $title, $req );
 			} else {
-				MobileFrontendSkinHooks::desktopFooter( $skin, $tpl, $ctx, $title, $req );
+				self::desktopFooter( $skin, $tpl, $ctx, $title, $req );
 			}
 		}
 	}
@@ -247,7 +247,6 @@ JAVASCRIPT;
 		$desktop = $ctx->msg( 'mobile-frontend-view-desktop' )->escaped();
 		$desktopToggler = Html::element( 'a',
 			[ 'id' => "mw-mf-display-toggle", "href" => $desktopUrl ], $desktop );
-		$sitename = self::getSitename( true );
 
 		// Generate the licensing text displayed in the footer of each page.
 		// See Skin::getCopyright for desktop equivalent.
@@ -261,7 +260,6 @@ JAVASCRIPT;
 		// Enable extensions to add links to footer in Mobile view, too - bug 66350
 		Hooks::run( 'MobileSiteOutputPageBeforeExec', [ &$sk, &$tpl ] );
 
-		$tpl->set( 'footer-site-heading-html', $sitename );
 		$tpl->set( 'desktop-toggle', $desktopToggler );
 		$tpl->set( 'mobile-license', $licenseText );
 		$tpl->set( 'privacy', $sk->footerLink( 'mobile-frontend-privacy-link-text', 'privacypage' ) );
@@ -277,53 +275,5 @@ JAVASCRIPT;
 		];
 		$tpl->set( 'footerlinks', $footerlinks );
 		return $tpl;
-	}
-
-	/**
-	 * Returns the site name for the footer, either as a text or <img> tag
-	 * @param boolean $withPossibleTrademark If true and a trademark symbol is specified
-	 *     by $wgMFTrademarkSitename, append that trademark symbol to the sitename/logo.
-	 *     This param exists so that the trademark symbol can be appended in some
-	 *     contexts, for example, the footer, but not in others. See bug T95007.
-	 * @return string
-	 */
-	public static function getSitename( $withPossibleTrademark = false ) {
-		$ctx = MobileContext::singleton();
-		$config = $ctx->getMFConfig();
-		$customLogos = $config->get( 'MFCustomLogos' );
-		$trademarkSymbol = $config->get( 'MFTrademarkSitename' );
-		$suffix = '';
-
-		$footerSitename = $ctx->msg( 'mobile-frontend-footer-sitename' )->text();
-
-		// Add a trademark symbol if needed
-		if ( $withPossibleTrademark ) {
-			// Registered trademark
-			if ( $trademarkSymbol === 'registered' ) {
-				$suffix = Html::element( 'sup', [], '®' );
-			// Unregistered (or unspecified) trademark
-			} elseif ( $trademarkSymbol ) {
-				$suffix = Html::element( 'sup', [], '™' );
-			}
-		}
-
-		// If there's a custom site logo, use that instead of text
-		if ( isset( $customLogos['copyright'] ) ) {
-			$attributes =  [
-				'src' => $customLogos['copyright'],
-				'alt' => $footerSitename,
-			];
-			if ( isset( $customLogos['copyright-height'] ) ) {
-				$attributes['height'] = $customLogos['copyright-height'];
-			}
-			if ( isset( $customLogos['copyright-width'] ) ) {
-				$attributes['width'] = $customLogos['copyright-width'];
-			}
-			$sitename = Html::element( 'img', $attributes );
-		} else {
-			$sitename = $footerSitename;
-		}
-
-		return $sitename . $suffix;
 	}
 }

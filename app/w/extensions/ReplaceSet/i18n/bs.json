@@ -1,11 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"CERminator"
+			"CERminator",
+			"Srdjan m"
 		]
 	},
 	"replaceset-desc": "Dodaje parsersku funkciju nowiki>{{#replaceset}}</nowiki> korištenu za zamjenu sekcija teksta sa formatiranim podacima",
-	"replaceset-error-calllimit": "Ograničenje poziva ReplaceSet je dostignuto.",
+	"replaceset-error-calllimit": "Dostignuta je granica broja poziva ($1) ReplaceSeta.",
 	"replaceset-error-regexnoend": "Šemi regularnih izraza ''$1'' nedostaje završni razdjelnik '$2'",
 	"replaceset-error-regexbadmodifier": "Modifikator regularnih izraza '$1' nije valjan."
 }

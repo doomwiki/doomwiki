@@ -59,16 +59,16 @@ class FlaggedRevsSetup {
 		$req = $wgFlaggedRevsAutoconfirm; // convenience
 		if ( is_array( $req ) ) {
 			$criteria = [ '&', // AND
-				[ APCOND_AGE, $req['days']*86400 ],
+				[ APCOND_AGE, $req['days'] * 86400 ],
 				[ APCOND_EDITCOUNT, $req['edits'] ],
 				[ APCOND_FR_EDITSUMMARYCOUNT, $req['editComments'] ],
 				[ APCOND_FR_UNIQUEPAGECOUNT, $req['uniqueContentPages'] ],
 				[ APCOND_FR_EDITSPACING, $req['spacing'], $req['benchmarks'] ],
 				[ '|', // OR
 					[ APCOND_FR_CONTENTEDITCOUNT,
-						$req['totalContentEdits'], $req['excludeLastDays']*86400 ],
+						$req['totalContentEdits'], $req['excludeLastDays'] * 86400 ],
 					[ APCOND_FR_CHECKEDEDITCOUNT,
-						$req['totalCheckedEdits'], $req['excludeLastDays']*86400 ]
+						$req['totalCheckedEdits'], $req['excludeLastDays'] * 86400 ]
 				],
 			];
 			if ( $req['email'] ) {
@@ -85,8 +85,8 @@ class FlaggedRevsSetup {
 		$req = $wgFlaggedRevsAutopromote; // convenience
 		if ( is_array( $req ) ) {
 			$criteria = [ '&', // AND
-				[ APCOND_AGE, $req['days']*86400 ],
-				[ APCOND_FR_EDITCOUNT, $req['edits'], $req['excludeLastDays']*86400 ],
+				[ APCOND_AGE, $req['days'] * 86400 ],
+				[ APCOND_FR_EDITCOUNT, $req['edits'], $req['excludeLastDays'] * 86400 ],
 				[ APCOND_FR_EDITSUMMARYCOUNT, $req['editComments'] ],
 				[ APCOND_FR_UNIQUEPAGECOUNT, $req['uniqueContentPages'] ],
 				[ APCOND_FR_USERPAGEBYTES, $req['userpageBytes'] ],
@@ -94,9 +94,9 @@ class FlaggedRevsSetup {
 				[ APCOND_FR_EDITSPACING, $req['spacing'], $req['benchmarks'] ],
 				[ '|', // OR
 					[ APCOND_FR_CONTENTEDITCOUNT,
-						$req['totalContentEdits'], $req['excludeLastDays']*86400 ],
+						$req['totalContentEdits'], $req['excludeLastDays'] * 86400 ],
 					[ APCOND_FR_CHECKEDEDITCOUNT,
-						$req['totalCheckedEdits'], $req['excludeLastDays']*86400 ]
+						$req['totalCheckedEdits'], $req['excludeLastDays'] * 86400 ]
 				],
 				[ APCOND_FR_MAXREVERTEDEDITRATIO, $req['maxRevertedEditRatio'] ],
 				[ '!', APCOND_ISBOT ]
@@ -109,15 +109,15 @@ class FlaggedRevsSetup {
 	}
 
 	/**
-	 * Set special pages
+	 * Set special page cache updates
 	 *
 	 * @return void
 	 */
-	public static function setSpecialPages() {
-		global $wgSpecialPages, $wgSpecialPageCacheUpdates;
+	public static function setSpecialPageCacheUpdates() {
+		global $wgSpecialPageCacheUpdates;
 
-		FlaggedRevsUISetup::defineSpecialPages(
-			$wgSpecialPages, $wgSpecialPageCacheUpdates );
+		FlaggedRevsUISetup::defineSpecialPageCacheUpdates(
+			$wgSpecialPageCacheUpdates );
 	}
 
 	/**
@@ -126,7 +126,7 @@ class FlaggedRevsSetup {
 	 * @return void
 	 */
 	public static function setAPIModules() {
-		global $wgAPIModules, $wgAPIListModules, $wgAPIPropModules;
+		global $wgAPIModules, $wgAPIListModules;
 		global $wgFlaggedRevsProtection;
 
 		if ( $wgFlaggedRevsProtection ) {

@@ -5,9 +5,11 @@
 class FlaggedRevsUIHooks {
 	/**
 	 * Add FlaggedRevs css/js.
+	 *
+	 * @param OutputPage $out
+	 * @return bool
 	 */
-	protected static function injectStyleAndJS() {
-		global $wgOut, $wgUser;
+	protected static function injectStyleAndJS( OutputPage $out ) {
 		static $loadedModules = false;
 		if ( $loadedModules ) {
 			return true; // don't double-load
@@ -19,16 +21,23 @@ class FlaggedRevsUIHooks {
 			return true;
 		}
 		# Add main CSS & JS files
-		$wgOut->addModuleStyles( 'ext.flaggedRevs.basic' );
-		$wgOut->addModules( 'ext.flaggedRevs.advanced' );
+		$out->addModuleStyles( 'ext.flaggedRevs.basic' );
+		$out->addModules( 'ext.flaggedRevs.advanced' );
 		# Add review form JS for reviewers
-		if ( $wgUser->isAllowed( 'review' ) ) {
-			$wgOut->addModules( 'ext.flaggedRevs.review' );
-			$wgOut->addModuleStyles( 'ext.flaggedRevs.review.styles' );
+		if ( $out->getUser()->isAllowed( 'review' ) ) {
+			$out->addModules( 'ext.flaggedRevs.review' );
+			$out->addModuleStyles( 'ext.flaggedRevs.review.styles' );
 		}
 		return true;
 	}
 
+	/**
+	 * Hook: MakeGlobalVariablesScript
+	 *
+	 * @param array &$globalVars
+	 * @param OutputPage $out
+	 * @return bool
+	 */
 	public static function injectGlobalJSVars( array &$globalVars, OutputPage $out ) {
 		# Get the review tags on this wiki
 		$rTags = FlaggedRevs::getJSTagParams();
@@ -48,7 +57,7 @@ class FlaggedRevsUIHooks {
 
 	/**
 	 * Add FlaggedRevs css for relevant special pages.
-	 * @param OutputPage $out
+	 * @param OutputPage &$out
 	 * @return bool
 	 */
 	protected static function injectStyleForSpecial( &$out ) {
@@ -80,7 +89,7 @@ class FlaggedRevsUIHooks {
 				}
 			}
 			$view->setRobotPolicy(); // set indexing policy
-			self::injectStyleAndJS(); // full CSS/JS
+			self::injectStyleAndJS( $out ); // full CSS/JS
 		} else {
 			self::maybeAddBacklogNotice( $out ); // RC/Watchlist notice
 			self::injectStyleForSpecial( $out ); // try special page CSS
@@ -90,6 +99,9 @@ class FlaggedRevsUIHooks {
 
 	/**
 	 * Add user preferences (uses prefs-flaggedrevs, prefs-flaggedrevs-ui msgs)
+	 * @param User $user
+	 * @param array &$preferences
+	 * @return true
 	 */
 	public static function onGetPreferences( $user, array &$preferences ) {
 		// Box or bar UI
@@ -221,7 +233,9 @@ class FlaggedRevsUIHooks {
 			$clearEnvironment = $article->isRedirect();
 		}
 		# Environment will change in MediaWiki::initializeArticle
-		if ( $clearEnvironment ) $view->clear();
+		if ( $clearEnvironment ) {
+			$view->clear();
+		}
 
 		return true;
 	}
@@ -265,8 +279,8 @@ class FlaggedRevsUIHooks {
 	public static function onSkinAfterContent( &$data ) {
 		global $wgOut;
 		if ( $wgOut->isArticleRelated()
-			&& FlaggablePageView::globalArticleInstance() != null )
-		{
+			&& FlaggablePageView::globalArticleInstance() != null
+		) {
 			$view = FlaggablePageView::singleton();
 			// Only use this hook if we want to append the form.
 			// We *prepend* the form for diffs, so skip that case here.
@@ -278,12 +292,11 @@ class FlaggedRevsUIHooks {
 	}
 
 	/**
-	 * Add per https://gerrit.wikimedia.org/r/c/mediawiki/extensions/FlaggedRevs/+/350664
 	 * Registers a filter on Special:NewPages to hide edits that have been reviewed
 	 * through FlaggedRevs.
 	 *
 	 * @param SpecialPage $specialPage Special page
-	 * @param array $filters Array of filters
+	 * @param array &$filters Array of filters
 	 */
 	public static function addHideReviewedUnstructuredFilter( $specialPage, &$filters ) {
 		if ( !FlaggedRevs::useSimpleConfig() ) {
@@ -316,11 +329,11 @@ class FlaggedRevsUIHooks {
 						'showHide' => 'flaggedrevs-hidereviewed',
 						'default' => false,
 						'queryCallable' => function ( $specialClassName, $ctx, $dbr, &$tables,
-							&$fields, &$conds, &$query_options, &$join_conds ) {
-
-								FlaggedRevsUIHooks::hideReviewedChangesUnconditionally(
-									$conds
-								);
+							&$fields, &$conds, &$query_options, &$join_conds
+						) {
+							FlaggedRevsUIHooks::hideReviewedChangesUnconditionally(
+								$conds
+							);
 						},
 					],
 				],
@@ -398,13 +411,16 @@ class FlaggedRevsUIHooks {
 		$specialPage, $opts, &$conds, &$tables, &$fields, &$join_conds
 	) {
 		self::makeAllQueryChanges( $conds, $tables, $join_conds, $fields );
+
 		return true;
 	}
 
 	public static function modifyChangesListSpecialPageQuery(
-		$name, &$tables, &$fields, &$conds, &$query_options, &$join_conds, $opts ) {
+		$name, &$tables, &$fields, &$conds, &$query_options, &$join_conds, $opts
+	) {
 		self::addMetadataQueryJoins( $tables, $join_conds, $fields );
 	}
+
 	/**
 	 * Make all query changes, both joining for FlaggedRevs metadata and conditionally
 	 * hiding reviewed changes
@@ -420,10 +436,10 @@ class FlaggedRevsUIHooks {
 		self::addMetadataQueryJoins( $tables, $join_conds, $fields );
 		self::hideReviewedChangesIfNeeded( $conds );
 	}
+
 	/**
 	 * Add FlaggedRevs metadata by adding fields and joins
 	 *
-	 * @param array &$conds Query conditions
 	 * @param array &$tables Tables to query
 	 * @param array &$join_conds Query join conditions
 	 * @param array &$fields Fields to query
@@ -448,10 +464,12 @@ class FlaggedRevsUIHooks {
 		array &$conds
 	) {
 		global $wgRequest;
+
 		if ( $wgRequest->getBool( 'hideReviewed' ) && !FlaggedRevs::useSimpleConfig() ) {
 			self::hideReviewedChangesUnconditionally( $conds );
 		}
 	}
+
 	/**
 	 * Hides reviewed changes unconditionally; assumes you have checked whether to do
 	 * so already
@@ -505,9 +523,13 @@ class FlaggedRevsUIHooks {
 			}
 		}
 		# Style the row as needed
-		if ( $class ) $s = "<span class='$class'>$s</span>";
+		if ( $class ) {
+			$s = "<span class='$class'>$s</span>";
+		}
 		# Add stable old version link
-		if ( $link ) $s .= " $link";
+		if ( $link ) {
+			$s .= " $link";
+		}
 		return true;
 	}
 
@@ -515,7 +537,7 @@ class FlaggedRevsUIHooks {
 	 * Make stable version link and return the css
 	 * @param IContextSource $ctx
 	 * @param Title $title
-	 * @param stdClass $row, from history page
+	 * @param stdClass $row from history page
 	 * @return array (string,string)
 	 */
 	protected static function markHistoryRow( IContextSource $ctx, Title $title, $row ) {
@@ -572,10 +594,10 @@ class FlaggedRevsUIHooks {
 	/**
 	 * Intercept contribution entries and format them to FlaggedRevs standards
 	 *
-	 * @param $contribs SpecialPage object for contributions
-	 * @param $ret string the HTML line
-	 * @param $row Row the DB row for this line
-	 * @param $classes the classes to add to the surrounding <li>
+	 * @param SpecialPage $contribs SpecialPage object for contributions
+	 * @param string &$ret the HTML line
+	 * @param stdClass $row Row the DB row for this line
+	 * @param array &$classes the classes to add to the surrounding <li>
 	 * @return bool
 	 */
 	public static function addToContribsLine( $contribs, &$ret, $row, &$classes ) {
@@ -587,8 +609,8 @@ class FlaggedRevsUIHooks {
 			} elseif ( isset( $row->fr_quality ) ) {
 				$classes[] = FlaggedRevsXML::getQualityColor( $row->fr_quality );
 			} elseif ( isset( $row->fp_pending_since )
-				&& $row->rev_timestamp >= $row->fp_pending_since ) // bug 15515
-			{
+				&& $row->rev_timestamp >= $row->fp_pending_since // bug 15515
+			) {
 				$classes[] = 'flaggedrevs-pending';
 			} elseif ( !isset( $row->fp_stable ) ) {
 				$classes[] = 'flaggedrevs-unreviewed';
@@ -602,8 +624,8 @@ class FlaggedRevsUIHooks {
 		$title = $rc->getTitle(); // convenience
 		if ( !FlaggedRevs::inReviewNamespace( $title )
 			|| empty( $rc->mAttribs['rc_this_oldid'] ) // rev, not log
-			|| !array_key_exists( 'fp_stable', $rc->mAttribs ) )
-		{
+			|| !array_key_exists( 'fp_stable', $rc->mAttribs )
+		) {
 			return true; // confirm that page is in reviewable namespace
 		}
 		$rlink = $css = '';
@@ -617,8 +639,8 @@ class FlaggedRevsUIHooks {
 			}
 		// page is reviewed and has pending edits (use timestamps; bug 15515)
 		} elseif ( isset( $rc->mAttribs['fp_pending_since'] ) &&
-			$rc->mAttribs['rc_timestamp'] >= $rc->mAttribs['fp_pending_since'] )
-		{
+			$rc->mAttribs['rc_timestamp'] >= $rc->mAttribs['fp_pending_since']
+		) {
 			$rlink = Linker::link(
 				$title,
 				wfMessage( 'revreview-reviewlink' )->escaped(),
@@ -654,8 +676,16 @@ class FlaggedRevsUIHooks {
 		return true;
 	}
 
-	public static function onDiffViewHeader( $diff, $oldRev, $newRev ) {
-		self::injectStyleAndJS();
+	/**
+	 * Hook: DiffViewHeader
+	 *
+	 * @param DifferenceEngine $diff
+	 * @param Revision|null $oldRev
+	 * @param Revision $newRev
+	 * @return bool
+	 */
+	public static function onDiffViewHeader( DifferenceEngine $diff, $oldRev, $newRev ) {
+		self::injectStyleAndJS( $diff->getOutput() );
 		$view = FlaggablePageView::singleton();
 		$view->setViewFlags( $diff, $oldRev, $newRev );
 		$view->addToDiffView( $diff, $oldRev, $newRev );
@@ -739,7 +769,9 @@ class FlaggedRevsUIHooks {
 		$expirySelect = $wgRequest->getVal( 'mwStabilizeExpirySelection', $oldExpirySelect );
 		# Load the requested expiry time (field)
 		$expiryOther = $wgRequest->getVal( 'mwStabilizeExpiryOther', '' );
-		if ( $expiryOther != '' ) $expirySelect = 'othertime'; // mutual exclusion
+		if ( $expiryOther != '' ) {
+			$expirySelect = 'othertime'; // mutual exclusion
+		}
 
 		# Add an extra row to the protection fieldset tables.
 		# Includes restriction dropdown and expiry dropdown & field.
@@ -900,5 +932,33 @@ class FlaggedRevsUIHooks {
 			}
 		}
 		return true;
+	}
+
+	public static function onSpecialPage_initList( array &$list ) {
+		global $wgFlaggedRevsProtection, $wgFlaggedRevsNamespaces, $wgUseTagFilter;
+
+		// Show special pages only if FlaggedRevs is enabled on some namespaces
+		if ( count( $wgFlaggedRevsNamespaces ) ) {
+			$list['RevisionReview'] = 'RevisionReview'; // unlisted
+			$list['ReviewedVersions'] = 'ReviewedVersions'; // unlisted
+			$list['PendingChanges'] = 'PendingChanges';
+			// Show tag filtered pending edit page if there are tags
+			if ( $wgUseTagFilter ) {
+				$list['ProblemChanges'] = 'ProblemChanges';
+			}
+			if ( !$wgFlaggedRevsProtection ) {
+				$list['ReviewedPages'] = 'ReviewedPages';
+				$list['UnreviewedPages'] = 'UnreviewedPages';
+			}
+			$list['QualityOversight'] = 'QualityOversight';
+			$list['ValidationStatistics'] = 'ValidationStatistics';
+			// Protect levels define allowed stability settings
+			if ( $wgFlaggedRevsProtection ) {
+				$list['StablePages'] = 'StablePages';
+			} else {
+				$list['ConfiguredPages'] = 'ConfiguredPages';
+				$list['Stabilization'] = 'Stabilization'; // unlisted
+			}
+		}
 	}
 }

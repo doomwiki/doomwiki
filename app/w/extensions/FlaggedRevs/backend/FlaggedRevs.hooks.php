@@ -249,7 +249,7 @@ class FlaggedRevsHooks {
 
 	public static function onParserGetVariableValueSwitch( &$parser, &$cache, &$word, &$ret ) {
 		if ( $word == 'pendingchangelevel' ) {
-			$ret = FlaggedRevsHooks::parserPendingChangeLevel( $parser );
+			$ret = self::parserPendingChangeLevel( $parser );
 		}
 		return true;
 	}
@@ -402,8 +402,8 @@ class FlaggedRevsHooks {
 		# Is the page manually checked off to be reviewed?
 		if ( $editTimestamp
 			&& $wgRequest->getCheck( 'wpReviewEdit' )
-			&& $title->getUserPermissionsErrors( 'review', $user ) === [] )
-		{
+			&& $title->getUserPermissionsErrors( 'review', $user ) === []
+		) {
 			if ( self::editCheckReview( $fa, $rev, $user, $editTimestamp ) ) {
 				return true; // reviewed...done!
 			}
@@ -707,8 +707,8 @@ class FlaggedRevsHooks {
 			// Note: $rev->getTitle() might be undefined (no rev id?)
 			$badRev = Revision::newFromTitle( $article->getTitle(), $undid );
 			if ( $badRev && $badRev->getUser( Revision::RAW ) // by logged-in user
-				&& $badRev->getUser( Revision::RAW ) != $rev->getUser( Revision::RAW ) ) // no self-reverts
-			{
+				&& $badRev->getUser( Revision::RAW ) != $rev->getUser( Revision::RAW ) // no self-reverts
+			) {
 				FRUserCounters::incCount( $badRev->getUser( Revision::RAW ), 'revertedEdits' );
 			}
 		}
@@ -762,9 +762,9 @@ class FlaggedRevsHooks {
 
 	/**
 	 * Check if a user has enough implicitly reviewed edits (before stable version)
-	 * @param $user User
-	 * @param $editsReq int
-	 * @param $seconds int
+	 * @param User $user
+	 * @param int $editsReq
+	 * @param int $seconds
 	 * @return bool
 	 */
 	protected static function reviewedEditsCheck( User $user, $editsReq, $seconds = 0 ) {
@@ -884,7 +884,7 @@ class FlaggedRevsHooks {
 			return true;
 		}
 
-		DeferredUpdates::addCallableUpdate( function() use ( $user, $article, $summary ) {
+		DeferredUpdates::addCallableUpdate( function () use ( $user, $article, $summary ) {
 			$p = FRUserCounters::getUserParams( $user->getId(), FR_FOR_UPDATE );
 			$changed = FRUserCounters::updateUserParams( $p, $article, $summary );
 			if ( $changed ) {
@@ -1003,7 +1003,7 @@ class FlaggedRevsHooks {
 				break;
 			case APCOND_FR_MAXREVERTEDEDITRATIO:
 				$p = FRUserCounters::getParams( $user );
-				$result = ( $p && $params[0]*$user->getEditCount() >= $p['revertedEdits'] );
+				$result = ( $p && $params[0] * $user->getEditCount() >= $p['revertedEdits'] );
 				break;
 			case APCOND_FR_NEVERDEMOTED: // b/c
 				$p = FRUserCounters::getParams( $user );
@@ -1076,8 +1076,8 @@ class FlaggedRevsHooks {
 
 	/**
 	 * Handler for EchoGetDefaultNotifiedUsers hook.
-	 * @param $event EchoEvent to get implicitly subscribed users for
-	 * @param &$users Array to append implicitly subscribed users to.
+	 * @param EchoEvent $event EchoEvent to get implicitly subscribed users for
+	 * @param array &$users Array to append implicitly subscribed users to.
 	 * @return bool true in all cases
 	 */
 	public static function onEchoGetDefaultNotifiedUsers( $event, &$users ) {
@@ -1091,7 +1091,7 @@ class FlaggedRevsHooks {
 	}
 
 	/**
-	 * @param array $updateFields
+	 * @param array &$updateFields
 	 * @return bool
 	 */
 	public static function onUserMergeAccountFields( array &$updateFields ) {

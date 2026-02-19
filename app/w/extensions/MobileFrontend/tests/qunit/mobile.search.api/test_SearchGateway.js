@@ -43,7 +43,7 @@
 		}
 	} );
 
-	QUnit.test( '._highlightSearchTerm', 14, function ( assert ) {
+	QUnit.test( '._highlightSearchTerm', function ( assert ) {
 		var data,
 			gateway = this.gateway;
 
@@ -69,8 +69,8 @@
 		} );
 	} );
 
-	QUnit.test( 'show redirect targets', 6, function ( assert ) {
-		this.gateway.search( 'barack' ).done( function ( response ) {
+	QUnit.test( 'show redirect targets', function ( assert ) {
+		return this.gateway.search( 'barack' ).done( function ( response ) {
 			assert.strictEqual( response.query, 'barack' );
 			assert.strictEqual( response.results.length, 2 );
 			assert.strictEqual( response.results[ 0 ].displayTitle, 'Claude Monet' );
@@ -116,11 +116,10 @@
 		}
 	} );
 
-	QUnit.asyncTest( 'Wikidata Description in search results', 3, function ( assert ) {
+	QUnit.test( 'Wikidata Description in search results', function ( assert ) {
 		var searchApi = new SearchGateway( new mw.Api() );
-		searchApi.search( 'brad' ).done( function ( resp ) {
+		return searchApi.search( 'brad' ).then( function ( resp ) {
 			var results = resp.results;
-			QUnit.start();
 			assert.ok(
 				results[0].wikidataDescription === undefined,
 				'Braddy does not have a Wikidata description.'

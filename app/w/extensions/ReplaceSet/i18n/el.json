@@ -1,9 +1,12 @@
 {
 	"@metadata": {
 		"authors": [
-			"Omnipaedista"
+			"Omnipaedista",
+			"Protnet"
 		]
 	},
-	"replaceset-error-regexnoend": "Το πρότυπο τακτικής έκφρασης \"$1\" υπολείπεται του ληκτικού χαρακτήρα '$2'",
+	"replaceset-desc": "Προσθέτει τη συνάρτηση συντακτικού αναλυτή <nowiki>{{#replaceset}}</nowiki> που χρησιμοποιείται για την αντικατάσταση ενοτήτων κειμένου με μορφοποιημένα δεδομένα",
+	"replaceset-error-calllimit": "Το ReplaceSet έφτασε στο όριο των κλήσεών του ($1).",
+	"replaceset-error-regexnoend": "Από το μοτίβο κανονικής έκφρασης «$1» λείπει ο οριοθέτης κλεισίματος «$2»",
 	"replaceset-error-regexbadmodifier": "Ο τροποποιητής τακτικής έκφρασης '$1' δεν είναι έγκυρος."
 }

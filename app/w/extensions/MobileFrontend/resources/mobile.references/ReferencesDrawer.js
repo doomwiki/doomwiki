@@ -1,6 +1,7 @@
 ( function ( M, $ ) {
 	var Drawer = M.require( 'mobile.startup/Drawer' ),
 		icons = M.require( 'mobile.startup/icons' ),
+		ReferencesGateway = M.require( 'mobile.references.gateway/ReferencesGateway' ),
 		Icon = M.require( 'mobile.startup/Icon' );
 
 	/**
@@ -31,7 +32,12 @@
 				additionalClassNames: 'text',
 				hasText: true,
 				label: mw.msg( 'mobile-frontend-references-citation' )
-			} ).toHtmlString()
+			} ).toHtmlString(),
+			errorClassName: new Icon( {
+				name: 'error',
+				hasText: true,
+				isSmall: true
+			} ).getClassName()
 		} ),
 		events: {
 			'click sup a': 'showNestedReference'
@@ -81,21 +87,29 @@
 		 * @param {string} refNumber the number it identifies as in the page
 		 */
 		showReference: function ( id, page, refNumber ) {
-			var drawer = this;
+			var drawer = this,
+				gateway = this.options.gateway;
 
 			// Save the page in case we have to show a nested reference.
 			this.options.page = page;
-			this.options.gateway.getReference( id, page ).done( function ( reference ) {
+			// If API is being used we want to show the drawer with the spinner while query runs
+			drawer.show();
+			gateway.getReference( id, page ).done( function ( reference ) {
 				drawer.render( {
 					title: refNumber,
 					text: reference.text
 				} );
-			} ).fail( function () {
-				drawer.render( {
-					error: true,
-					title: refNumber,
-					text: mw.msg( 'mobile-frontend-references-citation-error' )
-				} );
+			} ).fail( function ( err ) {
+				if ( err === ReferencesGateway.ERROR_NOT_EXIST ) {
+					window.location.hash = id;
+					drawer.hide();
+				} else {
+					drawer.render( {
+						error: true,
+						title: refNumber,
+						text: mw.msg( 'mobile-frontend-references-citation-error' )
+					} );
+				}
 			} );
 		},
 		/**
@@ -104,7 +118,7 @@
 		 * @return {boolean} False to cancel the native event
 		 */
 		showNestedReference: function ( ev ) {
-			var $dest = $( ev.target );
+			var $dest = this.$( ev.target );
 
 			this.showReference( $dest.attr( 'href' ), this.options.page, $dest.text() );
 			// Don't hide the already shown drawer via propagation and stop default scroll behaviour.
@@ -112,5 +126,5 @@
 		}
 	} );
 
-	M.define( 'mobile.references/ReferencesDrawer', ReferencesDrawer );
+	M.define( 'mobile.references/ReferencesDrawer', ReferencesDrawer ); // resource-modules-disable-line
 }( mw.mobileFrontend, jQuery ) );

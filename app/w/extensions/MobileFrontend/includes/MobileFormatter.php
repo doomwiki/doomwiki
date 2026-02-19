@@ -4,6 +4,7 @@
  */
 
 use HtmlFormatter\HtmlFormatter;
+use MobileFrontend\ContentProviders\IContentProvider;
 
 /**
  * Converts HTML into a mobile-friendly version
@@ -32,7 +33,7 @@ class MobileFormatter extends HtmlFormatter {
 
 	/**
 	 * The current revision id of the Title being worked on
-	 * @var Integer $revId
+	 * @var integer $revId
 	 */
 	private $revId;
 
@@ -94,11 +95,18 @@ class MobileFormatter extends HtmlFormatter {
 	 * Creates and returns a MobileFormatter
 	 *
 	 * @param MobileContext $context
-	 * @param string $html
+	 * @param IContentProvider $provider
+	 * @param bool $enableSections (optional)
+	 *  whether to wrap the content of sections
+	 * @param bool $includeTOC (optional) whether to include the
+	 *  table of contents in output HTML
 	 *
 	 * @return MobileFormatter
 	 */
-	public static function newFromContext( MobileContext $context, $html ) {
+	public static function newFromContext( MobileContext $context,
+		IContentProvider $provider,
+		$enableSections = false, $includeTOC = false
+	) {
 		$mfSpecialCaseMainPage = $context->getMFConfig()->get( 'MFSpecialCaseMainPage' );
 
 		$title = $context->getTitle();
@@ -106,14 +114,18 @@ class MobileFormatter extends HtmlFormatter {
 		$isFilePage = $title->inNamespace( NS_FILE );
 		$isSpecialPage = $title->isSpecialPage();
 
-		$html = self::wrapHTML( $html );
+		$html = self::wrapHTML( $provider->getHTML() );
 		$formatter = new MobileFormatter( $html, $title );
-		$formatter->enableExpandableSections( !$isMainPage && !$isSpecialPage );
+		if ( $isMainPage ) {
+			$formatter->enableExpandableSections( !$mfSpecialCaseMainPage );
+		} else {
+			$formatter->enableExpandableSections( $enableSections );
+		}
 
 		$formatter->setIsMainPage( $isMainPage );
-		if ( $context->getContentTransformations() && !$isFilePage ) {
-			$formatter->setRemoveMedia( $context->imagesDisabled() );
-		}
+
+		$formatter->enableExpandableSections( $enableSections );
+		$formatter->enableTOCPlaceholder( $includeTOC );
 
 		return $formatter;
 	}
@@ -121,7 +133,7 @@ class MobileFormatter extends HtmlFormatter {
 	/**
 	 * Mark whether a placeholder table of contents should be included at the end of the lead
 	 * section
-	 * @param boolean $flag
+	 * @param bool $flag
 	 */
 	public function enableTOCPlaceholder( $flag = true ) {
 		$this->isTOCEnabled = $flag;
@@ -138,7 +150,7 @@ class MobileFormatter extends HtmlFormatter {
 
 	/**
 	 * Change mainPage (is this the main page) to $value (standard: true)
-	 * @param boolean $value
+	 * @param bool $value
 	 */
 	public function setIsMainPage( $value = true ) {
 		$this->mainPage = $value;
@@ -225,6 +237,7 @@ class MobileFormatter extends HtmlFormatter {
 	 *     if any in the DOM;
 	 *   - the paragraph contains text content, e.g. no <p></p>;
 	 *   - the paragraph doesn't contain coordinates, i.e. span#coordinates.
+	 *   - article belongs to the MAIN namespace
 	 *
 	 * Additionally if paragraph immediate sibling is a list (ol or ul element), the list
 	 * is also moved along with paragraph above infobox.
@@ -236,6 +249,10 @@ class MobileFormatter extends HtmlFormatter {
 	 * @param DOMDocument $doc Document to which the section belongs
 	 */
 	private function moveFirstParagraphBeforeInfobox( $leadSectionBody, $doc ) {
+		// Move lead parapgraph only on pages in MAIN namespace (see @T163805)
+		if ( $this->title->getNamespace() !== NS_MAIN ) {
+			return;
+		}
 		$xPath = new DOMXPath( $doc );
 		// Find infoboxes and paragraphs that have text content, i.e. paragraphs
 		// that are not empty nor are wrapper paragraphs that contain span#coordinates.
@@ -291,8 +308,8 @@ class MobileFormatter extends HtmlFormatter {
 	 * @param DOMXPath $xPath
 	 */
 	private function logInfoboxesWrappedInContainers( $leadSectionBody, DOMXPath $xPath ) {
-		$infoboxes = $xPath->query( './*//table[contains(@class,"infobox")]', $leadSectionBody );
-
+		$infoboxes = $xPath->query( './*//table[contains(@class,"infobox")]' .
+			'[not(ancestor::table[contains(@class,"infobox")])]', $leadSectionBody );
 		if ( $infoboxes->length > 0 ) {
 			\MediaWiki\Logger\LoggerFactory::getInstance( 'mobile' )->info(
 				"Found infobox wrapped with container on {$this->title} (rev:{$this->revId})"
@@ -342,7 +359,6 @@ class MobileFormatter extends HtmlFormatter {
 
 			// Use class to decide it is a list of references
 			if ( strpos( $list->getAttribute( 'class' ), 'references' ) !== false ) {
-
 				// Only mark the section as a reference container if we're transforming a section, not the
 				// document.
 				$isReferenceSection = $el instanceof DOMElement;
@@ -442,11 +458,13 @@ class MobileFormatter extends HtmlFormatter {
 	 */
 	private function skipLazyLoadingForSmallDimensions( array $dimensions ) {
 		if ( array_key_exists( 'width', $dimensions )
-			 && $this->isDimensionSmallerThanThreshold( $dimensions['width'] ) ) {
+			&& $this->isDimensionSmallerThanThreshold( $dimensions['width'] )
+		) {
 			return true;
 		};
 		if ( array_key_exists( 'height', $dimensions )
-			 && $this->isDimensionSmallerThanThreshold( $dimensions['height'] ) ) {
+			&& $this->isDimensionSmallerThanThreshold( $dimensions['height'] )
+		) {
 			return true;
 		}
 		return false;
@@ -469,7 +487,8 @@ class MobileFormatter extends HtmlFormatter {
 				( isset( $dimensions['height'] ) ? "height: {$dimensions['height']};" : '' );
 
 			if ( $lazyLoadSkipSmallImages
-				 && $this->skipLazyLoadingForSmallDimensions( $dimensions ) ) {
+				&& $this->skipLazyLoadingForSmallDimensions( $dimensions )
+			) {
 				continue;
 			}
 
@@ -637,32 +656,44 @@ class MobileFormatter extends HtmlFormatter {
 	 * @param array $transformOptions Options to pass when transforming content per section
 	 */
 	protected function makeSections( DOMDocument $doc, array $headings, $transformOptions ) {
+		// Find the parser output wrapper div
+		$xpath = new DOMXPath( $doc );
+		$containers = $xpath->query( 'body/div[@class="mw-parser-output"][1]' );
+		if ( !$containers->length ) {
+			// No wrapper? This could be an old parser cache entry, or perhaps the
+			// OutputPage contained something that was not generated by the parser.
+			// Try using the <body> as the container.
+			$containers = $xpath->query( 'body' );
+			if ( !$containers->length ) {
+				throw new Exception( "HTML lacked body element even though we put it there ourselves" );
+			}
+		}
 
-		$body = $doc->getElementsByTagName( 'body' )->item( 0 );
-		$sibling = $body->firstChild;
-
+		$container = $containers->item( 0 );
+		$containerChild = $container->firstChild;
 		$firstHeading = reset( $headings );
-
 		$sectionNumber = 0;
 		$sectionBody = $this->createSectionBodyElement( $doc, $sectionNumber, false );
-		$this->prepareHeadings( $doc, $headings, $this->scriptsEnabled );
 
-		while ( $sibling ) {
-			$node = $sibling;
-			$sibling = $sibling->nextSibling;
+		while ( $containerChild ) {
+			$node = $containerChild;
+			$containerChild = $containerChild->nextSibling;
 
 			// If we've found a top level heading, insert the previous section if
 			// necessary and clear the container div.
 			// Note well the use of DOMNode#nodeName here. Only DOMElement defines
 			// DOMElement#tagName.  So, if there's trailing text - represented by
 			// DOMText - then accessing #tagName will trigger an error.
-			if ( $headings && $node->nodeName === $firstHeading->nodeName ) {
+			if ( $firstHeading && $node->nodeName === $firstHeading->nodeName ) {
+				// The heading we are transforming is always 1 section ahead of the
+				// section we are currently processing
+				$this->prepareHeading( $doc, $node, $sectionNumber + 1, $this->scriptsEnabled );
 				if ( $sectionBody->hasChildNodes() ) {
 					// Apply transformations to the section body
 					$this->filterContentInSection( $sectionBody, $doc, $sectionNumber, $transformOptions );
 				}
 				// Insert the previous section body and reset it for the new section
-				$body->insertBefore( $sectionBody, $node );
+				$container->insertBefore( $sectionBody, $node );
 
 				if ( $sectionNumber === 0 ) {
 					if ( $this->isTOCEnabled ) {
@@ -698,32 +729,28 @@ class MobileFormatter extends HtmlFormatter {
 			$this->filterContentInSection( $sectionBody, $doc, $sectionNumber, $transformOptions );
 		}
 		// Append the last section body.
-		$body->appendChild( $sectionBody );
+		$container->appendChild( $sectionBody );
 	}
 
 	/**
 	 * Prepare section headings, add required classes and onclick actions
 	 *
 	 * @param DOMDocument $doc
-	 * @param array $headings
+	 * @param DOMElement $heading
+	 * @param integer $sectionNumber
 	 * @param bool $isCollapsible
 	 */
-	private function prepareHeadings( DOMDocument $doc, array $headings, $isCollapsible ) {
-		$sectionNumber = 0;
-		// Mark the top level headings which could control collapsing
-		foreach ( $headings as $heading ) {
-			$sectionNumber += 1;
-			$className = $heading->hasAttribute( 'class' ) ? $heading->getAttribute( 'class' ) . ' ' : '';
-			$heading->setAttribute( 'class', $className . 'section-heading' );
-			if ( $isCollapsible ) {
-				$heading->setAttribute( 'onclick', 'javascript:mfTempOpenSection(' . $sectionNumber . ')' );
-			}
-
-			// prepend indicator
-			$indicator = $doc->createElement( 'div' );
-			$indicator->setAttribute( 'class', MobileUI::iconClass( '', 'element', 'indicator' ) );
-			$heading->insertBefore( $indicator, $heading->firstChild );
+	private function prepareHeading( DOMDocument $doc, $heading, $sectionNumber, $isCollapsible ) {
+		$className = $heading->hasAttribute( 'class' ) ? $heading->getAttribute( 'class' ) . ' ' : '';
+		$heading->setAttribute( 'class', $className . 'section-heading' );
+		if ( $isCollapsible ) {
+			$heading->setAttribute( 'onclick', 'javascript:mfTempOpenSection(' . $sectionNumber . ')' );
 		}
+
+		// prepend indicator - this avoids a reflow by creating a placeholder for a toggling indicator
+		$indicator = $doc->createElement( 'div' );
+		$indicator->setAttribute( 'class', MobileUI::iconClass( '', 'element', 'indicator' ) );
+		$heading->insertBefore( $indicator, $heading->firstChild );
 	}
 
 	/**

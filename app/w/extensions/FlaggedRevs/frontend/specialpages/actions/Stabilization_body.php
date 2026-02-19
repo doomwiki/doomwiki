@@ -215,7 +215,7 @@ class Stabilization extends UnlistedSpecialPage {
 
 			$s .= ' <tr>
 					<td class="mw-label">' .
-						xml::label( $this->msg( 'stabilization-comment' )->text(),
+						Xml::label( $this->msg( 'stabilization-comment' )->text(),
 							'wpReasonSelection' ) .
 					'</td>
 					<td class="mw-input">' .
@@ -288,8 +288,8 @@ class Stabilization extends UnlistedSpecialPage {
 			# Don't let them choose levels they can't set,
 			# but *show* them all when the form is disabled.
 			if ( $this->form->isAllowed()
-				&& !FlaggedRevs::userCanSetAutoreviewLevel( $this->getUser(), $key ) )
-			{
+				&& !FlaggedRevs::userCanSetAutoreviewLevel( $this->getUser(), $key )
+			) {
 				continue;
 			}
 			$allowedLevels[] = $key;

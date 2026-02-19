@@ -23,7 +23,8 @@
 			"Vengir",
 			"Halibutt",
 			"Openbk",
-			"The Polish"
+			"The Polish",
+			"InternerowyGołąb"
 		]
 	},
 	"abusefilter-desc": "Zastosowanie automatycznej heurystyki do edycji",
@@ -68,6 +69,7 @@
 	"abusefilter-log-search-filter": "Identyfikatory filtru (oddzielone znakiem pionowej kreski):",
 	"abusefilter-log-search-title": "Tytuł:",
 	"abusefilter-log-search-wiki": "Wiki:",
+	"abusefilter-log-search-entries-label": "Widoczność:",
 	"abusefilter-log-search-submit": "Szukaj",
 	"abusefilter-log-entry": "$1: $2 {{GENDER:$8|uruchomił|uruchomiła|uruchomił(a)}} filtr nadużyć, {{GENDER:$8|wykonując}} „$3” na $4.\nPodjęte działania: $5;\nOpis filtru: $6",
 	"abusefilter-log-entry-withdiff": "$1: $2  {{GENDER:$8|uruchomił|uruchomiła|uruchomił(a)}} filtr nadużyć, {{GENDER:$8|wykonując}} „$3” na $4.\nPodjęte działania: $5;\nOpis filtru: $6 ($7)",
@@ -203,7 +205,7 @@
 	"abusefilter-edit-export": "Eksportuj filtr do innej wiki",
 	"abusefilter-edit-syntaxok": "Nie wykryto błędów składni.",
 	"abusefilter-edit-syntaxerr": "Wykryto błąd składni – $1",
-	"abusefilter-edit-bad-tags": "Co najmniej jedno z oznaczeń jest niepoprawne.\nOznaczenia powinny być krótkie i nie powinny zawierać znaków specjalnych.",
+	"abusefilter-edit-bad-tags": "Co najmniej jedno z oznaczeń jest niepoprawne.\nOznaczenia powinny być krótkie i nie powinny zawierać znaków specjalnych, oraz nie powinny być wykorzystywane przez inne oprogramowanie. Spróbuj wybierać inne oznaczenie.",
 	"abusefilter-edit-notallowed": "Nie posiadasz uprawnienia do tworzenia lub edytowania filtrów nadużyć",
 	"abusefilter-edit-notallowed-global": "Nie posiadasz uprawnienia do tworzenia lub edytowania globalnych filtrów nadużyć",
 	"abusefilter-edit-notallowed-global-custom-msg": "Niestandardowe komunikaty ostrzegawcze nie są obsługiwane przez filtry globalne",
@@ -409,7 +411,6 @@
 	"abusefilter-topnav-import": "Import filtru",
 	"abusefilter-log-name": "Rejestr filtru nadużyć",
 	"abusefilter-log-header": "Rejestr zawiera zestawienie zmian wprowadzanych w filtrach.\nPełne informacje odnajdziesz w [[Special:AbuseFilter/history|rejestrze]] ostatnich zmian w filtrach.",
-	"abusefilter-log-entry-modify": "zmodyfikował filtr $1 ($2)",
 	"abusefilter-log-noresults": "Brak wyników",
 	"abusefilter-diff-title": "Różnice pomiędzy wersjami",
 	"abusefilter-diff-item": "Przedmiot",

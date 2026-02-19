@@ -1,4 +1,4 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var extendSearchParams = M.require( 'mobile.search.util/extendSearchParams' );
 
@@ -18,8 +18,6 @@
 	QUnit.test( 'it throws if the feature is invalid', function ( assert ) {
 		var expectedError = new Error( '"foo" isn\'t a feature that shows Wikibase descriptions.' );
 
-		QUnit.expect( 1 );
-
 		assert.throws( function () {
 			extendSearchParams( 'foo', {} );
 		}, expectedError );
@@ -37,8 +35,6 @@
 				wbptterms: 'description'
 			};
 
-		QUnit.expect( 1 );
-
 		assert.deepEqual( params, expectedParams );
 	} );
 
@@ -47,9 +43,7 @@
 			qux: 'quux'
 		} );
 
-		QUnit.expect( 2 );
-
-		assert.equal( $.inArray( params.prop, 'pageterms' ), -1 );
+		assert.equal( params.prop.indexOf( 'pageterms' ), -1 );
 		assert.equal( params.wbptterms, undefined );
 	} );
 
@@ -57,8 +51,6 @@
 		var params = extendSearchParams( 'search', {
 			wbptterms: 'grault'
 		} );
-
-		QUnit.expect( 1 );
 
 		assert.equal(
 			params.wbptterms,
@@ -77,8 +69,6 @@
 				wbptterms: 'description'
 			};
 
-		QUnit.expect( 1 );
-
 		assert.deepEqual(
 			params,
 			expectedParams,
@@ -88,13 +78,13 @@
 
 	QUnit.test( 'it is variadic', function ( assert ) {
 		var params = extendSearchParams(
-			'search',
-			{
-				baz: 'qux'
-			},
-			{
-				quux: 'corge'
-			}
+				'search',
+				{
+					baz: 'qux'
+				},
+				{
+					quux: 'corge'
+				}
 			),
 			expectedParams = {
 				foo: 'bar',
@@ -104,9 +94,7 @@
 				wbptterms: 'description'
 			};
 
-		QUnit.expect( 1 );
-
 		assert.deepEqual( params, expectedParams );
 	} );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

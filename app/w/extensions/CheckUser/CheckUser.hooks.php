@@ -55,16 +55,14 @@ class CheckUserHooks {
 		}
 
 		$dbw = wfGetDB( DB_MASTER );
-		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
 		$rcRow = [
-			'cuc_id'         => $cuc_id,
 			'cuc_namespace'  => $attribs['rc_namespace'],
 			'cuc_title'      => $attribs['rc_title'],
 			'cuc_minor'      => $attribs['rc_minor'],
 			'cuc_user'       => $attribs['rc_user'],
 			'cuc_user_text'  => $attribs['rc_user_text'],
 			'cuc_actiontext' => $actionText,
-			'cuc_comment'    => $attribs['rc_comment'],
+			'cuc_comment'    => $rc->getAttribute( 'rc_comment' ),
 			'cuc_this_oldid' => $attribs['rc_this_oldid'],
 			'cuc_last_oldid' => $attribs['rc_last_oldid'],
 			'cuc_type'       => $attribs['rc_type'],
@@ -104,9 +102,7 @@ class CheckUserHooks {
 		// Get agent
 		$agent = $wgRequest->getHeader( 'User-Agent' );
 		$dbw = wfGetDB( DB_MASTER );
-		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
 		$rcRow = [
-			'cuc_id'         => $cuc_id,
 			'cuc_namespace'  => NS_USER,
 			'cuc_title'      => '',
 			'cuc_minor'      => 0,
@@ -163,7 +159,7 @@ class CheckUserHooks {
 		// Get agent
 		$agent = $wgRequest->getHeader( 'User-Agent' );
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$rcRow = [
 			'cuc_namespace'  => NS_USER,
 			'cuc_title'      => '',
@@ -192,7 +188,6 @@ class CheckUserHooks {
 		$fname = __METHOD__;
 		DeferredUpdates::addCallableUpdate( function () use ( $rcRow, $fname ) {
 			$dbw = wfGetDB( DB_MASTER );
-			$rcRow['cuc_id'] = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
 			$dbw->insert( 'cu_changes', $rcRow, $fname );
 		} );
 
@@ -204,7 +199,7 @@ class CheckUserHooks {
 	 * Saves user data into the cu_changes table
 	 *
 	 * @param User $user
-	 * @param boolean $autocreated
+	 * @param bool $autocreated
 	 * @return true
 	 */
 	public static function onLocalUserCreated( User $user, $autocreated ) {
@@ -215,8 +210,8 @@ class CheckUserHooks {
 	}
 
 	/**
-	 * @param $user User
-	 * @param $actiontext string
+	 * @param User $user
+	 * @param string $actiontext
 	 * @return bool
 	 */
 	protected static function logUserAccountCreation( User $user, $actiontext ) {
@@ -230,9 +225,7 @@ class CheckUserHooks {
 		// Get agent
 		$agent = $wgRequest->getHeader( 'User-Agent' );
 		$dbw = wfGetDB( DB_MASTER );
-		$cuc_id = $dbw->nextSequenceValue( 'cu_changes_cu_id_seq' );
 		$rcRow = [
-			'cuc_id'         => $cuc_id,
 			'cuc_page_id'    => 0,
 			'cuc_namespace'  => NS_USER,
 			'cuc_title'      => '',
@@ -258,12 +251,13 @@ class CheckUserHooks {
 
 	/**
 	 * Hook function to prune data from the cu_changes table
+	 * @return true
 	 */
 	public static function maybePruneIPData() {
 		# Every 50th edit, prune the checkuser changes table.
 		if ( 0 == mt_rand( 0, 49 ) ) {
 			$fname = __METHOD__;
-			DeferredUpdates::addCallableUpdate( function() use ( $fname ) {
+			DeferredUpdates::addCallableUpdate( function () use ( $fname ) {
 				global $wgCUDMaxAge;
 
 				$dbw = wfGetDB( DB_MASTER );
@@ -406,7 +400,7 @@ class CheckUserHooks {
 	/**
 	 * Tell the parser test engine to create a stub cu_changes table,
 	 * or temporary pages won't save correctly during the test run.
-	 * @param array $tables
+	 * @param array &$tables
 	 * @return bool
 	 */
 	public static function checkUserParserTestTables( &$tables ) {
@@ -418,9 +412,9 @@ class CheckUserHooks {
 	 * Add a link to Special:CheckUser and Special:CheckUserLog
 	 * on Special:Contributions/<username> for
 	 * privileged users.
-	 * @param $id Integer: user ID
-	 * @param $nt Title: user page title
-	 * @param $links array: tool links
+	 * @param int $id User ID
+	 * @param Title $nt User page title
+	 * @param array &$links Tool links
 	 * @return true
 	 */
 	public static function checkUserContributionsLinks( $id, $nt, &$links ) {
@@ -456,7 +450,7 @@ class CheckUserHooks {
 	 * @return bool
 	 */
 	public static function doRetroactiveAutoblock( Block $block, array &$blockIds ) {
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 
 		$user = User::newFromName( (string)$block->getTarget(), false );
 		if ( !$user->getId() ) {

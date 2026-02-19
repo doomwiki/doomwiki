@@ -16,9 +16,9 @@ class AbuseFilterTokenizer {
 	const WHITESPACE = "\011\012\013\014\015\040";
 
 	// Order is important. The punctuation-matching regex requires that
-	//  ** comes before *, etc. They are sorted to make it easy to spot
-	//  such errors.
-	public static $operators = array(
+	// ** comes before *, etc. They are sorted to make it easy to spot
+	// such errors.
+	public static $operators = [
 		'!==', '!=', '!',   // Inequality
 		'**', '*',          // Multiplication/exponentiation
 		'/', '+', '-', '%', // Other arithmetic
@@ -28,34 +28,34 @@ class AbuseFilterTokenizer {
 		'<=', '<',          // Less than
 		'>=', '>',          // Greater than
 		'===', '==', '=',   // Equality
-	);
+	];
 
-	public static $punctuation = array(
+	public static $punctuation = [
 		',' => AFPToken::TCOMMA,
 		'(' => AFPToken::TBRACE,
 		')' => AFPToken::TBRACE,
 		'[' => AFPToken::TSQUAREBRACKET,
 		']' => AFPToken::TSQUAREBRACKET,
 		';' => AFPToken::TSTATEMENTSEPARATOR,
-	);
+	];
 
-	public static $bases = array(
+	public static $bases = [
 		'b' => 2,
 		'x' => 16,
 		'o' => 8
-	);
+	];
 
-	public static $baseCharsRe = array(
+	public static $baseCharsRe = [
 		2  => '/^[01]+$/',
 		8  => '/^[0-8]+$/',
 		16 => '/^[0-9A-Fa-f]+$/',
 		10 => '/^[0-9.]+$/',
-	);
+	];
 
-	public static $keywords = array(
+	public static $keywords = [
 		'in', 'like', 'true', 'false', 'null', 'contains', 'matches',
 		'rlike', 'irlike', 'regex', 'if', 'then', 'else', 'end',
-	);
+	];
 
 	/**
 	 * @param string $code
@@ -86,13 +86,13 @@ class AbuseFilterTokenizer {
 		}
 
 		$stats->increment( 'AbuseFilter.tokenizerCache.miss' );
-		$tokens = array();
+		$tokens = [];
 		$curPos = 0;
 
 		do {
 			$prevPos = $curPos;
 			$token = self::nextToken( $code, $curPos );
-			$tokens[ $token->pos ] = array( $token, $curPos );
+			$tokens[ $token->pos ] = [ $token, $curPos ];
 		} while ( $curPos !== $prevPos );
 
 		$tokenizerCache->set( $cacheKey, $tokens, 60 * 60 * 24 );
@@ -102,13 +102,13 @@ class AbuseFilterTokenizer {
 
 	/**
 	 * @param string $code
-	 * @param integer &$offset
+	 * @param int &$offset
 	 * @return AFPToken
 	 * @throws AFPException
 	 * @throws AFPUserVisibleException
 	 */
 	protected static function nextToken( $code, &$offset ) {
-		$matches = array();
+		$matches = [];
 		$start = $offset;
 
 		// Read past comments
@@ -135,7 +135,7 @@ class AbuseFilterTokenizer {
 			return self::readStringLiteral( $code, $offset, $start );
 		}
 
-		$matches = array();
+		$matches = [];
 
 		// Operators
 		if ( preg_match( self::OPERATOR_RE, $code, $matches, 0, $offset ) ) {
@@ -182,7 +182,7 @@ class AbuseFilterTokenizer {
 		}
 
 		throw new AFPUserVisibleException(
-			'unrecognisedtoken', $start, array( substr( $code, $start ) ) );
+			'unrecognisedtoken', $start, [ substr( $code, $start ) ] );
 	}
 
 	/**
@@ -249,7 +249,6 @@ class AbuseFilterTokenizer {
 				$offset++;
 			}
 		}
-		throw new AFPUserVisibleException( 'unclosedstring', $offset, array() );
+		throw new AFPUserVisibleException( 'unclosedstring', $offset, [] );
 	}
 }
-

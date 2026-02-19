@@ -1,7 +1,6 @@
 ( function ( M ) {
 	var Toast,
-		settingsKey = 'mobileFrontend/toast',
-		settings = M.require( 'mobile.startup/settings' );
+		storageKey = 'mobileFrontend/toast';
 
 	/**
 	 * Wrapper for one global Toast
@@ -15,13 +14,24 @@
 	 * Show a message with the given class in a toast.
 	 * @method
 	 * @param {string} msg Message to show in the toast
-	 * @param {string} cssClass CSS class to add to the element
+	 * @param {Object} options CSS class to add to the element if a string. If an object, more options for the
+	 *  notification, see mw.notification.show. For backwards compatibility reasons if a string is given it will be
+	 *  treated as options.type
 	 */
-	Toast.prototype.show = function ( msg, cssClass ) {
-		this.notification = mw.notify( msg, {
-			type: cssClass,
+	Toast.prototype.show = function ( msg, options ) {
+		if ( typeof options === 'string' ) {
+			mw.log.warn( 'The use of the cssClass parameter of Toast.show is deprecated, please convert it to an ' +
+				'options object.' );
+			options = {
+				type: options
+			};
+		}
+
+		options = $.extend( {
 			tag: 'toast'
-		} );
+		}, options );
+
+		this.notification = mw.notify( msg, options );
 	};
 
 	/**
@@ -37,7 +47,7 @@
 	};
 
 	/**
-	 * Save the toast data in settings so that we can show it on page reload.
+	 * Save the toast data in storage so that we can show it on page reload.
 	 * Also check whether there is a pending message that's not shown yet.
 	 * If yes, output a warning message and discard this message.
 	 * This is to ensure that the page needs to be reloaded before adding
@@ -47,29 +57,29 @@
 	 * @param {string} className class to add to element
 	 */
 	Toast.prototype.showOnPageReload = function ( content, className ) {
-		if ( settings.get( settingsKey ) ) {
+		if ( mw.storage.get( storageKey ) ) {
 			mw.log.warn(
 				'A pending toast message already exits. ' +
 				'The page should have been reloaded by now.'
 			);
 			return;
 		}
-		settings.save( settingsKey, JSON.stringify( {
+		mw.storage.set( storageKey, JSON.stringify( {
 			content: content,
 			className: className
 		} ) );
 	};
 
 	/**
-	 * Show the previously saved toast data and delete it from settings
+	 * Show the previously saved toast data and delete it from storage
 	 * @private
 	 */
 	Toast.prototype._showPending = function () {
-		var data = settings.get( settingsKey );
+		var data = mw.storage.get( storageKey );
 		if ( data ) {
 			data = JSON.parse( data );
 			this.show( data.content, data.className );
-			settings.remove( settingsKey );
+			mw.storage.remove( storageKey );
 		}
 	};
 

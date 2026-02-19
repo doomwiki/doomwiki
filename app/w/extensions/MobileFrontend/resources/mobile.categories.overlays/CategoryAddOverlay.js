@@ -86,7 +86,7 @@
 		 * @param {jQuery.Event} ev
 		 */
 		onCategoryClick: function ( ev ) {
-			$( ev.target ).closest( '.suggestion' ).detach();
+			this.$( ev.target ).closest( '.suggestion' ).detach();
 			if ( this.$( '.suggestion' ).length > 0 ) {
 				this.$saveButton.prop( 'disabled', false );
 			} else {
@@ -106,7 +106,7 @@
 			this.showHidden( '.saving-header' );
 
 			// add wikitext to add to the page
-			$( '.suggestion' ).each( function () {
+			this.$( '.suggestion' ).each( function () {
 				var data = $( this ).data( 'title' );
 
 				if ( data ) {
@@ -133,6 +133,6 @@
 		}
 	} );
 
-	M.define( 'mobile.categories.overlays/CategoryAddOverlay', CategoryAddOverlay );
+	M.define( 'mobile.categories.overlays/CategoryAddOverlay', CategoryAddOverlay ); // resource-modules-disable-line
 
 }( mw.mobileFrontend, jQuery ) );
