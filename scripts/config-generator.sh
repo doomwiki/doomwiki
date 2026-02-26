@@ -19,8 +19,8 @@ MYSQL_DATABASE=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r 
 MYSQL_HOSTNAME=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_listen_addr'`
 MYSQL_USERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_user'`"
 MYSQL_PASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_password'`"
-MYSQL_ADMINUSERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.root_user'`"
-MYSQL_ADMINPASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.root_password'`"
+MYSQL_ADMINUSERNAME="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_user'`"
+MYSQL_ADMINPASSWORD="`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.app_password'`"
 
 # Memcached Connection
 MEMCACHED_HOSTNAME=`aws secretsmanager get-secret-value --secret-id $SECRET | jq -r '.SecretString' | jq -r '.mysql_listen_addr'`

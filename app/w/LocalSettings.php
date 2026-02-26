@@ -325,10 +325,6 @@ wfLoadSkin('Vector');
 // skin-related config
 $wgAllowSiteCSSOnRestrictedPages = true;
 
-// haleyjd 20160411: Needed until update past MW 1.26
-// TODO: obsolete, remove me
-//$wgAllowMicrodataAttributes = true;
-
 //
 // Extensions
 //
@@ -375,6 +371,9 @@ $wgCaptchaQuestions[] = array (
   'question' => "Please input the $myChallengePositionName1 and $myChallengePositionName2 characters (with no spaces) from the code <code>$myChallengeString</code>:",
   'answer'   => $myChallengeAnswer
 );
+
+// set PageImage default licensing
+$wgPageImagesAPIDefaultLicense = 'any';
 
 // haleyjd 20160212: apply IP blocks to XFF
 $wgApplyIpBlocksToXff = true;
