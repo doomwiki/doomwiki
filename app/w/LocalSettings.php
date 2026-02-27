@@ -15,6 +15,12 @@
 //error_reporting(-1);
 //ini_set("display_errors", 1);
 
+// 20170905: jobs need to be run through a cronjob// Debug/diagnostics: show full exception details and DB backtraces
+// and write a consolidated debug log. Disable or adjust in production.
+// $wgShowExceptionDetails = true;
+// $wgShowSQLErrors = true;
+// $wgShowDBErrorBacktrace = true;
+
 // 20170905: jobs need to be run through a cronjob
 $wgJobRunRate = 0;
 putenv("MW_INSTALL_PATH=/home/doomwiki/public_html/w");
@@ -557,10 +563,6 @@ $wgNoFollowDomainExceptions[] = 'doomworld.com';   // Doomworld
 
 // haleyjd 20130826: enable IP rangeblocking
 $wgSysopRangeBans = true;
-
-// 20140420: Uncomment to enable extensive debugging
-//$wgShowExceptionDetails = true;
-//$wgShowSQLErrors = 1;
 
 // 20170924: uncomment and add lines as necessary when needing to do heavy debugging
 //$wgDebugLogFile = '/home/doomwiki/logs/debuglog.log';
