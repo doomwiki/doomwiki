@@ -12,8 +12,10 @@
 # http://www.mediawiki.org/wiki/Manual:Configuration_settings
 
 // Uncomment the next two lines in event of PHP errors:
-//error_reporting(-1);
-//ini_set("display_errors", 1);
+// error_reporting(-1);
+// ini_set("display_errors", 1);
+
+require_once( "$IP/includes/DefaultSettings.php" );
 
 // 20170905: jobs need to be run through a cronjob// Debug/diagnostics: show full exception details and DB backtraces
 // and write a consolidated debug log. Disable or adjust in production.
@@ -21,22 +23,23 @@
 // $wgShowSQLErrors = true;
 // $wgShowDBErrorBacktrace = true;
 
-// 20170905: jobs need to be run through a cronjob
-$wgJobRunRate = 0;
 putenv("MW_INSTALL_PATH=/home/doomwiki/public_html/w");
-# If you customize your file layout, set $IP to the directory that contains
-# the other MediaWiki files. It will be used as a base to locate files.
+
+// If you customize your file layout, set $IP to the directory that contains
+// the other MediaWiki files. It will be used as a base to locate files.
 if( getenv('MW_INSTALL_PATH') ) {
         $IP = getenv('MW_INSTALL_PATH');
 } else {
         $IP = dirname( __FILE__ );
 }
+
 date_default_timezone_set('America/Chicago');
 $today = getdate();
 $path = array( $IP, "$IP/includes", "$IP/languages" );
 set_include_path( implode( PATH_SEPARATOR, $path ) . PATH_SEPARATOR . get_include_path() );
 
-require_once( "$IP/includes/DefaultSettings.php" );
+// 20170905: jobs need to be run through a cronjob
+$wgJobRunRate = 0;
 
 if ( $wgCommandLineMode ) {
 	if ( isset( $_SERVER ) && array_key_exists( 'REQUEST_METHOD', $_SERVER ) ) {
