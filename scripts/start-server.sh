@@ -3,7 +3,7 @@
 MW_INSTALL_PATH="/home/doomwiki/public_html/w"
 export MW_INSTALL_PATH
 CACHE_DIR="/tmp/cache"
-SETTINGS_FILES="LocalSettings.php LocalSettingsRJ.php"
+SETTINGS_FILES="LocalSettings.php"
 
 echo "Relocate LocalSettings files to ${CACHE_DIR} and symlink main file back"
 sudo mkdir -p "${CACHE_DIR}"

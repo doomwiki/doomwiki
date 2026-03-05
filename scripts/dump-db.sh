@@ -49,7 +49,7 @@ log "Pruning backups older than ${RETENTION_DAYS} days in ${BACKUP_DIR}"
 find "${BACKUP_DIR}" -type f -name '*.gz' -mtime +"${RETENTION_DAYS}" -exec rm -f {} \;
 
 log "Locking MediaWiki"
-sed -i '/wgReadOnly = /s~^//~~' $MEDIAWIKI/LocalSettings.php $MEDIAWIKI/LocalSettingsRJ.php
+sed -i '/wgReadOnly = /s~^//~~' $MEDIAWIKI/LocalSettings.php
 
 log "Running mysqldump for ${DB_NAME}"
 mysqldump \
@@ -60,6 +60,6 @@ mysqldump \
   "${DB_NAME}" | gzip -9 > "${backup_dbfile}"
 
 log "Unlock MediaWiki"
-sed -i '/wgReadOnly = /s~^~//~' $MEDIAWIKI/LocalSettings.php $MEDIAWIKI/LocalSettingsRJ.php
+sed -i '/wgReadOnly = /s~^~//~' $MEDIAWIKI/LocalSettings.php
 
 log "Backup complete: ${backup_dbfile}"
