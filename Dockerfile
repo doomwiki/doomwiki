@@ -95,9 +95,7 @@ ENV PATH=/home/doomwiki/.composer:$PATH
 WORKDIR /home/doomwiki
 COPY --chown=doomwiki:doomwiki ./scripts/start-server.sh ./start
 COPY --chown=doomwiki:doomwiki ./scripts/doomwiki-jobs.sh ./doomwiki-jobs
-COPY --chown=doomwiki:doomwiki ./scripts/dump-db.sh ./dump-db
 COPY --chown=doomwiki:doomwiki ./.env .
-RUN mkdir dbdump
 
 # Copy application source code (until we get dynamic installation working)
 COPY --chown=doomwiki:doomwiki ./app/. ./public_html/
