@@ -193,7 +193,7 @@ class LogFormatter {
 	}
 
 	/**
-	 * Even uglier hack to maintain backwards compatibilty with IRC bots
+	 * Even uglier hack to maintain backwards compatibility with IRC bots
 	 * (T36508).
 	 * @see getActionText()
 	 * @return string Text
@@ -214,7 +214,7 @@ class LogFormatter {
 	}
 
 	/**
-	 * Even uglier hack to maintain backwards compatibilty with IRC bots
+	 * Even uglier hack to maintain backwards compatibility with IRC bots
 	 * (T36508).
 	 * @see getActionText()
 	 * @return string Text
@@ -261,19 +261,15 @@ class LogFormatter {
 						$text = wfMessage( 'undeletedarticle' )
 							->rawParams( $target )->inContentLanguage()->escaped();
 						break;
-					// @codingStandardsIgnoreStart Long line
 					//case 'revision': // Revision deletion
 					//case 'event': // Log deletion
 					// see https://github.com/wikimedia/mediawiki/commit/a9c243b7b5289dad204278dbe7ed571fd914e395
 					//default:
-					// @codingStandardsIgnoreEnd
 				}
 				break;
 
 			case 'patrol':
-				// @codingStandardsIgnoreStart Long line
 				// https://github.com/wikimedia/mediawiki/commit/1a05f8faf78675dc85984f27f355b8825b43efff
-				// @codingStandardsIgnoreEnd
 				// Create a diff link to the patrolled revision
 				if ( $entry->getSubtype() === 'patrol' ) {
 					$diffLink = htmlspecialchars(
@@ -290,7 +286,9 @@ class LogFormatter {
 				switch ( $entry->getSubtype() ) {
 					case 'protect':
 						$text = wfMessage( 'protectedarticle' )
-							->rawParams( $target . ' ' . $parameters['4::description'] )->inContentLanguage()->escaped();
+							->rawParams( $target . ' ' . $parameters['4::description'] )
+							->inContentLanguage()
+							->escaped();
 						break;
 					case 'unprotect':
 						$text = wfMessage( 'unprotectedarticle' )
@@ -298,7 +296,9 @@ class LogFormatter {
 						break;
 					case 'modify':
 						$text = wfMessage( 'modifiedarticleprotection' )
-							->rawParams( $target . ' ' . $parameters['4::description'] )->inContentLanguage()->escaped();
+							->rawParams( $target . ' ' . $parameters['4::description'] )
+							->inContentLanguage()
+							->escaped();
 						break;
 					case 'move_prot':
 						$text = wfMessage( 'movedarticleprotection' )
@@ -640,16 +640,22 @@ class LogFormatter {
 	 * @param Title $title The page
 	 * @param array $parameters Query parameters
 	 * @param string|null $html Linktext of the link as raw html
-	 * @throws MWException
 	 * @return string
 	 */
 	protected function makePageLink( Title $title = null, $parameters = [], $html = null ) {
-		if ( !$this->plaintext ) {
-			$link = Linker::link( $title, $html, [], $parameters );
-		} else {
-			if ( !$title instanceof Title ) {
-				throw new MWException( "Expected title, got null" );
+		if ( !$title instanceof Title ) {
+			$msg = $this->msg( 'invalidtitle' )->text();
+			if ( !$this->plaintext ) {
+				return Html::element( 'span', [ 'class' => 'mw-invalidtitle' ], $msg );
+			} else {
+				return $msg;
 			}
+		}
+
+		if ( !$this->plaintext ) {
+			$html = $html !== null ? new HtmlArmor( $html ) : $html;
+			$link = $this->getLinkRenderer()->makeLink( $title, $html, [], $parameters );
+		} else {
 			$link = '[[' . $title->getPrefixedText() . ']]';
 		}
 
@@ -866,10 +872,12 @@ class LogFormatter {
 			case 'title':
 			case 'title-link':
 				$title = Title::newFromText( $value );
-				if ( $title ) {
-					$value = [];
-					ApiQueryBase::addTitleInfo( $value, $title, "{$name}_" );
+				if ( !$title ) {
+					// Huh? Do something halfway sane.
+					$title = SpecialPage::getTitleFor( 'Badtitle', $value );
 				}
+				$value = [];
+				ApiQueryBase::addTitleInfo( $value, $title, "{$name}_" );
 				return $value;
 
 			case 'user':

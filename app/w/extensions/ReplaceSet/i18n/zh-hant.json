@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Kly"
+		]
+	},
+	"replaceset-desc": "添加用於以格式化資料來取代文字段落的 <nowiki>{{#replaceset}}</nowiki> 解析函式",
+	"replaceset-error-calllimit": "已達 ReplaceSet 的呼叫上限（$1）。",
+	"replaceset-error-regexnoend": "正規表達式模式「$1」缺少結束定界符「$2」",
+	"replaceset-error-regexbadmodifier": "正規表達式修飾符號「$1」無效。"
+}

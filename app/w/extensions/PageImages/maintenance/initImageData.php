@@ -6,7 +6,6 @@ if ( $IP === false ) {
 }
 require_once "$IP/maintenance/Maintenance.php";
 
-use MediaWiki\MediaWikiServices;
 use PageImages\Job\InitImageDataJob;
 
 /**
@@ -20,14 +19,22 @@ class InitImageData extends Maintenance {
 		$this->addOption( 'namespaces',
 			'Comma-separated list of namespace(s) to refresh', false, true );
 		$this->addOption( 'earlier-than',
-			'Run only on pages earlier than this timestamp', false, true );
+			'Run only on pages touched earlier than this timestamp', false, true );
+		$this->addOption( 'later-than',
+			'Run only on pages touched later than this timestamp', false, true );
 		$this->addOption( 'start', 'Starting page ID', false, true );
 		$this->addOption( 'queue-pressure', 'Maximum number of jobs to enqueue at a time. ' .
 			'If not provided or 0 will be run in-process.', false, true );
 		$this->addOption( 'quiet', "Don't report on job queue pressure" );
 		$this->setBatchSize( 100 );
+
+		$this->requireExtension( 'PageImages' );
 	}
 
+	/**
+	 * Do the actual work of filling out page images
+	 * @return null
+	 */
 	public function execute() {
 		global $wgPageImagesNamespaces;
 
@@ -51,7 +58,7 @@ class InitImageData extends Maintenance {
 				'LEFT JOIN', 'page_id = il_from',
 			] ];
 
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			if ( $this->hasOption( 'namespaces' ) ) {
 				$ns = explode( ',', $this->getOption( 'namespaces' ) );
 				$conds['page_namespace'] = $ns;
@@ -61,6 +68,10 @@ class InitImageData extends Maintenance {
 			if ( $this->hasOption( 'earlier-than' ) ) {
 				$conds[] = 'page_touched < '
 					. $dbr->addQuotes( $this->getOption( 'earlier-than' ) );
+			}
+			if ( $this->hasOption( 'later-than' ) ) {
+				$conds[] = 'page_touched > '
+					. $dbr->addQuotes( $this->getOption( 'later-than' ) );
 			}
 			$res = $dbr->select( $tables, $fields, $conds, __METHOD__,
 				[ 'LIMIT' => $this->mBatchSize, 'ORDER_BY' => 'page_id', 'GROUP BY' => 'page_id' ],
@@ -108,4 +119,4 @@ class InitImageData extends Maintenance {
 }
 
 $maintClass = 'InitImageData';
-require_once DO_MAINTENANCE;
+require_once RUN_MAINTENANCE_IF_MAIN;

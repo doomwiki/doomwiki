@@ -1,7 +1,4 @@
 <?php
-/**
- * SpecialMobileDiff.php
- */
 
 /**
  * Show the difference between two revisions of a page
@@ -53,7 +50,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	 * Takes 2 ids/keywords and validates them returning respective revisions
 	 *
 	 * @param int[] $revids Array of revision ids currently limited to 2 elements
-	 * @return Revision[] Array of previous and next revision. The next revision is null if
+	 * @return Revision[]|null[] Array of previous and next revision. The next revision is null if
 	 *   a bad parameter is passed
 	 */
 	public function getRevisionsToCompare( $revids ) {
@@ -127,7 +124,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			// icon to the left of the username
 			'mobile.special.pagefeed.styles'
 		] );
-		$output->addModules( 'mobile.special.mobilediff.images' );
+		$output->addModules( 'mobile.special.mobilediff.scripts' );
 
 		// Allow other extensions to load more stuff here
 		Hooks::run( 'BeforeSpecialMobileDiffDisplay', [ &$output, $ctx, $revisions ] );
@@ -137,7 +134,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		$this->displayDiffPage();
 		$output->addHTML( '</div>' );
 
-		$this->showFooter( $ctx );
+		$this->showFooter( $ctx, $this->getRequest()->getBool( 'unhide' ) );
 
 		$output->addHTML( '</div>' );
 
@@ -157,6 +154,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	 * Setups the mobile DifferenceEngine and displays a mobile optimised diff.
 	 */
 	protected function displayDiffPage() {
+		$unhide = $this->getRequest()->getBool( 'unhide' );
 		$contentHandler = $this->rev->getContentHandler();
 		$this->mDiffEngine = $contentHandler->createDifferenceEngine( $this->getContext(),
 			$this->getPrevId(), $this->revId );
@@ -168,11 +166,11 @@ class SpecialMobileDiff extends MobileSpecialPage {
 				$this->revId,
 				0,
 				false,
-				(bool)$this->getRequest()->getVal( 'unhide' )
+				$unhide
 			);
 		}
 
-		$this->showHeader();
+		$this->showHeader( $unhide );
 		$this->mDiffEngine->showDiffPage();
 	}
 
@@ -184,7 +182,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	 * Day and time of edit
 	 * Edit Comment
 	 */
-	private function showHeader() {
+	private function showHeader( $unhide = false ) {
 		if ( $this->rev->isMinor() ) {
 			$minor = ChangesList::flag( 'minor' );
 		} else {
@@ -194,7 +192,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			$this->getRevisionNavigationLinksHTML() .
 			$this->getIntroHTML() .
 			$minor .
-			$this->getCommentHTML()
+			$this->getCommentHTML( $unhide )
 		);
 	}
 
@@ -202,9 +200,14 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	 * Get the edit comment
 	 * @return string Build HTML for edit comment section
 	 */
-	private function getCommentHTML() {
-		if ( $this->rev->getComment() !== '' ) {
-			$comment = Linker::formatComment( $this->rev->getComment(), $this->targetTitle );
+	private function getCommentHTML( $unhide = false ) {
+		$audience = $unhide ? Revision::FOR_THIS_USER : Revision::FOR_PUBLIC;
+		$comment = $this->rev->getComment( $audience );
+
+		if ( $this->rev->isDeleted( Revision::DELETED_COMMENT ) && !$unhide ) {
+			$comment = $this->msg( 'rev-deleted-comment' )->plain();
+		} elseif ( $comment !== '' && $comment !== null ) {
+			$comment = Linker::formatComment( $comment, $this->targetTitle );
 		} else {
 			$comment = $this->msg( 'mobile-frontend-changeslist-nocomment' )->escaped();
 		}
@@ -259,7 +262,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 					'span', [ 'class' => 'mw-mf-diff-date meta' ],
 					$this->getLanguage()->getHumanTimestamp( $ts )
 				)
-			)->text()
+			)->parse()
 		. Html::closeElement( 'div' );
 	}
 
@@ -296,9 +299,10 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	/**
 	 * Render the footer including userinfos (Name, Role, Editcount)
 	 *
-	 * @param IContextSource $context Context
+	 * @param IContextSource $context
+	 * @param bool $unhide whether hidden content should be shown
 	 */
-	private function showFooter( IContextSource $context ) {
+	private function showFooter( IContextSource $context, $unhide ) {
 		$output = $this->getOutput();
 
 		$output->addHTML(
@@ -307,7 +311,11 @@ class SpecialMobileDiff extends MobileSpecialPage {
 			Html::openElement( 'div', [ 'class' => 'post-content' ] )
 		);
 
-		$userId = $this->rev->getUser();
+		$audience = $unhide ? Revision::FOR_THIS_USER : Revision::FOR_PUBLIC;
+		$userId = $this->rev->getUser( $audience );
+		$ipAddr = $this->rev->getUserText( $audience );
+
+		// Note $userId will be 0 and $ipAddr an empty string if the current audience cannot see it.
 		if ( $userId ) {
 			$user = User::newFromId( $userId );
 			$edits = $user->getEditCount();
@@ -335,8 +343,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 					)->parse() .
 				'</div>'
 			);
-		} else {
-			$ipAddr = $this->rev->getUserText();
+		} elseif ( $ipAddr ) {
 			$userPage = SpecialPage::getTitleFor( 'Contributions', $ipAddr );
 			$output->addHTML(
 				Html::element( 'div', [
@@ -345,6 +352,11 @@ class SpecialMobileDiff extends MobileSpecialPage {
 				'<div>' .
 					$this->getLinkRenderer()->makeLink( $userPage, $ipAddr ) .
 				'</div>'
+			);
+		} else {
+			// Case where the user cannot see who made the edit
+			$output->addHTML(
+				$this->msg( 'rev-deleted-user' )->plain()
 			);
 		}
 
@@ -357,7 +369,7 @@ class SpecialMobileDiff extends MobileSpecialPage {
 	/**
 	 * Get the list of groups of user
 	 * @param User $user The user object to get the list from
-	 * @param IContextSource $context The context
+	 * @param IContextSource $context
 	 * @return string comma separated list of user groups
 	 */
 
@@ -380,7 +392,8 @@ class SpecialMobileDiff extends MobileSpecialPage {
 		$req = MobileContext::singleton()->getRequest();
 		$rev2 = $req->getText( 'diff' );
 		$rev1 = $req->getText( 'oldid' );
-		if ( $rev1 == 'prev' || $rev1 == 'next' ) { // Actually, both do the same, WTF
+		// Actually, both do the same, WTF
+		if ( $rev1 == 'prev' || $rev1 == 'next' ) {
 			$rev1 = '';
 		}
 		// redirect requests to the diff page to mobile view

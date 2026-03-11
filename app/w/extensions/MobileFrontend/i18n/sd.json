@@ -16,6 +16,8 @@
 	"mobile-frontend-categories-add-wait": "ٿاڱو شامل ڀي رهيو آهي، مهرباني ڪري انتظار ڪريو",
 	"mobile-frontend-changeslist-nocomment": "ترميمي تَتُ ڪونھي",
 	"mobile-frontend-copyright": "مواد موجود آهي $1 جي تحت، نہ تہ ٻي صورت ۾ نوٽ ڪيل آهي.",
+	"mobile-frontend-diffview-editcount": "<div>$1</div> {{PLURAL:$1|ترميم|ترميمون}}",
+	"mobile-frontend-diffview-title": "تبديليون",
 	"mobile-frontend-editor-abusefilter-read-more": "وڌيڪ پڙھو",
 	"mobile-frontend-editor-cancel-confirm": "ڇا توھان سچ ۾ پنھنجي ترميم ڇڏي ڏيڻ ٿا چاھيو؟",
 	"mobile-frontend-editor-licensing": "تبديليون سانڍڻ سان، توھان پنھنجون ڀاڱيداريون $1 {{PLURAL:$2|لائسنس|لائسنسن}} تحت ڏيڻ تي راضپو ڏيکاريو ٿا.",
@@ -28,9 +30,7 @@
 	"mobile-frontend-last-modified-with-user-just-now": "{{PLURAL:$4|[$5 $2]|0=ڪنھن اڻڄاتل واپرائيندڙ}} پاران ھاڻي ھاڻي [$3 آخري ڀيرو {{GENDER:$1|سنواريل}}]",
 	"mobile-frontend-last-modified-with-user-minutes": "{{PLURAL:$5|[$6 $2]|0=ھڪ اڻڄاتل واپرائيندڙ}} پاران [$4 آخري ڀيرو {{PLURAL:$3|$3 منٽ|$3 منٽَ}} اڳ {{GENDER:$1|سنواريل}}]",
 	"mobile-frontend-nearby-error": "{{SITENAME}} ويجھا سان ڪجھ مسئلا آھن.",
-	"mobile-frontend-nearby-lookup-ui-error": "{{SITENAME}} ويجھا کي خبر نٿي پوي توھان ڪٿي آھيو... ٻيھر ڪوشش ڪجي؟",
 	"mobile-frontend-nearby-noresults": "بلڪل ھتي... ويجھن عنوان سان ڪي بہ صفحا نہ لڌا.",
-	"mobile-frontend-nearby-permission": "{{SITENAME}} ويجھا کي توھان جي مڪانيت تائين پھچڻ جي اجازت ڪونھي.",
 	"mobile-frontend-nearby-requirements": "معاف ڪجو! توھان جو ويب جھانگو {{SITENAME}} ويجھا کي سپورٽ نٿو ڪري.",
 	"mobile-frontend-nearby-title": "ويجھا",
 	"mobile-frontend-news-items": "خبرن ۾",
@@ -42,6 +42,7 @@
 	"mobile-frontend-view": "موبائل ڏيک",
 	"mobile-frontend-view-desktop": "ميزڀر",
 	"mobile-frontend-watchlist-filter-all": "سڀ",
+	"mobile-frontend-watchlist-filter-articles": "صفحا",
 	"tag-mobile_edit": "موبائل ترميم",
 	"tag-mobile_web_edit": "موبائل ويب ترميم"
 }

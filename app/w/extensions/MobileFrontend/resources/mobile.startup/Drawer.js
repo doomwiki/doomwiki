@@ -1,6 +1,7 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var Panel = M.require( 'mobile.startup/Panel' ),
+		util = M.require( 'mobile.startup/util' ),
 		Icon = M.require( 'mobile.startup/Icon' );
 
 	/**
@@ -18,7 +19,7 @@
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {string} defaults.cancelButton HTML of the button that closes the drawer.
 		 */
-		defaults: $.extend( {}, Panel.prototype.defaults, {
+		defaults: util.extend( {}, Panel.prototype.defaults, {
 			cancelButton: new Icon( {
 				tagName: 'a',
 				name: 'close-invert',
@@ -37,7 +38,7 @@
 		 * @property {boolean}
 		 */
 		closeOnScroll: true,
-		events: $.extend( {}, Panel.prototype.events, {
+		events: util.extend( {}, Panel.prototype.events, {
 			click: 'stopPropagation'
 		} ),
 
@@ -46,11 +47,11 @@
 			var self = this;
 			// This module might be loaded at the top of the page e.g. Special:Uploads
 			// Thus ensure we wait for the DOM to be loaded
-			$( function () {
+			util.docReady( function () {
 				self.appendTo( self.appendToElement );
 			} );
-			this.on( 'show', $.proxy( this, 'onShowDrawer' ) );
-			this.on( 'hide', $.proxy( this, 'onHideDrawer' ) );
+			this.on( 'show', this.onShowDrawer.bind( this ) );
+			this.on( 'hide', this.onHideDrawer.bind( this ) );
 		},
 		/**
 		 * Stop Propagation event handler
@@ -66,12 +67,13 @@
 		 * ShowDrawer event handler
 		 */
 		onShowDrawer: function () {
-			var self = this,
-				$window = $( window );
+			var self = this;
+
 			setTimeout( function () {
-				$window.one( 'click.drawer', $.proxy( self, 'hide' ) );
+				var $window = util.getWindow();
+				$window.one( 'click.drawer', self.hide.bind( self ) );
 				if ( self.closeOnScroll ) {
-					$window.one( 'scroll.drawer', $.proxy( self, 'hide' ) );
+					$window.one( 'scroll.drawer', self.hide.bind( self ) );
 				}
 			}, self.minHideDelay );
 		},
@@ -82,11 +84,11 @@
 		onHideDrawer: function () {
 			// .one() registers one callback for scroll and click independently
 			// if one fired, get rid of the other one
-			$( window ).off( '.drawer' );
+			util.getWindow().off( '.drawer' );
 		}
 	} );
 
 	M.define( 'mobile.startup/Drawer', Drawer )
 		.deprecate( 'mobile.drawers/Drawer' );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

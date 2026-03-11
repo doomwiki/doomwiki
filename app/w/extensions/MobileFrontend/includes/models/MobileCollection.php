@@ -1,10 +1,6 @@
 <?php
 
 /**
- * MobileCollection.php
- */
-
-/**
  * A collection of pages, which are represented by the MobilePage class.
  */
 class MobileCollection implements IteratorAggregate, Countable {
@@ -27,15 +23,13 @@ class MobileCollection implements IteratorAggregate, Countable {
 	/**
 	 * Adds a page to the collection.
 	 *
-	 * @param MobilePage $page
+	 * @param MobilePage $page Page to add
 	 */
 	public function add( MobilePage $page ) {
 		$this->pages[] = $page;
 	}
 
 	/**
-	 * Get the Iterator object
-	 *
 	 * @return ArrayIterator
 	 */
 	public function getIterator() {

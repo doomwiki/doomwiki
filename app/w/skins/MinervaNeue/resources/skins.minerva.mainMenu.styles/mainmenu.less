@@ -7,14 +7,9 @@
 
 /* Left menu */
 @menuSectionPadding: 22px;
-@menuBorderColor: #252525;
 @menuLinkLineHeight: 24px;
 @menuItemFontSize: 0.875em;
 @menuItemBackgroundColor: @skinContentBgColor;
-
-@pageLeftListDarkBorderColor: #3e3e3e;
-@pageLeftListMediumBorderColor: #5c5c5c;
-@pageLeftListLightBorderColor: #717171;
 
 #mw-mf-viewport {
 	position: relative;
@@ -110,6 +105,11 @@ nav {
 				margin: 0;
 				font-size: 0.75em; // equals `12px` at base `font-size: 16px`
 
+				// T173507
+				&:after {
+					content: none;
+				}
+
 				a {
 					color: @colorProgressive;
 					padding: 0.7em 12px;
@@ -168,7 +168,7 @@ nav {
 	}
 }
 
-@media all and ( min-width: @deviceWidthTablet ) {
+@media all and ( min-width: @width-breakpoint-tablet ) {
 	@rightDrawerLeftOffset: 100% - @rightDrawerWidth;
 	.secondary-navigation-enabled {
 		#mw-mf-page-center {
@@ -253,7 +253,7 @@ nav {
 	}
 }
 
-@media all and ( min-width: @deviceWidthTablet ) {
+@media all and ( min-width: @width-breakpoint-tablet ) {
 	.navigation-enabled {
 		#mw-mf-page-center {
 			left: @menuWidthTablet;

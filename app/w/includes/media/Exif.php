@@ -292,9 +292,9 @@ class Exif {
 
 		$this->debugFile( $this->basename, __FUNCTION__, true );
 		if ( function_exists( 'exif_read_data' ) ) {
-			MediaWiki\suppressWarnings();
+			Wikimedia\suppressWarnings();
 			$data = exif_read_data( $this->file, 0, true );
-			MediaWiki\restoreWarnings();
+			Wikimedia\restoreWarnings();
 		} else {
 			throw new MWException( "Internal error: exif_read_data not present. " .
 				"\$wgShowEXIF may be incorrectly set or not checked by an extension." );
@@ -467,17 +467,17 @@ class Exif {
 					break;
 			}
 			if ( $charset ) {
-				MediaWiki\suppressWarnings();
+				Wikimedia\suppressWarnings();
 				$val = iconv( $charset, 'UTF-8//IGNORE', $val );
-				MediaWiki\restoreWarnings();
+				Wikimedia\restoreWarnings();
 			} else {
 				// if valid utf-8, assume that, otherwise assume windows-1252
 				$valCopy = $val;
 				UtfNormal\Validator::quickIsNFCVerify( $valCopy ); // validates $valCopy.
 				if ( $valCopy !== $val ) {
-					MediaWiki\suppressWarnings();
+					Wikimedia\suppressWarnings();
 					$val = iconv( 'Windows-1252', 'UTF-8//IGNORE', $val );
-					MediaWiki\restoreWarnings();
+					Wikimedia\restoreWarnings();
 				}
 			}
 
@@ -742,12 +742,16 @@ class Exif {
 				$ecount = 1; // checking individual elements
 			}
 		}
-		$count = count( $val );
-		if ( $ecount != $count ) {
-			$this->debug( $val, __FUNCTION__, "Expected $ecount elements for $tag but got $count" );
 
-			return false;
+		$count = 1;
+		if ( is_array( $val ) ) {
+			$count = count( $val );
+			if ( $ecount != $count ) {
+				$this->debug( $val, __FUNCTION__, "Expected $ecount elements for $tag but got $count" );
+				return false;
+			}
 		}
+		// If there are multiple values, recursively validate each of them.
 		if ( $count > 1 ) {
 			foreach ( $val as $v ) {
 				if ( !$this->validate( $section, $tag, $v, true ) ) {

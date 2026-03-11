@@ -1,0 +1,11 @@
+{
+	"@metadata": {
+		"authors": [
+			"Sveinn í Felli"
+		]
+	},
+	"usermerge-userdeleted": "$1 ($2) hefur verið eytt.",
+	"right-usermerge": "Sameina notendur",
+	"action-usermerge": "sameina notendur",
+	"usermerge-page-unmoved": "Ekki var hægt að færa síðuna $1 á $2."
+}

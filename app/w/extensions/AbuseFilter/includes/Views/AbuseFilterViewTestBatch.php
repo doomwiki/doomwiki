@@ -1,11 +1,13 @@
 <?php
 
+use MediaWiki\Storage\RevisionRecord;
+
 class AbuseFilterViewTestBatch extends AbuseFilterView {
 	// Hard-coded for now.
 	protected static $mChangeLimit = 100;
 
-	public $mShowNegative, $mTestPeriodStart, $mTestPeriodEnd, $mTestPage,
-		$mTestUser;
+	public $mShowNegative, $mTestPeriodStart, $mTestPeriodEnd, $mTestPage;
+	public $mTestUser;
 
 	function show() {
 		$out = $this->getOutput();
@@ -21,56 +23,75 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 
 		$out->setPageTitle( $this->msg( 'abusefilter-test' ) );
 		$out->addWikiMsg( 'abusefilter-test-intro', self::$mChangeLimit );
+		$out->enableOOUI();
 
 		$output = '';
-		$output .= AbuseFilter::buildEditBox( $this->mFilter, 'wpTestFilter' ) . "\n";
 		$output .=
-			Xml::inputLabel(
-				$this->msg( 'abusefilter-test-load-filter' )->text(),
-				'wpInsertFilter',
-				'mw-abusefilter-load-filter',
-				10,
-				''
-			) .
-			'&#160;' .
-			Xml::element(
-				'input',
-				[
-					'type' => 'button',
-					'value' => $this->msg( 'abusefilter-test-load' )->text(),
-					'id' => 'mw-abusefilter-load'
-				]
-			);
+			AbuseFilter::buildEditBox(
+				$this->mFilter,
+				'wpTestFilter',
+				true,
+				true,
+				true
+			) . "\n";
+
+		$output .= AbuseFilter::buildFilterLoader();
 		$output = Xml::tags( 'div', [ 'id' => 'mw-abusefilter-test-editor' ], $output );
 
-		$output .= Xml::tags( 'p', null, Xml::checkLabel(
-			$this->msg( 'abusefilter-test-shownegative' )->text(),
-			'wpShowNegative', 'wpShowNegative', $this->mShowNegative )
-		);
+		$RCMaxAge = $this->getConfig()->get( 'RCMaxAge' );
+		$min = wfTimestamp( TS_ISO_8601, time() - $RCMaxAge );
+		$max = wfTimestampNow();
 
-		// Selectory stuff
-		$selectFields = [];
-		$selectFields['abusefilter-test-user'] = Xml::input( 'wpTestUser', 45, $this->mTestUser );
-		$selectFields['abusefilter-test-period-start'] =
-			Xml::input( 'wpTestPeriodStart', 45, $this->mTestPeriodStart );
-		$selectFields['abusefilter-test-period-end'] =
-			Xml::input( 'wpTestPeriodEnd', 45, $this->mTestPeriodEnd );
-		$selectFields['abusefilter-test-page'] =
-			Xml::input( 'wpTestPage', 45, $this->mTestPage );
+		// Search form
+		$formFields = [];
+		$formFields['wpTestUser'] = [
+			'name' => 'wpTestUser',
+			'type' => 'user',
+			'ipallowed' => true,
+			'label-message' => 'abusefilter-test-user',
+			'default' => $this->mTestUser
+		];
+		$formFields['wpTestPeriodStart'] = [
+			'name' => 'wpTestPeriodStart',
+			'type' => 'datetime',
+			'label-message' => 'abusefilter-test-period-start',
+			'default' => $this->mTestPeriodStart,
+			'min' => $min,
+			'max' => $max
+		];
+		$formFields['wpTestPeriodEnd'] = [
+			'name' => 'wpTestPeriodEnd',
+			'type' => 'datetime',
+			'label-message' => 'abusefilter-test-period-end',
+			'default' => $this->mTestPeriodEnd,
+			'min' => $min,
+			'max' => $max
+		];
+		$formFields['wpTestPage'] = [
+			'name' => 'wpTestPage',
+			'type' => 'title',
+			'label-message' => 'abusefilter-test-page',
+			'default' => $this->mTestPage,
+			'creatable' => true
+		];
+		$formFields['wpShowNegative'] = [
+			'name' => 'wpShowNegative',
+			'type' => 'check',
+			'label-message' => 'abusefilter-test-shownegative',
+			'selected' => $this->mShowNegative
+		];
 
-		$output .= Xml::buildForm( $selectFields, 'abusefilter-test-submit' );
+		$htmlForm = HTMLForm::factory( 'ooui', $formFields, $this->getContext() )
+			->addHiddenField( 'title', $this->getTitle( 'test' )->getPrefixedDBkey() )
+			->setId( 'wpFilterForm' )
+			->setWrapperLegendMsg( 'abusefilter-list-options' )
+			->setAction( $this->getTitle( 'test' )->getLocalURL() )
+			->setSubmitTextMsg( 'abusefilter-test-submit' )
+			->setMethod( 'post' )
+			->prepareForm();
+		$htmlForm = $htmlForm->getHTML( $htmlForm );
 
-		$output .= Html::hidden( 'title', $this->getTitle( 'test' )->getPrefixedDBkey() );
-		$output = Xml::tags( 'form',
-			[
-				'action' => $this->getTitle( 'test' )->getLocalURL(),
-				'method' => 'post'
-			],
-			$output
-		);
-
-		$output = Xml::fieldset( $this->msg( 'abusefilter-test-legend' )->text(), $output );
-
+		$output = Xml::fieldset( $this->msg( 'abusefilter-test-legend' )->text(), $output . $htmlForm );
 		$out->addHTML( $output );
 
 		if ( $this->getRequest()->wasPosted() ) {
@@ -92,7 +113,12 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 		$dbr = wfGetDB( DB_REPLICA );
 
 		$conds = [];
-		$conds['rc_user_text'] = $this->mTestUser;
+
+		if ( (string)$this->mTestUser !== '' ) {
+			$conds[] = ActorMigration::newMigration()->getWhere(
+				$dbr, 'rc_user', User::newFromName( $this->mTestUser, false )
+			)['conds'];
+		}
 
 		if ( $this->mTestPeriodStart ) {
 			$conds[] = 'rc_timestamp >= ' .
@@ -114,22 +140,52 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 		}
 
 		$conds[] = $this->buildTestConditions( $dbr );
+		$conds = array_merge( $conds, $this->buildVisibilityConditions( $dbr, $this->getUser() ) );
 
 		// Get our ChangesList
-		$changesList = new AbuseFilterChangesList( $this->getSkin() );
+		$changesList = new AbuseFilterChangesList( $this->getSkin(), $this->mFilter );
 		$output = $changesList->beginRecentChangesList();
 
+		$rcQuery = RecentChange::getQueryInfo();
 		$res = $dbr->select(
-			'recentchanges',
-			RecentChange::selectFields(),
+			$rcQuery['tables'],
+			$rcQuery['fields'],
 			array_filter( $conds ),
 			__METHOD__,
-			[ 'LIMIT' => self::$mChangeLimit, 'ORDER BY' => 'rc_timestamp desc' ]
+			[ 'LIMIT' => self::$mChangeLimit, 'ORDER BY' => 'rc_timestamp desc' ],
+			$rcQuery['joins']
 		);
 
 		$counter = 1;
 
+		$contextUser = $this->getUser();
 		foreach ( $res as $row ) {
+			$rc = RecentChange::newFromRow( $row );
+			if ( !$this->mShowNegative ) {
+				$type = (int)$rc->getAttribute( 'rc_type' );
+				$deletedValue = $rc->getAttribute( 'rc_deleted' );
+				if (
+					(
+						$type === RC_LOG &&
+						!LogEventsList::userCanBitfield(
+							$deletedValue,
+							LogPage::SUPPRESSED_ACTION | LogPage::SUPPRESSED_USER,
+							$contextUser
+						)
+					) || (
+						$type !== RC_LOG &&
+						!RevisionRecord::userCanBitfield(
+							$deletedValue, RevisionRecord::SUPPRESSED_ALL, $contextUser
+						)
+					)
+				) {
+					// If the RC is deleted, the user can't see it, and we're only showing matches,
+					// always skip this row. If mShowNegative is true, we can still show the row
+					// because we won't tell whether it matches the given filter.
+					continue;
+				}
+			}
+
 			$vars = AbuseFilter::getVarsFromRCRow( $row );
 
 			if ( !$vars ) {
@@ -141,7 +197,6 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 			if ( $result || $this->mShowNegative ) {
 				// Stash result in RC item
 				$rc = RecentChange::newFromRow( $row );
-				$rc->examineParams['testfilter'] = $this->mFilter;
 				$rc->filterResult = $result;
 				$rc->counter = $counter++;
 				$output .= $changesList->recentChangesLine( $rc, false );
@@ -176,15 +231,7 @@ class AbuseFilterViewTestBatch extends AbuseFilterView {
 		}
 
 		// Normalise username
-		$userTitle = Title::newFromText( $testUsername );
-
-		if ( $userTitle && $userTitle->getNamespace() == NS_USER ) {
-			$this->mTestUser = $userTitle->getText(); // Allow User:Blah syntax.
-		} elseif ( $userTitle ) {
-			// Not sure of the value of prefixedText over text, but no need to munge unnecessarily.
-			$this->mTestUser = $userTitle->getPrefixedText();
-		} else {
-			$this->mTestUser = null; // No user specified.
-		}
+		$userTitle = Title::newFromText( $testUsername, NS_USER );
+		$this->mTestUser = $userTitle ? $userTitle->getText() : null;
 	}
 }

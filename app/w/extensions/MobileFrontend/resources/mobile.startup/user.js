@@ -1,18 +1,22 @@
-( function ( M, $ ) {
+( function ( M ) {
+	var user,
+		mwUser = mw.user,
+		util = M.require( 'mobile.startup/util' );
+
 	/**
 	 * Utility library for looking up details on the current user
 	 * @class user
 	 * @singleton
 	 */
-	var user = {
+	user = {
 		/* @see mediaWiki.user */
-		tokens: mw.user.tokens,
+		tokens: mwUser.tokens,
 		/* @see mediaWiki.user */
-		isAnon: mw.user.isAnon,
+		isAnon: mwUser.isAnon,
 		/* @see mediaWiki.user */
-		getName: mw.user.getName,
+		getName: mwUser.getName,
 		/* @see mediaWiki.user */
-		getId: mw.user.getId,
+		getId: mwUser.getId,
 		/**
 		 * Find current users edit count
 		 * @method
@@ -30,7 +34,7 @@
 		 * @return {jQuery.Deferred}
 		 */
 		getGroups: function () {
-			return $.Deferred().resolve( mw.config.get( 'wgUserGroups' ) );
+			return util.Deferred().resolve( mw.config.get( 'wgUserGroups' ) );
 		},
 		/**
 		* Wrapper for mw.user.sessionId().
@@ -39,7 +43,7 @@
 		* @return {string}
 		*/
 		getSessionId: function () {
-			return mw.user.sessionId();
+			return mwUser.sessionId();
 		},
 
 		/**
@@ -55,4 +59,4 @@
 	M.define( 'mobile.startup/user', user )
 		.deprecate( 'mobile.user/user' );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

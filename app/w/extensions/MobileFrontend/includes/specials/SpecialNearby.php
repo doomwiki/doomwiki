@@ -1,7 +1,4 @@
 <?php
-/**
- * SpecialNearby.php
- */
 
 /**
  * Provide the Special page "Nearby" with location based articles
@@ -26,20 +23,34 @@ class SpecialNearby extends MobileSpecialPage {
 		$this->setHeaders();
 
 		$output = $this->getOutput();
-
+		$output->addBodyClasses( 'nearby-accept-pending' );
 		// set config
 		$output->addJsConfigVars( 'wgMFNearbyRange', $this->getMFConfig()->get( 'MFNearbyRange' ) );
+		$output->addModuleStyles( [ 'mobile.nearby.images' ] );
 		$output->setPageTitle( $this->msg( 'mobile-frontend-nearby-title' ) );
 
-		$html =
-			Html::openElement( 'div',
+		$html = Html::openElement( 'div', [ 'id' => 'mf-nearby-info-holder' ] )
+				. Html::element( 'div', [
+					'class' => 'mw-ui-icon mw-ui-icon-element mw-ui-mf-nearby-image-info mw-ui-icon-large icon'
+				] )
+				. Html::element( 'h3', [],
+					$this->msg( 'mobile-frontend-nearby-info-heading' )->text() )
+				. Html::element( 'div', [ 'class' => 'desc' ],
+					$this->msg( 'mobile-frontend-nearby-info-description' )->text() )
+				. Html::openElement( 'div', [ 'class' => 'jsonly' ] )
+					. Html::linkButton( $this->msg( 'mobile-frontend-nearby-info-show-button' )->text(),
+						[ 'id' => 'showArticles', 'class' => 'mw-ui-progressive' ] )
+				. Html::closeElement( 'div' )
+			. Html::closeElement( 'div' )
+
+			. Html::openElement( 'div',
 				[
 					'class' => 'content-unstyled',
 					'id' => 'mw-mf-nearby',
 				]
 			) .
 			MobileUI::contentElement(
-				MobileUI::errorBox(
+				Html::errorBox(
 					Html::element( 'h2', [],
 						$this->msg( 'mobile-frontend-nearby-requirements' )->text() ) .
 					Html::element( 'p', [],
@@ -47,11 +58,15 @@ class SpecialNearby extends MobileSpecialPage {
 				),
 				'noscript'
 			) .
-			Html::closeElement( 'div' ); // #mw-mf-nearby
+			// #mw-mf-nearby
+			Html::closeElement( 'div' );
 
 		$output->addHTML( $html );
 	}
 
+	/**
+	 * @return string
+	 */
 	protected function getGroupName() {
 		return 'pages';
 	}

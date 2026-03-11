@@ -1,4 +1,4 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var View = M.require( 'mobile.startup/View' );
 
@@ -73,6 +73,7 @@
 			rotation: 0,
 			hasText: false,
 			href: undefined,
+			glyphPrefix: 'mf',
 			tagName: 'div',
 			isSmall: false,
 			base: 'mw-ui-icon',
@@ -94,7 +95,7 @@
 		 * @return {string}
 		 */
 		getGlyphClassName: function () {
-			return this.options.base + '-' + this.options.name;
+			return this.options.base + '-' + this.options.glyphPrefix + '-' + this.options.name;
 		},
 		/**
 		 * Return the HTML representation of this view
@@ -102,11 +103,11 @@
 		 * @return {string}
 		 */
 		toHtmlString: function () {
-			return $( '<div>' ).append( this.$el ).html();
+			return this.parseHTML( '<div>' ).append( this.$el ).html();
 		},
 		template: mw.template.get( 'mobile.startup', 'icon.hogan' )
 	} );
 
 	M.define( 'mobile.startup/Icon', Icon );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

@@ -1,18 +1,21 @@
 {
 	"name": "Description2",
-	"version": "0.4.0",
+	"version": "0.4.1",
 	"author": [
 		"[http://danf.ca/mw/ Daniel Friesen]"
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:Description2",
 	"descriptionmsg": "description2-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"config": {
 		"EnableMetaDescriptionFunctions": false
 	},
+	"ConfigRegistry": {
+		"Description2": "GlobalVarConfig::newInstance"
+	},
 	"AutoloadClasses": {
-		"Description2": "Description2.class.php"
+		"MediaWiki\\Extension\\Description2\\Description2": "includes/Description2.php"
 	},
 	"ExtensionMessagesFiles": {
 		"Description2Magic": "Description2.i18n.magic.php"
@@ -23,9 +26,9 @@
 		]
 	},
 	"Hooks": {
-		"OutputPageParserOutput": "Description2::onOutputPageParserOutput",
-		"ParserAfterTidy": "Description2::onParserAfterTidy",
-		"ParserFirstCallInit": "Description2::onParserFirstCallInit"
+		"OutputPageParserOutput": "MediaWiki\\Extension\\Description2\\Description2::onOutputPageParserOutput",
+		"ParserAfterTidy": "MediaWiki\\Extension\\Description2\\Description2::onParserAfterTidy",
+		"ParserFirstCallInit": "MediaWiki\\Extension\\Description2\\Description2::onParserFirstCallInit"
 	},
 	"manifest_version": 1
 }

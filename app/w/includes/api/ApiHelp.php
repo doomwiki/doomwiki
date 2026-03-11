@@ -1,9 +1,5 @@
 <?php
 /**
- *
- *
- * Created on Aug 29, 2014
- *
  * Copyright © 2014 Wikimedia Foundation and contributors
  *
  * This program is free software; you can redistribute it and/or modify
@@ -584,7 +580,10 @@ class ApiHelp extends ApiBase {
 									if ( isset( $settings[ApiBase::PARAM_EXTRA_NAMESPACES] ) &&
 										is_array( $settings[ApiBase::PARAM_EXTRA_NAMESPACES] )
 									) {
-										$namespaces = array_merge( $namespaces, $settings[ApiBase::PARAM_EXTRA_NAMESPACES] );
+										$namespaces = array_merge(
+											$namespaces,
+											$settings[ApiBase::PARAM_EXTRA_NAMESPACES]
+										);
 									}
 									sort( $namespaces );
 									$count = count( $namespaces );
@@ -704,13 +703,23 @@ class ApiHelp extends ApiBase {
 								if ( $settings[ApiBase::PARAM_TYPE] === 'namespace' ) {
 									$allSpecifier = ApiBase::ALL_DEFAULT_STRING;
 								} else {
-									$allSpecifier = ( is_string( $allowAll ) ? $allowAll : ApiBase::ALL_DEFAULT_STRING );
+									$allSpecifier = ( is_string( $allowAll )
+										? $allowAll : ApiBase::ALL_DEFAULT_STRING );
 								}
 								$info[] = $context->msg( 'api-help-param-multi-all' )
 									->params( $allSpecifier )
 									->parse();
 							}
 						}
+					}
+
+					if ( isset( $settings[self::PARAM_MAX_BYTES] ) ) {
+						$info[] = $context->msg( 'api-help-param-maxbytes' )
+							->numParams( $settings[self::PARAM_MAX_BYTES] );
+					}
+					if ( isset( $settings[self::PARAM_MAX_CHARS] ) ) {
+						$info[] = $context->msg( 'api-help-param-maxchars' )
+							->numParams( $settings[self::PARAM_MAX_CHARS] );
 					}
 
 					// Add default

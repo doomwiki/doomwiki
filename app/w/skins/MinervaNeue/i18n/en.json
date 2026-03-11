@@ -2,15 +2,15 @@
 	"@metadata": {
 		"authors": []
 	},
-	"skinname-minervaneue": "MinervaNeue",
 	"minerva-last-modified-date": "Last edited on $1, at $2",
 	"minerva-talk-add-topic": "Add discussion",
-	"mobile-frontend-console-recruit": "\\o/ Hey! This is open source software and we need volunteers to help us build this thing, make it better and fix any bugs that you might be seeing in this JavaScript console!\n\nYou can find our backlog @ https://phabricator.wikimedia.org/project/profile/67/",
 	"mobile-frontend-cookies-required": "Cookies are required to switch view modes. Please enable them and try again.",
 	"mobile-frontend-editor-blocked-info-loggedin": "Your account is blocked from editing. The block was made by {{GENDER:$2|$2}} for the following reason: $1",
 	"mobile-frontend-editor-cta": "Help improve this page!",
+	"minerva-pointer-dismiss": "Dismiss",
 	"mobile-frontend-editor-disabled": "This page is protected to prevent vandalism.",
 	"mobile-frontend-editor-edit": "Edit",
+	"minerva-download": "Download",
 	"mobile-frontend-editor-redlink-create": "Create page",
 	"mobile-frontend-editor-redlink-explain": "This page has not yet been created.",
 	"mobile-frontend-editor-redlink-leave": "No, thanks.",
@@ -36,7 +36,7 @@
 	"mobile-frontend-main-menu-watchlist": "Watchlist",
 	"mobile-frontend-meta-data-issues": "Page issues",
 	"mobile-frontend-meta-data-issues-categories": "About this category",
-	"mobile-frontend-meta-data-issues-header": "Issues",
+	"mobile-frontend-meta-data-issues-header": "Page issues",
 	"mobile-frontend-meta-data-issues-header-talk": "About this page",
 	"mobile-frontend-meta-data-issues-talk": "About this talk page",
 	"mobile-frontend-notifications-filter": "Filter",
@@ -54,6 +54,10 @@
 	"mobile-frontend-user-page-member-since": "{{GENDER:$2|Joined}} $1",
 	"mobile-frontend-user-page-talk": "Talk",
 	"mobile-frontend-user-page-uploads": "Uploads",
-	"skinname-minerva": "Minerva",
-	"minerva-skin-desc": "A responsive mobile first skin"
+	"skinname-minerva": "MinervaNeue",
+	"minerva-skin-desc": "A responsive mobile first skin",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Categories",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "View categories of pages",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "Jump to top",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "Jump to top of the current page using a floating button"
 }

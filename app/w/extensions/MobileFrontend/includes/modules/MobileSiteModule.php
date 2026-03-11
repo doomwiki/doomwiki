@@ -1,7 +1,9 @@
 <?php
-/**
- * MobileSiteModule.php
- */
+
+namespace MobileFrontend\ResourceLoaderModules;
+
+use ResourceLoaderWikiModule;
+use ResourceLoaderContext;
 
 /**
  * Alternate of ResourceLoaderSiteModule for mobile web.
@@ -12,8 +14,14 @@ class MobileSiteModule extends ResourceLoaderWikiModule {
 	// Should not be enabled on desktop which has ResourceLoaderSiteModule instead
 	protected $targets = [ 'mobile' ];
 
-	// Always load from bottom, which differs from other skins.
-	protected $position = 'bottom';
+	/**
+	 * @inheritDoc
+	 */
+	public function getDependencies( ResourceLoaderContext $context = null ) {
+		// They should always be loaded together, regardless of whether mobile.site.styles
+		// had been made render blocking.
+		return [ 'mobile.site.styles' ];
+	}
 
 	/**
 	 * Get a list of pages used by this module.
@@ -23,7 +31,6 @@ class MobileSiteModule extends ResourceLoaderWikiModule {
 	 */
 	protected function getPages( ResourceLoaderContext $context ) {
 		return [
-			'MediaWiki:Mobile.css' => [ 'type' => 'style' ],
 			'MediaWiki:Mobile.js' => [ 'type' => 'script' ],
 		];
 	}

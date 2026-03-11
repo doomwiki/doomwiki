@@ -19,7 +19,7 @@ from the image description page.
 
 == Requirements ==
 
-This version of the RandomImage extension requires MediaWiki 1.25.0 or above.
+This version of the RandomImage extension requires MediaWiki 1.27.0 or above.
 
 == Installation ==
 
@@ -88,6 +88,11 @@ the extension file). This will affect all users, and might incur additional
 overhead on pageviews.
 
 == Change log ==
+19 September 2017
+Version 1.5.1
+	Deprecated DB_SLAVE constant changed to DB_REPLICA, thus at least MediaWiki
+	1.27 or newer is required.
+
 10 June 2017
 Version 1.5
 	Added version number to the extension credits displayed on Special:Version

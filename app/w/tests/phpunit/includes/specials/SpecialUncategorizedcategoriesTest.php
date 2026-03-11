@@ -5,10 +5,11 @@
 class UncategorizedCategoriesPageTest extends MediaWikiTestCase {
 	/**
 	 * @dataProvider provideTestGetQueryInfoData
+	 * @covers UncategorizedCategoriesPage::getQueryInfo
 	 */
 	public function testGetQueryInfo( $msgContent, $expected ) {
 		$msg = new RawMessage( $msgContent );
-		$mockContext = $this->getMockBuilder( 'RequestContext' )->getMock();
+		$mockContext = $this->getMockBuilder( RequestContext::class )->getMock();
 		$mockContext->method( 'msg' )->willReturn( $msg );
 		$special = new UncategorizedCategoriesPage();
 		$special->setContext( $mockContext );
@@ -20,7 +21,6 @@ class UncategorizedCategoriesPageTest extends MediaWikiTestCase {
 			'fields' => [
 				'namespace' => 'page_namespace',
 				'title' => 'page_title',
-				'value' => 'page_title',
 			],
 			'conds' => [
 				0 => 'cl_from IS NULL',

@@ -46,7 +46,7 @@ class RandomSelection {
 	public static function render( $input, $argv, $parser ) {
 		# Prevent caching if specified so by the user
 		if ( isset( $argv['uncached'] ) ) {
-			$parser->disableCache();
+			$parser->getOutput()->updateCacheExpiry( 0 );
 		}
 
 		# Parse the options and calculate total weight

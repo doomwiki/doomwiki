@@ -8,7 +8,6 @@
  * @class jQuery.plugin.makeCollapsible
  */
 ( function ( $, mw ) {
-
 	/**
 	 * Handler for a click on a collapsible toggler.
 	 *
@@ -264,14 +263,12 @@
 			buildDefaultToggleLink = function () {
 				return $( '<a class="mw-collapsible-text"></a>' )
 					.text( collapseText )
-					.wrap( '<span class="mw-collapsible-toggle"></span>' )
+					.wrap( '<span class="mw-collapsible-toggle mw-collapsible-toggle-default"></span>' )
 					.parent()
 					.attr( {
 						role: 'button',
 						tabindex: 0
 					} )
-					.prepend( '<span>[</span>' )
-					.append( '<span>]</span>' )
 					.on( 'click.mw-collapsible keypress.mw-collapsible', actionHandler );
 			};
 
@@ -282,6 +279,7 @@
 			} else {
 				collapsibleId = $collapsible.attr( 'id' ) || '';
 				if ( collapsibleId.indexOf( 'mw-customcollapsible-' ) === 0 ) {
+					collapsibleId = $.escapeSelector( collapsibleId );
 					$customTogglers = $( '.' + collapsibleId.replace( 'mw-customcollapsible', 'mw-customtoggle' ) )
 						.addClass( 'mw-customtoggle' );
 				}

@@ -3,7 +3,7 @@
 class DismissableSiteNoticeHooks {
 
 	/**
-	 * @param string $notice
+	 * @param string &$notice
 	 * @param Skin $skin
 	 * @return bool true
 	 */

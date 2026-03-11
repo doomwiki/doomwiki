@@ -9,7 +9,7 @@
  * @author Christian Williams
  * @author James Haley
  */
-if(!defined('MEDIAWIKI')) {
+if (!defined('MEDIAWIKI')) {
 	die(-1);
 }
 
@@ -37,7 +37,7 @@ class MonacoSidebar {
 
 		$line_temp = explode('|', trim($line, '* '), 3);
 		$line_temp[0] = trim($line_temp[0], '[]');
-		if(count($line_temp) >= 2 && $line_temp[1] != '') {
+		if (count($line_temp) >= 2 && $line_temp[1] != '') {
 			$line = trim($line_temp[1]);
 			$link = trim(wfMessage($line_temp[0])->inContentLanguage()->text());
 		} else {
@@ -48,7 +48,7 @@ class MonacoSidebar {
 
 		$descText = null;
 
-		if(count($line_temp) > 2 && $line_temp[2] != '') {
+		if (count($line_temp) > 2 && $line_temp[2] != '') {
 			$desc = $line_temp[2];
 			if (wfMessage($desc)->exists()) {
 				$descText = wfMessage($desc)->text();
@@ -63,7 +63,7 @@ class MonacoSidebar {
 			$text = $line;
 		}
 
-		if($link != null) {
+		if ($link != null) {
 			if (!wfMessage($line_temp[0])->exists()) {
 				$link = $line_temp[0];
 			}
@@ -71,7 +71,7 @@ class MonacoSidebar {
 				$href = $link;
 			} else {
 				$title = Title::newFromText( $link );
-				if($title) {
+				if ($title) {
 					if ($title->getNamespace() == NS_SPECIAL) {
 						$dbkey = $title->getDBkey();
 						list($specialCanonicalName, /*$par*/) = SpecialPageFactory::resolveAlias($dbkey);
@@ -93,38 +93,38 @@ class MonacoSidebar {
 	 * @return array
 	 */
 	public static function getMessageAsArray($messageKey) {
-        $message = trim(wfMessage($messageKey)->inContentLanguage()->text());
-        if(!wfMessage($messageKey)->inContentLanguage()->isBlank()) {
-                $lines = explode("\n", $message);
-                if(count($lines) > 0) {
-                        return $lines;
-                }
-        }
-        return null;
+		$message = trim(wfMessage($messageKey)->inContentLanguage()->text());
+		if (!wfMessage($messageKey)->inContentLanguage()->isBlank()) {
+			$lines = explode("\n", $message);
+			if (count($lines) > 0) {
+				return $lines;
+			}
+		}
+		return null;
 	}
 
 	public function getCode() {
 		global $wgUser, $wgTitle, $wgRequest, $wgMemc, $wgLang, $wgContLang;
-		if($wgUser->isLoggedIn()) {
-			if(empty($wgUser->mMonacoSidebar) || ($wgTitle->getNamespace() == NS_USER && $wgRequest->getText('action') == 'delete')) {
+		if ($wgUser->isLoggedIn()) {
+			if (empty($wgUser->mMonacoSidebar) || ($wgTitle->getNamespace() == NS_USER && $wgRequest->getText('action') == 'delete')) {
 				$wgUser->mMonacoSidebar = $this->getMenu($this->getUserLines(), true);
-				if(empty($wgUser->mMonacoSidebar)) {
+				if (empty($wgUser->mMonacoSidebar)) {
 					$wgUser->mMonacoSidebar = -1;
 				}
 			}
-			if($wgUser->mMonacoSidebar != -1) {
+			if ($wgUser->mMonacoSidebar != -1) {
 				return $wgUser->mMonacoSidebar;
 			}
 		}
 
 		$cache = $wgLang->getCode() == $wgContLang->getCode();
-		if($cache) {
+		if ($cache) {
 			$key = wfMemcKey('mMonacoSidebar', self::version);
 			$menu = $wgMemc->get($key);
 		}
-		if(empty($menu)) {
+		if (empty($menu)) {
 			$menu = $this->getMenu($this->getMenuLines());
-			if($cache) {
+			if ($cache) {
 				$wgMemc->set($key, $menu, 60 * 60 * 8);
 			}
 		}
@@ -132,13 +132,13 @@ class MonacoSidebar {
 	}
 
 	public function getUserLines() {
-		global $wgUser,  $wgParser, $wgMessageCache;
+		global $wgUser, $wgParser, $wgMessageCache;
 		$revision = Revision::newFromTitle(Title::newFromText('User:'.$wgUser->getName().'/Monaco-sidebar'));
-		if(is_object($revision)) {
+		if (is_object($revision)) {
 			// replace $revision->getText(), removed in MW 1.29
 			$content = $revision->getContent();
 			$text = ContentHandler::getContentText($content);
-			if(!empty($text)) {
+			if (!empty($text)) {
 				$ret = explode("\n", $wgParser->transformMsg($text, $wgMessageCache->getParserOptions()));
 				return $ret;
 			}
@@ -149,12 +149,12 @@ class MonacoSidebar {
 	public function getMenuLines() {
 /*		# if a local copy exists, try to use that first
 		$revision = Revision::newFromTitle(Title::newFromText('Monaco-sidebar', NS_MEDIAWIKI));
-		if(is_object($revision) && trim($revision->getText()) != '') {
+		if (is_object($revision) && trim($revision->getText()) != '') {
 			$lines = MonacoSidebar::getMessageAsArray('Monaco-sidebar');
 		}
 */
 		# if we STILL have no menu lines, fall back to just loading the default from the message system
-		if(empty($lines)) {
+		if (empty($lines)) {
 			$lines = MonacoSidebar::getMessageAsArray('Monaco-sidebar');
 		}
 
@@ -163,12 +163,12 @@ class MonacoSidebar {
 
 	public function getSubMenu($nodes, $children) {
 		$menu = '';
-		foreach($children as $key => $val) {
+		foreach ($children as $key => $val) {
 			$link_html = htmlspecialchars($nodes[$val]['text']);
 			if ( !empty( $nodes[$val]['children'] ) ) {
 				$link_html .= '<em>&rsaquo;</em>';
 			}
-			
+
 			$menu_item =
 				Html::rawElement( 'a', array(
 						'href' => !empty($nodes[$val]['href']) ? $nodes[$val]['href'] : '#',
@@ -191,19 +191,18 @@ class MonacoSidebar {
 
 		$nodes = $this->parse($lines);
 
-		if(count($nodes) > 0) {
-			
+		if (count($nodes) > 0) {
 			wfRunHooks('MonacoSidebarGetMenu', array(&$nodes));
-			
+
 			$mainMenu = array();
-			foreach($nodes[0]['children'] as $key => $val) {
-				if(isset($nodes[$val]['children'])) {
+			foreach ($nodes[0]['children'] as $key => $val) {
+				if (isset($nodes[$val]['children'])) {
 					$mainMenu[$val] = $nodes[$val]['children'];
 				}
-				if(isset($nodes[$val]['magic'])) {
+				if (isset($nodes[$val]['magic'])) {
 					$mainMenu[$val] = $nodes[$val]['magic'];
 				}
-				if(isset($nodes[$val]['href']) && $nodes[$val]['href'] == 'editthispage') $menu .= '<!--b-->';
+				if (isset($nodes[$val]['href']) && $nodes[$val]['href'] == 'editthispage') $menu .= '<!--b-->';
 				$menu .= '<li id="menu-item_'.$val.'" class="menu-item';
 				if ( !empty($nodes[$val]['children']) || !empty($nodes[$val]['magic']) ) {
 					$menu .= ' with-sub-menu';
@@ -221,9 +220,9 @@ class MonacoSidebar {
 					$menu .= $this->getSubMenu($nodes, $nodes[$val]['children']);
 				}
 				$menu .= '</li>';
-				if(isset($nodes[$val]['href']) && $nodes[$val]['href'] == 'editthispage') $menu .= '<!--e-->';
+				if (isset($nodes[$val]['href']) && $nodes[$val]['href'] == 'editthispage') $menu .= '<!--e-->';
 			}
-			
+
 			$classes = array();
 			if ( $userMenu )
 				$classes[] = 'userMenu';
@@ -231,13 +230,13 @@ class MonacoSidebar {
 			$menu = Html::rawElement( 'ul', null, $menu );
 			$menu = Html::rawElement( 'nav', array( 'id' => 'navigation', 'class' => implode(' ', $classes) ), $menu );
 
-			if($this->editUrl) {
+			if ($this->editUrl) {
 				$menu = str_replace('href="editthispage"', 'href="'.$this->editUrl.'"', $menu);
 			} else {
 				$menu = preg_replace('/<!--b-->(.*)<!--e-->/U', '', $menu);
 			}
 
-			if(isset($nodes[0]['magicWords'])) {
+			if (isset($nodes[0]['magicWords'])) {
 				$magicWords = $nodes[0]['magicWords'];
 				$magicWords = array_unique($magicWords);
 				sort($magicWords);
@@ -245,8 +244,8 @@ class MonacoSidebar {
 
 			$menuHash = hash('md5', serialize($nodes));
 
-			foreach($nodes as $key => $val) {
-				if(!isset($val['depth']) || $val['depth'] == 1) {
+			foreach ($nodes as $key => $val) {
+				if (!isset($val['depth']) || $val['depth'] == 1) {
 					unset($nodes[$key]);
 				}
 				unset($nodes[$key]['parentIndex']);
@@ -255,7 +254,7 @@ class MonacoSidebar {
 			}
 
 			$nodes['mainMenu'] = $mainMenu;
-			if(!empty($magicWords)) {
+			if (!empty($magicWords)) {
 				$nodes['magicWords'] = $magicWords;
 			}
 
@@ -273,41 +272,41 @@ class MonacoSidebar {
 		$nodes = array();
 		$lastDepth = 0;
 		$i = 0;
-		if(is_array($lines) && count($lines) > 0) {
-			foreach($lines as $line) {
-				if(trim($line) === '') {
+		if (is_array($lines) && count($lines) > 0) {
+			foreach ($lines as $line) {
+				if (trim($line) === '') {
 					continue; // ignore empty lines
 				}
 
 				$node = $this->parseLine($line);
 				$node['depth'] = strrpos($line, '*') + 1;
 
-				if($node['depth'] == $lastDepth) {
+				if ($node['depth'] == $lastDepth) {
 					$node['parentIndex'] = $nodes[$i]['parentIndex'];
 				} else if ($node['depth'] == $lastDepth + 1) {
 					$node['parentIndex'] = $i;
 				} else {
-					for($x = $i; $x >= 0; $x--) {
-						if($x == 0) {
+					for ($x = $i; $x >= 0; $x--) {
+						if ($x == 0) {
 							$node['parentIndex'] = 0;
 							break;
 						}
-						if($nodes[$x]['depth'] == $node['depth'] - 1) {
+						if ($nodes[$x]['depth'] == $node['depth'] - 1) {
 							$node['parentIndex'] = $x;
 							break;
 						}
 					}
 				}
 
-				if($node['original'] == 'editthispage') {
+				if ($node['original'] == 'editthispage') {
 					$node['href'] = 'editthispage';
-					if($node['depth'] == 1) {
+					if ($node['depth'] == 1) {
 						$nodes[0]['editthispage'] = true; // we have to know later if there is editthispage special word used in first level
 					}
-				} else if(!empty( $node['original'] ) && $node['original']{0} == '#') {
-					if($this->handleMagicWord($node)) {
+				} else if (!empty( $node['original'] ) && $node['original']{0} == '#') {
+					if ($this->handleMagicWord($node)) {
 						$nodes[0]['magicWords'][] = $node['magic'];
-						if($node['depth'] == 1) {
+						if ($node['depth'] == 1) {
 							$nodes[0]['magicWord'] = true; // we have to know later if there is any magic word used if first level
 						}
 					} else {
@@ -330,7 +329,7 @@ class MonacoSidebar {
 
 		$internal = false;
 
-		if(count($lineTmp) == 2 && $lineTmp[1] != '') {
+		if (count($lineTmp) == 2 && $lineTmp[1] != '') {
 			$link = trim(wfMessage($lineTmp[0])->inContentLanguage()->text());
 			$line = trim($lineTmp[1]);
 		} else {
@@ -338,26 +337,26 @@ class MonacoSidebar {
 			$line = trim($lineTmp[0]);
 		}
 
-		if(wfMessage($line)->exists()) {
+		if (wfMessage($line)->exists()) {
 			$text = wfMessage($line)->text();
 		} else {
 			$text = $line;
 		}
 
-		if(!wfMessage($lineTmp[0])->exists()) {
+		if (!wfMessage($lineTmp[0])->exists()) {
 			$link = $lineTmp[0];
 		}
 
-		if(preg_match( '/^(?:' . wfUrlProtocols() . ')/', $link )) {
+		if (preg_match( '/^(?:' . wfUrlProtocols() . ')/', $link )) {
 			$href = $link;
 		} else {
-			if(empty($link)) {
+			if (empty($link)) {
 				$href = '#';
-			} else if($link{0} == '#') {
+			} else if ($link{0} == '#') {
 				$href = '#';
 			} else {
 				$title = Title::newFromText($link);
-				if(is_object($title)) {
+				if (is_object($title)) {
 					$href = $title->fixSpecialName()->getLocalURL();
 					$internal = true;
 				} else {
@@ -374,23 +373,23 @@ class MonacoSidebar {
 
 	public function handleMagicWord(&$node) {
 		$original_lower = strtolower($node['original']);
-		if(in_array($original_lower, array('#voted#', '#popular#', '#visited#', '#newlychanged#', '#topusers#'))) {
-			if($node['text']{0} == '#') {
+		if (in_array($original_lower, array('#voted#', '#popular#', '#visited#', '#newlychanged#', '#topusers#'))) {
+			if ($node['text']{0} == '#') {
 				$node['text'] = wfMessage(trim($node['original'], ' *'))->text(); // TODO: That doesn't make sense to me
 			}
 			$node['magic'] = trim($original_lower, '#');
 			return true;
-		} else if(substr($original_lower, 1, 8) == 'category') {
+		} else if (substr($original_lower, 1, 8) == 'category') {
 			$param = trim(substr($node['original'], 9), '#');
-			if(is_numeric($param)) {
+			if (is_numeric($param)) {
 				$category = $this->getBiggestCategory($param);
 				$name = $category['name'];
 			} else {
 				$name = substr($param, 1);
 			}
-			if($name) {
+			if ($name) {
 				$node['href'] = Title::makeTitle(NS_CATEGORY, $name)->getLocalURL();
-				if($node['text']{0} == '#') {
+				if ($node['text']{0} == '#') {
 					$node['text'] = str_replace('_', ' ', $name);
 				}
 				$node['magic'] = 'category'.$name;
@@ -405,12 +404,12 @@ class MonacoSidebar {
 	public function getBiggestCategory($index) {
 		global $wgMemc, $wgBiggestCategoriesBlacklist;
 		$limit = max($index, 15);
-		if($limit > count($this->biggestCategories)) {
+		if ($limit > count($this->biggestCategories)) {
 			$key = wfMemcKey('biggest', $limit);
 			$data = $wgMemc->get($key);
-			if(empty($data)) {
+			if (empty($data)) {
 				$filterWordsA = array();
-				foreach($wgBiggestCategoriesBlacklist as $word) {
+				foreach ($wgBiggestCategoriesBlacklist as $word) {
 					$filterWordsA[] = '(cl_to not like "%'.$word.'%")';
 				}
 				$dbr =& wfGetDB( DB_SLAVE );
@@ -432,4 +431,3 @@ class MonacoSidebar {
 	}
 */
 }
-

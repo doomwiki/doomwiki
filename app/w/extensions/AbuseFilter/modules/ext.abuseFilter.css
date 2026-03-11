@@ -43,6 +43,12 @@ td.mw-abuselog-var {
 	width: 30%;
 }
 
+table.mw-abusefilter-list-scrollable {
+	display: block;
+	border: 0;
+	overflow-x: auto;
+}
+
 tr.mw-abusefilter-list-disabled,
 tr.mw-abusefilter-list-disabled td {
 	color: #666;
@@ -67,9 +73,26 @@ li.mw-abusefilter-changeslist-nomatch {
 	background-image: url( red_x.png );
 }
 
+div.mw-abusefilter-editor {
+	max-width: 75em;
+	height: 30em;
+	line-height: 1.5em;
+	border: 1px solid #a2a9b1;
+	display: none;
+}
+
+fieldset.mw-abusefilter-edit-buttons {
+	margin-top: 1em;
+}
+
+.mw-abusefilter-load-filter-id {
+	width: 25%;
+	min-width: 250px;
+}
+
 #mw-abusefilter-syntaxresult,
-li.mw-abusefilter-changeslist-nomatch,
-li.mw-abusefilter-changeslist-match {
+ul li.mw-abusefilter-changeslist-nomatch,
+ul li.mw-abusefilter-changeslist-match {
 	/* Do not consolidate these into a "background:" rule; it will override the background-image: settings in above rulesets */
 	background-repeat: no-repeat;
 	padding-left: 25px;

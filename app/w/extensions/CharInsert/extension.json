@@ -3,7 +3,7 @@
 	"author": "Brion Vibber",
 	"url": "https://www.mediawiki.org/wiki/Extension:CharInsert",
 	"descriptionmsg": "charinsert-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"Hooks": {
 		"ParserFirstCallInit": [
@@ -24,7 +24,7 @@
 				"ext.charinsert.js"
 			],
 			"dependencies": [
-				"mediawiki.toolbar"
+				"jquery.textSelection"
 			],
 			"targets": [
 				"desktop"
@@ -36,8 +36,7 @@
 			],
 			"targets": [
 				"desktop"
-			],
-			"group": "noscript"
+			]
 		}
 
 	},
@@ -46,7 +45,7 @@
 		"remoteExtPath": "CharInsert/modules"
 	},
 	"AutoloadClasses": {
-		"CharInsert": "CharInsert.body.php"
+		"CharInsert": "includes/CharInsert.php"
 	},
 	"manifest_version": 1
 }

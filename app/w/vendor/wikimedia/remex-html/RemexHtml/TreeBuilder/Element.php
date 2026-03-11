@@ -1,6 +1,7 @@
 <?php
 
 namespace RemexHtml\TreeBuilder;
+
 use RemexHtml\HTMLData;
 use RemexHtml\PropGuard;
 use RemexHtml\Tokenizer\Attributes;
@@ -14,6 +15,8 @@ use RemexHtml\Tokenizer\Attributes;
  * downstream clients.
  */
 class Element implements FormattingElement {
+	use PropGuard;
+
 	/**
 	 * The namespace. This will be the HTML namespace for elements that are not
 	 * in foreign content, even if there is a prefix.
@@ -54,7 +57,7 @@ class Element implements FormattingElement {
 	/**
 	 * Internal to CachingStack. A link in the scope list.
 	 */
-	public $nextScope;
+	public $nextEltInScope;
 
 	/**
 	 * Internal to CachingStack and SimpleStack. The current stack index, or
@@ -78,6 +81,17 @@ class Element implements FormattingElement {
 	 * by TreeBuilder.
 	 */
 	public $userData;
+
+	/**
+	 * A unique ID which identifies the element
+	 * @var int
+	 */
+	public $uid;
+
+	/**
+	 * The next unique ID to be used
+	 */
+	private static $nextUid = 1;
 
 	/**
 	 * The element types in the MathML namespace which are MathML text
@@ -123,10 +137,7 @@ class Element implements FormattingElement {
 			$this->htmlName = "$namespace $name";
 		}
 		$this->attrs = $attrs;
-	}
-
-	public function __set( $name, $value ) {
-		PropGuard::set( $this, $name, $value );
+		$this->uid = self::$nextUid++;
 	}
 
 	/**
@@ -141,6 +152,7 @@ class Element implements FormattingElement {
 
 	/**
 	 * Is the element an HTML integration point?
+	 * @return bool
 	 */
 	public function isHtmlIntegration() {
 		if ( $this->namespace === HTMLData::NS_MATHML ) {
@@ -173,8 +185,9 @@ class Element implements FormattingElement {
 
 	/**
 	 * Get a string identifying the element, for use in debugging.
+	 * @return string
 	 */
 	public function getDebugTag() {
-		return $this->htmlName . '#' . substr( md5( spl_object_hash( $this ) ), 0, 8 );
+		return $this->htmlName . '#' . $this->uid;
 	}
 }

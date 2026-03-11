@@ -1,5 +1,6 @@
-( function ( M, $ ) {
+( function ( M ) {
 	var Overlay = M.require( 'mobile.startup/Overlay' ),
+		util = M.require( 'mobile.startup/util' ),
 		Anchor = M.require( 'mobile.startup/Anchor' ),
 		NotificationsOverlay;
 
@@ -22,12 +23,12 @@
 
 		// Anchor tag that corresponds to a notifications badge
 		this.badge = options.badge;
-		this.$overlay = $( '<div>' )
+		this.$overlay = this.parseHTML( '<div>' )
 			.addClass( 'notifications-overlay-overlay position-fixed' );
 
 		// On error use the url as a fallback
 		if ( options.error ) {
-			this.onError();
+			options.onError();
 			return;
 		}
 
@@ -51,13 +52,13 @@
 
 		// Mark all read
 		this.markAllReadButton = new OO.ui.ButtonWidget( {
-			icon: 'doubleCheck',
+			icon: 'checkAll',
 			title: mw.msg( 'echo-mark-all-as-read' )
 		} );
 		this.markAllReadButton.toggle( false );
 		this.$( '.overlay-header' )
 			.append(
-				$( '<div>' )
+				this.parseHTML( '<div>' )
 					.addClass( 'notifications-overlay-header-markAllRead' )
 					.append(
 						this.markAllReadButton.$element
@@ -103,7 +104,7 @@
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {string} defaults.heading Heading text.
 		 */
-		defaults: $.extend( {}, Overlay.prototype.defaults, {
+		defaults: util.extend( {}, Overlay.prototype.defaults, {
 			heading: mw.msg( 'notifications' ),
 			footerAnchor: new Anchor( {
 				href: mw.util.getUrl( 'Special:Notifications' ),
@@ -156,13 +157,6 @@
 				} );
 		},
 		/**
-		 * Fall back to notifications archive page.
-		 * @method
-		 */
-		onError: function () {
-			window.location.href = this.badge.getNotificationURL();
-		},
-		/**
 		 * Update the unread number on the notifications badge
 		 *
 		 * @param {number} count Number of unread notifications
@@ -192,4 +186,4 @@
 
 	M.define( 'mobile.notifications.overlay/NotificationsOverlay', NotificationsOverlay );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

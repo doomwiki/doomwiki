@@ -1,5 +1,6 @@
-( function ( M, $ ) {
+( function ( M ) {
 	var Overlay = M.require( 'mobile.startup/Overlay' ),
+		util = M.require( 'mobile.startup/util' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		Button = M.require( 'mobile.startup/Button' ),
 		ImageGateway = M.require( 'mobile.mediaViewer/ImageGateway' );
@@ -24,6 +25,7 @@
 	OO.mfExtend( ImageOverlay, Overlay, {
 		// allow pinch zooming
 		hasFixedHeader: false,
+		hideOnExitClick: false,
 		className: 'overlay media-viewer',
 		template: mw.template.get( 'mobile.mediaViewer', 'Overlay.hogan' ),
 
@@ -36,7 +38,7 @@
 		 * @cfg {string} defaults.licenseLinkMsg Link to license information in media viewer.
 		 * @cfg {Thumbnail[]} defaults.thumbnails a list of thumbnails to browse
 		 */
-		defaults: $.extend( {}, Overlay.prototype.defaults, {
+		defaults: util.extend( {}, Overlay.prototype.defaults, {
 			cancelButton: new Icon( {
 				tagName: 'button',
 				// Uses a dark theme so swap out the icon
@@ -52,19 +54,17 @@
 			licenseLinkMsg: mw.msg( 'mobile-frontend-media-license-link' ),
 			thumbnails: [],
 			slideLeftButton: new Icon( {
-				isSmall: true,
 				rotation: 90,
 				name: 'arrow-invert'
 			} ).toHtmlString(),
 			slideRightButton: new Icon( {
-				isSmall: true,
 				rotation: -90,
 				name: 'arrow-invert'
 			} ).toHtmlString()
 		} ),
 
 		/** @inheritdoc */
-		events: $.extend( {}, Overlay.prototype.events, {
+		events: util.extend( {}, Overlay.prototype.events, {
 			'click .image-wrapper': 'onToggleDetails',
 			// Click tracking for table of contents so we can see if people interact with it
 			'click .slider-button': 'onSlide'
@@ -74,16 +74,8 @@
 		 * @param {jQuery.Event} ev
 		 */
 		onSlide: function ( ev ) {
-			this.setNewImage(
-				this.$( ev.target ).closest( '.slider-button' ).data( 'thumbnail' )
-			);
-		},
-		/**
-		 * Replace the current image with a new one
-		 * @param {Thumbnail} thumbnail
-		 */
-		setNewImage: function ( thumbnail ) {
-			window.location.hash = '#/media/' + encodeURIComponent( thumbnail.getFileName() );
+			var nextThumbnail = this.$( ev.target ).closest( '.slider-button' ).data( 'thumbnail' );
+			this.emit( ImageOverlay.EVENT_SLIDE, nextThumbnail );
 		},
 		/** @inheritdoc */
 		preRender: function () {
@@ -152,7 +144,7 @@
 				self.thumbWidth = data.thumbwidth;
 				self.thumbHeight = data.thumbheight;
 				self.imgRatio = data.thumbwidth / data.thumbheight;
-				$img = $( '<img>' ).attr( 'src', data.thumburl ).attr( 'alt', self.options.caption );
+				$img = self.parseHTML( '<img>' ).attr( 'src', data.thumburl ).attr( 'alt', self.options.caption );
 				self.$( '.image' ).append( $img );
 
 				if ( $img.prop( 'complete' ) ) {
@@ -182,7 +174,7 @@
 				self.adjustDetails();
 			} );
 
-			M.on( 'resize:throttled', $.proxy( this, '_positionImage' ) );
+			M.on( 'resize:throttled', this._positionImage.bind( this ) );
 		},
 
 		/**
@@ -194,15 +186,10 @@
 			this._positionImage();
 		},
 
-		/**
-		 * Close the overlay and prevent going back in browser's history
-		 * See T94188 & T94363.
-		 * @param {Object} ev Event Object
-		 */
-		onExit: function ( ev ) {
-			ev.preventDefault();
-			ev.stopPropagation();
-			window.location.hash = '';
+		// fixme: remove this redundant function.
+		onExitClick: function ( ev ) {
+			Overlay.prototype.onExitClick.apply( this, arguments );
+			this.emit( ImageOverlay.EVENT_EXIT, ev );
 		},
 
 		/** @inheritdoc */
@@ -219,12 +206,14 @@
 		 * @private
 		 */
 		_positionImage: function () {
-			var detailsHeight, windowWidth, windowHeight, windowRatio, $img;
+			var detailsHeight, windowWidth, windowHeight, windowRatio, $img,
+				$window = util.getWindow();
+
 			this.adjustDetails();
 			// with a hidden details box we have a little bit more space, we just need to use it
 			detailsHeight = !this.$details.is( ':visible' ) ? 0 : this.$details.outerHeight();
-			windowWidth = $( window ).width();
-			windowHeight = $( window ).height() - detailsHeight;
+			windowWidth = $window.width();
+			windowHeight = $window.height() - detailsHeight;
 			windowRatio = windowWidth / windowHeight;
 			$img = this.$( 'img' );
 
@@ -251,12 +240,17 @@
 		 * @method
 		 */
 		adjustDetails: function () {
-			var windowHeight = $( window ).height();
+			var windowHeight = util.getWindow().height();
 			if ( this.$( '.details' ).height() > windowHeight * 0.50 ) {
 				this.$( '.details' ).css( 'max-height', windowHeight * 0.50 );
 			}
 		}
 	} );
+	// fixme: remove this redundant constant.
+	/** @ignore @event ImageOverlay#ImageOverlay-exit */
+	ImageOverlay.EVENT_EXIT = 'ImageOverlay-exit';
+	/** @ignore @event ImageOverlay#ImageOverlay-slide */
+	ImageOverlay.EVENT_SLIDE = 'ImageOverlay-slide';
 	M.define( 'mobile.mediaViewer/ImageOverlay', ImageOverlay ); // resource-modules-disable-line
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

@@ -6,13 +6,15 @@ use Wikimedia\TestingAccessWrapper;
  * @group Cache
  * @covers MessageBlobStore
  */
-class MessageBlobStoreTest extends PHPUnit_Framework_TestCase {
+class MessageBlobStoreTest extends PHPUnit\Framework\TestCase {
+
+	use MediaWikiCoversValidator;
 
 	protected function setUp() {
 		parent::setUp();
 		// MediaWiki tests defaults $wgMainWANCache to CACHE_NONE.
 		// Use hash instead so that caching is observed
-		$this->wanCache = $this->getMockBuilder( 'WANObjectCache' )
+		$this->wanCache = $this->getMockBuilder( WANObjectCache::class )
 			->setConstructorArgs( [ [
 				'cache' => new HashBagOStuff(),
 				'pool' => 'test',
@@ -24,13 +26,17 @@ class MessageBlobStoreTest extends PHPUnit_Framework_TestCase {
 		$this->wanCache->expects( $this->any() )
 			->method( 'makePurgeValue' )
 			->will( $this->returnCallback( function ( $timestamp, $holdoff ) {
-				// Disable holdoff as it messes with testing
-				return WANObjectCache::PURGE_VAL_PREFIX . (float)$timestamp . ':0';
+				// Disable holdoff as it messes with testing. Aside from a 0-second holdoff,
+				// make sure that "time" passes between getMulti() check init and the set()
+				// in recacheMessageBlob(). This especially matters for Windows clocks.
+				$ts = (float)$timestamp - 0.0001;
+
+				return WANObjectCache::PURGE_VAL_PREFIX . $ts . ':0';
 			} ) );
 	}
 
 	protected function makeBlobStore( $methods = null, $rl = null ) {
-		$blobStore = $this->getMockBuilder( 'MessageBlobStore' )
+		$blobStore = $this->getMockBuilder( MessageBlobStore::class )
 			->setConstructorArgs( [ $rl ] )
 			->setMethods( $methods )
 			->getMock();
@@ -200,12 +206,16 @@ class MessageBlobStoreTest extends PHPUnit_Framework_TestCase {
 			->method( 'fetchMessage' )
 			->will( $this->onConsecutiveCalls( 'First', 'Second' ) );
 
+		$now = microtime( true );
+		$this->wanCache->setMockTime( $now );
+
 		$blob = $blobStore->getBlob( $module, 'en' );
 		$this->assertEquals( '{"example":"First"}', $blob, 'Generated blob' );
 
 		$blob = $blobStore->getBlob( $module, 'en' );
 		$this->assertEquals( '{"example":"First"}', $blob, 'Cache-hit' );
 
+		$now += 1;
 		$blobStore->clear();
 
 		$blob = $blobStore->getBlob( $module, 'en' );

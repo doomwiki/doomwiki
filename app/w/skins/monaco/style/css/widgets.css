@@ -78,37 +78,37 @@ body.widgetsAddingBlocked .add {
 
 .widget .widgetMore
 {
-    padding: 5px 0;
-    text-align: right;
-    text-transform: lowercase;
+	padding: 5px 0;
+	text-align: right;
+	text-transform: lowercase;
 }
 
 .widget_loading
 {
-    height: 30px;
-    background-image: url('../images/ajax.gif');
-    background-position: 50% 50%;
-    background-repeat: no-repeat;
+	height: 30px;
+	background-image: url('../images/ajax.gif');
+	background-position: 50% 50%;
+	background-repeat: no-repeat;
 }
 
 .widget form label {
-    display: inline;
+	display: inline;
 }
 
 /*.widget form input {
-    margin: 3px 0;
-    width: 170px;
+	margin: 3px 0;
+	width: 170px;
 }
 
 .widget form select {
-    margin: 3px 0;
-    width: 180px;
+	margin: 3px 0;
+	width: 180px;
 }*/
 
 .widget form input.checkbox,
 .widget form input.editor_button {
-    width: auto;
-    margin: 0 3px;
+	width: auto;
+	margin: 0 3px;
 }
 
 /*** SEARCH/NAVIGATION ***/
@@ -122,8 +122,8 @@ body.widgetsAddingBlocked .add {
 }
 #searchform {
 	background-color: #FFF;
-      	background-image: -moz-linear-gradient(top, #BFBFBF 0%, #FFF 40%);
-      	background-image: -webkit-gradient(linear, 0% 0%, 0% 40%, from(#BFBFBF), to(#FFF));
+	background-image: -moz-linear-gradient(top, #BFBFBF 0%, #FFF 40%);
+	background-image: -webkit-gradient(linear, 0% 0%, 0% 40%, from(#BFBFBF), to(#FFF));
 	border: 1px solid #039;
 	-moz-border-radius: 5px;
 	-khtml-border-radius: 5px;
@@ -141,7 +141,7 @@ body.widgetsAddingBlocked .add {
 	padding: 0 3px 0 3px;
 	width: 164px;
 }
-#searchInput:focus { 
+#searchInput:focus {
 	box-shadow: none;
 }
 #searchInput.placeholder { color: gray }

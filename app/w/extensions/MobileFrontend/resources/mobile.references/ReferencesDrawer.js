@@ -1,5 +1,6 @@
-( function ( M, $ ) {
+( function ( M ) {
 	var Drawer = M.require( 'mobile.startup/Drawer' ),
+		util = M.require( 'mobile.startup/util' ),
 		icons = M.require( 'mobile.startup/icons' ),
 		ReferencesGateway = M.require( 'mobile.references.gateway/ReferencesGateway' ),
 		Icon = M.require( 'mobile.startup/Icon' );
@@ -20,7 +21,7 @@
 		 * @cfg {string} defaults.cancelButton HTML of the button that closes the drawer.
 		 * @cfg {boolean} defaults.error whether an error message is being shown
 		 */
-		defaults: $.extend( {}, Drawer.prototype.defaults, {
+		defaults: util.extend( {}, Drawer.prototype.defaults, {
 			spinner: icons.spinner().toHtmlString(),
 			cancelButton: new Icon( {
 				name: 'overlay-close-gray',
@@ -28,6 +29,7 @@
 				label: mw.msg( 'mobile-frontend-overlay-close' )
 			} ).toHtmlString(),
 			citation: new Icon( {
+				isSmall: true,
 				name: 'citation',
 				additionalClassNames: 'text',
 				hasText: true,
@@ -56,7 +58,7 @@
 		 * @inheritdoc
 		 */
 		postRender: function () {
-			var windowHeight = $( window ).height();
+			var windowHeight = util.getWindow().height();
 
 			Drawer.prototype.postRender.apply( this );
 
@@ -65,26 +67,27 @@
 				this.$el.css( 'max-height', windowHeight / 2 );
 			}
 
-			this.on( 'show', $.proxy( this, 'onShow' ) );
-			this.on( 'hide', $.proxy( this, 'onHide' ) );
+			this.on( 'show', this.onShow.bind( this ) );
+			this.on( 'hide', this.onHide.bind( this ) );
 		},
 		/**
 		 * Make body not scrollable
 		 */
 		onShow: function () {
-			$( 'body' ).addClass( 'drawer-enabled' );
+			util.getDocument().find( 'body' ).addClass( 'drawer-enabled' );
 		},
 		/**
 		 * Restore body scroll
 		 */
 		onHide: function () {
-			$( 'body' ).removeClass( 'drawer-enabled' );
+			util.getDocument().find( 'body' ).removeClass( 'drawer-enabled' );
 		},
 		/**
 		 * Fetch and render nested reference upon click
 		 * @param {string} id of the reference to be retrieved
 		 * @param {Page} page to locate reference for
 		 * @param {string} refNumber the number it identifies as in the page
+		 * @return {jQuery.Deferred}
 		 */
 		showReference: function ( id, page, refNumber ) {
 			var drawer = this,
@@ -94,14 +97,13 @@
 			this.options.page = page;
 			// If API is being used we want to show the drawer with the spinner while query runs
 			drawer.show();
-			gateway.getReference( id, page ).done( function ( reference ) {
+			return gateway.getReference( id, page ).then( function ( reference ) {
 				drawer.render( {
 					title: refNumber,
 					text: reference.text
 				} );
-			} ).fail( function ( err ) {
+			}, function ( err ) {
 				if ( err === ReferencesGateway.ERROR_NOT_EXIST ) {
-					window.location.hash = id;
 					drawer.hide();
 				} else {
 					drawer.render( {
@@ -127,4 +129,4 @@
 	} );
 
 	M.define( 'mobile.references/ReferencesDrawer', ReferencesDrawer ); // resource-modules-disable-line
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

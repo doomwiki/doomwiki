@@ -14,7 +14,8 @@
 			"Lokal Profil",
 			"Jenniesarina",
 			"Jopparn",
-			"McDutchie"
+			"McDutchie",
+			"Bengtsson96"
 		]
 	},
 	"checkuser-summary": "Det här verktyget söker igenom de senaste ändringarna för att hämta IP-adresser för en användare, eller redigeringar och användare för en IP-adress.\nAnvändare och redigeringar kan visas med IP-adress från XFF genom att lägga till \"/xff\" efter IP-adressen. Verktyget stödjer IPv4 (CIDR $1-32) och IPv6 (CIDR $2-128).\nPå grund av prestandaskäl så visas inte mer än 5000 redigeringar. Använd verktyget i enlighet med policy.",
@@ -50,6 +51,8 @@
 	"checkuser-nomatch": "Inga träffar hittades.",
 	"checkuser-nomatch-edits": "Fick ingen träff.\nSenaste redigering var $1 kl $2.",
 	"checkuser-check": "Kontrollera",
+	"checkuser-check-this-user": "Granska den här användaren",
+	"checkuser-recent-checks": "Senaste kontroller för denna användare",
 	"checkuser-log-fail": "Loggposten kunde inte läggas i loggfilen.",
 	"checkuser-nolog": "Hittade ingen loggfil.",
 	"checkuser-blocked": "Blockerad",
@@ -88,8 +91,6 @@
 	"checkuser-create-action": "skapades",
 	"checkuser-email-action": "skickade ett mejl till användare \"$1\"",
 	"checkuser-reset-action": "återställ lösenord för användare \"$1\"",
-	"checkuser-userlinks-ip": "([[User_talk:$1|diskussion]] | [[Special:Contributions/$1|bidrag]] | [[Special:Block/$1|blockera]] | <span class=\"plainlinks\">[https://www.robtex.com/whois/$1.html WHOIS/RDNS]</span>)",
-	"checkuser-userlinks": "([[User_talk:$1|diskussion]] | [[Special:Contributions/$1|bidrag]] | [[Special:Block/$1|blockera]])",
 	"checkuser-token-fail": "Session misslyckande. Var god försök igen.",
 	"apihelp-query+checkuser-description": "Kontrollera vilka IP-adresser som används av ett visst användarnamn eller vilka användarnamn som används av en viss IP-adress.",
 	"apihelp-query+checkuser-param-request": "Typ av CheckUser begäran:\n;userips:Få IP-adresser för målanvändaren.\n;edits:Få ändringar från mål-IP-adresser eller -intervall.\n;ipusers:Få användare från mål-IP-adresser eller -intervall.",

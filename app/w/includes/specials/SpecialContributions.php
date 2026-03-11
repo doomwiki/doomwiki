@@ -21,6 +21,7 @@
  * @ingroup SpecialPage
  */
 
+use MediaWiki\MediaWikiServices;
 use MediaWiki\Widget\DateInputWidget;
 
 /**
@@ -39,14 +40,12 @@ class SpecialContributions extends IncludableSpecialPage {
 		$this->setHeaders();
 		$this->outputHeader();
 		$out = $this->getOutput();
+		// Modules required for viewing the list of contributions (also when included on other pages)
 		$out->addModuleStyles( [
 			'mediawiki.special',
 			'mediawiki.special.changeslist',
-			'mediawiki.widgets.DateInputWidget.styles',
 		] );
-		$out->addModules( 'mediawiki.special.contributions' );
 		$this->addHelpLink( 'Help:User contributions' );
-		$out->enableOOUI();
 
 		$this->opts = [];
 		$request = $this->getRequest();
@@ -82,21 +81,39 @@ class SpecialContributions extends IncludableSpecialPage {
 		$this->opts['newOnly'] = $request->getBool( 'newOnly' );
 		$this->opts['hideMinor'] = $request->getBool( 'hideMinor' );
 
-		$nt = Title::makeTitleSafe( NS_USER, $target );
-		if ( !$nt ) {
-			$out->addHTML( $this->getForm() );
+		$id = 0;
+		if ( $this->opts['contribs'] === 'newbie' ) {
+			$userObj = User::newFromName( $target ); // hysterical raisins
+			$out->addSubtitle( $this->msg( 'sp-contributions-newbies-sub' ) );
+			$out->setHTMLTitle( $this->msg(
+				'pagetitle',
+				$this->msg( 'sp-contributions-newbies-title' )->plain()
+			)->inContentLanguage() );
+		} elseif ( ExternalUserNames::isExternal( $target ) ) {
+			$userObj = User::newFromName( $target, false );
+			if ( !$userObj ) {
+				$out->addHTML( $this->getForm() );
+				return;
+			}
 
-			return;
-		}
-		$userObj = User::newFromName( $nt->getText(), false );
-		if ( !$userObj ) {
-			$out->addHTML( $this->getForm() );
+			$out->addSubtitle( $this->contributionsSub( $userObj ) );
+			$out->setHTMLTitle( $this->msg(
+				'pagetitle',
+				$this->msg( 'contributions-title', $target )->plain()
+			)->inContentLanguage() );
+		} else {
+			$nt = Title::makeTitleSafe( NS_USER, $target );
+			if ( !$nt ) {
+				$out->addHTML( $this->getForm() );
+				return;
+			}
+			$userObj = User::newFromName( $nt->getText(), false );
+			if ( !$userObj ) {
+				$out->addHTML( $this->getForm() );
+				return;
+			}
+			$id = $userObj->getId();
 
-			return;
-		}
-		$id = $userObj->getId();
-
-		if ( $this->opts['contribs'] != 'newbie' ) {
 			$target = $nt->getText();
 			$out->addSubtitle( $this->contributionsSub( $userObj ) );
 			$out->setHTMLTitle( $this->msg(
@@ -106,15 +123,17 @@ class SpecialContributions extends IncludableSpecialPage {
 
 			# For IP ranges, we want the contributionsSub, but not the skin-dependent
 			# links under 'Tools', which may include irrelevant links like 'Logs'.
-			if ( !IP::isValidRange( $target ) ) {
+			if ( !IP::isValidRange( $target ) &&
+				( User::isIP( $target ) || $userObj->isLoggedIn() )
+			) {
+				// Don't add non-existent users, because hidden users
+				// that we add here will be removed later to pretend
+				// that they don't exist, and if users that actually don't
+				// exist are added here and then not removed, it exposes
+				// which users exist and are hidden vs. which actually don't
+				// exist. But, do set the relevant user for single IPs.
 				$this->getSkin()->setRelevantUser( $userObj );
 			}
-		} else {
-			$out->addSubtitle( $this->msg( 'sp-contributions-newbies-sub' ) );
-			$out->setHTMLTitle( $this->msg(
-				'pagetitle',
-				$this->msg( 'sp-contributions-newbies-title' )->plain()
-			)->inContentLanguage() );
 		}
 
 		$ns = $request->getVal( 'namespace', null );
@@ -216,22 +235,43 @@ class SpecialContributions extends IncludableSpecialPage {
 				$limits = $this->getConfig()->get( 'RangeContributionsCIDRLimit' );
 				$limit = $limits[ IP::isIPv4( $target ) ? 'IPv4' : 'IPv6' ];
 				$out->addWikiMsg( 'sp-contributions-outofrange', $limit );
-			} elseif ( !$pager->getNumRows() ) {
-				$out->addWikiMsg( 'nocontribs', $target );
 			} else {
-				# Show a message about replica DB lag, if applicable
-				$lag = wfGetLB()->safeGetLag( $pager->getDatabase() );
-				if ( $lag > 0 ) {
-					$out->showLagWarning( $lag );
+				// @todo We just want a wiki ID here, not a "DB domain", but
+				// current status of MediaWiki conflates the two. See T235955.
+				$poolKey = WikiMap::getCurrentWikiDbDomain() . ':SpecialContributions:';
+				if ( $this->getUser()->isAnon() ) {
+					$poolKey .= 'a:' . $this->getUser()->getName();
+				} else {
+					$poolKey .= 'u:' . $this->getUser()->getId();
 				}
+				$work = new PoolCounterWorkViaCallback( 'SpecialContributions', $poolKey, [
+					'doWork' => function () use ( $pager, $out, $target ) {
+						if ( !$pager->getNumRows() ) {
+							$out->addWikiMsg( 'nocontribs', $target );
+						} else {
+							# Show a message about replica DB lag, if applicable
+							$lag = $pager->getDatabase()->getSessionLagStatus()['lag'];
+							if ( $lag > 0 ) {
+								$out->showLagWarning( $lag );
+							}
 
-				$output = $pager->getBody();
-				if ( !$this->including() ) {
-					$output = '<p>' . $pager->getNavigationBar() . '</p>' .
-						$output .
-						'<p>' . $pager->getNavigationBar() . '</p>';
-				}
-				$out->addHTML( $output );
+							$output = $pager->getBody();
+							if ( !$this->including() ) {
+								$output = $pager->getNavigationBar() .
+									$output .
+									$pager->getNavigationBar();
+							}
+							$out->addHTML( $output );
+						}
+					},
+					'error' => function () use ( $out ) {
+						$msg = $this->getUser()->isAnon()
+							? 'sp-contributions-concurrency-ip'
+							: 'sp-contributions-concurrency-user';
+						$out->wrapWikiMsg( "<div class='errorbox'>\n$1\n</div>", $msg );
+					}
+				] );
+				$work->execute();
 			}
 
 			$out->preventClickjacking( $pager->getPreventClickjacking() );
@@ -246,7 +286,10 @@ class SpecialContributions extends IncludableSpecialPage {
 			} elseif ( $userObj->isAnon() ) {
 				// No message for non-existing users
 				$message = '';
+			} elseif ( $userObj->isHidden() && !$this->getUser()->isAllowed( 'hideuser' ) ) {
+				$message = '';
 			} else {
+				// Not hidden, or hidden but the viewer can still see it
 				$message = 'sp-contributions-footer';
 			}
 
@@ -270,7 +313,14 @@ class SpecialContributions extends IncludableSpecialPage {
 	 * Could be combined.
 	 */
 	protected function contributionsSub( $userObj ) {
-		if ( $userObj->isAnon() ) {
+		$isAnon = $userObj->isAnon();
+		if ( !$isAnon && $userObj->isHidden() && !$this->getUser->isAllowed( 'hideuser' ) ) {
+			// T120883 if the user is hidden and the viewer cannot see hidden
+			// users, pretend like it does not exist at all.
+			$isAnon = true;
+		}
+
+		if ( $isAnon ) {
 			// Show a warning message that the user being searched for doesn't exists.
 			// User::isIP returns true for IP address and usemod IPs like '123.123.123.xxx',
 			// but returns false for IP ranges. We don't want to suggest either of these are
@@ -495,6 +545,14 @@ class SpecialContributions extends IncludableSpecialPage {
 			$this->opts['hideMinor'] = false;
 		}
 
+		// Modules required only for the form
+		$this->getOutput()->addModules( [
+			'mediawiki.userSuggest',
+			'mediawiki.special.contributions',
+		] );
+		$this->getOutput()->addModuleStyles( 'mediawiki.widgets.DateInputWidget.styles' );
+		$this->getOutput()->enableOOUI();
+
 		$form = Html::openElement(
 			'form',
 			[
@@ -541,8 +599,6 @@ class SpecialContributions extends IncludableSpecialPage {
 		} else {
 			$filterSelection = Html::rawElement( 'div', [], '' );
 		}
-
-		$this->getOutput()->addModules( 'mediawiki.userSuggest' );
 
 		$labelNewbies = Xml::radioLabel(
 			$this->msg( 'sp-contributions-newbies' )->text(),

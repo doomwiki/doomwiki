@@ -246,7 +246,7 @@ class MobileContextTest extends MediaWikiTestCase {
 	/**
 	 * A null title shouldn't result in a fatal exception - bug T142914
 	 * @covers MobileContext::shouldDisplayMobileView
-	 * @covers MobileContext::useFormat
+	 * @covers MobileContext::setUseFormat
 	 */
 	public function testRedirectMobileEnabledPages() {
 		$this->setMwGlobals( [
@@ -521,7 +521,7 @@ class MobileContextTest extends MediaWikiTestCase {
 				'', ''
 			],
 			/*
-		    FIXME: works locally but fails in Jerkins
+			FIXME: works locally but fails in Jerkins
 			array( 'Main Page', '/?mobileaction=toggle_view_desktop',
 				$token, 'http://en.wikipedia.org/wiki/Main_Page'
 			),
@@ -548,12 +548,13 @@ class MobileContextTest extends MediaWikiTestCase {
 			array( 'Page', '/wiki/index.php?title=Page&mobileaction=toggle_view_mobile',
 				$token, 'http://en.m.wikipedia.org/wiki/Page',
 			),
-		    */
+			*/
 		];
 	}
 
 	/**
 	 * @codeCoverageIgnore
+	 * @coversNothing
 	 */
 	public function testBug71329() {
 		SpecialPageFactory::resetList();
@@ -570,49 +571,9 @@ class MobileContextTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @dataProvider provideGetConfigVariable
-	 * @covers MobileContext::getConfigVariable
-	 */
-	public function testGetConfigVariable(
-		$expected,
-		$madeUpConfigVariable,
-		$mobileMode = MobileContext::MODE_STABLE
-	) {
-		$this->setMwGlobals( [
-			'wgMFEnableBeta' => true,
-			'wgMFMadeUpConfigVariable' => $madeUpConfigVariable
-		] );
-
-		$context = MobileContext::singleton();
-		$context->setMobileMode( $mobileMode );
-
-		$this->assertEquals(
-			$expected,
-			$context->getConfigVariable( 'MFMadeUpConfigVariable' )
-		);
-	}
-
-	public static function provideGetConfigVariable() {
-		$madeUpConfigVariable = [
-			'beta' => 'bar',
-			'base' => 'foo',
-		];
-
-		return [
-			[ 'foo', $madeUpConfigVariable, MobileContext::MODE_STABLE ],
-			[ 'bar', $madeUpConfigVariable, MobileContext::MODE_BETA ],
-
-			[ null, [ 'alpha' => 'baz' ] ],
-
-			// When the config variable isn't an array, then its value is returned
-			// regardless of whether the user is a member of the beta group.
-			[ true, true ],
-		];
-	}
-
-	/**
 	 * @dataProvider provideShouldStripResponsiveImages
 	 * @covers MobileContext::shouldStripResponsiveImages
+	 * @covers MobileContext::setForceMobileView
 	 */
 	public function testShouldStripResponsiveImages(
 		$expected,

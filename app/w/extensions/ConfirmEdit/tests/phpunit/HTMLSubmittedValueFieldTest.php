@@ -2,7 +2,10 @@
 
 require_once __DIR__ . '/../../ReCaptcha/HTMLSubmittedValueField.php';
 
-class HTMLSubmittedValueFieldTest extends PHPUnit_Framework_TestCase {
+/**
+ * @covers HTMLSubmittedValueField
+ */
+class HTMLSubmittedValueFieldTest extends PHPUnit\Framework\TestCase {
 	public function testSubmit() {
 		$form = new HTMLForm( [
 			'foo' => [
@@ -14,7 +17,8 @@ class HTMLSubmittedValueFieldTest extends PHPUnit_Framework_TestCase {
 			'foo' => '123',
 			'bar' => '456',
 		], true );
-		$mockClosure = $this->getMockBuilder( 'object' )->setMethods( [ '__invoke' ] )->getMock();
+		$mockClosure = $this->getMockBuilder( stdClass::class )
+			->setMethods( [ '__invoke' ] )->getMock();
 		$mockClosure->expects( $this->once() )->method( '__invoke' )
 			->with( [ 'foo' => '456' ] )->willReturn( true );
 

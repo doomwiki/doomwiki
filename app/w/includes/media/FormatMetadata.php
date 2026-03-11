@@ -270,8 +270,13 @@ class FormatMetadata extends ContextSource {
 
 					// TODO: YCbCrCoefficients  #p27 (see annex E)
 					case 'ExifVersion':
-					case 'FlashpixVersion':
-						$val = "$val" / 100;
+					// PHP likes to be the odd one out with casing of FlashPixVersion;
+					// https://www.exif.org/Exif2-2.PDF#page=32 and
+					// https://www.digitalgalen.net/Documents/External/XMP/XMPSpecificationPart2.pdf#page=51
+					// both use FlashpixVersion. However, since at least 2002, PHP has used FlashPixVersion at
+					// https://github.com/php/php-src/blame/master/ext/exif/exif.c#L725
+					case 'FlashPixVersion':
+						$val = (int)$val / 100;
 						break;
 
 					case 'ColorSpace':
@@ -740,8 +745,13 @@ class FormatMetadata extends ContextSource {
 
 					case 'Software':
 						if ( is_array( $val ) ) {
-							// if its a software, version array.
-							$val = $this->msg( 'exif-software-version-value', $val[0], $val[1] )->text();
+							if ( count( $val ) > 1 ) {
+								// if its a software, version array.
+								$val = $this->msg( 'exif-software-version-value', $val[0], $val[1] )->text();
+							} else {
+								// https://phabricator.wikimedia.org/T178130
+								$val = $this->exifMsg( $tag, '', $val[0] );
+							}
 						} else {
 							$val = $this->exifMsg( $tag, '', $val );
 						}
@@ -1395,11 +1405,16 @@ class FormatMetadata extends ContextSource {
 	 * Format a coordinate value, convert numbers from floating point
 	 * into degree minute second representation.
 	 *
-	 * @param int $coord Degrees, minutes and seconds
-	 * @param string $type Latitude or longitude (for if its a NWS or E)
-	 * @return mixed A floating point number or whatever we were fed
+	 * @param float|string $coord Expected to be a number or numeric string in degrees
+	 * @param string $type "latitude" or "longitude"
+	 * @return string
 	 */
 	private function formatCoords( $coord, $type ) {
+		if ( !is_numeric( $coord ) ) {
+			wfDebugLog( 'exif', __METHOD__ . ": \"$coord\" is not a number" );
+			return (string)$coord;
+		}
+
 		$ref = '';
 		if ( $coord < 0 ) {
 			$nCoord = -$coord;
@@ -1409,7 +1424,7 @@ class FormatMetadata extends ContextSource {
 				$ref = 'W';
 			}
 		} else {
-			$nCoord = $coord;
+			$nCoord = (float)$coord;
 			if ( $type === 'latitude' ) {
 				$ref = 'N';
 			} elseif ( $type === 'longitude' ) {
@@ -1418,13 +1433,14 @@ class FormatMetadata extends ContextSource {
 		}
 
 		$deg = floor( $nCoord );
-		$min = floor( ( $nCoord - $deg ) * 60.0 );
-		$sec = round( ( ( $nCoord - $deg ) - $min / 60 ) * 3600, 2 );
+		$min = floor( ( $nCoord - $deg ) * 60 );
+		$sec = round( ( ( $nCoord - $deg ) * 60 - $min ) * 60, 2 );
 
 		$deg = $this->formatNum( $deg );
 		$min = $this->formatNum( $min );
 		$sec = $this->formatNum( $sec );
 
+		// Note the default message "$1° $2′ $3″ $4" ignores the 5th parameter
 		return $this->msg( 'exif-coordinate-format', $deg, $min, $sec, $ref, $coord )->text();
 	}
 
@@ -1761,9 +1777,9 @@ class FormatMetadata extends ContextSource {
 			}
 			return $newValue;
 		} else { // _type is 'ul' or 'ol' or missing in which case it defaults to 'ul'
-			list( $k, $v ) = each( $value );
-			if ( $k === '_type' ) {
-				$v = current( $value );
+			$v = reset( $value );
+			if ( key( $value ) === '_type' ) {
+				$v = next( $value );
 			}
 			return $v;
 		}
@@ -1854,9 +1870,9 @@ class FormatMetadata extends ContextSource {
 		// drop all characters which are not valid in an XML tag name
 		// a bunch of non-ASCII letters would be valid but probably won't
 		// be used so we take the easy way
-		$key = preg_replace( '/[^a-zA-z0-9_:.-]/', '', $key );
+		$key = preg_replace( '/[^a-zA-z0-9_:.\-]/', '', $key );
 		// drop characters which are invalid at the first position
-		$key = preg_replace( '/^[\d-.]+/', '', $key );
+		$key = preg_replace( '/^[\d\-.]+/', '', $key );
 
 		if ( $key == '' ) {
 			$key = '_';

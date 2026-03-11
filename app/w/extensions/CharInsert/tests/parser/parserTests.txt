@@ -1,0 +1,10 @@
+!! hooks
+charinsert
+!! test
+basic charinsert usage
+!! input
+<charinsert>Σ</charinsert>
+!! result
+<p><a data-mw-charinsert-start="Σ" data-mw-charinsert-end="" class="mw-charinsert-item">Σ</a>
+</p>
+!! end

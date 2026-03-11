@@ -70,7 +70,7 @@
 	} );
 
 	QUnit.test( 'show redirect targets', function ( assert ) {
-		return this.gateway.search( 'barack' ).done( function ( response ) {
+		return this.gateway.search( 'barack' ).then( function ( response ) {
 			assert.strictEqual( response.query, 'barack' );
 			assert.strictEqual( response.results.length, 2 );
 			assert.strictEqual( response.results[ 0 ].displayTitle, 'Claude Monet' );
@@ -90,18 +90,14 @@
 							ns: 0,
 							title: 'Brad Pitt',
 							index: 2,
-							terms: {
-								description: [ 'American actor' ]
-							}
+							description: 'American actor'
 						},
 						4: {
 							pageid: 4,
 							ns: 0,
 							title: 'Bradley Cooper',
 							index: 3,
-							terms: {
-								description: [ 'American actor and film producer' ]
-							}
+							description: 'American actor and film producer'
 						},
 						5: {
 							pageid: 5,

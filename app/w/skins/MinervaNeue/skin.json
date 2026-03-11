@@ -1,17 +1,24 @@
 {
 	"AutoloadClasses": {
-		"MinervaHooks": "includes/Minerva.hooks.php",
+		"MinervaResourceLoaderParsedMessageModule": "includes/MinervaResourceLoaderParsedMessageModule.php",
+		"MinervaUI": "includes/MinervaUI.php",
+		"MinervaHooks": "includes/MinervaHooks.php",
 		"MinervaTemplate": "includes/skins/MinervaTemplate.php",
 		"SkinMinerva": "includes/skins/SkinMinerva.php",
+		"SkinMinervaNeue": "includes/skins/SkinMinerva.php",
 		"ICustomizableSkin": "includes/skins/ICustomizableSkin.php",
 		"MediaWiki\\Minerva\\MenuBuilder": "includes/skins/MenuBuilder.php",
 		"MediaWiki\\Minerva\\MenuEntry": "includes/skins/MenuBuilder.php",
+		"MediaWiki\\Minerva\\ResourceLoaderLessVarFileModule": "includes/ResourceLoaderLessVarFileModule.php",
 		"MediaWiki\\Minerva\\SkinUserPageHelper": "includes/skins/SkinUserPageHelper.php"
 	},
 	"ConfigRegistry": {
 		"minerva": "GlobalVarConfig::newInstance"
 	},
 	"Hooks": {
+		"MobileFrontendFeaturesRegistration": [
+			"MinervaHooks::onMobileFrontendFeaturesRegistration"
+		],
 		"RequestContextCreateSkinMobile": [
 			"MinervaHooks::onRequestContextCreateSkinMobile"
 		],
@@ -20,9 +27,6 @@
 		],
 		"SpecialPageBeforeExecute": [
 			"MinervaHooks::onSpecialPageBeforeExecute"
-		],
-		"ResourceLoaderGetLessVars": [
-			"MinervaHooks::onResourceLoaderGetLessVars"
 		]
 	},
 	"MessagesDirs": {
@@ -36,6 +40,9 @@
 	},
 	"ResourceModuleSkinStyles": {
 		"minerva": {
+			"mobile.special.mobileoptions.styles": [
+				"skinStyles/mobile.special.mobileoptions.styles/minerva.less"
+			],
 			"mediawiki.special.userlogin.common.styles": [
 				"skinStyles/mediawiki.special.userlogin.common.styles/minerva.less"
 			],
@@ -74,9 +81,6 @@
 			"mediawiki.special.preferences.styles": [
 				"skinStyles/mediawiki.special.preferences.styles/styles.less"
 			],
-			"mobile.pointerOverlay": [
-				"skinStyles/mobile.pointerOverlay/minerva.less"
-			],
 			"mobile.search": [
 				"skinStyles/mobile.search/SearchOverlay.less"
 			],
@@ -91,7 +95,6 @@
 				"mobile",
 				"desktop"
 			],
-			"position": "top",
 			"styles": [
 				"resources/skins.minerva.base.reset/reset.less"
 			]
@@ -101,42 +104,46 @@
 				"mobile",
 				"desktop"
 			],
-			"position": "top",
 			"styles": [
 				"resources/skins.minerva.base.styles/ui.less",
 				"resources/skins.minerva.base.styles/pageactions.less",
 				"resources/skins.minerva.base.styles/common.less",
-				"resources/skins.minerva.base.styles/icons.less",
 				"resources/skins.minerva.base.styles/images.less",
 				"resources/skins.minerva.base.styles/footer.less",
 				"resources/skins.minerva.base.styles/print/styles.less"
 			]
 		},
 		"skins.minerva.content.styles": {
+			"class": "MediaWiki\\Minerva\\ResourceLoaderLessVarFileModule",
 			"targets": [
 				"mobile",
 				"desktop"
 			],
-			"position": "top",
 			"styles": [
 				"resources/skins.minerva.content.styles/styles.less"
 			]
 		},
 		"skins.minerva.tablet.styles": {
+			"class": "MediaWiki\\Minerva\\ResourceLoaderLessVarFileModule",
 			"targets": [
 				"mobile",
 				"desktop"
 			],
-			"position": "top",
 			"styles": [
 				"resources/skins.minerva.tablet.styles/styles.less"
 			]
 		},
+		"skins.minerva.icons.loggedin": {
+			"class": "ResourceLoaderImageModule",
+			"selector": ".mw-ui-icon-minerva-{name}:before",
+			"images": {
+				"notifications": "resources/skins.minerva.icons.loggedin/bell.svg"
+			}
+		},
 		"skins.minerva.icons.images": {
 			"class": "ResourceLoaderImageModule",
-			"selector": ".mw-ui-icon-{name}:before",
+			"selector": ".mw-ui-icon-minerva-{name}:before",
 			"images": {
-				"notifications": "resources/skins.minerva.icons.images/bell.svg",
 				"mainmenu": "resources/skins.minerva.icons.images/hamburger.svg",
 				"edit": "resources/skins.minerva.icons.images/editLocked.svg",
 				"edit-enabled": "resources/skins.minerva.icons.images/edit.svg",
@@ -145,33 +152,36 @@
 			}
 		},
 		"skins.minerva.icons.images.variants": {
-			"selectorWithoutVariant": ".mw-ui-icon-{name}:before",
-			"selectorWithVariant": ".mw-ui-icon-{name}-{variant}:before",
+			"selectorWithoutVariant": ".mw-ui-icon-minerva-{name}:before",
+			"selectorWithVariant": ".mw-ui-icon-minerva-{name}-{variant}:before",
 			"class": "ResourceLoaderImageModule",
 			"variants": {
 				"gray": {
-					"color": "#BBB",
+					"color": "#54595d",
 					"global": true
 				},
 				"invert": {
-					"color": "#FFF",
+					"color": "#fff",
 					"global": true
 				}
 			},
 			"images": {
-				"clock": "resources/skins.minerva.icons.images.variants/clock.svg",
-				"arrow": "resources/skins.minerva.icons.images.variants/arrow.svg"
+				"clock": "resources/skins.minerva.icons.images.variants/clock.svg"
 			}
 		},
 		"skins.minerva.icons.images.scripts": {
 			"class": "ResourceLoaderImageModule",
-			"selector": ".mw-ui-icon-{name}:before",
-			"position": "bottom",
+			"selector": ".mw-ui-icon-minerva-{name}:before",
 			"images": {
-				"watch": "resources/skins.minerva.icons.images.scripts/watch.svg",
-				"watched": "resources/skins.minerva.icons.images.scripts/watched.svg",
-				"user": "resources/skins.minerva.icons.images.scripts/userNormal.svg",
-				"anonymous": "resources/skins.minerva.icons.images.scripts/userAnonymous.svg"
+				"issue-speedy": "resources/skins.minerva.icons.images.scripts/issue-speedy.svg",
+				"issue-delete": "resources/skins.minerva.icons.images.scripts/issue-delete.svg",
+				"issue-protection": "resources/skins.minerva.icons.images.scripts/issue-protection.svg",
+				"issue-default": "resources/skins.minerva.icons.images.scripts/issue-default.svg",
+				"issue-pov": "resources/skins.minerva.icons.images.scripts/issue-pov.svg",
+				"issue-style": "resources/skins.minerva.icons.images.scripts/issue-style.svg",
+				"issue-content": "resources/skins.minerva.icons.images.scripts/issue-content.svg",
+				"issue-move": "resources/skins.minerva.icons.images.scripts/issue-move.svg",
+				"download": "resources/skins.minerva.icons.images.scripts/download.svg"
 			}
 		},
 		"skins.minerva.mainPage.styles": {
@@ -179,17 +189,15 @@
 				"mobile",
 				"desktop"
 			],
-			"position": "top",
 			"styles": [
 				"resources/skins.minerva.mainPage.styles/common.less"
 			]
 		},
 		"skins.minerva.userpage.icons": {
 			"class": "ResourceLoaderImageModule",
-			"selector": ".mw-ui-icon-{name}:before",
+			"selector": ".mw-ui-icon-mf-{name}:before",
 			"images": {
-				"talk": "resources/skins.minerva.userpage.icons/talk.svg",
-				"userpage": "resources/skins.minerva.userpage.icons/userpage.svg"
+				"talk": "resources/skins.minerva.userpage.icons/talk.svg"
 			}
 		},
 		"skins.minerva.userpage.styles": {
@@ -203,9 +211,9 @@
 		},
 		"skins.minerva.mainMenu.icons": {
 			"class": "ResourceLoaderImageModule",
-			"selector": ".mw-ui-icon-mf-{name}:before",
+			"selector": ".mw-ui-icon-minerva-{name}:before",
 			"images": {
-				"anonymous": "resources/skins.minerva.mainMenu.icons/anonymous.svg",
+				"login": "resources/skins.minerva.mainMenu.icons/login.svg",
 				"home": "resources/skins.minerva.mainMenu.icons/home.svg",
 				"logout": "resources/skins.minerva.mainMenu.icons/logout.svg",
 				"nearby": "resources/skins.minerva.mainMenu.icons/nearby.svg",
@@ -233,10 +241,8 @@
 			"dependencies": [
 				"skins.minerva.mainMenu.icons",
 				"skins.minerva.mainMenu.styles",
-				"mobile.startup",
-				"mobile.loggingSchemas.mobileWebMainMenuClickTracking"
+				"mobile.startup"
 			],
-			"position": "bottom",
 			"templates": {
 				"menu.hogan": "resources/skins.minerva.mainMenu/menu.mustache",
 				"menuGroup.hogan": "resources/skins.minerva.mainMenu/menuGroup.mustache"
@@ -245,12 +251,24 @@
 				"resources/skins.minerva.mainMenu/MainMenu.js"
 			]
 		},
+		"skins.minerva.loggedin.styles": {
+			"targets": [
+				"mobile",
+				"desktop"
+			],
+			"styles": [
+				"resources/skins.minerva.loggedin.styles/styles.less"
+			]
+		},
 		"skins.minerva.scripts": {
 			"targets": [
 				"mobile",
 				"desktop"
 			],
 			"dependencies": [
+				"jquery.cookie",
+				"mobile.init",
+				"skins.minerva.icons.images.scripts",
 				"skins.minerva.scripts.top",
 				"mediawiki.util",
 				"mediawiki.router",
@@ -260,10 +278,10 @@
 				"mobile.issues",
 				"mobile.search.api",
 				"mobile.search",
-				"mobile.references",
-				"mobile.betaoptin"
+				"mobile.references"
 			],
 			"messages": [
+				"edithelp",
 				"mobile-frontend-language-change",
 				"mobile-frontend-meta-data-issues",
 				"mobile-frontend-meta-data-issues-talk",
@@ -272,16 +290,21 @@
 				"mobile-frontend-meta-data-issues-header-talk",
 				"mobile-frontend-languages-not-available",
 				"mobile-frontend-cookies-required",
-				"mobile-frontend-console-recruit",
+				"minerva-download",
 				"mobile-frontend-redirected-from"
+			],
+			"styles": [
+				"resources/skins.minerva.scripts/styles.less"
 			],
 			"scripts": [
 				"resources/skins.minerva.scripts/preInit.js",
+				"resources/skins.minerva.scripts/DownloadIcon.js",
 				"resources/skins.minerva.scripts/init.js",
 				"resources/skins.minerva.scripts/initLogging.js",
 				"resources/skins.minerva.scripts/mobileRedirect.js",
 				"resources/skins.minerva.scripts/search.js",
 				"resources/skins.minerva.scripts/references.js",
+				"resources/skins.minerva.scripts/utils.js",
 				"resources/skins.minerva.scripts/cleanuptemplates.js"
 			]
 		},
@@ -290,7 +313,6 @@
 				"mobile",
 				"desktop"
 			],
-			"position": "top",
 			"dependencies": [
 				"skins.minerva.mainMenu"
 			],
@@ -303,21 +325,32 @@
 				"mobile",
 				"desktop"
 			],
+			"styles": [
+				"resources/skins.minerva.newusers/PointerOverlay.less"
+			],
+			"templates": {
+				"PointerOverlay.hogan": "resources/skins.minerva.newusers/PointerOverlay.hogan"
+			},
 			"dependencies": [
 				"skins.minerva.editor",
 				"mediawiki.util",
-				"mobile.pointerOverlay"
+				"mobile.startup"
 			],
 			"scripts": [
+				"resources/skins.minerva.newusers/PointerOverlay.js",
 				"resources/skins.minerva.newusers/init.js"
 			],
 			"messages": [
+				"minerva-pointer-dismiss",
 				"mobile-frontend-editor-tutorial-summary",
 				"mobile-frontend-editor-tutorial-confirm",
 				"mobile-frontend-editor-tutorial-cancel"
 			]
 		},
 		"skins.minerva.notifications.badge": {
+			"messages": [
+				"echo-badge-count"
+			],
 			"dependencies": [
 				"mediawiki.router",
 				"mobile.startup"
@@ -351,7 +384,7 @@
 			]
 		},
 		"skins.minerva.editor": {
-			"class": "MFResourceLoaderParsedMessageModule",
+			"class": "MinervaResourceLoaderParsedMessageModule",
 			"dependencies": [
 				"mediawiki.util",
 				"mediawiki.router",
@@ -360,8 +393,7 @@
 				"mediawiki.ui.input",
 				"mobile.startup",
 				"skins.minerva.toggling",
-				"mediawiki.jqueryMsg",
-				"mobile.loggingSchemas.edit"
+				"mediawiki.jqueryMsg"
 			],
 			"messages": {
 				"0": "mobile-frontend-editor-disabled",
@@ -383,16 +415,24 @@
 				"resources/skins.minerva.editor/init.js"
 			]
 		},
+
 		"skins.minerva.backtotop": {
 			"targets": [
 				"mobile",
 				"desktop"
 			],
 			"dependencies": [
-				"mobile.backtotop",
+				"mobile.toggle",
 				"mobile.startup"
 			],
+			"templates": {
+				"BackToTopOverlay.hogan": "resources/skins.minerva.backtotop/BackToTopOverlay.hogan"
+			},
+			"styles": [
+				"resources/skins.minerva.backtotop/backtotop.less"
+			],
 			"scripts": [
+				"resources/skins.minerva.backtotop/BackToTopOverlay.js",
 				"resources/skins.minerva.backtotop/init.js"
 			]
 		},
@@ -422,13 +462,10 @@
 			],
 			"scripts": [
 				"resources/skins.minerva.talk/init.js"
-			],
-			"messages": [
-				"minerva-talk-add-topic"
 			]
 		},
 		"skins.minerva.toggling": {
-			"class": "MFResourceLoaderParsedMessageModule",
+			"class": "MinervaResourceLoaderParsedMessageModule",
 			"dependencies": [
 				"mobile.toggle",
 				"skins.minerva.icons.images.variants",
@@ -452,18 +489,6 @@
 				"resources/skins.minerva.watchstar/init.js"
 			]
 		},
-		"skins.minerva.fontchanger": {
-			"targets": [
-				"mobile",
-				"desktop"
-			],
-			"dependencies": [
-				"mobile.startup"
-			],
-			"scripts": [
-				"resources/skins.minerva.fontchanger/init.js"
-			]
-		},
 		"skins.minerva.tablet.scripts": {
 			"targets": [
 				"mobile",
@@ -478,11 +503,11 @@
 		}
 	},
 	"ValidSkinNames": {
-		"minervaneue": "MinervaNeue",
-		"minerva": "Minerva"
+		"minerva": "MinervaNeue"
 	},
 	"author": [],
 	"config": {
+		"MinervaDownloadNamespaces": [ 0 ],
 		"MinervaEnableSiteNotice": false,
 		"MinervaCustomLogos": [],
 		"MinervaApplyKnownTemplateHacks": false,
@@ -494,27 +519,25 @@
 		],
 		"MinervaAlwaysShowLanguageButton": true,
 		"MinervaShowCategoriesButton": {
-			"base": false,
-			"beta": true
-		},
-		"MinervaEnableFontChanger": {
+			"prefix": "skin-minerva-",
 			"base": false,
 			"beta": true
 		},
 		"MinervaEnableBackToTop": {
+			"prefix": "skin-minerva-",
 			"base": false,
 			"beta": true
 		}
 	},
 	"descriptionmsg": "minerva-skin-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"manifest_version": 1,
 	"name": "MinervaNeue",
 	"namemsg": "skinname-minerva",
 	"requires": {
 		"MediaWiki": ">= 1.25.0",
 		"extensions": {
-			"MobileFrontend": ">= 2.0.0"
+			"MobileFrontend": ">= 2.1.0"
 		}
 	},
 	"type": "skin",

@@ -1,4 +1,4 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var PageList = M.require( 'mobile.startup/PageList' ),
 		Watchstar = M.require( 'mobile.watchstar/Watchstar' ),
@@ -54,7 +54,10 @@
 
 			// Check what we have in the page list
 			$li.each( function () {
-				pages.push( $( this ).data( 'id' ) );
+				var id = self.$( this ).data( 'id' );
+				if ( id ) {
+					pages.push( id );
+				}
 			} );
 
 			// Create watch stars for each entry in list
@@ -66,8 +69,8 @@
 							page = new Page( {
 								// FIXME: Set sections so we don't hit the api (hacky)
 								sections: [],
-								title: $( this ).attr( 'title' ),
-								id: $( this ).data( 'id' )
+								title: self.$( this ).attr( 'title' ),
+								id: self.$( this ).data( 'id' )
 							} );
 
 						watchstar = new Watchstar( {
@@ -76,21 +79,25 @@
 							isAnon: false,
 							isWatched: gateway.isWatchedPage( page ),
 							page: page,
-							el: $( '<div>' ).appendTo( this )
+							el: self.parseHTML( '<div>' ).appendTo( this )
 						} );
 
-						$( this ).addClass( 'with-watchstar' );
+						self.$( this ).addClass( 'with-watchstar' );
 
 						/**
 						 * @event watch
 						 * Fired when an article in the PageList is watched.
 						 */
-						watchstar.on( 'watch', $.proxy( self, 'emit', 'watch' ) );
+						watchstar.on( 'watch', function () {
+							self.emit( 'watch' );
+						} );
 						/**
 						 * @event unwatch
 						 * Fired when an article in the PageList is watched.
 						 */
-						watchstar.on( 'unwatch', $.proxy( self, 'emit', 'unwatch' ) );
+						watchstar.on( 'unwatch', function () {
+							self.emit( 'unwatch' );
+						} );
 					} );
 				} );
 			}
@@ -99,4 +106,4 @@
 
 	M.define( 'mobile.pagelist.scripts/WatchstarPageList', WatchstarPageList );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

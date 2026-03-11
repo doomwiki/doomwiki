@@ -209,7 +209,10 @@ final class Session implements \Countable, \Iterator, \ArrayAccess {
 	}
 
 	/**
-	 * Whether HTTPS should be forced
+	 * Get the expected value of the forceHTTPS cookie. This reflects whether
+	 * session cookies were sent with the Secure attribute. If $wgForceHTTPS
+	 * is true, the forceHTTPS cookie is not sent and this value is ignored.
+	 *
 	 * @return bool
 	 */
 	public function shouldForceHTTPS() {
@@ -217,7 +220,10 @@ final class Session implements \Countable, \Iterator, \ArrayAccess {
 	}
 
 	/**
-	 * Set whether HTTPS should be forced
+	 * Set the value of the forceHTTPS cookie. This reflects whether session
+	 * cookies were sent with the Secure attribute. If $wgForceHTTPS is true,
+	 * the forceHTTPS cookie is not sent, and this value is ignored.
+	 *
 	 * @param bool $force
 	 */
 	public function setForceHTTPS( $force ) {
@@ -621,31 +627,37 @@ final class Session implements \Countable, \Iterator, \ArrayAccess {
 	 * @{
 	 */
 
+	/** @inheritDoc */
 	public function count() {
 		$data = &$this->backend->getData();
 		return count( $data );
 	}
 
+	/** @inheritDoc */
 	public function current() {
 		$data = &$this->backend->getData();
 		return current( $data );
 	}
 
+	/** @inheritDoc */
 	public function key() {
 		$data = &$this->backend->getData();
 		return key( $data );
 	}
 
+	/** @inheritDoc */
 	public function next() {
 		$data = &$this->backend->getData();
 		next( $data );
 	}
 
+	/** @inheritDoc */
 	public function rewind() {
 		$data = &$this->backend->getData();
 		reset( $data );
 	}
 
+	/** @inheritDoc */
 	public function valid() {
 		$data = &$this->backend->getData();
 		return key( $data ) !== null;
@@ -678,10 +690,12 @@ final class Session implements \Countable, \Iterator, \ArrayAccess {
 		return $data[$offset];
 	}
 
+	/** @inheritDoc */
 	public function offsetSet( $offset, $value ) {
 		$this->set( $offset, $value );
 	}
 
+	/** @inheritDoc */
 	public function offsetUnset( $offset ) {
 		$this->remove( $offset );
 	}

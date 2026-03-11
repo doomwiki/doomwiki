@@ -1,7 +1,4 @@
 <?php
-/**
- * ApiMobileView.php
- */
 
 /**
  * Extends Api of MediaWiki with actions for mobile devices. For further information see
@@ -11,7 +8,7 @@ class ApiMobileView extends ApiBase {
 	/**
 	 * Increment this when changing the format of cached data
 	 */
-	const CACHE_VERSION = 8;
+	const CACHE_VERSION = 9;
 
 	/** @var boolean Saves whether redirects has to be followed or not */
 	private $followRedirects;
@@ -94,7 +91,8 @@ class ApiMobileView extends ApiBase {
 		$moduleName = $this->getModuleName();
 
 		if ( $this->offset === 0 && $this->maxlen === 0 ) {
-			$this->offset = -1; // Disable text splitting
+			// Disable text splitting
+			$this->offset = -1;
 		} elseif ( $this->maxlen === 0 ) {
 			$this->maxlen = PHP_INT_MAX;
 		}
@@ -247,7 +245,7 @@ class ApiMobileView extends ApiBase {
 		// https://bugzilla.wikimedia.org/show_bug.cgi?id=51586
 		// Inform ppl if the page is infested with LiquidThreads but that's the
 		// only thing we support about it.
-		if ( class_exists( 'LqtDispatch' ) && LqtDispatch::isLqtPage( $title ) ) {
+		if ( class_exists( \LqtDispatch::class ) && \LqtDispatch::isLqtPage( $title ) ) {
 			$resultObj->addValue( null, $moduleName,
 				[ 'liquidthreads' => true ]
 			);
@@ -270,25 +268,32 @@ class ApiMobileView extends ApiBase {
 	/**
 	 * Small wrapper around XAnalytics extension
 	 *
-	 * @see XAnalytics::addItem
+	 * @see \XAnalytics::addItem
 	 * @param string $name
 	 * @param string $value
 	 */
 	private function addXAnalyticsItem( $name, $value ) {
-		if ( is_callable( 'XAnalytics::addItem' ) ) {
-			XAnalytics::addItem( $name, $value );
+		if ( is_callable( [ \XAnalytics::class, 'addItem' ] ) ) {
+			\XAnalytics::addItem( $name, $value );
 		}
 	}
 
 	/**
 	 * Creates and validates a title
-	 * @param string $name
+	 * @param string $name Title content
 	 * @return Title
 	 */
 	protected function makeTitle( $name ) {
+		global $wgContLang;
 		$title = Title::newFromText( $name );
 		if ( !$title ) {
 			$this->dieWithError( [ 'apierror-invalidtitle', wfEscapeWikiText( $name ) ] );
+		}
+		$unconvertedTitle = $title->getPrefixedText();
+		$wgContLang->findVariantLink( $name, $title );
+		if ( $unconvertedTitle !== $title->getPrefixedText() ) {
+			$values = [ 'from' => $unconvertedTitle, 'to' => $title->getPrefixedText() ];
+			$this->getResult()->addValue( 'mobileview', 'converted', $values );
 		}
 		if ( $title->inNamespace( NS_FILE ) ) {
 			$this->file = $this->findFile( $title );
@@ -302,7 +307,7 @@ class ApiMobileView extends ApiBase {
 	/**
 	 * Wrapper that returns a page image for a given title
 	 *
-	 * @param Title $title
+	 * @param Title $title Page title
 	 * @return bool|File
 	 */
 	protected function getPageImage( Title $title ) {
@@ -312,8 +317,8 @@ class ApiMobileView extends ApiBase {
 	/**
 	 * Wrapper for wfFindFile
 	 *
-	 * @param Title|string $title
-	 * @param array $options
+	 * @param Title|string $title Page title
+	 * @param array $options Options for wfFindFile (see RepoGroup::findFile)
 	 * @return bool|File
 	 */
 	protected function findFile( $title, $options = [] ) {
@@ -328,8 +333,8 @@ class ApiMobileView extends ApiBase {
 	 */
 	protected function isMainPage( $title ) {
 		if ( $title->isRedirect() && $this->followRedirects ) {
-			$wp = $this->makeWikiPage( $title );
-			$target = $wp->getRedirectTarget();
+			$wikiPage = $this->makeWikiPage( $title );
+			$target = $wikiPage->getRedirectTarget();
 			if ( $target ) {
 				return $target->isMainPage();
 			}
@@ -344,9 +349,11 @@ class ApiMobileView extends ApiBase {
 	 */
 	private function stringSplitter( $text ) {
 		if ( $this->offset < 0 ) {
-			return $text; // NOOP - string splitting mode is off
+			// NOOP - string splitting mode is off
+			return $text;
 		} elseif ( $this->maxlen < 0 ) {
-			return ''; // Limit exceeded
+			// Limit exceeded
+			return '';
 		}
 		$textLen = mb_strlen( $text );
 		$start = $this->offset;
@@ -437,15 +444,19 @@ class ApiMobileView extends ApiBase {
 
 	/**
 	 * Performs a page parse
-	 * @param WikiPage $wp
+	 * @param WikiPage $wikiPage
 	 * @param ParserOptions $parserOptions
 	 * @param null|int $oldid Revision ID to get the text from, passing null or 0 will
 	 *   get the current revision (default value)
-	 * @return ParserOutput|null
+	 * @return ParserOutput|bool
 	 */
-	protected function getParserOutput( WikiPage $wp, ParserOptions $parserOptions, $oldid = null ) {
-		$parserOutput = $wp->getParserOutput( $parserOptions, $oldid );
-		if ( $parserOutput ) {
+	protected function getParserOutput(
+		WikiPage $wikiPage,
+		ParserOptions $parserOptions,
+		$oldid = null
+	) {
+		$parserOutput = $wikiPage->getParserOutput( $parserOptions, $oldid );
+		if ( $parserOutput && !defined( 'ParserOutput::SUPPORTS_STATELESS_TRANSFORMS' ) ) {
 			$parserOutput->setTOCEnabled( false );
 		}
 
@@ -454,7 +465,7 @@ class ApiMobileView extends ApiBase {
 
 	/**
 	 * Creates a WikiPage from title
-	 * @param Title $title
+	 * @param Title $title Page title
 	 * @return WikiPage
 	 */
 	protected function makeWikiPage( Title $title ) {
@@ -462,23 +473,19 @@ class ApiMobileView extends ApiBase {
 	}
 
 	/**
-	 * Creates a ParserOptions instance
-	 * @param WikiPage $wp
+	 * Call makeParserOptions on a WikiPage with the wrapper output class disabled.
+	 * @param WikiPage $wikiPage to call makeParserOptions on.
 	 * @return ParserOptions
 	 */
-	protected function makeParserOptions( WikiPage $wp ) {
-		$popt = $wp->makeParserOptions( $this );
-		if ( is_callable( [ $popt, 'setWrapOutputClass' ] ) ) {
-			// Let the client handle it.
-			$popt->setWrapOutputClass( false );
-		}
+	protected function makeParserOptions( WikiPage $wikiPage ) {
+		$popt = $wikiPage->makeParserOptions( $this );
 		return $popt;
 	}
 
 	/**
 	 * Parses section data
 	 * @param string $html representing the entire page
-	 * @param Title $title
+	 * @param Title $title Page title
 	 * @param ParserOutput $parserOutput
 	 * @param int $revId this is a temporary parameter to avoid debug log warnings.
 	 *  Long term the call to wfDebugLog should be moved outside this method (optional)
@@ -530,16 +537,16 @@ class ApiMobileView extends ApiBase {
 	 * @return array
 	 */
 	private function getData( Title $title, $noImages, $oldid = null ) {
+		global $wgMemc;
+
 		$mfConfig = MobileContext::singleton()->getMFConfig();
 		$mfMinCachedPageSize = $mfConfig->get( 'MFMinCachedPageSize' );
 		$mfSpecialCaseMainPage = $mfConfig->get( 'MFSpecialCaseMainPage' );
 
-		global $wgMemc;
-
 		$result = $this->getResult();
-		$wp = $this->makeWikiPage( $title );
-		if ( $this->followRedirects && $wp->isRedirect() ) {
-			$newTitle = $wp->getRedirectTarget();
+		$wikiPage = $this->makeWikiPage( $title );
+		if ( $this->followRedirects && $wikiPage->isRedirect() ) {
+			$newTitle = $wikiPage->getRedirectTarget();
 			if ( $newTitle ) {
 				$title = $newTitle;
 				$textTitle = $title->getPrefixedText();
@@ -555,16 +562,24 @@ class ApiMobileView extends ApiBase {
 					);
 					return [];
 				}
-				$wp = $this->makeWikiPage( $title );
+				$wikiPage = $this->makeWikiPage( $title );
 			}
 		}
-		$latest = $wp->getLatest();
+		$latest = $wikiPage->getLatest();
 		// Use page_touched so template updates invalidate cache
-		$touched = $wp->getTouched();
+		$touched = $wikiPage->getTouched();
 		$revId = $oldid ? $oldid : $title->getLatestRevID();
 		if ( $this->file ) {
-			$key = wfMemcKey( 'mf', 'mobileview', self::CACHE_VERSION, $noImages,
-				$touched, $this->noTransform, $this->file->getSha1(), $this->variant );
+			$key = $wgMemc->makeKey(
+				'mf',
+				'mobileview',
+				self::CACHE_VERSION,
+				$noImages,
+				$touched,
+				$this->noTransform,
+				$this->file->getSha1(),
+				$this->variant
+			);
 			$cacheExpiry = 3600;
 		} else {
 			if ( !$latest ) {
@@ -572,10 +587,10 @@ class ApiMobileView extends ApiBase {
 				// Title::exists() above doesn't seem to always catch recently deleted pages
 				$this->dieWithError( [ 'apierror-missingtitle' ] );
 			}
-			$parserOptions = $this->makeParserOptions( $wp );
-			$parserCacheKey = \MediaWiki\MediaWikiServices::getInstance()->getParserCache()->getKey( $wp,
-					$parserOptions );
-			$key = wfMemcKey(
+			$parserOptions = $this->makeParserOptions( $wikiPage );
+			$parserCache = \MediaWiki\MediaWikiServices::getInstance()->getParserCache();
+			$parserCacheKey = $parserCache->getKey( $wikiPage, $parserOptions );
+			$key = $wgMemc->makeKey(
 				'mf',
 				'mobileview',
 				self::CACHE_VERSION,
@@ -595,12 +610,13 @@ class ApiMobileView extends ApiBase {
 		if ( $this->file ) {
 			$html = $this->getFilePage( $title );
 		} else {
-			$parserOutput = $this->getParserOutput( $wp, $parserOptions, $oldid );
+			$parserOutput = $this->getParserOutput( $wikiPage, $parserOptions, $oldid );
 			if ( $parserOutput === false ) {
 				$this->dieWithError( 'apierror-mobilefrontend-badidtitle', 'invalidparams' );
 				return;
 			}
-			$html = $parserOutput->getText();
+			$html = $parserOutput->getText( [ 'allowTOC' => false, 'unwrap' => true,
+				'deduplicateStyles' => false ] );
 			$cacheExpiry = $parserOutput->getCacheExpiry();
 		}
 
@@ -628,14 +644,14 @@ class ApiMobileView extends ApiBase {
 			}
 		}
 
-		$data['lastmodified'] = wfTimestamp( TS_ISO_8601, $wp->getTimestamp() );
+		$data['lastmodified'] = wfTimestamp( TS_ISO_8601, $wikiPage->getTimestamp() );
 
 		// Page id
-		$data['id'] = $wp->getId();
-		$user = User::newFromId( $wp->getUser() );
+		$data['id'] = $wikiPage->getId();
+		$user = User::newFromId( $wikiPage->getUser() );
 		if ( !$user->isAnon() ) {
 			$data['lastmodifiedby'] = [
-				'name' => $wp->getUserText(),
+				'name' => $wikiPage->getUserText(),
 				'gender' => $user->getOption( 'gender' ),
 			];
 		} else {
@@ -755,7 +771,8 @@ class ApiMobileView extends ApiBase {
 					: $file->getWidth();
 			}
 			if ( !$resize ) {
-				$resize['width'] = $resize['height'] = 50; // Default
+				// Default
+				$resize['width'] = $resize['height'] = 50;
 			}
 			$thumb = $file->transform( $resize );
 			if ( !$thumb ) {
@@ -870,7 +887,7 @@ class ApiMobileView extends ApiBase {
 			],
 			'variant' => [
 				ApiBase::PARAM_TYPE => 'string',
-				ApiBase::PARAM_DFLT => false,
+				ApiBase::PARAM_DFLT => '',
 			],
 			'noimages' => false,
 			'noheadings' => false,

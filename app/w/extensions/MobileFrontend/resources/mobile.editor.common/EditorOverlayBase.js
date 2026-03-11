@@ -1,9 +1,11 @@
-( function ( M, $ ) {
+( function ( M ) {
 	var Overlay = M.require( 'mobile.startup/Overlay' ),
+		util = M.require( 'mobile.startup/util' ),
 		PageGateway = M.require( 'mobile.startup/PageGateway' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		toast = M.require( 'mobile.startup/toast' ),
-		user = M.require( 'mobile.startup/user' );
+		user = M.require( 'mobile.startup/user' ),
+		mwUser = mw.user;
 
 	/**
 	 * 'Edit' button
@@ -47,7 +49,7 @@
 		var self = this;
 
 		if ( options.isNewPage ) {
-			options.placeholder = mw.msg( 'mobile-frontend-editor-placeholder-new-page', mw.user );
+			options.placeholder = mw.msg( 'mobile-frontend-editor-placeholder-new-page', mwUser );
 		}
 		// change the message to request a summary when not in article namespace
 		if ( mw.config.get( 'wgNamespaceNumber' ) !== 0 ) {
@@ -106,7 +108,7 @@
 		 * @cfg {string} defaults.licenseMsg Text and link of the license, under which this contribution will be
 		 * released to inform the user.
 		 */
-		defaults: $.extend( {}, Overlay.prototype.defaults, {
+		defaults: util.extend( {}, Overlay.prototype.defaults, {
 			hasToolbar: false,
 			continueMsg: mw.msg( 'mobile-frontend-editor-continue' ),
 			cancelMsg: mw.msg( 'mobile-frontend-editor-cancel' ),
@@ -127,7 +129,7 @@
 			licenseMsg: undefined
 		} ),
 		/** @inheritdoc **/
-		templatePartials: $.extend( {}, Overlay.prototype.templatePartials, {
+		templatePartials: util.extend( {}, Overlay.prototype.templatePartials, {
 			editHeader: mw.template.get( 'mobile.editor.common', 'editHeader.hogan' ),
 			previewHeader: mw.template.get( 'mobile.editor.common', 'previewHeader.hogan' ),
 			saveHeader: mw.template.get( 'mobile.editor.common', 'saveHeader.hogan' )
@@ -136,7 +138,7 @@
 		template: mw.template.get( 'mobile.editor.common', 'EditorOverlayBase.hogan' ),
 		/** @inheritdoc **/
 		className: 'overlay editor-overlay',
-		events: $.extend( {}, Overlay.prototype.events, {
+		events: util.extend( {}, Overlay.prototype.events, {
 			'click .back': 'onClickBack',
 			'click .continue': 'onClickContinue',
 			'click .submit': 'onClickSubmit'
@@ -146,7 +148,7 @@
 		 * @param {Object} data
 		 */
 		log: function ( data ) {
-			mw.track( 'mf.schemaEdit', $.extend( data, {
+			mw.track( 'mf.schemaEdit', util.extend( data, {
 				editor: this.editor,
 				editingSessionId: this.sessionId
 			} ) );
@@ -161,7 +163,7 @@
 			if ( this.isNewPage &&
 				// TODO: Replace with an OOUI dialog
 				// eslint-disable-next-line no-alert
-				!window.confirm( mw.msg( 'mobile-frontend-editor-new-page-confirm', mw.user ) )
+				!window.confirm( mw.msg( 'mobile-frontend-editor-new-page-confirm', mwUser ) )
 			) {
 				return false;
 			} else {
@@ -170,11 +172,12 @@
 		},
 		/**
 		 * Executed when page save is complete. Handles reloading the page, showing toast
-		 * messages, and setting mobile edit cookie.
+		 * messages.
 		 * @method
 		 */
 		onSaveComplete: function () {
 			var msg,
+				$window = util.getWindow(),
 				title = this.options.title,
 				self = this;
 
@@ -201,17 +204,15 @@
 				title = title + '#' + self.sectionLine;
 			}
 
-			$( window ).off( 'beforeunload.mfeditorwarning' );
+			$window.off( 'beforeunload.mfeditorwarning' );
 
-			// Set a cookie for 30 days indicating that this user has edited from
-			// the mobile interface.
-			$.cookie( 'mobileEditor', 'true', {
-				expires: 30
-			} );
-
+			// FIXME: Blocked on T189173
+			// eslint-disable-next-line no-restricted-properties
 			window.location = mw.util.getUrl( title );
 			if ( self.sectionLine ) {
 				// since the path and only the hash has changed it has not triggered a refresh so forcefully refresh
+				// FIXME: Blocked on T189173
+				// eslint-disable-next-line no-restricted-properties
 				window.location.reload();
 			}
 		},
@@ -278,12 +279,12 @@
 		 * Back button click handler
 		 * @method
 		 */
-		onClickBack: $.noop,
+		onClickBack: util.noop,
 		/**
 		 * Exit handler
 		 */
-		onExit: function () {
-			Overlay.prototype.onExit.apply( this, arguments );
+		onExitClick: function () {
+			Overlay.prototype.onExitClick.apply( this, arguments );
 			// log cancel attempt
 			this.log( {
 				action: 'abort',
@@ -338,7 +339,7 @@
 		 * implemented by child class.
 		 * @method
 		 */
-		hasChanged: $.noop,
+		hasChanged: util.noop,
 		/**
 		 * Handles a failed save due to a CAPTCHA provided by ConfirmEdit extension.
 		 * @method
@@ -383,4 +384,4 @@
 
 	M.define( 'mobile.editor.common/EditorOverlayBase', EditorOverlayBase )
 		.deprecate( 'modules/editor/EditorOverlayBase' );
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

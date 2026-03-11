@@ -198,14 +198,8 @@ class UserMailer {
 	private static function isMailMimeUsable() {
 		static $usable = null;
 		if ( $usable === null ) {
-			// If the class is not already loaded, and it's in the include path,
-			// try requiring it.
-			if ( !class_exists( 'Mail_mime' ) && stream_resolve_include_path( 'Mail/mime.php' ) ) {
-				require_once 'Mail/mime.php';
-			}
 			$usable = class_exists( 'Mail_mime' );
 		}
-
 		return $usable;
 	}
 
@@ -218,11 +212,6 @@ class UserMailer {
 	private static function isMailUsable() {
 		static $usable = null;
 		if ( $usable === null ) {
-			// If the class is not already loaded, and it's in the include path,
-			// try requiring it.
-			if ( !class_exists( 'Mail' ) && stream_resolve_include_path( 'Mail.php' ) ) {
-				require_once 'Mail.php';
-			}
 			$usable = class_exists( 'Mail' );
 		}
 
@@ -393,13 +382,13 @@ class UserMailer {
 				throw new MWException( 'PEAR mail package is not installed' );
 			}
 
-			MediaWiki\suppressWarnings();
+			Wikimedia\suppressWarnings();
 
 			// Create the mail object using the Mail::factory method
-			$mail_object =& Mail::factory( 'smtp', $wgSMTP );
+			$mail_object = Mail::factory( 'smtp', $wgSMTP );
 			if ( PEAR::isError( $mail_object ) ) {
 				wfDebug( "PEAR::Mail factory failed: " . $mail_object->getMessage() . "\n" );
-				MediaWiki\restoreWarnings();
+				Wikimedia\restoreWarnings();
 				return Status::newFatal( 'pear-mail-error', $mail_object->getMessage() );
 			}
 
@@ -419,11 +408,11 @@ class UserMailer {
 				$status = self::sendWithPear( $mail_object, $chunk, $headers, $body );
 				// FIXME : some chunks might be sent while others are not!
 				if ( !$status->isOK() ) {
-					MediaWiki\restoreWarnings();
+					Wikimedia\restoreWarnings();
 					return $status;
 				}
 			}
-			MediaWiki\restoreWarnings();
+			Wikimedia\restoreWarnings();
 			return Status::newGood();
 		} else {
 			// PHP mail()

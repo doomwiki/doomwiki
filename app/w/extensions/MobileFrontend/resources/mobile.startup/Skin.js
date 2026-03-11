@@ -1,8 +1,12 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		View = M.require( 'mobile.startup/View' ),
+		util = M.require( 'mobile.startup/util' ),
+		Deferred = util.Deferred,
+		when = util.when,
 		icons = M.require( 'mobile.startup/icons' ),
+		viewport = mw.viewport,
 		spinner = icons.spinner();
 
 	/**
@@ -56,41 +60,18 @@
 			mw.log.warn( 'Skin: Use of mainMenu is deprecated.' );
 		}
 		View.call( this, options );
-		// Must be run after merging with defaults as must be defined.
-		this.tabletModules = options.tabletModules;
 		this.referencesGateway = options.referencesGateway;
-
-		/**
-		 * Tests current window size and if suitable loads styles and scripts specific for larger devices
-		 *
-		 * @method
-		 * @ignore
-		 */
-		function loadWideScreenModules() {
-			if ( browser.isWideScreen() ) {
-				// Adjust screen for tablets
-				if ( self.page.inNamespace( '' ) ) {
-					mw.loader.using( self.tabletModules ).always( function () {
-						self.off( '_resize' );
-						self.emit( 'changed' );
-					} );
-				}
-			}
-		}
-		M.on( 'resize', $.proxy( this, 'emit', '_resize' ) );
-		this.on( '_resize', loadWideScreenModules );
-		this.emit( '_resize' );
 
 		if (
 			mw.config.get( 'wgMFLazyLoadImages' )
 		) {
-			$( function () {
-				self.loadImages();
+			util.docReady( function () {
+				self.setupImageLoading();
 			} );
 		}
 
 		if ( mw.config.get( 'wgMFLazyLoadReferences' ) ) {
-			M.on( 'before-section-toggled', $.proxy( this.lazyLoadReferences, this ) );
+			M.on( 'before-section-toggled', this.lazyLoadReferences.bind( this ) );
 		}
 	}
 
@@ -104,12 +85,10 @@
 		 * @inheritdoc
 		 * @cfg {Object} defaults Default options hash.
 		 * @cfg {Page} defaults.page page the skin is currently rendering
-		 * @cfg {Array} defaults.tabletModules modules to load when in tablet
 		 * @cfg {ReferencesGateway} defaults.referencesGateway instance of references gateway
 		 */
 		defaults: {
-			page: undefined,
-			tabletModules: []
+			page: undefined
 		},
 
 		/**
@@ -128,7 +107,8 @@
 			if ( browser.supportsTouchEvents() ) {
 				$el.addClass( 'touch-events' );
 			}
-			$( '<div class="transparent-shield cloaked-element">' ).appendTo( '#mw-mf-page-center' );
+			util.parseHTML( '<div class="transparent-shield cloaked-element">' )
+				.appendTo( $el.find( '#mw-mf-page-center' ) );
 			/**
 			 * @event changed
 			 * Fired when appearance of skin changes.
@@ -141,41 +121,63 @@
 			 */
 			this.$( '#mw-mf-page-center' ).on( 'click', this.emit.bind( this, 'click' ) );
 		},
-
 		/**
-		 * Load images on demand
+		 * Get images that have not yet been loaded in the page
 		 * @param {jQuery.Object} [$container] The container that should be
 		 *  searched for image placeholders. Defaults to "#content".
+		 * @return {Array} of unloaded image placeholders in the page
 		 */
-		loadImages: function ( $container ) {
-			var self = this,
-				offset = $( window ).height() * 1.5,
-				imagePlaceholders;
-
+		getUnloadedImages: function ( $container ) {
 			$container = $container || this.$( '#content' );
-			imagePlaceholders = $container.find( '.lazy-image-placeholder' ).toArray();
+			return $container.find( '.lazy-image-placeholder' ).toArray();
+		},
+		/**
+		 * Setup listeners to watch unloaded images and load them into the page
+		 * as and when they are needed.
+		 * @param {jQuery.Object} [$container] The container that should be
+		 *  searched for image placeholders. Defaults to "#content".
+		 * @return {jQuery.Deferred} which will be resolved when the attempts to load all images subject to
+		 *  loading have been completed.
+		 */
+		setupImageLoading: function ( $container ) {
+			var self = this,
+				offset = util.getWindow().height() * 1.5,
+				loadImagesList = this.loadImagesList.bind( this ),
+				imagePlaceholders = this.getUnloadedImages( $container );
+
+			/**
+			 * Check whether an image should be loaded based on its proximity to the
+			 * viewport; and whether it is displayed to the user.
+			 * @param {jQuery.Object} $placeholder
+			 * @return {Boolean}
+			 * @ignore
+			 */
+			function shouldLoadImage( $placeholder ) {
+				return viewport.isElementCloseToViewport( $placeholder[0], offset ) &&
+					// If a placeholder is an inline element without a height attribute set it will record as hidden
+					// to circumvent this we also need to test the height (see T143768).
+					( $placeholder.is( ':visible' ) || $placeholder.height() === 0 );
+			}
 
 			/**
 			 * Load remaining images in viewport
+			 * @ignore
+			 * @return {jQuery.Deferred}
 			 */
 			function _loadImages() {
-
-				imagePlaceholders = $.grep( imagePlaceholders, function ( placeholder ) {
+				var images = [];
+				// Filter unloaded images to only the images that still need to be loaded
+				imagePlaceholders = util.grep( imagePlaceholders, function ( placeholder ) {
 					var $placeholder = self.$( placeholder );
-
-					if (
-						mw.viewport.isElementCloseToViewport( placeholder, offset ) &&
-						// If a placeholder is an inline element without a height attribute set it will record as hidden
-						// to circumvent this we also need to test the height (see T143768).
-						( $placeholder.is( ':visible' ) || $placeholder.height() === 0 )
-					) {
-						self.loadImage( $placeholder );
+					// Check length to ensure the image is still in the DOM.
+					if ( $placeholder.length && shouldLoadImage( $placeholder ) ) {
+						images.push( placeholder );
 						return false;
 					}
-
 					return true;
 				} );
 
+				// When no images are left unbind all events
 				if ( !imagePlaceholders.length ) {
 					M.off( 'scroll:throttled', _loadImages );
 					M.off( 'resize:throttled', _loadImages );
@@ -183,6 +185,8 @@
 					self.off( 'changed', _loadImages );
 				}
 
+				// load any remaining images.
+				return loadImagesList( images );
 			}
 
 			M.on( 'scroll:throttled', _loadImages );
@@ -190,19 +194,37 @@
 			M.on( 'section-toggled', _loadImages );
 			this.on( 'changed', _loadImages );
 
-			_loadImages();
+			return _loadImages();
 		},
+		/**
+		 * Load an image on demand
+		 * @param {Array} [images] a list of images that have not been loaded. If none given all will be loaded
+		 * @return {jQuery.Deferred}
+		 */
+		loadImagesList: function ( images ) {
+			var callbacks,
+				$ = this.$.bind( this ),
+				loadImage = this.loadImage.bind( this );
 
+			images = images || this.getUnloadedImages();
+			callbacks = images.map( function ( placeholder ) {
+				return loadImage( $( placeholder ) );
+			} );
+
+			return when.apply( null, callbacks );
+		},
 		/**
 		 * Load an image on demand
 		 * @param {jQuery.Object} $placeholder
+		 * @return {jQuery.Deferred}
 		 */
 		loadImage: function ( $placeholder ) {
 			var
+				d = Deferred(),
 				width = $placeholder.attr( 'data-width' ),
 				height = $placeholder.attr( 'data-height' ),
-				// Image will start downloading
-				$downloadingImage = $( '<img>' );
+				// document must be passed to ensure image will start downloading
+				$downloadingImage = util.parseHTML( '<img>', this.$el[0].ownerDocument );
 
 			// When the image has loaded
 			$downloadingImage.on( 'load', function () {
@@ -210,6 +232,10 @@
 				// dimensions the same and not trigger layouts
 				$downloadingImage.addClass( 'image-lazy-loaded' );
 				$placeholder.replaceWith( $downloadingImage );
+				d.resolve();
+			} );
+			$downloadingImage.on( 'error', function () {
+				d.reject();
 			} );
 
 			// Trigger image download after binding the load handler
@@ -222,6 +248,7 @@
 				style: $placeholder.attr( 'style' ),
 				srcset: $placeholder.attr( 'data-srcset' )
 			} );
+			return d;
 		},
 
 		/**
@@ -241,6 +268,8 @@
 		lazyLoadReferences: function ( data ) {
 			var $content, $spinner,
 				gateway = this.referencesGateway,
+				getUnloadedImages = this.getUnloadedImages.bind( this ),
+				loadImagesList = this.loadImagesList.bind( this ),
 				self = this;
 
 			// If the section was expanded before toggling, do not load anything as
@@ -267,7 +296,7 @@
 
 						$content.find( '.mf-lazy-references-placeholder' ).each( function () {
 							var refListIndex = 0,
-								$placeholder = $( this ),
+								$placeholder = $content.find( this ),
 								// search for id of the collapsible heading
 								id = getSectionId( $placeholder );
 
@@ -306,12 +335,12 @@
 					} )
 					.always( function () {
 						// lazy load images if any
-						self.loadImages( $content );
+						loadImagesList( getUnloadedImages( $content ) );
 						// Do not attempt further loading even if we're unable to load this time.
 						$content.data( 'are-references-loaded', 1 );
 					} );
 			} else {
-				return $.Deferred().reject();
+				return Deferred().reject();
 			}
 		},
 
@@ -349,6 +378,6 @@
 	} );
 
 	Skin.getSectionId = getSectionId;
-	M.define( 'mobile.startup/Skin', Skin ); // resource-modules-disable-line
+	M.define( 'mobile.startup/Skin', Skin );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

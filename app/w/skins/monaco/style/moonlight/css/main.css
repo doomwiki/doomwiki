@@ -17,7 +17,7 @@
 	color: #333;
 }
 .dark_text_1 {
- 	color: #036;
+	color: #036;
 }
 .dark_text_2 {
 	color: #333;
@@ -120,7 +120,7 @@
 /* @group Main Page */
 
 body.mainpage div.monaco_shrinkwrap {
-        width: 972px;
+	width: 972px;
 }
 body.mainpage {
 	background-position: center top;
@@ -153,7 +153,7 @@ body.masthead-special #page_bar {
 	background: #6180AE;
 	border-color: #1D283E;
 }
-body.masthead-regular #page_controls a, 
+body.masthead-regular #page_controls a,
 body.masthead-special #page_controls a {
 	color: #FFF;
 }

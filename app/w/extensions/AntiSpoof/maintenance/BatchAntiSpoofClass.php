@@ -1,4 +1,20 @@
 <?php
+/**
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ */
 
 $IP = getenv( 'MW_INSTALL_PATH' );
 if ( $IP === false ) {
@@ -15,10 +31,11 @@ class BatchAntiSpoof extends Maintenance {
 		parent::__construct();
 
 		$this->requireExtension( 'AntiSpoof' );
+		$this->setBatchSize( 1000 );
 	}
 
 	/**
-	 * @param $items array
+	 * @param array $items
 	 */
 	protected function batchRecord( $items ) {
 		SpoofUser::batchRecord( $this->getDB( DB_MASTER ), $items );
@@ -39,7 +56,14 @@ class BatchAntiSpoof extends Maintenance {
 	}
 
 	/**
-	 * @param $name string
+	 * @return string Primary key of the table returned by getTableName()
+	 */
+	protected function getPrimaryKey() {
+		return 'user_id';
+	}
+
+	/**
+	 * @param string $name
 	 * @return SpoofUser
 	 */
 	protected function makeSpoofUser( $name ) {
@@ -54,30 +78,29 @@ class BatchAntiSpoof extends Maintenance {
 	 * Do the actual work. All child classes will need to implement this
 	 */
 	public function execute() {
-		$dbw = $this->getDB( DB_MASTER );
-
-		$batchSize = 1000;
-
 		$this->output( "Creating username spoofs...\n" );
+
 		$userCol = $this->getUserColumn();
-		$result = $dbw->select( $this->getTableName(), $userCol, null, __FUNCTION__ );
+		$iterator = new BatchRowIterator( $this->getDB( DB_MASTER ),
+			$this->getTableName(),
+			$this->getPrimaryKey(),
+			$this->getBatchSize()
+		);
+		$iterator->setFetchColumns( [ $userCol ] );
+
 		$n = 0;
-		$items = [];
-		foreach ( $result as $row ) {
-			if ( $n++ % $batchSize == 0 ) {
-				$this->output( "...$n\n" );
+		foreach ( $iterator as $batch ) {
+			$items = [];
+			foreach ( $batch as $row ) {
+				$items[] = $this->makeSpoofUser( $row->$userCol );
 			}
 
-			$items[] = $this->makeSpoofUser( $row->$userCol );
-
-			if ( $n % $batchSize == 0 ) {
-				$this->batchRecord( $items );
-				$items = [];
-				$this->waitForSlaves();
-			}
+			$n += count( $items );
+			$this->output( "...$n\n" );
+			$this->batchRecord( $items );
+			$this->waitForSlaves();
 		}
 
-		$this->batchRecord( $items );
 		$this->output( "$n user(s) done.\n" );
 	}
 }

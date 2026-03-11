@@ -76,7 +76,7 @@ class UnreviewedPages extends SpecialPage {
 
 		# Query may get too slow to be live...
 		if ( !$this->live ) {
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 			$ts = $dbr->selectField( 'querycache_info', 'qci_timestamp',
 				[ 'qci_type' => 'fr_unreviewedpages' ], __METHOD__ );
 			if ( $ts ) {
@@ -175,6 +175,7 @@ class UnreviewedPages extends SpecialPage {
 
 	/**
 	 * There may be many pages, most of which are reviewed
+	 * @return bool
 	 */
 	public static function generalQueryOK() {
 		$namespaces = FlaggedRevs::getReviewNamespaces();
@@ -182,7 +183,7 @@ class UnreviewedPages extends SpecialPage {
 			return true;
 		}
 		# Get est. of fraction of pages that are reviewed
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$reviewedpages = $dbr->estimateRowCount( 'flaggedpages', '*', [], __METHOD__ );
 		$pages = $dbr->estimateRowCount( 'page', '*',
 			[ 'page_namespace' => $namespaces ],
@@ -193,7 +194,7 @@ class UnreviewedPages extends SpecialPage {
 		return ( $ratio <= 400 );
 	}
 
-	/*
+	/**
 	 * Run an update to the cached query rows
 	 * @return void
 	 */
@@ -202,7 +203,7 @@ class UnreviewedPages extends SpecialPage {
 		if ( empty( $rNamespaces ) ) {
 			return;
 		}
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 
 		$insertRows = [];
 		// Find pages that were never reviewed at all...

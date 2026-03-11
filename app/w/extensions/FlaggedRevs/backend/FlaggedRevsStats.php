@@ -7,7 +7,7 @@ class FlaggedRevsStats {
 	 * Get FR-related stats at a designated snapshot in time.
 	 * If no $timestamp is specified, then the latest will be used.
 	 *
-	 * @param $timestamp string|bool false TS_ timestamp
+	 * @param string|bool $timestamp false TS_ timestamp
 	 * @return array of current FR stats
 	 */
 	public static function getStats( $timestamp = false ) {
@@ -26,7 +26,7 @@ class FlaggedRevsStats {
 		$data['pendingLag-average'] = '-';
 		$data['statTimestamp'] = '-';
 
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		if ( $timestamp === false ) { // use latest
 			$timestamp = $dbr->selectField( 'flaggedrevs_statistics', 'MAX(frs_timestamp)' );
 		}
@@ -67,10 +67,10 @@ class FlaggedRevsStats {
 		return $data;
 	}
 
-	/*
+	/**
 	 * Run a stats update and update the DB
 	 * Note: this can easily be too expensive to run live
-	*
+	 *
 	 * @return void
 	 */
 	public static function updateCache() {
@@ -192,7 +192,7 @@ class FlaggedRevsStats {
 	private static function getPerNamespaceTotals() {
 		$ns_total = $ns_reviewed = $ns_synced = [];
 		// Get total, reviewed, and synced page count for each namespace
-		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
+		$dbr = wfGetDB( DB_REPLICA, 'vslow' );
 		$res = $dbr->select( [ 'page', 'flaggedpages' ],
 			[ 'page_namespace',
 				'COUNT(*) AS total',
@@ -218,7 +218,7 @@ class FlaggedRevsStats {
 	}
 
 	private static function getMeanPendingEditTime() {
-		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
+		$dbr = wfGetDB( DB_REPLICA, 'vslow' );
 		$nowUnix = wfTimestamp( TS_UNIX ); // current time in UNIX TS
 		$unixTimeCall = self::dbUnixTime( $dbr, 'fp_pending_since' );
 		return (int)$dbr->selectField(
@@ -234,8 +234,8 @@ class FlaggedRevsStats {
 
 	/**
 	 * Get edit review time statistics (as recent as possible)
-	 * @param $stash BagOStuff object
-	 * @param $users string "anons" or "users"
+	 * @param BagOStuff $stash BagOStuff object
+	 * @param string $users string "anons" or "users"
 	 * @throws Exception
 	 * @return array associative
 	 */
@@ -255,7 +255,7 @@ class FlaggedRevsStats {
 		$rPerTable = []; // review wait percentiles
 		# Only go so far back...otherwise we will get garbage values due to
 		# the fact that FlaggedRevs wasn't enabled until after a while.
-		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
+		$dbr = wfGetDB( DB_REPLICA, 'vslow' );
 		$installedUnix = (int)$dbr->selectField( 'logging',
 			self::dbUnixTime( $dbr, 'MIN(log_timestamp)' ),
 			[ 'log_type' => 'review' ]

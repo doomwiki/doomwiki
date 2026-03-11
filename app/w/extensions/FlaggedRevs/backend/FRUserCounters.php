@@ -69,7 +69,7 @@ class FRUserCounters {
 				$options[] = 'FOR UPDATE';
 			}
 		} else {
-			$db = wfGetDB( DB_SLAVE, [], $dBName );
+			$db = wfGetDB( DB_REPLICA, [], $dBName );
 		}
 		return $db->selectRow( 'flaggedrevs_promote',
 			'frp_user_params',
@@ -125,7 +125,6 @@ class FRUserCounters {
 	 * Increments a count for a user
 	 * @param int $uid User id
 	 * @param string $param Count name
-	 * @return string
 	 */
 	public static function incCount( $uid, $param ) {
 		$p = self::getUserParams( $uid, FR_FOR_UPDATE );

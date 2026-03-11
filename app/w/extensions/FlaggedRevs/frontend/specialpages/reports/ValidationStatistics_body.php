@@ -14,7 +14,7 @@ class ValidationStatistics extends IncludableSpecialPage {
 		$lang = $this->getLanguage();
 
 		$this->setHeaders();
-		$this->db = wfGetDB( DB_SLAVE );
+		$this->db = wfGetDB( DB_REPLICA );
 
 		$this->maybeUpdate();
 
@@ -304,7 +304,10 @@ class ValidationStatistics extends IncludableSpecialPage {
 		return $stats['statTimestamp'];
 	}
 
-	// top X reviewers in the last Y hours
+	/**
+	 * Get top X reviewers in the last Y hours
+	 * @return array
+	 */
 	protected function getTopReviewers() {
 		global $wgFlaggedRevsStats;
 
@@ -315,7 +318,7 @@ class ValidationStatistics extends IncludableSpecialPage {
 			return $data; // cache hit
 		}
 
-		$dbr = wfGetDB( DB_SLAVE, 'vslow' );
+		$dbr = wfGetDB( DB_REPLICA, 'vslow' );
 		$limit = (int)$wgFlaggedRevsStats['topReviewersCount'];
 		$seconds = 3600 * $wgFlaggedRevsStats['topReviewersHours'];
 		$cutoff = $dbr->timestamp( time() - $seconds );

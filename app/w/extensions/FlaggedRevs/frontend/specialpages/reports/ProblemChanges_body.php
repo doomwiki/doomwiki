@@ -108,7 +108,11 @@ class ProblemChanges extends SpecialPage {
 		}
 	}
 
-	// set pager parameters from $par, return pager limit
+	/**
+	 * Set pager parameters from $par, return pager limit
+	 * @param string $par
+	 * @return bool|int
+	 */
 	protected function parseParams( $par ) {
 		$bits = preg_split( '/\s*,\s*/', trim( $par ) );
 		$limit = false;
@@ -265,7 +269,7 @@ class ProblemChanges extends SpecialPage {
 	 */
 	protected static function getChangeTags( $pageId, $revId ) {
 		$tags = [];
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$res = $dbr->select(
 			[ 'revision', 'change_tag' ],
 			'DISTINCT(ct_tag)', // unique tags

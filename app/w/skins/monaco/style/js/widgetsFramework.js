@@ -52,11 +52,11 @@ var WidgetFramework = {
 		$('#widget_'+id+'_editform').html('').addClass('widget_loading');
 
 		$.getJSON(wgScript, req, function(res) {
-			if(res.success) {
+			if (res.success) {
 				$('#widget_' + res.id + '_editform').removeClass('widget_loading').hide();
 				$('#widget_' + res.id + '_content').html(res.body).show();
 
-				if(res.title) {
+				if (res.title) {
 					// save content of widget toolbox when title is updated (trac #2330)
 					toolBox = $('#widget_' + res.id + '_header')[0].childNodes[0];
 
@@ -140,7 +140,7 @@ var WidgetFramework = {
 				widget.find('.close').click(WidgetFramework.close);
 
 				var fname = res.type + '_init';
-				if(typeof window[fname] == 'function') {
+				if (typeof window[fname] == 'function') {
 					$().log('calling ' + fname, 'Widgets');
 					window[fname](newId, widget);
 				}
@@ -167,10 +167,10 @@ var WidgetFramework = {
 		req = $.extend(req, params);
 
 		$.getJSON(wgScript, req, function(res) {
-			if(res.success) {
+			if (res.success) {
 				$('#widget_' + res.id +'_content').removeClass('widget_loading').html(res.body);
 
-				if(res.title) {
+				if (res.title) {
 					// save content of widget toolbox when title is updated (trac #2330)
 					toolBox = $('#widget_' + res.id + '_header')[0].childNodes[0];
 
@@ -215,7 +215,7 @@ var WidgetFramework = {
 
 		$('#headerMenuUser').hide().log('showing cockpit', 'Widgets');
 
-		if(WidgetFramework.carouselLoaded == false) {
+		if (WidgetFramework.carouselLoaded == false) {
 			// RT #16828
 			$('#wikia_header').before('<div id="cockpit" class="color1"><div id="cockpit_wrapper"><ul id="widget_cockpit_list"></ul></div><img src="'+wgBlankImgUrl+'" id="cockpit_close" class="sprite close" /></div>');
 
@@ -223,18 +223,18 @@ var WidgetFramework = {
 
 				widgetsConfig = WidgetFramework._sort(widgetsConfig);
 
-				for(var i in widgetsConfig) {
+				for (var i in widgetsConfig) {
 					widgetConfig = widgetsConfig[i];
 					var allow = false;
-					if(widgetConfig.groups.length > 0) {
-						for(var j in widgetConfig.groups) {
-							if(wgUserGroups.indexOf(widgetConfig.groups[j]) >= 0) {
+					if (widgetConfig.groups.length > 0) {
+						for (var j in widgetConfig.groups) {
+							if (wgUserGroups.indexOf(widgetConfig.groups[j]) >= 0) {
 								allow = true;
 							}
 						}
 					} else if (widgetConfig.languages.length > 0) {
-						for(var k in widgetConfig.languages) {
-							if(wgContentLanguage.indexOf(widgetConfig.languages[k]) >= 0) {
+						for (var k in widgetConfig.languages) {
+							if (wgContentLanguage.indexOf(widgetConfig.languages[k]) >= 0) {
 								allow = true;
 							}
 						}
@@ -242,26 +242,26 @@ var WidgetFramework = {
 						allow = true;
 					}
 
-					if(allow) {
+					if (allow) {
 						WidgetFramework.carouselLength++;
 
 						var thumb_el = document.createElement('li');
 
-						if(skin == 'quartz') {
+						if (skin == 'quartz') {
 							thumb_el.id = 'mycarousel-item-' + WidgetFramework.carouselLength;
 						} else {
 							thumb_el.id = 'widget_cockpit-item-' + WidgetFramework.carouselLength;
 						}
 						thumb_el.name = i + '_thumb';
 
-						if( typeof widgetConfig.title[wgUserLanguage] == 'string' ) {
+						if (typeof widgetConfig.title[wgUserLanguage] == 'string') {
 							title = widgetConfig.title[wgUserLanguage];
 						}
 						else {
 							title = widgetConfig.title.en;
 						}
 
-						if( typeof widgetConfig.desc[wgUserLanguage] == 'string' ) {
+						if (typeof widgetConfig.desc[wgUserLanguage] == 'string') {
 							desc = widgetConfig.desc[wgUserLanguage];
 						}
 						else {
@@ -269,9 +269,9 @@ var WidgetFramework = {
 						}
 
 						thumb_el.className = 'widget_thumb draggable clearfix ' + i +'Thumb';
-						if(skin == 'monaco' || skin == 'awesome') {
+						if (skin == 'monaco' || skin == 'awesome') {
 							thumb_el.innerHTML = '<div class="icon"></div><h1>' + title + '<img src="'+wgBlankImgUrl+'" class="sprite add" rel="' + i + '" /></h1><br />' + desc;
-						} else if(skin == 'quartz') {
+						} else if (skin == 'quartz') {
 							thumb_el.innerHTML = title;
 							thumb_el.title = desc;
 						}
@@ -368,13 +368,13 @@ $(function() {
 				placeholder: 'widget_sort_placeholder',
 				revert: 200, // smooth animation
 				// events
-				start: function(event, ui) 
+				start: function(event, ui)
 				{
 					/*
 					 * @author Tomek0.
-					 * it remove script tag with google ads, because 
-					 * during insert of html script tag will be start one more 
-					 * time and will cause empty page effect 
+					 * it remove script tag with google ads, because
+					 * during insert of html script tag will be start one more
+					 * time and will cause empty page effect
 					 */
 					if ($(ui.item).hasClass( 'WidgetAdvertiser' )) {
 						$(ui.item).find( 'script' ).remove();
@@ -392,19 +392,19 @@ $(function() {
 					});
 
 					// get sidebar ID
-					
+
 					var id = parseInt(newSidebar.attr('id').substring(8), 10);
 
-					/* 
+					/*
 					 * @author Tomek0.
-					 * block drag WidgetCommunity to WidgetDashboard (id != 1 ) 
-					 * 
-					 * */ 
-					if( (id != 1 ) && ($(ui.item).hasClass( 'WidgetCommunity' )) ) {
+					 * block drag WidgetCommunity to WidgetDashboard (id != 1 )
+					 *
+					 * */
+					if ( (id != 1 ) && ($(ui.item).hasClass( 'WidgetCommunity' )) ) {
 						$(ev.target).sortable("cancel");
 						return true;
 					}
-					
+
 					// send reindex request to WidgetFramework
 					$.get(wgScript, {
 						action: 'ajax',

@@ -14,6 +14,7 @@
 		"jQuery.Object",
 		"jqXHR",
 		"File",
+		"Element",
 		"Router",
 		"MainMenu",
 		"mw.user",
@@ -22,6 +23,7 @@
 		"OO.ui.ToolGroup",
 		"OO.ui.Tool",
 		"OO.ui.mixin.LookupElement",
+		"OO.ui.LabelWidget",
 		"OO.EventEmitter",
 		"ve.init.mw.MobileArticleTarget",
 		"mw.echo.dm.NotificationItem"

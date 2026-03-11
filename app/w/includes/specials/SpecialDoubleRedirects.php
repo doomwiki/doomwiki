@@ -21,7 +21,7 @@
  * @ingroup SpecialPage
  */
 
-use Wikimedia\Rdbms\ResultWrapper;
+use Wikimedia\Rdbms\IResultWrapper;
 use Wikimedia\Rdbms\IDatabase;
 
 /**
@@ -64,7 +64,6 @@ class DoubleRedirectsPage extends QueryPage {
 			'fields' => [
 				'namespace' => 'pa.page_namespace',
 				'title' => 'pa.page_title',
-				'value' => 'pa.page_title',
 
 				'b_namespace' => 'pb.page_namespace',
 				'b_title' => 'pb.page_title',
@@ -202,7 +201,7 @@ class DoubleRedirectsPage extends QueryPage {
 	 * Cache page content model and gender distinction for performance
 	 *
 	 * @param IDatabase $db
-	 * @param ResultWrapper $res
+	 * @param IResultWrapper $res
 	 */
 	function preprocessResults( $db, $res ) {
 		if ( !$res->numRows() ) {

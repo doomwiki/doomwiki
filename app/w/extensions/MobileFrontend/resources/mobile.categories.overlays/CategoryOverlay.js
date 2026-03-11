@@ -1,6 +1,7 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var Overlay = M.require( 'mobile.startup/Overlay' ),
+		util = M.require( 'mobile.startup/util' ),
 		InfiniteScroll = M.require( 'mobile.infiniteScroll/InfiniteScroll' ),
 		CategoryGateway = M.require( 'mobile.categories.overlays/CategoryGateway' );
 
@@ -15,8 +16,9 @@
 	 */
 	function CategoryOverlay( options ) {
 		this.infiniteScroll = new InfiniteScroll();
-		this.infiniteScroll.on( 'load', $.proxy( this, '_loadCategories' ) );
+		this.infiniteScroll.on( 'load', this._loadCategories.bind( this ) );
 		this.gateway = new CategoryGateway( options.api );
+		M.on( 'category-added', this._loadCategories.bind( this ) );
 		Overlay.apply( this, arguments );
 	}
 
@@ -32,7 +34,7 @@
 		 * @cfg {Array} defaults.headerButtons Objects that will be used as defaults for
 		 * generating header buttons.
 		 */
-		defaults: $.extend( {}, Overlay.prototype.defaults, {
+		defaults: util.extend( {}, Overlay.prototype.defaults, {
 			heading: mw.msg( 'mobile-frontend-categories-heading' ),
 			subheading: mw.msg( 'mobile-frontend-categories-subheading' ),
 			headerButtonsListClassName: 'header-action',
@@ -51,11 +53,11 @@
 		/**
 		 * @inheritdoc
 		 */
-		templatePartials: $.extend( {}, Overlay.prototype.templatePartials, {
+		templatePartials: util.extend( {}, Overlay.prototype.templatePartials, {
 			content: mw.template.get( 'mobile.categories.overlays', 'CategoryOverlay.hogan' ),
 			item: mw.template.get( 'mobile.categories.overlays', 'CategoryOverlayItem.hogan' )
 		} ),
-		events: $.extend( {}, Overlay.prototype.events, {
+		events: util.extend( {}, Overlay.prototype.events, {
 			'click .catlink': 'onCatlinkClick'
 		} ),
 		/**
@@ -70,7 +72,6 @@
 			if ( !this.options.items ) {
 				this._loadCategories();
 			}
-			M.off( 'category-added' ).on( 'category-added', $.proxy( this, '_loadCategories' ) );
 		},
 
 		/**
@@ -151,4 +152,4 @@
 
 	M.define( 'mobile.categories.overlays/CategoryOverlay', CategoryOverlay ); // resource-modules-disable-line
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

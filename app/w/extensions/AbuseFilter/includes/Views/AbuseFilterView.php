@@ -1,5 +1,6 @@
 <?php
 
+use MediaWiki\Storage\RevisionRecord;
 use Wikimedia\Rdbms\IDatabase;
 
 abstract class AbuseFilterView extends ContextSource {
@@ -11,8 +12,8 @@ abstract class AbuseFilterView extends ContextSource {
 	protected $linkRenderer;
 
 	/**
-	 * @param $page SpecialAbuseFilter
-	 * @param $params array
+	 * @param SpecialAbuseFilter $page
+	 * @param array $params
 	 */
 	function __construct( $page, $params ) {
 		$this->mPage = $page;
@@ -95,6 +96,25 @@ abstract class AbuseFilterView extends ContextSource {
 	}
 
 	/**
+	 * @todo Core should provide a method for this (T233222)
+	 * @param IDatabase $db
+	 * @param User $user
+	 * @return array
+	 */
+	public function buildVisibilityConditions( IDatabase $db, User $user ) : array {
+		if ( !$user->isAllowed( 'deletedhistory' ) ) {
+			$bitmask = RevisionRecord::DELETED_USER;
+		} elseif ( !$user->isAllowedAny( 'suppressrevision', 'viewsuppressed' ) ) {
+			$bitmask = RevisionRecord::DELETED_USER | RevisionRecord::DELETED_RESTRICTED;
+		} else {
+			$bitmask = 0;
+		}
+		return $bitmask
+			? [ $db->bitAnd( 'rc_deleted', $bitmask ) . " != $bitmask" ]
+			: [];
+	}
+
+	/**
 	 * @static
 	 * @return bool
 	 */
@@ -109,103 +129,4 @@ abstract class AbuseFilterView extends ContextSource {
 		return $canView;
 	}
 
-}
-
-class AbuseFilterChangesList extends OldChangesList {
-	/**
-	 * @param $s
-	 * @param $rc
-	 * @param $classes array
-	 */
-	public function insertExtra( &$s, &$rc, &$classes ) {
-		if ( (int)$rc->getAttribute( 'rc_deleted' ) !== 0 ) {
-			$s .= ' ' . $this->msg( 'abusefilter-log-hidden-implicit' )->parse();
-			if ( !$this->userCan( $rc, Revision::SUPPRESSED_ALL ) ) {
-				return;
-			}
-		}
-
-		$examineParams = empty( $rc->examineParams ) ? [] : $rc->examineParams;
-
-		$title = SpecialPage::getTitleFor( 'AbuseFilter', 'examine/' . $rc->mAttribs['rc_id'] );
-		$examineLink = $this->linkRenderer->makeLink(
-			$title,
-			new HtmlArmor( $this->msg( 'abusefilter-changeslist-examine' )->parse() ),
-			[],
-			$examineParams
-		);
-
-		$s .= ' '.$this->msg( 'parentheses' )->rawParams( $examineLink )->escaped();
-
-		# If we have a match..
-		if ( isset( $rc->filterResult ) ) {
-			$class = $rc->filterResult ?
-				'mw-abusefilter-changeslist-match' :
-				'mw-abusefilter-changeslist-nomatch';
-
-			$classes[] = $class;
-		}
-	}
-
-	/**
-	 * Insert links to user page, user talk page and eventually a blocking link.
-	 *   Like the parent, but don't hide details if user can see them.
-	 *
-	 * @param string &$s HTML to update
-	 * @param RecentChange &$rc
-	 */
-	public function insertUserRelatedLinks( &$s, &$rc ) {
-		$links = $this->getLanguage()->getDirMark() . Linker::userLink( $rc->mAttribs['rc_user'],
-				$rc->mAttribs['rc_user_text'] ) .
-				Linker::userToolLinks( $rc->mAttribs['rc_user'], $rc->mAttribs['rc_user_text'] );
-
-		if ( $this->isDeleted( $rc, Revision::DELETED_USER ) ) {
-			if ( $this->userCan( $rc, Revision::DELETED_USER ) ) {
-				$s .= ' <span class="history-deleted">' . $links . '</span>';
-			} else {
-				$s .= ' <span class="history-deleted">' .
-					$this->msg( 'rev-deleted-user' )->escaped() . '</span>';
-			}
-		} else {
-			$s .= $links;
-		}
-	}
-
-	/**
-	 * Insert a formatted comment. Like the parent, but don't hide details if user can see them.
-	 * @param RecentChange $rc
-	 * @return string
-	 */
-	public function insertComment( $rc ) {
-		if ( $this->isDeleted( $rc, Revision::DELETED_COMMENT ) ) {
-			if ( $this->userCan( $rc, Revision::DELETED_COMMENT ) ) {
-				return ' <span class="history-deleted">' .
-					Linker::commentBlock( $rc->mAttribs['rc_comment'], $rc->getTitle() ) . '</span>';
-			} else {
-				return ' <span class="history-deleted">' .
-					$this->msg( 'rev-deleted-comment' )->escaped() . '</span>';
-			}
-		} else {
-			return Linker::commentBlock( $rc->mAttribs['rc_comment'], $rc->getTitle() );
-		}
-	}
-
-	/**
-	 * Insert a formatted action. The same as parent, but with a different audience in LogFormatter
-	 *
-	 * @param RecentChange $rc
-	 * @return string
-	 */
-	public function insertLogEntry( $rc ) {
-		$formatter = LogFormatter::newFromRow( $rc->mAttribs );
-		$formatter->setContext( $this->getContext() );
-		$formatter->setAudience( LogFormatter::FOR_THIS_USER );
-		$formatter->setShowUserToolLinks( true );
-		$mark = $this->getLanguage()->getDirMark();
-		return $formatter->getActionText() . " $mark" . $formatter->getComment();
-	}
-
-	// Kill rollback links.
-	public function insertRollback( &$s, &$rc ) {
-	}
 }

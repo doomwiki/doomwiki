@@ -5,11 +5,12 @@
 		]
 	},
 	"minerva-last-modified-date": "Fir d'lescht geännert den $1 ëm $2",
-	"minerva-talk-add-topic": "Diskussioun derbäisetzen",
+	"minerva-talk-add-topic": "Diskussioun dobäisetzen",
 	"mobile-frontend-editor-blocked-info-loggedin": "Äre Benotzerkont ass gespaart fir z'änneren. D'Spär gouf vum {{GENDER:$2|$2}} aus dësem Grond gemaach: $1",
 	"mobile-frontend-editor-cta": "Hëlleft dës Säit ze verbesseren!",
 	"mobile-frontend-editor-disabled": "Dës Säit ass geschützt fir Vandalismus ze verhënneren.",
 	"mobile-frontend-editor-edit": "Änneren",
+	"minerva-download": "Eroflueden",
 	"mobile-frontend-editor-redlink-create": "Säit uleeën",
 	"mobile-frontend-editor-redlink-explain": "Dës Säit gouf nach net ugeluecht.",
 	"mobile-frontend-editor-redlink-leave": "Nee, Merci.",
@@ -34,7 +35,7 @@
 	"mobile-frontend-main-menu-watchlist": "Iwwerwaachungslëscht",
 	"mobile-frontend-meta-data-issues": "Problemer mat der Säit",
 	"mobile-frontend-meta-data-issues-categories": "Iwwer dës Kategorie",
-	"mobile-frontend-meta-data-issues-header": "Problemer",
+	"mobile-frontend-meta-data-issues-header": "Problemer mat Säiten",
 	"mobile-frontend-meta-data-issues-header-talk": "Iwwer dës Säit",
 	"mobile-frontend-meta-data-issues-talk": "Iwwer dës Diskussiouns-Säit",
 	"mobile-frontend-notifications-filter": "Filter",
@@ -50,5 +51,7 @@
 	"mobile-frontend-user-page-contributions": "Kontributiounen",
 	"mobile-frontend-user-page-member-since": "{{GENDER:$2|Bäigetrueden}} $1",
 	"mobile-frontend-user-page-talk": "Diskussioun",
-	"mobile-frontend-user-page-uploads": "Eropgeluede Fichieren"
+	"mobile-frontend-user-page-uploads": "Eropgeluede Fichieren",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Kategorien",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Kategorie vu Säite weisen"
 }

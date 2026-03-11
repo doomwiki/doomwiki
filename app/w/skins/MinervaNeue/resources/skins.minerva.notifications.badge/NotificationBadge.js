@@ -1,7 +1,10 @@
 ( function ( M ) {
 	var View = M.require( 'mobile.startup/View' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
-		notificationIcon = new Icon( { name: 'notifications' } ),
+		notificationIcon = new Icon( {
+			name: 'notifications',
+			glyphPrefix: 'minerva'
+		} ),
 		icons = M.require( 'mobile.startup/icons' );
 
 	/**
@@ -11,9 +14,11 @@
 	 *
 	 * @constructor
 	 * @param {Object} options Configuration options
+	 * @module skins.minerva.notifications/NotificationBadge
 	 */
 	function NotificationBadge( options ) {
 		var $el,
+			count = options.notificationCountRaw || 0,
 			el = options.el;
 
 		if ( el ) {
@@ -22,11 +27,16 @@
 			options.hasNotifications = options.hasUnseenNotifications;
 			options.title = $el.find( 'a' ).attr( 'title' );
 			options.url = $el.find( 'a' ).attr( 'href' );
-			options.notificationCount = parseInt( $el.find( 'span' ).text(), 10 );
+			count = Number( $el.find( 'span' ).data( 'notification-count' ) );
+			options.onError = function () {
+				// FIXME: Blocked on T189173. Ideally we'd use the router here.
+				window.location.href = this.getNotificationURL();
+			}.bind( this );
 		}
 		View.call( this, options );
-		this.url = this.$el.find( 'a' ).attr( 'href' );
+		this.url = options.url;
 		this._bindOverlayManager();
+		this.setCount( count );
 	}
 
 	OO.mfExtend( NotificationBadge, View, {
@@ -35,14 +45,14 @@
 		 * @cfg {String} defaults.notificationIconClass e.g. mw-ui-icon for icon
 		 * @cfg {String} defaults.loadingIconHtml for spinner
 		 * @cfg {Boolean} defaults.hasUnseenNotifications whether the user has unseen notifications
-		 * @cfg {Number} defaults.notificationCount number of unread notifications
-		 */
+		 * @cfg {Number} defaults.notificationCountRaw number of unread notifications
+	 */
 		defaults: {
 			notificationIconClass: notificationIcon.getClassName(),
 			loadingIconHtml: icons.spinner().toHtmlString(),
 			hasNotifications: false,
 			hasUnseenNotifications: false,
-			notificationCount: 0
+			notificationCountRaw: 0
 		},
 		isBorderBox: false,
 		/**
@@ -126,7 +136,13 @@
 		 * @param {Number} count
 		 */
 		setCount: function ( count ) {
-			this.options.notificationCount = count;
+			if ( count > 100 ) {
+				count = 100;
+			}
+			this.options.notificationCountRaw = count;
+			this.options.notificationCountString = mw.message( 'echo-badge-count',
+				mw.language.convertNumber( count )
+			).text();
 			this.options.isNotificationCountZero = count === 0;
 			this.render();
 		},

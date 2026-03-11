@@ -1,12 +1,6 @@
 <?php
 
 /**
- * API for MediaWiki 1.14+
- *
- * Created on Sep 2, 2008
- *
- * Copyright © 2008 Chad Horohoe
- *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -32,12 +26,20 @@ use MediaWiki\MediaWikiServices;
  * @ingroup API
  */
 class ApiPurge extends ApiBase {
-	private $mPageSet;
+	private $mPageSet = null;
 
 	/**
 	 * Purges the cache of a page
 	 */
 	public function execute() {
+		$user = $this->getUser();
+
+		// Fail early if the user is blocked.
+		$block = $user->getBlock();
+		if ( $block ) {
+			$this->dieBlocked( $block );
+		}
+
 		$params = $this->extractRequestParams();
 
 		$continuationManager = new ApiContinuationManager( $this, [], [] );
@@ -49,7 +51,6 @@ class ApiPurge extends ApiBase {
 		$pageSet->execute();
 
 		$result = $pageSet->getInvalidTitlesAndRevisions();
-		$user = $this->getUser();
 
 		foreach ( $pageSet->getGoodTitles() as $title ) {
 			$r = [];
@@ -93,6 +94,7 @@ class ApiPurge extends ApiBase {
 						$updates = $content->getSecondaryDataUpdates(
 							$title, null, $forceRecursiveLinkUpdate, $p_result );
 						foreach ( $updates as $update ) {
+							$update->setCause( 'api-purge', $this->getUser()->getName() );
 							DeferredUpdates::addUpdate( $update, DeferredUpdates::PRESEND );
 						}
 
@@ -137,7 +139,7 @@ class ApiPurge extends ApiBase {
 	 * @return ApiPageSet
 	 */
 	private function getPageSet() {
-		if ( !isset( $this->mPageSet ) ) {
+		if ( $this->mPageSet === null ) {
 			$this->mPageSet = new ApiPageSet( $this );
 		}
 

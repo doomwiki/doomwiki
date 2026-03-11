@@ -42,6 +42,8 @@
 	"checkuser-nomatch": "মিলে যায় এমন কিছু পাওয়া যায়নি।",
 	"checkuser-nomatch-edits": "কোন মিল খুঁজে পাওয়া যায়নি।\nশেষ সম্পাদনাটি ছিল $1 তারিখে $2 টায়।",
 	"checkuser-check": "পরীক্ষা করুন",
+	"checkuser-check-this-user": "এই ব্যবহারাকারীকে পরীক্ষণ করুন",
+	"checkuser-recent-checks": "এই ব্যবহারকারীর জন্য সাম্প্রতিক পরীক্ষাগুলি",
 	"checkuser-log-fail": "লগ ভুক্তিতে যোগ করা সম্ভব হচ্ছে না",
 	"checkuser-nolog": "কোন লগ ফাইল পাওয়া যায়নি।",
 	"checkuser-blocked": "বাধা দেওয়া হয়েছে",
@@ -81,10 +83,8 @@
 	"checkuser-log-entry-useredits": "$3, $1 $2-এর জন্য সম্পাদনাগুলি পেয়েছেন",
 	"checkuser-autocreate-action": "স্বয়ংক্রিয়ভাবে তৈরি হয়েছিলো",
 	"checkuser-create-action": "তৈরি করা হয়েছে",
-	"checkuser-email-action": "ব্যবহারকারী \"$1\"-এর কাছে একটি ই-মেইল পাঠাও",
+	"checkuser-email-action": "ব্যবহারকারী \"$1\" কে একটি ই-মেইল পাঠিয়েছে",
 	"checkuser-reset-action": "ব্যবহারকারী \"$1\"-এর জন্য পাসওয়ার্ড পুনঃস্থাপন করো",
-	"checkuser-userlinks-ip": "([[User_talk:$1|আলাপ]] | [[Special:Contributions/$1|অবদান]] | [[Special:Block/$1|বাধা দিন]] | <span class=\"plainlinks\">[https://www.robtex.com/whois/$1.html WHOIS/RDNS]</span>)",
-	"checkuser-userlinks": "([[User_talk:$1|আলাপ]] | [[Special:Contributions/$1|অবদান]] | [[Special:Block/$1|বাধা দিন]])",
 	"checkuser-token-fail": "সেশন ব্যর্থতা। অনুগ্রহপূর্বক আবার চেষ্টা করুন।",
 	"apihelp-query+checkuser-param-reason": "পরীক্ষার কারণ।"
 }

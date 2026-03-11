@@ -36,7 +36,7 @@ class AFPData {
 	}
 
 	/**
-	 * @param $var
+	 * @param mixed $var
 	 * @return AFPData
 	 * @throws AFPException
 	 */
@@ -73,8 +73,8 @@ class AFPData {
 	}
 
 	/**
-	 * @param $orig AFPData
-	 * @param $target
+	 * @param AFPData $orig
+	 * @param string $target
 	 * @return AFPData
 	 */
 	public static function castTypes( $orig, $target ) {
@@ -123,7 +123,7 @@ class AFPData {
 	}
 
 	/**
-	 * @param $value AFPData
+	 * @param AFPData $value
 	 * @return AFPData
 	 */
 	public static function boolInvert( $value ) {
@@ -131,17 +131,22 @@ class AFPData {
 	}
 
 	/**
-	 * @param $base AFPData
-	 * @param $exponent AFPData
+	 * @param AFPData $base
+	 * @param AFPData $exponent
 	 * @return AFPData
 	 */
 	public static function pow( $base, $exponent ) {
-		return new AFPData( self::DFLOAT, pow( $base->toFloat(), $exponent->toFloat() ) );
+		$res = pow( $base->toNumber(), $exponent->toNumber() );
+		if ( $res === (int)$res ) {
+			return new AFPData( self::DINT, $res );
+		} else {
+			return new AFPData( self::DFLOAT, $res );
+		}
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
+	 * @param AFPData $a
+	 * @param AFPData $b
 	 * @return AFPData
 	 */
 	public static function keywordIn( $a, $b ) {
@@ -156,8 +161,8 @@ class AFPData {
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
+	 * @param AFPData $a
+	 * @param AFPData $b
 	 * @return AFPData
 	 */
 	public static function keywordContains( $a, $b ) {
@@ -172,8 +177,8 @@ class AFPData {
 	}
 
 	/**
-	 * @param $value
-	 * @param $list
+	 * @param string $value
+	 * @param mixed $list
 	 * @return bool
 	 */
 	public static function listContains( $value, $list ) {
@@ -188,35 +193,56 @@ class AFPData {
 	}
 
 	/**
-	 * @param $d1 AFPData
-	 * @param $d2 AFPData
+	 * @ToDo Should we also build a proper system to compare arrays with different types?
+	 * @param AFPData $d1
+	 * @param AFPData $d2
+	 * @param bool $strict whether to also check types
 	 * @return bool
 	 */
-	public static function equals( $d1, $d2 ) {
-		return $d1->type != self::DLIST && $d2->type != self::DLIST &&
-		$d1->toString() === $d2->toString();
+	public static function equals( $d1, $d2, $strict = false ) {
+		if ( $d1->type != self::DLIST && $d2->type != self::DLIST ) {
+			$typecheck = $d1->type == $d2->type || !$strict;
+			return $typecheck && $d1->toString() === $d2->toString();
+		} elseif ( $d1->type == self::DLIST && $d2->type == self::DLIST ) {
+			$data1 = $d1->data;
+			$data2 = $d2->data;
+			if ( count( $data1 ) !== count( $data2 ) ) {
+				return false;
+			}
+			$length = count( $data1 );
+			for ( $i = 0; $i < $length; $i++ ) {
+				$result = self::equals( $data1[$i], $data2[$i], $strict );
+				if ( $result === false ) {
+					return false;
+				}
+			}
+			return true;
+		} else {
+			// Trying to compare an array to something else
+			return false;
+		}
 	}
 
 	/**
-	 * @param $str AFPData
-	 * @param $pattern AFPData
+	 * @param AFPData $str
+	 * @param AFPData $pattern
 	 * @return AFPData
 	 */
 	public static function keywordLike( $str, $pattern ) {
 		$str = $str->toString();
 		$pattern = '#^' . strtr( preg_quote( $pattern->toString(), '#' ), self::$wildcardMap ) . '$#u';
-		MediaWiki\suppressWarnings();
+		Wikimedia\suppressWarnings();
 		$result = preg_match( $pattern, $str );
-		MediaWiki\restoreWarnings();
+		Wikimedia\restoreWarnings();
 
 		return new AFPData( self::DBOOL, (bool)$result );
 	}
 
 	/**
-	 * @param $str AFPData
-	 * @param $regex AFPData
-	 * @param $pos
-	 * @param $insensitive bool
+	 * @param AFPData $str
+	 * @param AFPData $regex
+	 * @param int $pos
+	 * @param bool $insensitive
 	 * @return AFPData
 	 * @throws Exception
 	 */
@@ -231,7 +257,9 @@ class AFPData {
 			$pattern .= 'i';
 		}
 
+		Wikimedia\suppressWarnings();
 		$result = preg_match( $pattern, $str );
+		Wikimedia\restoreWarnings();
 		if ( $result === false ) {
 			throw new AFPUserVisibleException(
 				'regexfailure',
@@ -244,9 +272,9 @@ class AFPData {
 	}
 
 	/**
-	 * @param $str
-	 * @param $regex
-	 * @param $pos
+	 * @param string $str
+	 * @param string $regex
+	 * @param int $pos
 	 * @return AFPData
 	 */
 	public static function keywordRegexInsensitive( $str, $regex, $pos ) {
@@ -254,7 +282,7 @@ class AFPData {
 	}
 
 	/**
-	 * @param $data AFPData
+	 * @param AFPData $data
 	 * @return AFPData
 	 */
 	public static function unaryMinus( $data ) {
@@ -266,9 +294,9 @@ class AFPData {
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
-	 * @param $op string
+	 * @param AFPData $a
+	 * @param AFPData $b
+	 * @param string $op
 	 * @return AFPData
 	 * @throws AFPException
 	 */
@@ -288,9 +316,9 @@ class AFPData {
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
-	 * @param $op string
+	 * @param AFPData $a
+	 * @param AFPData $b
+	 * @param string $op
 	 * @return AFPData
 	 * @throws AFPException
 	 */
@@ -302,10 +330,10 @@ class AFPData {
 			return new AFPData( self::DBOOL, !self::equals( $a, $b ) );
 		}
 		if ( $op == '===' ) {
-			return new AFPData( self::DBOOL, $a->type == $b->type && self::equals( $a, $b ) );
+			return new AFPData( self::DBOOL, self::equals( $a, $b, true ) );
 		}
 		if ( $op == '!==' ) {
-			return new AFPData( self::DBOOL, $a->type != $b->type || !self::equals( $a, $b ) );
+			return new AFPData( self::DBOOL, !self::equals( $a, $b, true ) );
 		}
 		$a = $a->toString();
 		$b = $b->toString();
@@ -325,27 +353,17 @@ class AFPData {
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
-	 * @param $op string
-	 * @param $pos
+	 * @param AFPData $a
+	 * @param AFPData $b
+	 * @param string $op
+	 * @param int $pos
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 * @throws AFPException
 	 */
 	public static function mulRel( $a, $b, $op, $pos ) {
-		// Figure out the type.
-		if ( $a->type == self::DFLOAT || $b->type == self::DFLOAT ||
-			$a->toFloat() != $a->toString() || $b->toFloat() != $b->toString()
-		) {
-			$type = self::DFLOAT;
-			$a = $a->toFloat();
-			$b = $b->toFloat();
-		} else {
-			$type = self::DINT;
-			$a = $a->toInt();
-			$b = $b->toInt();
-		}
+		$a = $a->toNumber();
+		$b = $b->toNumber();
 
 		if ( $op != '*' && $b == 0 ) {
 			throw new AFPUserVisibleException( 'dividebyzero', $pos, [ $a ] );
@@ -362,18 +380,20 @@ class AFPData {
 			throw new AFPException( "Invalid multiplication-related operation: {$op}" );
 		}
 
-		if ( $type == self::DINT ) {
+		if ( $data === (int)$data ) {
 			$data = intval( $data );
+			$type = self::DINT;
 		} else {
 			$data = floatval( $data );
+			$type = self::DFLOAT;
 		}
 
 		return new AFPData( $type, $data );
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
+	 * @param AFPData $a
+	 * @param AFPData $b
 	 * @return AFPData
 	 */
 	public static function sum( $a, $b ) {
@@ -382,17 +402,27 @@ class AFPData {
 		} elseif ( $a->type == self::DLIST && $b->type == self::DLIST ) {
 			return new AFPData( self::DLIST, array_merge( $a->toList(), $b->toList() ) );
 		} else {
-			return new AFPData( self::DFLOAT, $a->toFloat() + $b->toFloat() );
+			$res = $a->toNumber() + $b->toNumber();
+			if ( $res === (int)$res ) {
+				return new AFPData( self::DINT, $res );
+			} else {
+				return new AFPData( self::DFLOAT, $res );
+			}
 		}
 	}
 
 	/**
-	 * @param $a AFPData
-	 * @param $b AFPData
+	 * @param AFPData $a
+	 * @param AFPData $b
 	 * @return AFPData
 	 */
 	public static function sub( $a, $b ) {
-		return new AFPData( self::DFLOAT, $a->toFloat() - $b->toFloat() );
+		$res = $a->toNumber() - $b->toNumber();
+		if ( $res === (int)$res ) {
+			return new AFPData( self::DINT, $res );
+		} else {
+			return new AFPData( self::DFLOAT, $res );
+		}
 	}
 
 	/** Convert shorteners */
@@ -452,6 +482,13 @@ class AFPData {
 	 */
 	public function toInt() {
 		return self::castTypes( $this, self::DINT )->data;
+	}
+
+	/**
+	 * @return int|float
+	 */
+	public function toNumber() {
+		return $this->type == self::DINT ? $this->toInt() : $this->toFloat();
 	}
 
 	public function toList() {

@@ -6,17 +6,20 @@
 			"Biathlon",
 			"Okras",
 			"Ole Yves",
-			"Redredsonia"
+			"Redredsonia",
+			"Kareyac",
+			"Patrick Star"
 		]
 	},
 	"minerva-last-modified-date": "Последний раз редактировалась $1 в $2",
 	"minerva-talk-add-topic": "Добавить обсуждение",
-	"mobile-frontend-console-recruit": "\\o/ Привет! Это программное обеспечение с открытым исходным кодом, и мы нуждаемся в волонтерах, которые бы помогали нам в разработке, улучшении и исправлении ошибок, которые ты можешь видеть в этой консоли JavaScript!\n\nТы можешь найти нас здесь @ https://phabricator.wikimedia.org/project/profile/67/",
 	"mobile-frontend-cookies-required": "Для переключения режимов просмотра требуются файлы cookie. Пожалуйста, включите их и повторите попытку.",
 	"mobile-frontend-editor-blocked-info-loggedin": "Возможность редактирования с вашей учётной записи заблокирована. Блокировка была сделана {{GENDER:$2|участником|участницей}} $2 по следующей причине: $1",
 	"mobile-frontend-editor-cta": "Помогите улучшить эту страницу!",
+	"minerva-pointer-dismiss": "Закрыть",
 	"mobile-frontend-editor-disabled": "Эта страница защищена ради предотвращения вандализма.",
 	"mobile-frontend-editor-edit": "Править",
+	"minerva-download": "Скачать",
 	"mobile-frontend-editor-redlink-create": "Создать страницу",
 	"mobile-frontend-editor-redlink-explain": "Эта страница ещё не была создана.",
 	"mobile-frontend-editor-redlink-leave": "Нет, спасибо.",
@@ -41,7 +44,7 @@
 	"mobile-frontend-main-menu-watchlist": "Список наблюдения",
 	"mobile-frontend-meta-data-issues": "Вопросы по странице",
 	"mobile-frontend-meta-data-issues-categories": "Об этой категории",
-	"mobile-frontend-meta-data-issues-header": "Вопросы",
+	"mobile-frontend-meta-data-issues-header": "Вопросы по странице",
 	"mobile-frontend-meta-data-issues-header-talk": "Об этой странице",
 	"mobile-frontend-meta-data-issues-talk": "Об этой странице обсуждения",
 	"mobile-frontend-notifications-filter": "Фильтр",
@@ -59,5 +62,9 @@
 	"mobile-frontend-user-page-member-since": "{{GENDER:$2|Присоединился|Присоединилась}} $1",
 	"mobile-frontend-user-page-talk": "Обсуждение",
 	"mobile-frontend-user-page-uploads": "Загрузки",
-	"minerva-skin-desc": "Первая адаптивная мобильная тема оформления."
+	"minerva-skin-desc": "Первая адаптивная мобильная тема оформления.",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Категории",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Посмотреть категории страниц",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "Перейти наверх",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "Перейти наверх на текущей странице с помощью плавающей кнопки"
 }

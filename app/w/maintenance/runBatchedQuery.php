@@ -87,6 +87,7 @@ class BatchedQueryRunner extends Maintenance {
 				$updateConds = array_merge( $where, [ "$key <= $end" ] );
 			} else {
 				$updateConds = $where;
+				$end = false;
 			}
 			if ( $prevEnd !== false ) {
 				$updateConds = array_merge( [ "$key > $prevEnd" ], $updateConds );
@@ -111,5 +112,5 @@ class BatchedQueryRunner extends Maintenance {
 	}
 }
 
-$maintClass = "BatchedQueryRunner";
+$maintClass = BatchedQueryRunner::class;
 require_once RUN_MAINTENANCE_IF_MAIN;

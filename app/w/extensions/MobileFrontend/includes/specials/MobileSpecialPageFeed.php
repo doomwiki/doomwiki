@@ -1,7 +1,4 @@
 <?php
-/**
- * MobileSpecialPageFeed.php
- */
 
 /**
  * This is an abstract class intended for use by special pages that consist primarily of
@@ -31,6 +28,7 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 	 * @param string $comment The raw comment text
 	 * @param Title $title The title of the page that was edited
 	 * @fixme: Duplication with SpecialMobileWatchlist
+	 * @suppress SecurityCheck-DoubleEscaped phan false positive
 	 *
 	 * @return string HTML code
 	 */
@@ -40,7 +38,7 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 		} else {
 			$comment = Linker::formatComment( $comment, $title );
 			// flatten back to text
-			$comment = Sanitizer::stripAllTags( $comment );
+			$comment = htmlspecialchars( Sanitizer::stripAllTags( $comment ) );
 		}
 		return $comment;
 	}
@@ -54,11 +52,11 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 		if ( !isset( $this->lastDate ) || $date !== $this->lastDate ) {
 			$output = $this->getOutput();
 			if ( isset( $this->lastDate ) ) {
-				$output->addHtml(
+				$output->addHTML(
 					Html::closeElement( 'ul' )
 				);
 			}
-			$output->addHtml(
+			$output->addHTML(
 				Html::element( 'h2', [ 'class' => 'list-header' ], $date ) .
 				Html::openElement( 'ul', [
 						'class' => 'page-list diff-summary-list side-list'
@@ -67,6 +65,56 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 			);
 		}
 		$this->lastDate = $date;
+	}
+
+	/**
+	 * Generates revision text based on user's rights and preference
+	 * @param Revision $rev
+	 * @param User $user viewing the revision
+	 * @param bool $unhide whether the user wants to see hidden comments
+	 *   if the user doesn't have prmission comment will display as rev-deleted-comment
+	 * @return string plain test label
+	 */
+	protected function getRevisionCommentHTML( $rev, $user, $unhide ) {
+		if ( $rev->userCan( Revision::DELETED_COMMENT, $user ) ) {
+			if ( $rev->isDeleted( Revision::DELETED_COMMENT ) && !$unhide ) {
+				$comment = $this->msg( 'rev-deleted-comment' )->plain();
+			} else {
+				$comment = $rev->getComment( Revision::FOR_THIS_USER, $user );
+				// escape any HTML in summary and add CSS for any auto-generated comments
+				$comment = $this->formatComment( $comment, $this->title );
+			}
+		} else {
+			// Confusingly "Revision::userCan" Determines if the current user is
+			// allowed to view a particular field of this revision, /if/ it's marked as
+			// deleted. This will only get executed in event a comment has been deleted
+			// and user cannot view it.
+			$comment = $this->msg( 'rev-deleted-comment' )->plain();
+		}
+		return $comment;
+	}
+
+	/**
+	 * Generates username text based on user's rights and preference
+	 * @param Revision $rev
+	 * @param User $user viewing the revision
+	 * @param bool $unhide whether the user wants to see hidden usernames
+	 * @return string plain test label
+	 */
+	protected function getUsernameText( $rev, $user, $unhide ) {
+		$userId = $rev->getUser( Revision::FOR_THIS_USER, $user );
+		if ( $userId === 0 ) {
+			$username = IP::prettifyIP( $rev->getUserText( Revision::RAW ) );
+		} else {
+			$username = $rev->getUserText( Revision::FOR_THIS_USER, $user );
+		}
+		if (
+			!$rev->userCan( Revision::DELETED_USER, $user ) ||
+			( $rev->isDeleted( Revision::DELETED_USER ) && !$unhide )
+		) {
+			$username = $this->msg( 'rev-deleted-user' )->plain();
+		}
+		return $username;
 	}
 
 	/**
@@ -150,6 +198,6 @@ abstract class MobileSpecialPageFeed extends MobileSpecialPage {
 		}
 		$html .= Html::closeElement( 'li' );
 
-		$output->addHtml( $html );
+		$output->addHTML( $html );
 	}
 }

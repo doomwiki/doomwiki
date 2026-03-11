@@ -2,12 +2,12 @@
 function sf_focus(e) {
 
 	// Let's make sure that we are going only one time thru the initialization procedure
-	if(!window.sf_initiated) {
+	if (!window.sf_initiated) {
 		window.sf_initiated = true;
 
 		// onblur handler for #search_field  - if the search field value is empty then recover it to default and remove field_active class
 		$('#search_field').blur(function() {
-			if($("#search_field").val() == '') {
+			if ($("#search_field").val() == '') {
 				$("#search_field").val($("#search_field").attr('alt')).removeClass("field_active");
 			}
 		});
@@ -26,12 +26,12 @@ function sf_focus(e) {
 				deferRequestBy: 1000,
 				appendTo: '#search_box'
 			});
-		    $('body').children('div').slice(-1).css('zIndex', 20000);
+			$('body').children('div').slice(-1).css('zIndex', 20000);
 		});
 	}
 
 	// if the search field value is same as a default then clean it and add field_active class
-	if($('#search_field').val() == $("#search_field").attr('alt')) {
+	if ($('#search_field').val() == $("#search_field").attr('alt')) {
 		$('#search_field').val('').addClass('field_active');
 	}
 }

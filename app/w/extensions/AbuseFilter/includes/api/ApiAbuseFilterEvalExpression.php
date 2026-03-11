@@ -2,6 +2,11 @@
 
 class ApiAbuseFilterEvalExpression extends ApiBase {
 	public function execute() {
+		// "Anti-DoS"
+		if ( !AbuseFilter::canViewPrivate( $this->getUser() ) ) {
+			$this->dieWithError( 'apierror-abusefilter-canteval', 'permissiondenied' );
+		}
+
 		$params = $this->extractRequestParams();
 
 		$result = AbuseFilter::evaluateExpression( $params['expression'] );
@@ -19,6 +24,7 @@ class ApiAbuseFilterEvalExpression extends ApiBase {
 
 	/**
 	 * @see ApiBase::getExamplesMessages()
+	 * @return array
 	 */
 	protected function getExamplesMessages() {
 		return [

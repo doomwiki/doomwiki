@@ -1,9 +1,12 @@
 <?php
 
 namespace RemexHtml\Serializer;
+
 use RemexHtml\PropGuard;
 
 class SerializerNode {
+	use PropGuard;
+
 	public $id;
 	public $parentId;
 	public $namespace;
@@ -26,7 +29,11 @@ class SerializerNode {
 		$this->void = $void;
 	}
 
-	public function __set( $name, $value ) {
-		PropGuard::set( $this, $name, $value );
+	/**
+	 * Get a string identifying the node, for use in debugging.
+	 * @return string
+	 */
+	public function getDebugTag() {
+		return $this->name . '#' . $this->id;
 	}
 }

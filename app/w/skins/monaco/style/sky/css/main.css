@@ -21,10 +21,10 @@
 	color: #333;
 }
 .dark_text_1 {
- 	color: #036;
+	color: #036;
 }
 .dark_text_2 {
- 	color: #222;
+	color: #222;
 }
 
 #background_strip {
@@ -151,7 +151,7 @@ body.masthead-special #page_bar {
 	background-image: -webkit-gradient(linear, left top, left bottom, from(#4598E6), to(#A2C8F9));
 	border-color: #4598E6;
 }
-body.masthead-regular #page_controls a, 
+body.masthead-regular #page_controls a,
 body.masthead-special #page_controls a {
 	color: #FFF;
 }

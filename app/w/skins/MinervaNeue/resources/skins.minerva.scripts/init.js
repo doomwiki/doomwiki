@@ -1,18 +1,16 @@
-( function ( M, $ ) {
-	var inSample, inStable, experiment,
+( function ( M, track, config, $ ) {
+	var
 		toast = M.require( 'mobile.startup/toast' ),
 		time = M.require( 'mobile.startup/time' ),
-		token = mw.storage.get( 'mobile-betaoptin-token' ),
-		BetaOptinPanel = M.require( 'mobile.betaoptin/BetaOptinPanel' ),
+		skin = M.require( 'mobile.init/skin' ),
+		DownloadIcon = M.require( 'skins.minerva.scripts/DownloadIcon' ),
+		browser = M.require( 'mobile.startup/Browser' ).getSingleton(),
 		loader = M.require( 'mobile.startup/rlModuleLoader' ),
 		router = require( 'mediawiki.router' ),
-		context = M.require( 'mobile.startup/context' ),
 		OverlayManager = M.require( 'mobile.startup/OverlayManager' ),
 		overlayManager = new OverlayManager( require( 'mediawiki.router' ) ),
 		page = M.getCurrentPage(),
-		thumbs = page.getThumbnails(),
-		experiments = mw.config.get( 'wgMFExperiments' ) || {},
-		betaOptinPanel;
+		thumbs = page.getThumbnails();
 
 	/**
 	 * Event handler for clicking on an image thumbnail
@@ -21,7 +19,15 @@
 	 */
 	function onClickImage( ev ) {
 		ev.preventDefault();
-		router.navigate( '#/media/' + encodeURIComponent( $( this ).data( 'thumb' ).getFileName() ) );
+		routeThumbnail( $( this ).data( 'thumb' ) );
+	}
+
+	/**
+	 * @param {jQuery.Element} thumbnail
+	 * @ignore
+	 */
+	function routeThumbnail( thumbnail ) {
+		router.navigate( '#/media/' + encodeURIComponent( thumbnail.getFileName() ) );
 	}
 
 	/**
@@ -74,6 +80,18 @@
 	}
 
 	/**
+	 * Loads tablet modules when the skin is in tablet mode and the
+	 * current page is in the main namespace.
+	 * @method
+	 * @ignore
+	 */
+	function loadTabletModules() {
+		if ( browser.isWideScreen() && page.inNamespace( '' ) ) {
+			mw.loader.using( 'skins.minerva.tablet.scripts' );
+		}
+	}
+
+	/**
 	 * Load image overlay
 	 * @method
 	 * @ignore
@@ -88,12 +106,22 @@
 			return $.Deferred().reject();
 		} else {
 			return loader.loadModule( 'mobile.mediaViewer' ).then( function () {
-				var ImageOverlay = M.require( 'mobile.mediaViewer/ImageOverlay' );
-				return new ImageOverlay( {
-					api: new mw.Api(),
-					thumbnails: thumbs,
-					title: decodeURIComponent( title )
+				var ImageOverlay = M.require( 'mobile.mediaViewer/ImageOverlay' ),
+					imageOverlay = new ImageOverlay( {
+						api: new mw.Api(),
+						thumbnails: thumbs,
+						title: decodeURIComponent( title )
+					} );
+				imageOverlay.on( ImageOverlay.EVENT_EXIT, function () {
+					// Actually dismiss the overlay whenever the cross is closed.
+					window.location.hash = '';
+					// Clear the hash.
+					router.navigate( '' );
 				} );
+				imageOverlay.on( ImageOverlay.EVENT_SLIDE, function ( nextThumbnail ) {
+					routeThumbnail( nextThumbnail );
+				} );
+				return imageOverlay;
 			} );
 		}
 	}
@@ -126,35 +154,6 @@
 	$( function () {
 		initButton();
 		initMediaViewer();
-	} );
-
-	// Access the beta optin experiment if available.
-	experiment = experiments.betaoptin || false;
-	// local storage is supported in this case, when ~ means it was dismissed
-	if ( experiment && token !== false && token !== '~' && !page.isMainPage() && !page.inNamespace( 'special' ) ) {
-		if ( !token ) {
-			token = mw.user.generateRandomSessionId();
-			mw.storage.set( 'mobile-betaoptin-token', token );
-		}
-
-		inStable = context.getMode() === 'stable';
-		inSample = mw.experiments.getBucket( experiment, token ) === 'A';
-		if ( inStable && ( inSample || mw.util.getParamValue( 'debug' ) ) ) {
-			betaOptinPanel = new BetaOptinPanel( {
-				postUrl: mw.util.getUrl( 'Special:MobileOptions', {
-					returnto: page.title
-				} )
-			} )
-				.on( 'hide', function () {
-					mw.storage.set( 'mobile-betaoptin-token', '~' );
-				} )
-				.appendTo( M.getCurrentPage().getLeadSectionElement() );
-		}
-	}
-
-	// let the interested parties know whether the panel is shown
-	mw.track( 'minerva.betaoptin', {
-		isPanelShown: betaOptinPanel !== undefined
 	} );
 
 	/**
@@ -238,12 +237,38 @@
 		} );
 	}
 
+	/**
+	 * Initialize and inject the download button
+	 *
+	 * There are many restrictions when we can show the download button, this function should handle
+	 * all device/os/operating system related checks and if device supports printing it will inject
+	 * the Download icon
+	 * @ignore
+	 */
+	function appendDownloadButton() {
+		var downloadIcon = new DownloadIcon( skin, config.get( 'wgMinervaDownloadNamespaces' ), window );
+
+		if ( downloadIcon.isAvailable( navigator.userAgent ) ) {
+			// Because the page actions are floated to the right, their order in the
+			// DOM is reversed in the display. The watchstar is last in the DOM and
+			// left-most in the display. Since we want the download button to be to
+			// the left of the watchstar, we put it after it in the DOM.
+			downloadIcon.$el.insertAfter( '#ca-watch' );
+			track( 'minerva.downloadAsPDF', {
+				action: 'buttonVisible'
+			} );
+		}
+	}
+
 	$( function () {
 		// Update anything else that needs enhancing (e.g. watchlist)
 		initModifiedInfo();
 		initRegistrationInfo();
 		initHistoryLink( $( '.last-modifier-tagline a' ) );
+		M.on( 'resize', loadTabletModules );
+		loadTabletModules();
+		appendDownloadButton();
 	} );
 
 	M.define( 'skins.minerva.scripts/overlayManager', overlayManager );
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend, mw.track, mw.config, jQuery ) );

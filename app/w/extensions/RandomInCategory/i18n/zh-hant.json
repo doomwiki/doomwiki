@@ -5,10 +5,14 @@
 			"Mark85296341",
 			"Oapbtommy",
 			"Wrightbus",
-			"Cwlin0416"
+			"Cwlin0416",
+			"Kly"
 		]
 	},
+	"randomincategory": "分類裡的隨機頁面",
+	"randomincategory-desc": "以[[Special:Randompageincategory|特殊頁面]]取得在分類裡的隨機頁面",
 	"randomincategory-toolbox": "隨機頁面",
+	"randomincategory-nocategory": "分類「$1」不存在或是內容為空",
 	"randomincategory-label": "類別：",
 	"randomincategory-submit": "前往"
 }

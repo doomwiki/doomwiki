@@ -52,7 +52,13 @@ class DeviceDetectorServiceIntegrationTest extends MediaWikiTestCase {
 		);
 	}
 
-	public function test_it_should_handle_requests_from_mobile_UAs() {
+	/**
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::factory
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::detectDeviceProperties
+	 * @covers MobileFrontend\Devices\DeviceProperties::isMobileDevice
+	 * @covers MobileFrontend\Devices\DeviceProperties::isTabletDevice
+	 */
+	public function testItShouldHandleRequestsFromMobileUAs() {
 		$this->whenTheRequestIsFromAMobileUA();
 
 		$properties = $this->detectDeviceProperties();
@@ -61,14 +67,26 @@ class DeviceDetectorServiceIntegrationTest extends MediaWikiTestCase {
 		$this->assertFalse( $properties->isTabletDevice() );
 	}
 
-	public function test_it_should_handle_a_request_from_desktop_browsers() {
+	/**
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::factory
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::detectDeviceProperties
+	 * @covers MobileFrontend\Devices\DeviceProperties::isMobileDevice
+	 * @covers MobileFrontend\Devices\DeviceProperties::isTabletDevice
+	 */
+	public function testItShouldHandleARequestFromDesktopBrowsers() {
 		$properties = $this->detectDeviceProperties();
 
 		$this->assertFalse( $properties->isMobileDevice() );
 		$this->assertFalse( $properties->isTabletDevice() );
 	}
 
-	public function test_it_should_prioritize_the_custom_request_header() {
+	/**
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::factory
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::detectDeviceProperties
+	 * @covers MobileFrontend\Devices\DeviceProperties::isMobileDevice
+	 * @covers MobileFrontend\Devices\DeviceProperties::isTabletDevice
+	 */
+	public function testItShouldPrioritizeTheCustomRequestHeader() {
 		// @codingStandardsIgnoreStart
 		// The custom header //should// either be M or ZERO, per
 		// <https://github.com/wikimedia/operations-puppet/blob/2a2714c28eab25eed469375dc5322ea6a6ef85df/modules/varnish/templates/text-frontend.inc.vcl.erb#L74-L78>.
@@ -84,8 +102,12 @@ class DeviceDetectorServiceIntegrationTest extends MediaWikiTestCase {
 
 	/**
 	 * @FIXME Should this really be the case?
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::factory
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::detectDeviceProperties
+	 * @covers MobileFrontend\Devices\DeviceProperties::isMobileDevice
+	 * @covers MobileFrontend\Devices\DeviceProperties::isTabletDevice
 	 */
-	public function test_it_should_prioritize_the_amf_environment_variables() {
+	public function testItShouldPrioritizeTheAmfEnvironmentVariables() {
 		$this->request->setHeader( 'X-Subdomain', 'M' );
 
 		$this->server[ 'AMF_DEVICE_IS_TABLET' ] = 'true';
@@ -99,7 +121,11 @@ class DeviceDetectorServiceIntegrationTest extends MediaWikiTestCase {
 		$this->assertTrue( $properties->isTabletDevice() );
 	}
 
-	public function test_it_should_handle_device_detection_being_disabled() {
+	/**
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::factory
+	 * @covers MobileFrontend\Devices\DeviceDetectorService::detectDeviceProperties
+	 */
+	public function testItShouldHandleDeviceDetectionBeingDisabled() {
 		$this->setMwGlobals( 'wgMFAutodetectMobileView', false );
 
 		$this->whenTheRequestIsFromAMobileUA();

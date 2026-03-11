@@ -63,7 +63,6 @@
 	"mobile-frontend-donate-image-title": "Yüklemeler",
 	"mobile-frontend-donate-image-title-username": "$1 tarafından yüklendi",
 	"mobile-frontend-donate-image-title-you": "Siz yüklediniz",
-	"mobile-frontend-pointer-dismiss": "Kapat",
 	"mobile-frontend-edit-login-action": "<strong>{{SITENAME}}'yi geliştirmemize yardımcı olun.</strong><br />Düzenlemek için giriş yapın.",
 	"mobile-frontend-edit-signup-action": "<strong>{{SITENAME}}'yi geliştirmemize yardımcı olun.</strong><br />Düzenlemek için kayıt olun.",
 	"mobile-frontend-editor-abusefilter-disallow": "Bu düzenleme kaydedilemiyor çünkü bir sorun saptadık.",
@@ -144,13 +143,8 @@
 	"mobile-frontend-nearby-error": "{{SITENAME}} Yakılarınızdaki bazı sorunlar yaşıyor.",
 	"mobile-frontend-nearby-error-guidance": "Konumunuzu yenilemeyi deneyin.",
 	"mobile-frontend-nearby-loading": "Bulunduğunuz konuma en yakın konular yükleniyor",
-	"mobile-frontend-nearby-lookup-ui-error": "{{SITENAME}} yakınındakiler tespit edilemedi… tekrar deneyin?",
-	"mobile-frontend-nearby-lookup-ui-error-guidance": "Açık bir alanda, daha iyi bir sinyal ile deneyin.",
 	"mobile-frontend-nearby-noresults": "Burası epey sessiz... Size yakın konuma uygun bir içerik bulunamadı.",
 	"mobile-frontend-nearby-noresults-guidance": "Yeni bir sayfa oluşturmayı veya mevcut konumunuzu eklemeyi deneyin",
-	"mobile-frontend-nearby-permission": "{{SITENAME}} Yakındakiler konumunuza erişim iznine sahip değil.",
-	"mobile-frontend-nearby-permission-guidance": "Nerede olduğunuzu göstermeye izin verdiğinize lütfen emin olunuz. Tarayıcınızın konum ayarlarını kontrol etmeniz gerekebilir.",
-	"mobile-frontend-nearby-refresh": "Konumu yenile",
 	"mobile-frontend-nearby-requirements": "Üzgünüz! Veb tarayıcınız {{SITENAME}} yakınındakileri desteklemiyor.",
 	"mobile-frontend-nearby-requirements-guidance": "Farklı bir tarayıcı deneyin veya JavaScript devredışı bırakılmışsa etkinleştirin.",
 	"mobile-frontend-nearby-title": "Yakınındakiler",
@@ -175,8 +169,6 @@
 	"mobile-frontend-search-content-no-results": "'''{{int:mobile-frontend-search-content}}''' araması ile eşleşen bulunamadı.",
 	"mobile-frontend-search-no-results": "Bu başlığa sahip bir sayfa yok.",
 	"mobile-frontend-settings-beta": "Deneme",
-	"mobile-frontend-settings-site-description": "{{SITENAME}} $1 {{PLURAL:$1|dil|dil}}de mevcut. Mevcut bütün sürümler aşağıda listelenmektedir",
-	"mobile-frontend-settings-site-header": "{{SITENAME}} Dilleri",
 	"mobile-frontend-talk-fullpage": "Viki sayfası olarak oku",
 	"mobile-frontend-talk-add-overlay-content-placeholder": "Aklında ne var?",
 	"mobile-frontend-talk-add-overlay-subject-placeholder": "Konu başlığı",
@@ -250,5 +242,6 @@
 	"mobile-frontend-panel-ok": "Tamam",
 	"mobile-frontend-panel-cancel": "Hayır, teşekkürler",
 	"mobile-frontend-panel-betaoptin-msg": "Bazı yeni özellikleri denemek ister misiniz? Beta'ya katılarak, hatalar ve sorunlarla karşılaşmayı göze alarak deneysel özelliklere erişim sağlayabilirsiniz.",
-	"mobile-frontend-notifications-filter-title": "Süzgeç bildirimleri"
+	"mobile-frontend-notifications-filter-title": "Süzgeç bildirimleri",
+	"mobile-frontend-console-recruit": "\\o/ Hey! Bu açık kaynak kodlu bir yazılım ve bizim oluşturmak, daha iyi yapmak, JavaScript konsolunda görünebilecek olası hataları düzeltmek amacıyla yardımcı olacak gönüllülere ihtiyacımız var! \n\nBekleme listemizi şurada bulabilirsiniz @ https://phabricator.wikimedia.org/project/profile/67/"
 }

@@ -6,7 +6,7 @@ if ( getenv( 'MW_INSTALL_PATH' ) ) {
 }
 require_once "$IP/maintenance/Maintenance.php";
 
-class PurgeOldIPAddressData extends Maintenance {
+class PurgeOldData extends Maintenance {
 	public function __construct() {
 		parent::__construct();
 		$this->mDescription = "Purge expired rows in CheckUser and RecentChanges";
@@ -48,9 +48,9 @@ class PurgeOldIPAddressData extends Maintenance {
 				break; // all cleared
 			}
 			// Record the start and end timestamp for the set
-			$blockStart = $dbw->addQuotes( $res->fetchObject()->$ts_column );
+			$blockStart = $dbw->addQuotes( $res->fetchRow()[$ts_column] );
 			$res->seek( $res->numRows() - 1 );
-			$blockEnd = $dbw->addQuotes( $res->fetchObject()->$ts_column );
+			$blockEnd = $dbw->addQuotes( $res->fetchRow()[$ts_column] );
 			$res->free();
 
 			// Do the actual delete...
@@ -67,5 +67,5 @@ class PurgeOldIPAddressData extends Maintenance {
 	}
 }
 
-$maintClass = "PurgeOldIPAddressData";
+$maintClass = "PurgeOldData";
 require_once RUN_MAINTENANCE_IF_MAIN;

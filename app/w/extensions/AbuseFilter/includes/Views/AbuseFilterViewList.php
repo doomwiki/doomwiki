@@ -17,10 +17,12 @@ class AbuseFilterViewList extends AbuseFilterView {
 
 		// New filter button
 		if ( $this->canEdit() ) {
-			$title = $this->getTitle( 'new' );
-			$link = $this->linkRenderer->makeLink( $title, $this->msg( 'abusefilter-new' )->text() );
-			$links = Xml::tags( 'p', null, $link ) . "\n";
-			$out->addHTML( $links );
+			$out->enableOOUI();
+			$link = new OOUI\ButtonWidget( [
+				'label' => $this->msg( 'abusefilter-new' )->text(),
+				'href' => $this->getTitle( 'new' )->getFullURL(),
+			] );
+			$out->addHTML( $link );
 		}
 
 		// Options.
@@ -33,6 +35,17 @@ class AbuseFilterViewList extends AbuseFilterView {
 			$defaultscope = 'local';
 		}
 		$scope = $request->getVal( 'rulescope', $defaultscope );
+
+		$searchEnabled = $this->canViewPrivate() && !( isset( $wgAbuseFilterCentralDB ) &&
+			!$wgAbuseFilterIsCentral && $scope == 'global' );
+
+		if ( $searchEnabled ) {
+			$querypattern = $request->getVal( 'querypattern' );
+			$searchmode = $request->getVal( 'searchoption', 'LIKE' );
+		} else {
+			$querypattern = '';
+			$searchmode = '';
+		}
 
 		if ( $deleted == 'show' ) {
 			# Nothing
@@ -53,111 +66,171 @@ class AbuseFilterViewList extends AbuseFilterView {
 			$conds['af_global'] = 1;
 		}
 
-		$this->showList( $conds, compact( 'deleted', 'hidedisabled', 'scope' ) );
+		$dbr = wfGetDB( DB_REPLICA );
+
+		if ( $querypattern !== '' ) {
+			if ( $searchmode !== 'LIKE' ) {
+				// Check regex pattern validity
+				Wikimedia\suppressWarnings();
+				$validreg = preg_match( '/' . $querypattern . '/', null );
+				Wikimedia\restoreWarnings();
+
+				if ( $validreg === false ) {
+					$out->wrapWikiMsg(
+						'<div class="errorbox">$1</div>',
+						'abusefilter-list-regexerror'
+					);
+					$this->showList(
+						[ 'af_deleted' => 0 ],
+						compact( 'deleted', 'hidedisabled', 'querypattern', 'searchmode', 'scope', 'searchEnabled' )
+					);
+					return;
+				}
+				if ( $searchmode === 'RLIKE' ) {
+					$conds[] = 'af_pattern RLIKE ' .
+						$dbr->addQuotes( $querypattern );
+				} else {
+					$conds[] = 'LOWER( CAST( af_pattern AS char ) ) RLIKE ' .
+						strtolower( $dbr->addQuotes( $querypattern ) );
+				}
+			} else {
+				// Build like query escaping tokens and encapsulating in % to search everywhere
+				$conds[] = 'LOWER( CAST( af_pattern AS char ) ) ' .
+					$dbr->buildLike(
+						$dbr->anyString(),
+						strtolower( $querypattern ),
+						$dbr->anyString()
+					);
+			}
+		}
+
+		$this->showList(
+			$conds,
+			compact( 'deleted', 'hidedisabled', 'querypattern', 'searchmode', 'scope', 'searchEnabled' )
+		);
 	}
 
 	function showList( $conds = [ 'af_deleted' => 0 ], $optarray = [] ) {
 		global $wgAbuseFilterCentralDB, $wgAbuseFilterIsCentral;
 
-		$output = '';
-		$output .= Xml::element( 'h2', null,
-			$this->msg( 'abusefilter-list' )->parse() );
-
-		$pager = new AbuseFilterPager( $this, $conds, $this->linkRenderer );
+		$this->getOutput()->addHTML(
+			Xml::element( 'h2', null, $this->msg( 'abusefilter-list' )->parse() )
+		);
 
 		$deleted = $optarray['deleted'];
 		$hidedisabled = $optarray['hidedisabled'];
 		$scope = $optarray['scope'];
-
-		# Options form
-		$fields = [];
-		$fields['abusefilter-list-options-deleted'] =
-			Xml::radioLabel(
-				$this->msg( 'abusefilter-list-options-deleted-show' )->text(),
-				'deletedfilters',
-				'show',
-				'mw-abusefilter-deletedfilters-show',
-				$deleted == 'show'
-			) .
-			Xml::radioLabel(
-				$this->msg( 'abusefilter-list-options-deleted-hide' )->text(),
-				'deletedfilters',
-				'hide',
-				'mw-abusefilter-deletedfilters-hide',
-				$deleted == 'hide'
-			) .
-			Xml::radioLabel(
-				$this->msg( 'abusefilter-list-options-deleted-only' )->text(),
-				'deletedfilters',
-				'only',
-				'mw-abusefilter-deletedfilters-only',
-				$deleted == 'only'
-			);
-
-		if ( isset( $wgAbuseFilterCentralDB ) ) {
-			$fields['abusefilter-list-options-scope'] =
-				Xml::radioLabel(
-					$this->msg( 'abusefilter-list-options-scope-local' )->text(),
-					'rulescope',
-					'local',
-					'mw-abusefilter-rulescope-local',
-					$scope == 'local'
-				) .
-				Xml::radioLabel(
-					$this->msg( 'abusefilter-list-options-scope-global' )->text(),
-					'rulescope',
-					'global',
-					'mw-abusefilter-rulescope-global',
-					$scope == 'global'
-				);
-
-			if ( $wgAbuseFilterIsCentral ) {
-				// For central wiki: add third scope option
-				$fields['abusefilter-list-options-scope'] .=
-					Xml::radioLabel(
-						$this->msg( 'abusefilter-list-options-scope-all' )->text(),
-						'rulescope',
-						'all',
-						'mw-abusefilter-rulescope-all',
-						$scope == 'all'
-				);
-			}
-		}
-
-		$fields['abusefilter-list-options-disabled'] =
-			Xml::checkLabel(
-				$this->msg( 'abusefilter-list-options-hidedisabled' )->text(),
-				'hidedisabled',
-				'mw-abusefilter-disabledfilters-hide',
-				$hidedisabled
-			);
-		$fields['abusefilter-list-limit'] = $pager->getLimitSelect();
-
-		$options = Xml::buildForm( $fields, 'abusefilter-list-options-submit' );
-		$options .= Html::hidden( 'title', $this->getTitle()->getPrefixedDBkey() );
-		$options = Xml::tags( 'form',
-			[
-				'method' => 'get',
-				'action' => $this->getTitle()->getFullURL()
-			],
-			$options
-		);
-		$options = Xml::fieldset( $this->msg( 'abusefilter-list-options' )->text(), $options );
-
-		$output .= $options;
+		$searchEnabled = $optarray['searchEnabled'];
+		$querypattern = $optarray['querypattern'];
+		$searchmode = $optarray['searchmode'];
 
 		if ( isset( $wgAbuseFilterCentralDB ) && !$wgAbuseFilterIsCentral && $scope == 'global' ) {
-			$globalPager = new GlobalAbuseFilterPager( $this, $conds, $this->linkRenderer );
-			$output .=
-				$globalPager->getNavigationBar() .
-				$globalPager->getBody() .
-				$globalPager->getNavigationBar();
+			$pager = new GlobalAbuseFilterPager(
+				$this,
+				$conds,
+				$this->linkRenderer
+			);
 		} else {
-			$output .=
-				$pager->getNavigationBar() .
-				$pager->getBody() .
-				$pager->getNavigationBar();
+			$pager = new AbuseFilterPager(
+				$this,
+				$conds,
+				$this->linkRenderer,
+				[ $querypattern, $searchmode ]
+			);
 		}
+
+		# Options form
+		$formDescriptor = [];
+		$formDescriptor['deletedfilters'] = [
+			'name' => 'deletedfilters',
+			'type' => 'radio',
+			'flatlist' => true,
+			'label-message' => 'abusefilter-list-options-deleted',
+			'options-messages' => [
+				'abusefilter-list-options-deleted-show' => 'show',
+				'abusefilter-list-options-deleted-hide' => 'hide',
+				'abusefilter-list-options-deleted-only' => 'only',
+			],
+			'default' => $deleted,
+		];
+
+		if ( isset( $wgAbuseFilterCentralDB ) ) {
+			$optionsMsg = [
+				'abusefilter-list-options-scope-local' => 'local',
+				'abusefilter-list-options-scope-global' => 'global',
+			];
+			if ( $wgAbuseFilterIsCentral ) {
+				// For central wiki: add third scope option
+				$optionsMsg['abusefilter-list-options-scope-all'] = 'all';
+			}
+			$formDescriptor['rulescope'] = [
+				'name' => 'rulescope',
+				'type' => 'radio',
+				'flatlist' => true,
+				'label-message' => 'abusefilter-list-options-scope',
+				'options-messages' => $optionsMsg,
+				'default' => $scope,
+			];
+		}
+
+		$formDescriptor['info'] = [
+			'type' => 'info',
+			'default' => $this->msg( 'abusefilter-list-options-disabled' )->parse(),
+		];
+
+		$formDescriptor['hidedisabled'] = [
+			'name' => 'hidedisabled',
+			'type' => 'check',
+			'label-message' => 'abusefilter-list-options-hidedisabled',
+			'selected' => $hidedisabled,
+		];
+
+		// ToDo: Since this is only for saving space, we should convert it
+		// to use a 'hide-if'
+		if ( $searchEnabled ) {
+			$formDescriptor['querypattern'] = [
+				'name' => 'querypattern',
+				'type' => 'text',
+				'label-message' => 'abusefilter-list-options-searchfield',
+				'placeholder' => $this->msg( 'abusefilter-list-options-searchpattern' )->text(),
+				'default' => $querypattern
+			];
+
+			$formDescriptor['searchoption'] = [
+				'name' => 'searchoption',
+				'type' => 'radio',
+				'flatlist' => true,
+				'label-message' => 'abusefilter-list-options-searchoptions',
+				'options-messages' => [
+					'abusefilter-list-options-search-like' => 'LIKE',
+					'abusefilter-list-options-search-rlike' => 'RLIKE',
+					'abusefilter-list-options-search-irlike' => 'IRLIKE',
+				],
+				'default' => $searchmode
+			];
+		}
+
+		$formDescriptor['limit'] = [
+			'name' => 'limit',
+			'type' => 'select',
+			'label-message' => 'abusefilter-list-limit',
+			'options' => $pager->getLimitSelectList(),
+			'default' => $pager->getLimit(),
+		];
+
+		HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() )
+			->addHiddenField( 'title', $this->getTitle()->getPrefixedDBkey() )
+			->setAction( $this->getTitle()->getFullURL() )
+			->setWrapperLegendMsg( 'abusefilter-list-options' )
+			->setSubmitTextMsg( 'abusefilter-list-options-submit' )
+			->setMethod( 'get' )
+			->prepareForm()
+			->displayForm( false );
+
+		$output =
+			$pager->getNavigationBar() .
+			$pager->getBody() .
+			$pager->getNavigationBar();
 
 		$this->getOutput()->addHTML( $output );
 	}
@@ -189,258 +262,6 @@ class AbuseFilterViewList extends AbuseFilterView {
 
 			$status = Xml::tags( 'div', [ 'class' => 'mw-abusefilter-status' ], $status );
 			$this->getOutput()->addHTML( $status );
-		}
-	}
-}
-
-/**
- * Class to build paginated filter list
- */
-// Probably no need to autoload this class, as it will only be called from the class above.
-class AbuseFilterPager extends TablePager {
-
-	/**
-	 * @var \MediaWiki\Linker\LinkRenderer
-	 */
-	protected $linkRenderer;
-
-	function __construct( $page, $conds, $linkRenderer ) {
-		$this->mPage = $page;
-		$this->mConds = $conds;
-		$this->linkRenderer = $linkRenderer;
-		parent::__construct( $this->mPage->getContext() );
-	}
-
-	function getQueryInfo() {
-		return [
-			'tables' => [ 'abuse_filter' ],
-			'fields' => [
-				'af_id',
-				'af_enabled',
-				'af_deleted',
-				'af_global',
-				'af_public_comments',
-				'af_hidden',
-				'af_hit_count',
-				'af_timestamp',
-				'af_user_text',
-				'af_user',
-				'af_actions',
-				'af_group',
-			],
-			'conds' => $this->mConds,
-		];
-	}
-
-	function getFieldNames() {
-		static $headers = null;
-
-		if ( !empty( $headers ) ) {
-			return $headers;
-		}
-
-		$headers = [
-			'af_id' => 'abusefilter-list-id',
-			'af_public_comments' => 'abusefilter-list-public',
-			'af_actions' => 'abusefilter-list-consequences',
-			'af_enabled' => 'abusefilter-list-status',
-			'af_timestamp' => 'abusefilter-list-lastmodified',
-			'af_hidden' => 'abusefilter-list-visibility',
-		];
-
-		if ( $this->mPage->getUser()->isAllowed( 'abusefilter-log-detail' ) ) {
-			$headers['af_hit_count'] = 'abusefilter-list-hitcount';
-		}
-
-		global $wgAbuseFilterValidGroups;
-		if ( count( $wgAbuseFilterValidGroups ) > 1 ) {
-			$headers['af_group'] = 'abusefilter-list-group';
-		}
-
-		foreach ( $headers as &$msg ) {
-			$msg = $this->msg( $msg )->text();
-		}
-
-		return $headers;
-	}
-
-	function formatValue( $name, $value ) {
-		$lang = $this->getLanguage();
-		$row = $this->mCurrentRow;
-
-		switch ( $name ) {
-			case 'af_id':
-				return $this->linkRenderer->makeLink(
-					SpecialPage::getTitleFor( 'AbuseFilter', intval( $value ) ),
-					$lang->formatNum( intval( $value ) )
-				);
-			case 'af_public_comments':
-				return $this->linkRenderer->makeLink(
-					SpecialPage::getTitleFor( 'AbuseFilter', intval( $row->af_id ) ),
-					$value
-				);
-			case 'af_actions':
-				$actions = explode( ',', $value );
-				$displayActions = [];
-				foreach ( $actions as $action ) {
-					$displayActions[] = AbuseFilter::getActionDisplay( $action );
-				}
-				return htmlspecialchars( $lang->commaList( $displayActions ) );
-			case 'af_enabled':
-				$statuses = [];
-				if ( $row->af_deleted ) {
-					$statuses[] = $this->msg( 'abusefilter-deleted' )->parse();
-				} elseif ( $row->af_enabled ) {
-					$statuses[] = $this->msg( 'abusefilter-enabled' )->parse();
-				} else {
-					$statuses[] = $this->msg( 'abusefilter-disabled' )->parse();
-				}
-
-				global $wgAbuseFilterIsCentral;
-				if ( $row->af_global && $wgAbuseFilterIsCentral ) {
-					$statuses[] = $this->msg( 'abusefilter-status-global' )->parse();
-				}
-
-				return $lang->commaList( $statuses );
-			case 'af_hidden':
-				$msg = $value ? 'abusefilter-hidden' : 'abusefilter-unhidden';
-				return $this->msg( $msg )->parse();
-			case 'af_hit_count':
-				if ( SpecialAbuseLog::canSeeDetails( $row->af_id, $row->af_hidden ) ) {
-					$count_display = $this->msg( 'abusefilter-hitcount' )
-						->numParams( $value )->parse();
-					$link = $this->linkRenderer->makeKnownLink(
-						SpecialPage::getTitleFor( 'AbuseLog' ),
-						$count_display,
-						[],
-						[ 'wpSearchFilter' => $row->af_id ]
-					);
-				} else {
-					$link = "";
-				}
-				return $link;
-			case 'af_timestamp':
-				$userLink =
-					Linker::userLink(
-						$row->af_user,
-						$row->af_user_text
-					) .
-					Linker::userToolLinks(
-						$row->af_user,
-						$row->af_user_text
-					);
-				$user = $row->af_user_text;
-				return $this->msg( 'abusefilter-edit-lastmod-text' )
-					->rawParams( $lang->timeanddate( $value, true ),
-						$userLink,
-						$lang->date( $value, true ),
-						$lang->time( $value, true ),
-						$user
-				)->parse();
-			case 'af_group':
-				return AbuseFilter::nameGroup( $value );
-				break;
-			default:
-				throw new MWException( "Unknown row type $name!" );
-		}
-	}
-
-	function getDefaultSort() {
-		return 'af_id';
-	}
-
-	function getRowClass( $row ) {
-		if ( $row->af_enabled ) {
-			return 'mw-abusefilter-list-enabled';
-		} elseif ( $row->af_deleted ) {
-			return 'mw-abusefilter-list-deleted';
-		} else {
-			return 'mw-abusefilter-list-disabled';
-		}
-	}
-
-	function isFieldSortable( $name ) {
-		$sortable_fields = [
-			'af_id',
-			'af_enabled',
-			'af_throttled',
-			'af_user_text',
-			'af_timestamp',
-			'af_hidden',
-			'af_group',
-		];
-		if ( $this->mPage->getUser()->isAllowed( 'abusefilter-log-detail' ) ) {
-			$sortable_fields[] = 'af_hit_count';
-		}
-		return in_array( $name, $sortable_fields );
-	}
-}
-
-/**
- * Class to build paginated filter list for wikis using global abuse filters
- */
-class GlobalAbuseFilterPager extends AbuseFilterPager {
-	function __construct( $page, $conds, $linkRenderer ) {
-		parent::__construct( $page, $conds, $linkRenderer );
-		global $wgAbuseFilterCentralDB;
-		$this->mDb = wfGetDB( DB_REPLICA, [], $wgAbuseFilterCentralDB );
-	}
-
-	function formatValue( $name, $value ) {
-		$lang = $this->getLanguage();
-		$row = $this->mCurrentRow;
-
-		switch ( $name ) {
-			case 'af_id':
-				return $lang->formatNum( intval( $value ) );
-			case 'af_public_comments':
-				return $this->getOutput()->parseInline( $value );
-			case 'af_actions':
-				$actions = explode( ',', $value );
-				$displayActions = [];
-				foreach ( $actions as $action ) {
-					$displayActions[] = AbuseFilter::getActionDisplay( $action );
-				}
-				return htmlspecialchars( $lang->commaList( $displayActions ) );
-			case 'af_enabled':
-				$statuses = [];
-				if ( $row->af_deleted ) {
-					$statuses[] = $this->msg( 'abusefilter-deleted' )->parse();
-				} elseif ( $row->af_enabled ) {
-					$statuses[] = $this->msg( 'abusefilter-enabled' )->parse();
-				} else {
-					$statuses[] = $this->msg( 'abusefilter-disabled' )->parse();
-				}
-				if ( $row->af_global ) {
-					$statuses[] = $this->msg( 'abusefilter-status-global' )->parse();
-				}
-
-				return $lang->commaList( $statuses );
-			case 'af_hidden':
-				$msg = $value ? 'abusefilter-hidden' : 'abusefilter-unhidden';
-				return $this->msg( $msg, 'parseinline' )->parse();
-			case 'af_hit_count':
-				// If the rule is hidden, don't show it, even to priviledged local admins
-				if ( $row->af_hidden ) {
-					return '';
-				}
-				return $this->msg( 'abusefilter-hitcount' )->numParams( $value )->parse();
-			case 'af_timestamp':
-				$user = $row->af_user_text;
-				return $this->msg(
-					'abusefilter-edit-lastmod-text',
-					$lang->timeanddate( $value, true ),
-					$user,
-					$lang->date( $value, true ),
-					$lang->time( $value, true ),
-					$user
-				)->parse();
-			case 'af_group':
-				// If this is global, local name probably doesn't exist, but try
-				return AbuseFilter::nameGroup( $value );
-				break;
-			default:
-				throw new MWException( "Unknown row type $name!" );
 		}
 	}
 }

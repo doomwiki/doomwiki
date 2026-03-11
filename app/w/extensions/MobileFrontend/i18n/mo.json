@@ -1,9 +1,11 @@
 {
 	"@metadata": {
 		"authors": [
-			"TheChampionMan1234"
+			"TheChampionMan1234",
+			"Cybernenea11"
 		]
 	},
-	"mobile-frontend-search-submit": "Ду-те",
-	"mobile-frontend-view": "Версюне мобилэ"
+	"mobile-frontend-view": "Версиуне мобилэ",
+	"tag-mobile_edit": "Редактаря де пе диспозитивул мобил",
+	"tag-mobile_web_edit": "Редактаря де пе версиуня пентру диспозитиве мобиле"
 }

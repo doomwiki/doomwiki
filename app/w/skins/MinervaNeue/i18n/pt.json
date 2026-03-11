@@ -4,17 +4,19 @@
 			"Fúlvio",
 			"Hamilton Abreu",
 			"Macofe",
-			"Vitorvicentevalente"
+			"Vitorvicentevalente",
+			"Athena in Wonderland"
 		]
 	},
 	"minerva-last-modified-date": "Última edição a $1, às $2",
 	"minerva-talk-add-topic": "Adicionar discussão",
-	"mobile-frontend-console-recruit": "\\o/ Olá! Este software é de código aberto e precisamos de voluntários para ajudar a construí-lo, torná-lo melhor e corrigir todos os erros que possa estar a ver nesta consola JavaScript!\n\nPode ver a lista de coisas ainda por fazer em https://phabricator.wikimedia.org/project/profile/67/",
 	"mobile-frontend-cookies-required": "Os cookies são necessários para alterar os modos de apresentação. Ative-os e tente novamente, por favor.",
 	"mobile-frontend-editor-blocked-info-loggedin": "A sua conta está impedida de realizar edições. O bloqueio foi feito {{GENDER:$2|pelo utilizador|pela utilizadora}} $2 pelo seguinte motivo: $1",
 	"mobile-frontend-editor-cta": "Ajude a melhorar esta página!",
+	"minerva-pointer-dismiss": "Ignorar",
 	"mobile-frontend-editor-disabled": "Esta página está protegida para evitar vandalismo.",
 	"mobile-frontend-editor-edit": "Editar",
+	"minerva-download": "Descarregar",
 	"mobile-frontend-editor-redlink-create": "Criar página",
 	"mobile-frontend-editor-redlink-explain": "Esta página ainda não foi criada.",
 	"mobile-frontend-editor-redlink-leave": "Não, obrigado",
@@ -39,7 +41,7 @@
 	"mobile-frontend-main-menu-watchlist": "Páginas vigiadas",
 	"mobile-frontend-meta-data-issues": "Problemas da página",
 	"mobile-frontend-meta-data-issues-categories": "Sobre esta categoria",
-	"mobile-frontend-meta-data-issues-header": "Problemas",
+	"mobile-frontend-meta-data-issues-header": "Problemas da página",
 	"mobile-frontend-meta-data-issues-header-talk": "Sobre esta página",
 	"mobile-frontend-meta-data-issues-talk": "Sobre esta página de discussão",
 	"mobile-frontend-notifications-filter": "Filtrar",
@@ -57,5 +59,9 @@
 	"mobile-frontend-user-page-member-since": "{{GENDER:$2|Juntou-se a}} $1",
 	"mobile-frontend-user-page-talk": "Discussão",
 	"mobile-frontend-user-page-uploads": "Carregamentos",
-	"minerva-skin-desc": "Um tema inicial de resposta rápida para telemóveis."
+	"minerva-skin-desc": "Um tema inicial de resposta rápida para telemóveis.",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Categorias",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Mostra as categorias das páginas",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "Saltar para o topo",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "Salta para o topo da página atual, utilizando um botão flutuante"
 }

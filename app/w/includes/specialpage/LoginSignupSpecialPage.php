@@ -112,7 +112,8 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 		$this->mAction = $request->getVal( 'action' );
 		$this->mFromHTTP = $request->getBool( 'fromhttp', false )
 			|| $request->getBool( 'wpFromhttp', false );
-		$this->mStickHTTPS = ( !$this->mFromHTTP && $request->getProtocol() === 'https' )
+		$this->mStickHTTPS = $this->getConfig()->get( 'ForceHTTPS' )
+			|| ( !$this->mFromHTTP && $request->getProtocol() === 'https' )
 			|| $request->getBool( 'wpForceHttps', false );
 		$this->mLanguage = $request->getText( 'uselang' );
 		$this->mReturnTo = $request->getVal( 'returnto', '' );
@@ -478,7 +479,6 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 	/**
 	 * Replace some globals to make sure the fact that the user has just been logged in is
 	 * reflected in the current request.
-	 * @param User $user
 	 */
 	protected function setSessionUserForCurrentRequest() {
 		global $wgUser, $wgLang;
@@ -516,7 +516,6 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 	 * @private
 	 */
 	protected function mainLoginForm( array $requests, $msg = '', $msgtype = 'error' ) {
-		$titleObj = $this->getPageTitle();
 		$user = $this->getUser();
 		$out = $this->getOutput();
 
@@ -652,7 +651,6 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 	 * @return HTMLForm
 	 */
 	protected function getAuthForm( array $requests, $action, $msg = '', $msgType = 'error' ) {
-		global $wgSecureLogin;
 		// FIXME merge this with parent
 
 		if ( isset( $this->authForm ) ) {
@@ -683,7 +681,8 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 		}
 		$form->addHiddenField( 'force', $this->securityLevel );
 		$form->addHiddenField( $this->getTokenName(), $this->getToken()->toString() );
-		if ( $wgSecureLogin ) {
+		$config = $this->getConfig();
+		if ( $config->get( 'SecureLogin' ) && !$config->get( 'ForceHTTPS' ) ) {
 			// If using HTTPS coming from HTTP, then the 'fromhttp' parameter must be preserved
 			if ( !$this->isSignup() ) {
 				$form->addHiddenField( 'wpForceHttps', (int)$this->mStickHTTPS );
@@ -1182,7 +1181,7 @@ abstract class LoginSignupSpecialPage extends AuthManagerSpecialPage {
 								],
 								$this->msg(
 									$loggedIn ? 'userlogin-createanother' : 'userlogin-joinproject'
-								)->escaped()
+								)->text()
 							)
 						);
 					},

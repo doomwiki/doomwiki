@@ -8,7 +8,7 @@
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:DismissableSiteNotice",
 	"descriptionmsg": "sitenotice-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "other",
 	"config": {
 		"MajorSiteNoticeID": 1,
@@ -41,8 +41,7 @@
 			"targets": [
 				"desktop",
 				"mobile"
-			],
-			"position": "top"
+			]
 		}
 	},
 	"ResourceFileModulePaths": {

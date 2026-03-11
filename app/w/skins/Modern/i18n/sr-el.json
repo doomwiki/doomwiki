@@ -1,6 +1,11 @@
 {
-	"@metadata": [],
-	"modern.css": "/* CSS postavljen ovde će uticati na sve korisnike teme „Savremeno“ */",
-	"modern.js": "/* Javaskript postavljen ovde će se učitati za sve one koji koriste temu „Savremeno“ */",
-	"skinname-modern": "Savremeno"
+	"@metadata": {
+		"authors": [
+			"Zoranzoki21"
+		]
+	},
+	"modern.css": "/* CSS postavljen ovde će uticati na sve korisnike savremene teme */",
+	"modern.js": "/* Javaskript postavljen ovde će se učitati za sve one koji koriste savremenu temu */",
+	"skinname-modern": "Savremena",
+	"modern-desc": "Plava/siva tema sa sajdbarom i gornjom trakom. Izvedeno iz Monobuka"
 }

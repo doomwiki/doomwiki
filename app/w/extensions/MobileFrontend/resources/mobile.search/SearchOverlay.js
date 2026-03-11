@@ -1,13 +1,13 @@
-( function ( M, $ ) {
+( function ( M ) {
 
 	var
 		Overlay = M.require( 'mobile.startup/Overlay' ),
+		util = M.require( 'mobile.startup/util' ),
 		Anchor = M.require( 'mobile.startup/Anchor' ),
 		Icon = M.require( 'mobile.startup/Icon' ),
 		WatchstarPageList = M.require( 'mobile.pagelist.scripts/WatchstarPageList' ),
 		SEARCH_DELAY = 300,
 		SEARCH_SPINNER_DELAY = 2000,
-		$html = $( 'html' ),
 		feedbackLink = mw.config.get( 'wgCirrusSearchFeedbackLink' );
 
 	/**
@@ -21,23 +21,17 @@
 	 * @param {Object} options Configuration options
 	 */
 	function SearchOverlay( options ) {
-		var self = this;
 		Overlay.call( this, options );
 		this.api = options.api;
 		// eslint-disable-next-line new-cap
 		this.gateway = new options.gatewayClass( this.api );
 
 		this.router = options.router;
-		// FIXME: Remove when search registers route with overlay manager
-		// we need this because of the focus/delay hack in search.js
-		this.router.once( 'route', function () {
-			self._hideOnRoute();
-		} );
 	}
 
 	OO.mfExtend( SearchOverlay, Overlay, {
 		isBorderBox: false,
-		templatePartials: $.extend( {}, Overlay.prototype.templatePartials, {
+		templatePartials: util.extend( {}, Overlay.prototype.templatePartials, {
 			header: mw.template.get( 'mobile.search', 'header.hogan' ),
 			content: mw.template.get( 'mobile.search', 'content.hogan' ),
 			icon: Icon.prototype.template
@@ -64,7 +58,7 @@
 		 * @cfg {string} defaults.action The value of wgScript
 		 * @cfg {Object} defaults.feedback options for the feedback link below the search results
 		 */
-		defaults: $.extend( {}, Overlay.prototype.defaults, {
+		defaults: util.extend( {}, Overlay.prototype.defaults, {
 			headerChrome: true,
 			clearIcon: new Icon( {
 				tagName: 'button',
@@ -74,13 +68,14 @@
 				additionalClassNames: 'clear'
 			} ).options,
 			searchContentIcon: new Icon( {
-				tagName: 'button',
+				tagName: 'a',
+				// When this icon is clicked we want to reset the hash for subsequent views
+				href: '#',
 				name: 'search-content',
 				label: mw.msg( 'mobile-frontend-search-content' )
 			} ).options,
 			searchTerm: '',
-			// FIXME: Do not use global $
-			placeholderMsg: $( '#searchInput' ).attr( 'placeholder' ),
+			placeholderMsg: '',
 			noResultsMsg: mw.msg( 'mobile-frontend-search-no-results' ),
 			searchContentNoResultsMsg: mw.msg( 'mobile-frontend-search-content-no-results' ),
 			action: mw.config.get( 'wgScript' ),
@@ -95,7 +90,7 @@
 		/**
 		 * @inheritdoc
 		 */
-		events: $.extend( {}, Overlay.prototype.events, {
+		events: util.extend( {}, Overlay.prototype.events, {
 			'input input': 'onInputInput',
 			'click .clear': 'onClickClear',
 			'click .search-content': 'onClickSearchContent',
@@ -105,36 +100,6 @@
 			'mousedown .results': 'hideKeyboardOnScroll',
 			'click .results a': 'onClickResult'
 		} ),
-
-		/**
-		 * Hide self when the route is visited
-		 * @method
-		 * @private
-		 * FIXME: Remove when search registers route with overlay manager
-		 */
-		_hideOnRoute: function () {
-			var self = this;
-			this.router.once( 'route', function ( ev ) {
-				if ( !self.hide() ) {
-					ev.preventDefault();
-					self._hideOnRoute();
-				}
-			} );
-		},
-
-		/**
-		 * SearchOverlay is not managed by OverlayManager and using window.history.back() causes
-		 * problems described in T102946, i.e. the users should not be taken to the previous page
-		 * when landing on /wiki/Foo#/search directly. The overlay should just close.
-		 * @inheritdoc
-		 * @param {Object} ev Event Object
-		 */
-		onExit: function ( ev ) {
-			ev.preventDefault();
-			ev.stopPropagation();
-			this.hide();
-			window.location.hash = '';
-		},
 
 		/**
 		 * Make sure search header is docked to the top of the screen when the
@@ -164,12 +129,11 @@
 		 * Initialize 'search within pages' functionality
 		 */
 		onClickSearchContent: function () {
-			var $form = this.$( 'form' );
-
-			window.history.back();
+			var $el = util.getDocument().find( 'body' ),
+				$form = this.$( 'form' );
 
 			// Add fulltext input to force fulltext search
-			$( '<input>' )
+			this.parseHTML( '<input>' )
 				.attr( {
 					type: 'hidden',
 					name: 'fulltext',
@@ -178,9 +142,9 @@
 				.appendTo( $form );
 			// history.back queues a task so might run after this call. Thus we use setTimeout
 			// http://www.w3.org/TR/2011/WD-html5-20110113/webappapis.html#queue-a-task
-			window.setTimeout( function () {
+			setTimeout( function () {
 				// Firefox doesn't allow submission of a form not in the DOM so temporarily re-add it
-				$form.appendTo( document.body );
+				$form.appendTo( $el );
 				$form.submit();
 			}, 0 );
 		},
@@ -235,6 +199,9 @@
 			// FIXME: ugly hack that removes search from browser history when navigating to search results
 			ev.preventDefault();
 			this.router.back().done( function () {
+				// Router.navigate does not support changing href.
+				// FIXME: Needs upstream change T189173
+				// eslint-disable-next-line no-restricted-properties
 				window.location.href = $link.attr( 'href' );
 			} );
 		},
@@ -279,16 +246,26 @@
 			}
 		},
 
-		/** @inheritdoc */
-		show: function () {
+		/**
+		 * Trigger a focus() event on search input in order to
+		 * bring up the virtual keyboard.
+		 * @method
+		 */
+		showKeyboard: function () {
 			var len = this.$input.val().length;
-			Overlay.prototype.show.apply( this, arguments );
 			this.$input.focus();
 			// Cursor to the end of the input
 			if ( this.$input[0].setSelectionRange ) {
 				this.$input[0].setSelectionRange( len, len );
 			}
+		},
 
+		/** @inheritdoc */
+		show: function () {
+			// Overlay#show defines the actual overlay visibility.
+			Overlay.prototype.show.apply( this, arguments );
+
+			this.showKeyboard();
 			/**
 			 * @event search-show Fired after the search overlay is shown
 			 */
@@ -300,7 +277,8 @@
 		 * @inheritdoc
 		 */
 		hide: function () {
-			var self = this;
+			var self = this,
+				$html = util.getDocument();
 
 			if ( $html.hasClass( 'animations' ) ) {
 				self.$el.addClass( 'fade-out' );
@@ -336,6 +314,8 @@
 
 				if ( query.length ) {
 					this.timer = setTimeout( function () {
+						var xhr;
+
 						/**
 						 * @event search-start Fired immediately before the search API request is
 						 *  sent
@@ -346,10 +326,11 @@
 							delay: delay
 						} );
 
-						self._pendingQuery = self.gateway.search( query ).done( function ( data ) {
+						xhr = self.gateway.search( query );
+						self._pendingQuery = xhr.then( function ( data ) {
 							// check if we're getting the rights response in case of out of
 							// order responses (need to get the current value of the input)
-							if ( data.query === self.$input.val() ) {
+							if ( data && data.query === self.$input.val() ) {
 								self.$el.toggleClass( 'no-results', data.results.length === 0 );
 								self.$searchContent
 									.show()
@@ -378,7 +359,7 @@
 									results: data.results
 								} );
 							}
-						} );
+						} ).promise( { abort: function () { xhr.abort(); } } );
 					}, delay );
 				} else {
 					self.resetSearch();
@@ -402,4 +383,4 @@
 
 	M.define( 'mobile.search/SearchOverlay', SearchOverlay ); // resource-modules-disable-line
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

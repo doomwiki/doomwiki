@@ -118,12 +118,12 @@ class RandomImage {
 	 */
 	protected function removeMagnifier( $html ) {
 		$dom = new DOMDocument();
-		$doc = $dom->loadHTML( $html );
-		$xpath = new DOMXPath( $doc );
+		$dom->loadHTML( $html );
+		$xpath = new DOMXPath( $dom );
 		foreach ( $xpath->query( '//div[@class="magnify"]' ) as $mag ) {
 			$mag->parentNode->removeChild( $mag );
 		}
-		return preg_replace( '!<\?xml[^?]*\?>!', '', $doc->saveXml() );
+		return preg_replace( '!<\?xml[^?]*\?>!', '', $dom->saveXml() );
 	}
 
 	/**
@@ -190,7 +190,7 @@ class RandomImage {
 	 * @return Title
 	 */
 	protected function pickFromDatabase() {
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		list( $table, $conds, $opts ) = $this->getExtraSelectOptions( $dbr );
 		$res = $dbr->select(
 			$table,
