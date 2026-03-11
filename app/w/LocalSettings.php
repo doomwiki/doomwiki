@@ -327,7 +327,7 @@ $wgActions['mcrrestore'] = false;
 // Skins
 //
 
-//wfLoadSkin('CologneBlue');
+wfLoadSkin('Timeless');
 wfLoadSkin('Modern');
 wfLoadSkin('MonoBook');
 wfLoadSkin('Vector');
