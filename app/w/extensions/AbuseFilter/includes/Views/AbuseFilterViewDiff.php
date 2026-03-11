@@ -1,40 +1,5 @@
 <?php
 
-/**
- * Like TableDiffFormatter, but will always render the full context
- * (even for empty diffs).
- *
- * @private
- */
-class TableDiffFormatterFullContext extends TableDiffFormatter {
-	/**
-	 * Format a diff.
-	 *
-	 * @param Diff $diff
-	 * @return string The formatted output.
-	 */
-	function format( $diff ) {
-		$xlen = $ylen = 0;
-
-		// Calculate the length of the left and the right side
-		foreach ( $diff->edits as $edit ) {
-			if ( $edit->orig ) {
-				$xlen += count( $edit->orig );
-			}
-			if ( $edit->closing ) {
-				$ylen += count( $edit->closing );
-			}
-		}
-
-		// Just render the diff with no preprocessing
-		$this->startDiff();
-		$this->block( 1, $xlen, 1, $ylen, $diff->edits );
-		$end = $this->endDiff();
-
-		return $end;
-	}
-}
-
 class AbuseFilterViewDiff extends AbuseFilterView {
 	public $mOldVersion = null;
 	public $mNewVersion = null;
@@ -99,18 +64,21 @@ class AbuseFilterViewDiff extends AbuseFilterView {
 		$newSpec = $this->mParams[4];
 		$this->mFilter = $this->mParams[1];
 
-		if ( AbuseFilter::filterHidden( $this->mFilter )
-			&& !$this->getUser()->isAllowedAny( 'abusefilter-modify', 'abusefilter-view-private' )
-		) {
-			$this->getOutput()->addWikiMsg( 'abusefilter-history-error-hidden' );
-			return false;
-		}
-
 		$this->mOldVersion = $this->loadSpec( $oldSpec, $newSpec );
 		$this->mNewVersion = $this->loadSpec( $newSpec, $oldSpec );
 
 		if ( is_null( $this->mOldVersion ) || is_null( $this->mNewVersion ) ) {
 			$this->getOutput()->addWikiMsg( 'abusefilter-diff-invalid' );
+			return false;
+		}
+
+		if ( !self::canViewPrivate() &&
+			(
+				in_array( 'hidden', explode( ',', $this->mOldVersion['info']['flags'] ) ) ||
+				in_array( 'hidden', explode( ',', $this->mNewVersion['info']['flags'] ) )
+			)
+		) {
+			$this->getOutput()->addWikiMsg( 'abusefilter-history-error-hidden' );
 			return false;
 		}
 

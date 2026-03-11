@@ -475,7 +475,7 @@ abstract class HTMLFormField {
 	public function getTableRow( $value ) {
 		list( $errors, $errorClass ) = $this->getErrorsAndErrorClass( $value );
 		$inputHtml = $this->getInputHTML( $value );
-		$fieldType = static::class;
+		$fieldType = $this->getClassName();
 		$helptext = $this->getHelpTextHtmlTable( $this->getHelpText() );
 		$cellAttributes = [];
 		$rowAttributes = [];
@@ -533,7 +533,7 @@ abstract class HTMLFormField {
 	public function getDiv( $value ) {
 		list( $errors, $errorClass ) = $this->getErrorsAndErrorClass( $value );
 		$inputHtml = $this->getInputHTML( $value );
-		$fieldType = static::class;
+		$fieldType = $this->getClassName();
 		$helptext = $this->getHelpTextHtmlDiv( $this->getHelpText() );
 		$cellAttributes = [];
 		$label = $this->getLabelHtml( $cellAttributes );
@@ -601,7 +601,7 @@ abstract class HTMLFormField {
 			$infusable = false;
 		}
 
-		$fieldType = static::class;
+		$fieldType = $this->getClassName();
 		$help = $this->getHelpText();
 		$errors = $this->getErrorsRaw( $value );
 		foreach ( $errors as &$error ) {
@@ -631,7 +631,7 @@ abstract class HTMLFormField {
 
 		// the element could specify, that the label doesn't need to be added
 		$label = $this->getLabel();
-		if ( $label ) {
+		if ( $label && $label !== '&#160;' ) {
 			$config['label'] = new OOUI\HtmlSnippet( $label );
 		}
 
@@ -648,6 +648,18 @@ abstract class HTMLFormField {
 		}
 
 		return $this->getFieldLayoutOOUI( $inputField, $config );
+	}
+
+	/**
+	 * Gets the non namespaced class name
+	 *
+	 * @since 1.36
+	 *
+	 * @return string
+	 */
+	protected function getClassName() {
+		$name = explode( '\\', static::class );
+		return end( $name );
 	}
 
 	/**
@@ -673,7 +685,7 @@ abstract class HTMLFormField {
 	}
 
 	/**
-	 * Whether the field should be automatically infused. Note that all OOjs UI HTMLForm fields are
+	 * Whether the field should be automatically infused. Note that all OOUI HTMLForm fields are
 	 * infusable (you can call OO.ui.infuse() on them), but not all are infused by default, since
 	 * there is no benefit in doing it e.g. for buttons and it's a small performance hit on page load.
 	 *
@@ -686,7 +698,7 @@ abstract class HTMLFormField {
 
 	/**
 	 * Get the list of extra ResourceLoader modules which must be loaded client-side before it's
-	 * possible to infuse this field's OOjs UI widget.
+	 * possible to infuse this field's OOUI widget.
 	 *
 	 * @return string[]
 	 */

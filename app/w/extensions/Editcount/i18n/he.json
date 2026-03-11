@@ -2,12 +2,13 @@
 	"@metadata": {
 		"authors": [
 			"Agbad",
-			"Rotemliss"
+			"Rotemliss",
+			"Amire80"
 		]
 	},
 	"editcount": "מונה עריכות",
 	"editcount-desc": "הצגת [[Special:Editcount|מונה עריכות]] של משתמש",
 	"editcount_username": "משתמש:",
 	"editcount_submit": "שליחה",
-	"editcount_total": "סך הכל"
+	"editcount_total": "סך הכול"
 }

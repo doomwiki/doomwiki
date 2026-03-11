@@ -15,8 +15,8 @@
 @grayLight: @colorGray12;
 @grayLightest: @colorGray14;
 
-@wgMFDeviceWidthMobileSmall: 320px;
-@wgMFDeviceWidthDesktop: 1000px;
+// For backwards compatibility with MobileFrontend skinStyles
+@wgMFDeviceWidthDesktop: @width-breakpoint-desktop;
 
 @skinContentBgColor: #fff;
 
@@ -42,7 +42,7 @@
 @headerMarginTop: -1px;  // used to hide the header border top when a banner is not present
 @searchBoxWidth: 375/16em;
 @iconSizeTotal: @iconSize + @iconGutterWidth + @iconGutterWidth;
-@deviceWidthTabletEms: unit( @deviceWidthTablet/16, em );
+@deviceWidthTabletEms: unit( @width-breakpoint-tablet/16, em );
 @brandingBoxWidth: @deviceWidthTabletEms - ( @iconSizeTotal * 3 ) - @searchBoxWidth;
 
 @titleSectionSpacingTop: 20px;
@@ -52,7 +52,7 @@
 @chromeColor: @grayLightest;
 @semiTransparent: rgba( 0, 0, 0, 0.8 );
 
-@linkColor: #002bb8;
+@linkColor: @colorProgressive;
 @redLinkColor: @colorErrorText;
 @lastModifiedBarActiveBackgroundColor: #00af89;
 @toastNotificationColor: @colorGray2;
@@ -70,6 +70,7 @@
 
 // typography
 @fontFamilyHeading: 'Linux Libertine', 'Georgia', 'Times', serif;
+@fontFamilyMonospace: monospace, monospace;
 @fontScalingFactor: 1;
 @contentLineHeight: 1.65;
 
@@ -84,7 +85,7 @@
 @contentPaddingTablet: 3.35em;
 
 // note since content does not use view border box we have to include padding.
-@contentMaxWidthTablet: @wgMFDeviceWidthDesktop - ( 2 * @contentPaddingTablet );
+@contentMaxWidthTablet: @width-breakpoint-desktop - ( 2 * @contentPaddingTablet );
 @contentTopPadding: 1.6em;
 
 // Wiki specific variables
@@ -101,6 +102,9 @@
 @notificationBackgroundUnread: @colorDestructive;
 @notificationColorUnread: #fff;
 
+// z-index:
+@z-indexOverlay: 1;
+
 // Print specific
-@printBorderColor: #9aa0a7;
-@printBorderColorLight: @colorGray12;
+@colorPrintSubtle: #999;
+@borderColorPrint: #999;

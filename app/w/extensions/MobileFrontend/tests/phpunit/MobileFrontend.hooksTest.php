@@ -14,7 +14,7 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 	/**
 	 * Test no alternate/canonical link is set on Special:MobileCite
 	 *
-	 * @covers MobileFrontendHooks::OnBeforePageDisplay
+	 * @covers MobileFrontendHooks::onBeforePageDisplay
 	 */
 	public function testSpecialMobileCiteOnBeforePageDisplay() {
 		$this->setMwGlobals( [
@@ -24,9 +24,9 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		] );
 		$param = $this->getContextSetup( 'mobile', [], SpecialPage::getTitleFor( 'MobileCite' ) );
 		$out = $param['out'];
-		$sk = $param['sk'];
+		$skin = $param['sk'];
 
-		MobileFrontendHooks::onBeforePageDisplay( $out, $sk );
+		MobileFrontendHooks::onBeforePageDisplay( $out, $skin );
 
 		$links = $out->getLinkTags();
 		$this->assertEquals( 0, count( $links ),
@@ -36,7 +36,7 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 	 * Test headers and alternate/canonical links to be set or not
 	 *
 	 * @dataProvider onBeforePageDisplayDataProvider
-	 * @covers MobileFrontendHooks::OnBeforePageDisplay
+	 * @covers MobileFrontendHooks::onBeforePageDisplay
 	 */
 	public function testOnBeforePageDisplay( $mobileUrlTemplate, $mfNoindexPages,
 		$mfEnableXAnalyticsLogging, $mfAutoDetectMobileView, $mfVaryOnUA, $mfXAnalyticsItems,
@@ -55,10 +55,10 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		// test with forced mobile view
 		$param = $this->getContextSetup( 'mobile', $mfXAnalyticsItems );
 		$out = $param['out'];
-		$sk = $param['sk'];
+		$skin = $param['sk'];
 
 		// run the test
-		MobileFrontendHooks::onBeforePageDisplay( $out, $sk );
+		MobileFrontendHooks::onBeforePageDisplay( $out, $skin );
 
 		// test, if alternate or canonical link is added, but not both
 		$links = $out->getLinkTags();
@@ -82,10 +82,10 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		// test with forced desktop view
 		$param = $this->getContextSetup( 'desktop', $mfXAnalyticsItems );
 		$out = $param['out'];
-		$sk = $param['sk'];
+		$skin = $param['sk'];
 
 		// run the test
-		MobileFrontendHooks::onBeforePageDisplay( $out, $sk );
+		MobileFrontendHooks::onBeforePageDisplay( $out, $skin );
 		// test, if alternate or canonical link is added, but not both
 		$links = $out->getLinkTags();
 		$this->assertEquals( $isAlternateCanonical, count( $links ),
@@ -118,7 +118,6 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 	 */
 	protected function getContextSetup( $mode, $mfXAnalyticsItems, $title = null ) {
 		MobileContext::resetInstanceForTesting();
-		// create a new instance of MobileContext
 		$context = MobileContext::singleton();
 
 		// create a DerivativeContext to use in MobileContext later
@@ -126,7 +125,7 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		// create a new, empty OutputPage
 		$out = new OutputPage( $context );
 		// create a new, empty SkinTemplate
-		$sk = new SkinTemplate();
+		$skin = new SkinTemplate();
 		if ( is_null( $title ) ) {
 			// create a new Title (main page)
 			$title = Title::newMainPage();
@@ -139,7 +138,7 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		// set the main page title to the context
 		$mainContext->setTitle( $title );
 		// set the context to the SkinTemplate
-		$sk->setContext( $mainContext );
+		$skin->setContext( $mainContext );
 		// set the OutputPage to the context
 		$mainContext->setOutput( $out );
 		// set the DerivativeContext as a base to MobileContext
@@ -154,13 +153,13 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 		// return the stuff
 		return [
 			'out' => $out,
-			'sk' => $sk,
+			'sk' => $skin,
 			'context' => $context,
 		];
 	}
 
 	/**
-	 * Dataprovider fro testOnBeforePageDisplay
+	 * Dataprovider for testOnBeforePageDisplay
 	 */
 	public function onBeforePageDisplayDataProvider() {
 		return [
@@ -183,7 +182,7 @@ class MobileFrontendHooksTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @codeCoverageIgnore
+	 * @covers MobileFrontendHooks::onTitleSquidURLs
 	 */
 	public function testOnTitleSquidURLs() {
 		$this->setMwGlobals( [

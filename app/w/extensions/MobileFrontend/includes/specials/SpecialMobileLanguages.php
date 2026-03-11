@@ -1,7 +1,4 @@
 <?php
-/**
- * SpecialMobileLanguages.php
- */
 
 /**
  * Provides a list of languages available for a page
@@ -84,7 +81,8 @@ class SpecialMobileLanguages extends MobileSpecialPage {
 	 * @see https://phabricator.wikimedia.org/T93500
 	 * @see https://phabricator.wikimedia.org/T172316
 	 * @param array $languageMap array of language names, indexed by code.
-	 * @param array $langObject array of lang objects
+	 * @param array $langObject with lang and url keys. If url key is not present a warning
+	 *   will be logged.
 	 * @return bool
 	 */
 	private function isLanguageObjectValid( $languageMap, $langObject ) {
@@ -125,7 +123,7 @@ class SpecialMobileLanguages extends MobileSpecialPage {
 					$output[] = [
 						'langname' => $varname,
 						'url' => $this->title->getLocalURL( [ 'variant' => $code ] ),
-						'lang' => wfBCP47( $code )
+						'lang' => LanguageCode::bcp47( $code ),
 					];
 				}
 			}

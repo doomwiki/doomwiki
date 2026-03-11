@@ -4,18 +4,26 @@
  * @author John Du Hart
  * @author Marius Hoch <hoo@online.de>
  */
+/* global ace */
 
-( function( mw, $ ) {
+( function ( mw, $ ) {
 	'use strict';
 
-	// Filter textarea
+	// Filter editor for JS and jQuery handling
 	// @var {jQuery}
-	var $filterBox;
+	var $filterBox,
+		// Filter editor for Ace specific functions
+		filterEditor,
+		// Hidden textarea for submitting form
+		// @var {jQuery}
+		$plainTextBox,
+		// Bool to determine what editor to use
+		useAce = false;
 
 	/**
 	 * Returns the currently selected warning message
 	 *
-	 * @returns {string} current warning message
+	 * @return {string} current warning message
 	 */
 	function getCurrentWarningMessage() {
 		var message = $( '#mw-abusefilter-warn-message-existing' ).val();
@@ -25,29 +33,6 @@
 		}
 
 		return message;
-	}
-
-	/**
-	 * Sends the current filter text to be checked for syntax issues.
-	 *
-	 * @context HTMLElement
-	 * @param {jQuery.Event} e
-	 */
-	function doSyntaxCheck() {
-		/*jshint validthis:true */
-		var filter = $filterBox.val(),
-			api = new mw.Api();
-
-		$( this )
-			.prop( 'disabled', true )
-			.injectSpinner( 'abusefilter-syntaxcheck' );
-
-		api.post( {
-			action: 'abusefilterchecksyntax',
-			filter: filter
-		} )
-		.done( processSyntaxResult )
-		.fail( processSyntaxResultFailure );
 	}
 
 	/**
@@ -69,11 +54,53 @@
 	}
 
 	/**
+	 * Converts index (used in textareas) in position {row, column} for ace
+	 *
+	 * @author danyaPostfactum (https://github.com/ajaxorg/ace/issues/1162)
+	 *
+	 * @param {string} index Part of data returned from the AJAX request
+	 * @return {Object} row and column
+	 */
+	function indexToPosition( index ) {
+		var lines = filterEditor.session.getDocument().$lines,
+			newLineChar = filterEditor.session.doc.getNewLineCharacter(),
+			currentIndex = 0,
+			row, length;
+		for ( row = 0; row < lines.length; row++ ) {
+			length = filterEditor.session.getLine( row ).length;
+			if ( currentIndex + length >= index ) {
+				return {
+					row: row,
+					column: index - currentIndex
+				};
+			}
+			currentIndex += length + newLineChar.length;
+		}
+	}
+
+	/**
+	 * Switch between Ace Editor and classic textarea
+	 */
+	function switchEditor() {
+		if ( useAce ) {
+			useAce = false;
+			$filterBox.hide();
+			$plainTextBox.show();
+		} else {
+			useAce = true;
+			filterEditor.session.setValue( $plainTextBox.val() );
+			$filterBox.show();
+			$plainTextBox.hide();
+		}
+	}
+
+	/**
 	 * Takes the data retrieved in doSyntaxCheck and processes it
 	 *
 	 * @param {Object} data Data returned from the AJAX request
 	 */
 	function processSyntaxResult( data ) {
+		var position;
 		data = data.abusefilterchecksyntax;
 
 		if ( data.status === 'ok' ) {
@@ -91,9 +118,16 @@
 				false
 			);
 
-			$filterBox
-				.focus()
-				.textSelection( 'setSelection', { start: data.character } );
+			if ( useAce ) {
+				filterEditor.focus();
+				position = indexToPosition( data.character );
+				filterEditor.navigateTo( position.row, position.column );
+				filterEditor.scrollToRow( position.row );
+			} else {
+				$plainTextBox
+					.focus()
+					.textSelection( 'setSelection', { start: data.character } );
+			}
 		}
 	}
 
@@ -113,6 +147,28 @@
 	}
 
 	/**
+	 * Sends the current filter text to be checked for syntax issues.
+	 *
+	 * @context HTMLElement
+	 * @param {jQuery.Event} e
+	 */
+	function doSyntaxCheck() {
+		var filter = $plainTextBox.val(),
+			api = new mw.Api();
+
+		$( this )
+			.prop( 'disabled', true )
+			.injectSpinner( { id: 'abusefilter-syntaxcheck', size: 'large' } );
+
+		api.post( {
+			action: 'abusefilterchecksyntax',
+			filter: filter
+		} )
+			.done( processSyntaxResult )
+			.fail( processSyntaxResultFailure );
+	}
+
+	/**
 	 * Adds text to the filter textarea
 	 * Fired by a change event from the #wpFilterBuilder dropdown
 	 */
@@ -123,9 +179,14 @@
 			return;
 		}
 
-		$filterBox.textSelection(
-			'encapsulateSelection', { 'pre': $filterBuilder.val() + ' ' }
-		);
+		if ( useAce ) {
+			filterEditor.insert( $filterBuilder.val() + ' ' );
+			$plainTextBox.val( filterEditor.getSession().getValue() );
+		} else {
+			$plainTextBox.textSelection(
+				'encapsulateSelection', { pre: $filterBuilder.val() + ' ' }
+			);
+		}
 		$filterBuilder.prop( 'selectedIndex', 0 );
 	}
 
@@ -136,15 +197,14 @@
 	 * @param {jQuery.Event} e
 	 */
 	function fetchFilter() {
-		/*jshint validthis:true */
-		var filterId = $.trim( $( '#mw-abusefilter-load-filter' ).val() ),
+		var filterId = $.trim( $( '#mw-abusefilter-load-filter input' ).val() ),
 			api;
 
 		if ( filterId === '' ) {
 			return;
 		}
 
-		$( this ).injectSpinner( 'fetch-spinner' );
+		$( this ).injectSpinner( { id: 'fetch-spinner', size: 'large' } );
 
 		// We just ignore errors or unexisting filters over here
 		api = new mw.Api();
@@ -156,14 +216,17 @@
 			abfendid: filterId,
 			abflimit: 1
 		} )
-		.always( function() {
-			$.removeSpinner( 'fetch-spinner' );
-		} )
-		.done( function( data ) {
-			if ( data.query.abusefilters[0] !== undefined ) {
-				$filterBox.val( data.query.abusefilters[0].pattern );
-			}
-		} );
+			.always( function () {
+				$.removeSpinner( 'fetch-spinner' );
+			} )
+			.done( function ( data ) {
+				if ( data.query.abusefilters[ 0 ] !== undefined ) {
+					if ( useAce ) {
+						filterEditor.setValue( data.query.abusefilters[ 0 ].pattern );
+					}
+					$plainTextBox.val( data.query.abusefilters[ 0 ].pattern );
+				}
+			} );
 	}
 
 	/**
@@ -171,7 +234,7 @@
 	 * that don't have checked boxes
 	 */
 	function hideDeselectedActions() {
-		$( 'input.mw-abusefilter-action-checkbox' ).each( function() {
+		$( 'input.mw-abusefilter-action-checkbox' ).each( function () {
 			// mw-abusefilter-action-checkbox-{$action}
 			var action = this.id.substr( 31 ),
 				$params = $( '#mw-abusefilter-' + action + '-parameters' );
@@ -192,7 +255,7 @@
 	function previewWarnMessage() {
 		var api = new mw.Api(),
 			args = [
-				$( 'input[name=wpFilterDescription]' ).val(),
+				'<nowiki>' + $( 'input[name=wpFilterDescription]' ).val() + '</nowiki>',
 				$( '#mw-abusefilter-edit-id' ).children().last().text()
 			],
 			message = getCurrentWarningMessage();
@@ -200,19 +263,19 @@
 			action: 'query',
 			meta: 'allmessages',
 			ammessages: message,
-			amargs: args.join( '|' ),
+			amargs: args.join( '|' )
 		} )
-		.done( function( data ) {
-			api.parse( data.query.allmessages[0]['*'], {
-				disablelimitreport: '',
-				preview: '',
-				prop: 'text',
-				title: 'MediaWiki:' + message,
-			} )
-			.done( function( html ) {
-				$( '#mw-abusefilter-warn-preview' ).html( html );
+			.done( function ( data ) {
+				api.parse( data.query.allmessages[ 0 ][ '*' ], {
+					disablelimitreport: '',
+					preview: '',
+					prop: 'text',
+					title: 'MediaWiki:' + message
+				} )
+					.done( function ( html ) {
+						$( '#mw-abusefilter-warn-preview' ).html( html );
+					} );
 			} );
-		} );
 	}
 
 	/**
@@ -221,7 +284,9 @@
 	function editWarnMessage() {
 		var message = getCurrentWarningMessage();
 
-		window.location = mw.config.get( 'wgScript' ) + '?title=MediaWiki:' +  mw.util.wikiUrlencode( message ) + '&action=edit&preload=MediaWiki:abusefilter-warning';
+		window.location = mw.config.get( 'wgScript' ) +
+			'?title=MediaWiki:' + mw.util.wikiUrlencode( message ) +
+			'&action=edit&preload=MediaWiki:abusefilter-warning';
 	}
 
 	/**
@@ -231,13 +296,12 @@
 	 * @param {jQuery.Event} e
 	 */
 	function onFilterGroupChange() {
-		/*jshint validthis:true */
 		var $afWarnMessageExisting, $afWarnMessageOther, newVal;
 
 		if ( !$( '#mw-abusefilter-action-warn-checkbox' ).is( ':checked' ) ) {
 			$afWarnMessageExisting = $( '#mw-abusefilter-warn-message-existing' );
 			$afWarnMessageOther = $( '#mw-abusefilter-warn-message-other' );
-			newVal = mw.config.get( 'wgAbuseFilterDefaultWarningMessage' )[$( this ).val()];
+			newVal = mw.config.get( 'wgAbuseFilterDefaultWarningMessage' )[ $( this ).val() ];
 
 			if ( $afWarnMessageExisting.find( 'option[value=\'' + newVal + '\']' ).length ) {
 				$afWarnMessageExisting.val( newVal );
@@ -281,11 +345,58 @@
 	}
 
 	// On ready initialization
-	$( document ).ready( function() {
-		var $exportBox = $( '#mw-abusefilter-export' );
-		$filterBox = $( '#' + mw.config.get( 'abuseFilterBoxName' ) );
+	$( document ).ready( function () {
+		var basePath, readOnly,
+			$exportBox = $( '#mw-abusefilter-export' );
+
+		$plainTextBox = $( '#' + mw.config.get( 'abuseFilterBoxName' ) );
+
+		if ( $( '#wpAceFilterEditor' ).length ) {
+			// CodeEditor is installed.
+			mw.loader.using( [ 'ext.abuseFilter.ace' ] ).then( function () {
+				$filterBox = $( '#wpAceFilterEditor' );
+
+				filterEditor = ace.edit( 'wpAceFilterEditor' );
+				filterEditor.session.setMode( 'ace/mode/abusefilter' );
+
+				// Ace setup from codeEditor extension
+				basePath = mw.config.get( 'wgExtensionAssetsPath', '' );
+				if ( basePath.slice( 0, 2 ) === '//' ) {
+					// ACE uses web workers, which have importScripts, which don't like relative links.
+					// This is a problem only when the assets are on another server, so this rewrite should suffice
+					// Protocol relative
+					basePath = window.location.protocol + basePath;
+				}
+				ace.config.set( 'basePath', basePath + '/CodeEditor/modules/ace' );
+
+				// Settings for Ace editor box
+				readOnly = mw.config.get( 'aceConfig' ).aceReadOnly;
+
+				filterEditor.setTheme( 'ace/theme/textmate' );
+				filterEditor.session.setOption( 'useWorker', false );
+				filterEditor.setReadOnly( readOnly );
+				filterEditor.$blockScrolling = Infinity;
+
+				// Display Ace editor
+				switchEditor();
+
+				// Hide the syntax ok message when the text changes and sync dummy box
+				$filterBox.keyup( function () {
+					var $el = $( '#mw-abusefilter-syntaxresult' );
+
+					if ( $el.data( 'syntaxOk' ) ) {
+						$el.hide();
+					}
+
+					$plainTextBox.val( filterEditor.getSession().getValue() );
+				} );
+
+				$( '#mw-abusefilter-switcheditor' ).click( switchEditor );
+			} );
+		}
+
 		// Hide the syntax ok message when the text changes
-		$filterBox.keyup( function() {
+		$plainTextBox.keyup( function () {
 			var $el = $( '#mw-abusefilter-syntaxresult' );
 
 			if ( $el.data( 'syntaxOk' ) ) {
@@ -308,10 +419,10 @@
 		$( '#mw-abusefilter-edit-group-input' ).change( onFilterGroupChange );
 
 		$( '#mw-abusefilter-export-link' ).click(
-			function( e ) {
+			function ( e ) {
 				e.preventDefault();
 				$exportBox.toggle();
 			}
 		);
 	} );
-} ( mediaWiki, jQuery ) );
+}( mediaWiki, jQuery ) );

@@ -1,5 +1,7 @@
 <?php
 
+use Wikimedia\Equivset\Equivset;
+
 class AbuseFilterParser {
 	public $mCode, $mTokens, $mPos, $mCur, $mShortCircuit, $mAllowShort, $mLen;
 
@@ -8,7 +10,7 @@ class AbuseFilterParser {
 	 */
 	public $mVars;
 
-	// length,lcase,ucase,ccnorm,rmdoubles,specialratio,rmspecials,norm,count
+	// length,lcase,ucase,ccnorm,rmdoubles,specialratio,rmspecials,norm,count,get_matches
 	public static $mFunctions = [
 		'lcase' => 'funcLc',
 		'ucase' => 'funcUc',
@@ -19,14 +21,18 @@ class AbuseFilterParser {
 		'bool' => 'castBool',
 		'norm' => 'funcNorm',
 		'ccnorm' => 'funcCCNorm',
+		'ccnorm_contains_any' => 'funcCCNormContainsAny',
+		'ccnorm_contains_all' => 'funcCCNormContainsAll',
 		'specialratio' => 'funcSpecialRatio',
 		'rmspecials' => 'funcRMSpecials',
 		'rmdoubles' => 'funcRMDoubles',
 		'rmwhitespace' => 'funcRMWhitespace',
 		'count' => 'funcCount',
 		'rcount' => 'funcRCount',
+		'get_matches' => 'funcGetMatches',
 		'ip_in_range' => 'funcIPInRange',
 		'contains_any' => 'funcContainsAny',
+		'contains_all' => 'funcContainsAll',
 		'substr' => 'funcSubstr',
 		'strlen' => 'funcLen',
 		'strpos' => 'funcStrPos',
@@ -48,15 +54,20 @@ class AbuseFilterParser {
 		'contains' => 'keywordContains',
 		'rlike' => 'keywordRegex',
 		'irlike' => 'keywordRegexInsensitive',
-		'regex' => 'keywordRegex'
+		'regex' => 'keywordRegex',
 	];
 
 	public static $funcCache = [];
 
 	/**
+	 * @var Equivset
+	 */
+	protected static $equivset;
+
+	/**
 	 * Create a new instance
 	 *
-	 * @param $vars AbuseFilterVariableHolder
+	 * @param AbuseFilterVariableHolder $vars
 	 */
 	public function __construct( $vars = null ) {
 		$this->resetState();
@@ -75,7 +86,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $filter
+	 * @param string $filter
 	 * @return array|bool
 	 */
 	public function checkSyntax( $filter ) {
@@ -94,15 +105,15 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $name
-	 * @param $value
+	 * @param string $name
+	 * @param mixed $value
 	 */
 	public function setVar( $name, $value ) {
 		$this->mVars->setVar( $name, $value );
 	}
 
 	/**
-	 * @param $vars
+	 * @param mixed $vars
 	 */
 	public function setVars( $vars ) {
 		if ( is_array( $vars ) ) {
@@ -166,7 +177,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $code
+	 * @param string $code
 	 * @return bool
 	 */
 	public function parse( $code ) {
@@ -174,7 +185,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $filter
+	 * @param string $filter
 	 * @return string
 	 */
 	public function evaluateExpression( $filter ) {
@@ -182,10 +193,10 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $code
+	 * @param string $code
 	 * @return AFPData
 	 */
-	function intEval( $code ) {
+	public function intEval( $code ) {
 		// Setup, resetting
 		$this->mCode = $code;
 		$this->mTokens = AbuseFilterTokenizer::tokenize( $code );
@@ -200,8 +211,8 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $a
-	 * @param $b
+	 * @param string $a
+	 * @param string $b
 	 * @return int
 	 */
 	static function lengthCompare( $a, $b ) {
@@ -217,7 +228,7 @@ class AbuseFilterParser {
 	/**
 	 * Handles unexpected characters after the expression
 	 *
-	 * @param $result AFPData
+	 * @param AFPData &$result
 	 * @throws AFPUserVisibleException
 	 */
 	protected function doLevelEntry( &$result ) {
@@ -233,7 +244,7 @@ class AbuseFilterParser {
 
 	/**
 	 * Handles multiple expressions
-	 * @param $result AFPData
+	 * @param AFPData &$result
 	 */
 	protected function doLevelSemicolon( &$result ) {
 		do {
@@ -247,7 +258,7 @@ class AbuseFilterParser {
 	/**
 	 * Handles multiple expressions
 	 *
-	 * @param $result AFPData
+	 * @param AFPData &$result
 	 * @throws AFPUserVisibleException
 	 */
 	protected function doLevelSet( &$result ) {
@@ -315,7 +326,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result AFPData
+	 * @param AFPData &$result
 	 * @throws AFPUserVisibleException
 	 */
 	protected function doLevelConditions( &$result ) {
@@ -436,7 +447,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result AFPData
+	 * @param AFPData &$result
 	 */
 	protected function doLevelBoolOps( &$result ) {
 		$this->doLevelCompares( $result );
@@ -463,7 +474,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelCompares( &$result ) {
 		$this->doLevelSumRels( $result );
@@ -482,7 +493,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelSumRels( &$result ) {
 		$this->doLevelMulRels( $result );
@@ -505,7 +516,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelMulRels( &$result ) {
 		$this->doLevelPow( $result );
@@ -523,7 +534,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelPow( &$result ) {
 		$this->doLevelBoolInvert( $result );
@@ -539,7 +550,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelBoolInvert( &$result ) {
 		if ( $this->mCur->type == AFPToken::TOP && $this->mCur->value == '!' ) {
@@ -555,7 +566,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelSpecialWords( &$result ) {
 		$this->doLevelUnarys( $result );
@@ -579,7 +590,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 */
 	protected function doLevelUnarys( &$result ) {
 		$op = $this->mCur->value;
@@ -598,7 +609,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 * @throws AFPUserVisibleException
 	 */
 	protected function doLevelListElements( &$result ) {
@@ -625,7 +636,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 * @throws AFPUserVisibleException
 	 */
 	protected function doLevelBraces( &$result ) {
@@ -649,7 +660,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 * @throws AFPUserVisibleException
 	 */
 	protected function doLevelFunction( &$result ) {
@@ -713,7 +724,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $result
+	 * @param string &$result
 	 * @throws AFPUserVisibleException
 	 * @return AFPData
 	 */
@@ -798,7 +809,7 @@ class AbuseFilterParser {
 	/* End of levels */
 
 	/**
-	 * @param $var
+	 * @param string $var
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -820,8 +831,8 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $name
-	 * @param $value
+	 * @param string $name
+	 * @param string $value
 	 * @throws AFPUserVisibleException
 	 */
 	protected function setUserVariable( $name, $value ) {
@@ -835,7 +846,7 @@ class AbuseFilterParser {
 	// Built-in functions
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -854,7 +865,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -873,7 +884,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -895,7 +906,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -916,7 +927,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -942,7 +953,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -965,7 +976,7 @@ class AbuseFilterParser {
 			$needle = $args[0]->toString();
 			$haystack = $args[1]->toString();
 
-			// Bug #60203: Keep empty parameters from causing PHP warnings
+			// T62203: Keep empty parameters from causing PHP warnings
 			if ( $needle === '' ) {
 				$count = 0;
 			} else {
@@ -977,7 +988,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 * @throws Exception
@@ -1017,7 +1028,60 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * Returns an array of matches of needle in the haystack, the first one for the whole regex,
+	 * the other ones for every capturing group.
+	 *
+	 * @param array $args
+	 * @return AFPData A list of matches.
+	 * @throws AFPUserVisibleException
+	 */
+	protected function funcGetMatches( $args ) {
+		if ( count( $args ) < 2 ) {
+			throw new AFPUserVisibleException(
+				'notenoughargs',
+				$this->mCur->pos,
+				[ 'get_matches', 2, count( $args ) ]
+			);
+		}
+		$needle = $args[0]->toString();
+		$haystack = $args[1]->toString();
+
+		// Count the amount of capturing groups in the submitted pattern.
+		// This way we can return a fixed-dimension array, much easier to manage.
+		// First, strip away escaped parentheses
+		$sanitized = preg_replace( '/(\\\\\\\\)*\\\\\(/', '', $needle );
+		// Then strip starting parentheses of non-capturing groups
+		// (also atomics, lookahead and so on, even if not every of them is supported)
+		$sanitized = preg_replace( '/\(\?/', '', $sanitized );
+		// Finally create an array of falses with dimension = # of capturing groups
+		$groupscount = substr_count( $sanitized, '(' ) + 1;
+		$falsy = array_fill( 0, $groupscount, false );
+
+		// Munge the regex by escaping slashes
+		$needle = preg_replace( '!(\\\\\\\\)*(\\\\)?/!', '$1\/', $needle );
+		$needle = "/$needle/u";
+
+		// Suppress and restore are here for the same reason as T177744
+		Wikimedia\suppressWarnings();
+		$check = preg_match( $needle, $haystack, $matches );
+		Wikimedia\restoreWarnings();
+
+		if ( $check === false ) {
+			throw new AFPUserVisibleException(
+				'regexfailure',
+				$this->mCur->pos,
+				[ 'unspecified error in preg_match()', $needle ]
+			);
+		}
+
+		// Returned array has non-empty positions identical to the ones returned
+		// by the third parameter of a standard preg_match call ($matches in this case).
+		// We want an union with falsy to return a fixed-dimention array.
+		return AFPData::newFromPHPVar( $matches + $falsy );
+	}
+
+	/**
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1039,7 +1103,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1060,7 +1124,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1074,53 +1138,139 @@ class AbuseFilterParser {
 		}
 
 		$s = array_shift( $args );
-		$s = $s->toString();
 
-		$searchStrings = [];
-
-		foreach ( $args as $arg ) {
-			$searchStrings[] = $arg->toString();
-		}
-
-		if ( function_exists( 'fss_prep_search' ) ) {
-			$fss = fss_prep_search( $searchStrings );
-			$result = fss_exec_search( $fss, $s );
-
-			$ok = is_array( $result );
-		} else {
-			$ok = false;
-			foreach ( $searchStrings as $needle ) {
-				// Bug #60203: Keep empty parameters from causing PHP warnings
-				if ( $needle !== '' && strpos( $s, $needle ) !== false ) {
-					$ok = true;
-					break;
-				}
-			}
-		}
-
-		return new AFPData( AFPData::DBOOL, $ok );
+		return new AFPData( AFPData::DBOOL, self::contains( $s, $args, true ) );
 	}
 
 	/**
-	 * @param $s
-	 * @return mixed
+	 * @param array $args
+	 * @return AFPData
+	 * @throws AFPUserVisibleException
 	 */
-	protected function ccnorm( $s ) {
-		if ( is_callable( 'AntiSpoof::normalizeString' ) ) {
-			$s = AntiSpoof::normalizeString( $s );
-		} else {
-			// AntiSpoof isn't available, so ignore and return same string
-			wfDebugLog(
-				'AbuseFilter',
-				"Can't compute normalized string (ccnorm) as the AntiSpoof Extension isn't installed."
+	protected function funcContainsAll( $args ) {
+		if ( count( $args ) < 2 ) {
+			throw new AFPUserVisibleException(
+				'notenoughargs',
+				$this->mCur->pos,
+				[ 'contains_all', 2, count( $args ) ]
 			);
 		}
 
-		return $s;
+		$s = array_shift( $args );
+
+		return new AFPData( AFPData::DBOOL, self::contains( $s, $args, false, false ) );
 	}
 
 	/**
-	 * @param $s string
+	 * Normalize and search a string for multiple substrings in OR mode
+	 *
+	 * @param array $args
+	 * @return AFPData
+	 * @throws AFPUserVisibleException
+	 */
+	protected function funcCCNormContainsAny( $args ) {
+		if ( count( $args ) < 2 ) {
+			throw new AFPUserVisibleException(
+				'notenoughargs',
+				$this->mCur->pos,
+				[ 'ccnorm_contains_any', 2, count( $args ) ]
+			);
+		}
+
+		$s = array_shift( $args );
+
+		return new AFPData( AFPData::DBOOL, self::contains( $s, $args, true, true ) );
+	}
+
+	/**
+	 * Normalize and search a string for multiple substrings in AND mode
+	 *
+	 * @param array $args
+	 * @return AFPData
+	 * @throws AFPUserVisibleException
+	 */
+	protected function funcCCNormContainsAll( $args ) {
+		if ( count( $args ) < 2 ) {
+			throw new AFPUserVisibleException(
+				'notenoughargs',
+				$this->mCur->pos,
+				[ 'ccnorm_contains_all', 2, count( $args ) ]
+			);
+		}
+
+		$s = array_shift( $args );
+
+		return new AFPData( AFPData::DBOOL, self::contains( $s, $args, false, true ) );
+	}
+
+	/**
+	 * Search for substrings in a string
+	 *
+	 * Use is_any to determine wether to use logic OR (true) or AND (false).
+	 *
+	 * Use normalize = true to make use of ccnorm and
+	 * normalize both sides of the search.
+	 *
+	 * @param AFPData $string
+	 * @param AFPData[] $values
+	 * @param bool $is_any
+	 * @param bool $normalize
+	 *
+	 * @return bool
+	 */
+	protected static function contains( $string, $values, $is_any = true, $normalize = false ) {
+		$string = $string->toString();
+		if ( $string == '' ) {
+			return false;
+		}
+
+		if ( $normalize ) {
+			$string = self::ccnorm( $string );
+		}
+
+		foreach ( $values as $needle ) {
+			$needle = $needle->toString();
+			if ( $normalize ) {
+				$needle = self::ccnorm( $needle );
+			}
+			if ( $needle === '' ) {
+				// T62203: Keep empty parameters from causing PHP warnings
+				continue;
+			}
+
+			$is_found = strpos( $string, $needle ) !== false;
+			if ( $is_found === $is_any ) {
+				// If I'm here and it's ANY (OR) it means that something is     found.
+				// Just enough! Found!
+				// If I'm here and it's ALL (AND) it means that something isn't found.
+				// Just enough! Not found!
+				return $is_found;
+			}
+		}
+
+		// If I'm here and it's ANY (OR) it means that nothing     was  found:
+		// return false (because $is_any is true)
+		// If I'm here and it's ALL (AND) it means that everything were found:
+		// return true  (because $is_any is false)
+		return ! $is_any;
+	}
+
+	/**
+	 * @param string $s
+	 * @return mixed
+	 */
+	protected static function ccnorm( $s ) {
+		// Instatiate a single version of the equivset so the data is not loaded
+		// more than once.
+		if ( !self::$equivset ) {
+			self::$equivset = new Equivset();
+		}
+
+		return self::$equivset->normalize( $s );
+	}
+
+	/**
+	 * @param string $s
 	 * @return array|string
 	 */
 	protected function rmspecials( $s ) {
@@ -1128,7 +1278,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $s string
+	 * @param string $s
 	 * @return array|string
 	 */
 	protected function rmdoubles( $s ) {
@@ -1136,7 +1286,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $s string
+	 * @param string $s
 	 * @return array|string
 	 */
 	protected function rmwhitespace( $s ) {
@@ -1144,7 +1294,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1164,7 +1314,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1184,7 +1334,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1204,7 +1354,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1227,7 +1377,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1255,7 +1405,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1271,7 +1421,7 @@ class AbuseFilterParser {
 		$haystack = $args[0]->toString();
 		$needle = $args[1]->toString();
 
-		// Bug #60203: Keep empty parameters from causing PHP warnings
+		// T62203: Keep empty parameters from causing PHP warnings
 		if ( $needle === '' ) {
 			return new AFPData( AFPData::DINT, -1 );
 		}
@@ -1292,7 +1442,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1313,7 +1463,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1331,7 +1481,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return mixed
 	 * @throws AFPUserVisibleException
 	 */
@@ -1353,7 +1503,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1367,7 +1517,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1381,7 +1531,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */
@@ -1395,7 +1545,7 @@ class AbuseFilterParser {
 	}
 
 	/**
-	 * @param $args array
+	 * @param array $args
 	 * @return AFPData
 	 * @throws AFPUserVisibleException
 	 */

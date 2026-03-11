@@ -1,7 +1,4 @@
 <?php
-/**
- * SpecialUploads.php
- */
 
 /**
  * Provides a special page with a list of uploaded items/images of a User
@@ -39,7 +36,7 @@ class SpecialUploads extends MobileSpecialPage {
 					$output->setPageTitle( $this->msg( 'mobile-frontend-donate-image-title-username', $par ) );
 					$output->setStatusCode( 404 );
 					$html = MobileUI::contentElement(
-						MobileUI::errorBox(
+						Html::errorBox(
 							$this->msg( 'mobile-frontend-photo-upload-invalid-user', $par ) )
 					);
 				} else {
@@ -62,7 +59,7 @@ class SpecialUploads extends MobileSpecialPage {
 	/**
 	 * Generates HTML for the uploads page for the passed user.
 	 *
-	 * @param User $user
+	 * @param User $user User to display uploads of
 	 * @return string
 	 */
 	public function getUserUploadsPageHtml( User $user ) {
@@ -108,7 +105,7 @@ class SpecialUploads extends MobileSpecialPage {
 
 		$mfPhotoUploadWiki = $this->getMFConfig()->get( 'MFPhotoUploadWiki' );
 		if ( !$mfPhotoUploadWiki ) {
-			$dbr = wfGetDB( DB_SLAVE );
+			$dbr = wfGetDB( DB_REPLICA );
 		} elseif (
 				$mfPhotoUploadWiki &&
 				!in_array( $mfPhotoUploadWiki, $wgConf->getLocalDatabases() )
@@ -116,17 +113,20 @@ class SpecialUploads extends MobileSpecialPage {
 			// early return if the database is invalid
 			return false;
 		} else {
-			$dbr = wfGetDB( DB_SLAVE, [], $mfPhotoUploadWiki );
+			$dbr = wfGetDB( DB_REPLICA, [], $mfPhotoUploadWiki );
 		}
 
 		$limit = $this->getUploadCountThreshold() + 1;
 		// not using SQL's count(*) because it's more expensive with big number of rows
+		$imgWhere = ActorMigration::newMigration()
+			->getWhere( $dbr, 'img_user', User::newFromName( $username, false ) );
 		$res = $dbr->select(
-			'image',
-			'img_size',
-			[ 'img_user_text' => $username ],
+			[ 'image' ] + $imgWhere['tables'],
+			1,
+			$imgWhere['conds'],
 			__METHOD__,
-			[ 'LIMIT' => $limit ]
+			[ 'LIMIT' => $limit ],
+			$imgWhere['joins']
 		);
 		return ( $res ) ? $res->numRows() : false;
 	}

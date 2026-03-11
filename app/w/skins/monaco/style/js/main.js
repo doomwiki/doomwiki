@@ -87,13 +87,13 @@ $.fn.extend({
 		}
 
 		var menu = $(this);
-  		var headerMenuTimer;
+		var headerMenuTimer;
 		var settings = {
-    			delay: 500,
-    			edge: 10,
-    			attach_to: "#wikia_header",
-    			attach_at: "bottom"
-    		};
+			delay: 500,
+			edge: 10,
+			attach_to: "#wikia_header",
+			attach_at: "bottom"
+		};
 		if (options) {
 			$.extend(settings, options);
 		}
@@ -140,7 +140,7 @@ $.fn.extend({
 		menu.click(function(event) {
 			event.stopPropagation();
 		});
-  	},
+	},
 	closeHeaderMenu: function(trigger, headerMenuFunction) {
 		$(document).unbind("click.headerMenu");
 		trigger.bind("click.headerMenu", headerMenuFunction);
@@ -289,9 +289,9 @@ function setupVoting() {
 
 //watch unwatch combomodal
 $(function() {
-	 $("#ca-watch").click(function(e){
-		 	$.tracker.byStr( 'articleAction/watch' );
-		 	var callback_link = $(e.target).attr("href");
+	$("#ca-watch").click(function(e){
+			$.tracker.byStr( 'articleAction/watch' );
+			var callback_link = $(e.target).attr("href");
 			showComboAjaxForPlaceHolder(false, false, function(){
 				AjaxLogin.doSuccess = function() {
 					window.location = callback_link;

@@ -1,5 +1,6 @@
-( function ( M, $, ve ) {
-	var EditorOverlayBase = M.require( 'mobile.editor.common/EditorOverlayBase' );
+( function ( M, ve ) {
+	var EditorOverlayBase = M.require( 'mobile.editor.common/EditorOverlayBase' ),
+		util = M.require( 'mobile.startup/util' );
 
 	/**
 	 * Overlay for VisualEditor view
@@ -19,7 +20,7 @@
 		/** @inheritdoc **/
 		isBorderBox: false,
 		/** @inheritdoc **/
-		templatePartials: $.extend( {}, EditorOverlayBase.prototype.templatePartials, {
+		templatePartials: util.extend( {}, EditorOverlayBase.prototype.templatePartials, {
 			editHeader: mw.template.get( 'mobile.editor.ve', 'toolbarVE.hogan' ),
 			content: mw.template.get( 'mobile.editor.ve', 'contentVE.hogan' )
 		} ),
@@ -69,7 +70,6 @@
 						// (which has no header to scroll to)
 						section: overlay.options.sectionId || null
 					} );
-					overlay.target.activating = true;
 					overlay.target.load();
 				}, function ( e ) {
 					mw.log.warn( 'VisualEditor failed to load: ' + e );
@@ -146,4 +146,4 @@
 
 	M.define( 'mobile.editor.ve/VisualEditorOverlay', VisualEditorOverlay );
 
-}( mw.mobileFrontend, jQuery, window.ve ) );
+}( mw.mobileFrontend, window.ve ) );

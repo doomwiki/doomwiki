@@ -127,7 +127,7 @@
 /* @group Main Page */
 
 body.mainpage div.monaco_shrinkwrap {
-        width: 972px;
+	width: 972px;
 }
 body.mainpage #background_accent1 {
 	background-image: url(../images/forest_left.png);
@@ -169,7 +169,7 @@ body.masthead-special .page_bar {
 	background: #555;
 	border-color: #AAA;
 }
-body.masthead-regular .page_bar .page_buttons a, 
+body.masthead-regular .page_bar .page_buttons a,
 body.masthead-special .page_bar .page_buttons a {
 	color: #FFF;
 }

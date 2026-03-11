@@ -7,9 +7,9 @@
 	 *
 	 * @class MainMenu
 	 * @extends View
-	 *
 	 * @constructor
 	 * @param {Object} options Configuration options
+	 * @module skins.minerva.mainMenu/MainMenu
 	 */
 	function MainMenu( options ) {
 		this.activator = options.activator;
@@ -36,6 +36,8 @@
 		 * attributes on elements.
 		 */
 		enableLogging: function () {
+			// Load the EventLogging module inside MobileFrontend if available
+			mw.loader.using( 'mobile.loggingSchemas.mobileWebMainMenuClickTracking' );
 			this.$( 'a' ).on( 'click', function () {
 				var $link = $( this ),
 					eventName = $link.data( 'event-name' );
@@ -102,6 +104,7 @@
 		 * Toggle open navigation drawer
 		 * @param {string} [drawerType] A name that identifies the navigation drawer that
 		 *     should be toggled open. Defaults to 'primary'.
+		 * @fires MainMenu#open
 		 */
 		openNavigationDrawer: function ( drawerType ) {
 			// close any existing ones first.
@@ -110,9 +113,7 @@
 			// FIXME: We should be moving away from applying classes to the body
 			$( 'body' ).toggleClass( 'navigation-enabled' )
 				.toggleClass( drawerType + '-navigation-enabled' );
-			/**
-			 * @event open emitted when navigation drawer is opened
-			 */
+
 			this.emit( 'open' );
 		}
 	} );

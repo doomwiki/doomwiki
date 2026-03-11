@@ -8,18 +8,19 @@
 			"Luckas",
 			"Macofe",
 			"Opraco",
-			"Peter Fernando"
+			"Peter Fernando",
+			"Eduardo Addad de Oliveira"
 		]
 	},
-	"skinname-minervaneue": "MinervaNeue",
 	"minerva-last-modified-date": "Modificado pela última vez em $1 às $2",
 	"minerva-talk-add-topic": "Adicionar discussão",
-	"mobile-frontend-console-recruit": "\\o/ Hey! Este é um software de código aberto e nós precisamos de voluntários para nos ajudar a criar isso, torná-lo melhor e corrigir todos os erros que você possa estar vendo neste console de JavaScript!\n\nVocê pode encontrar nosso backlog @ https://phabricator.wikimedia.org/project/profile/67/",
 	"mobile-frontend-cookies-required": "Os cookies são necessários para alternar os modos de exibição. Por favor, ative-os e tente novamente.",
 	"mobile-frontend-editor-blocked-info-loggedin": "Sua conta está impedida de editar. O bloqueio foi feito por {{GENDER: $2|$2}} pela seguinte razão: $1",
 	"mobile-frontend-editor-cta": "Ajude a melhorar esta página!",
+	"minerva-pointer-dismiss": "Dispensar",
 	"mobile-frontend-editor-disabled": "Esta página está protegida para prevenir vandalismos.",
 	"mobile-frontend-editor-edit": "Editar",
+	"minerva-download": "Baixar",
 	"mobile-frontend-editor-redlink-create": "Criar página",
 	"mobile-frontend-editor-redlink-explain": "Esta página ainda não foi criada.",
 	"mobile-frontend-editor-redlink-leave": "Não, obrigado.",
@@ -44,7 +45,7 @@
 	"mobile-frontend-main-menu-watchlist": "Páginas vigiadas",
 	"mobile-frontend-meta-data-issues": "Problemas da página",
 	"mobile-frontend-meta-data-issues-categories": "Sobre esta categoria",
-	"mobile-frontend-meta-data-issues-header": "Problemas",
+	"mobile-frontend-meta-data-issues-header": "Problemas da página",
 	"mobile-frontend-meta-data-issues-header-talk": "Sobre esta página",
 	"mobile-frontend-meta-data-issues-talk": "Sobre esta página de discussão",
 	"mobile-frontend-notifications-filter": "Filtro",
@@ -63,5 +64,9 @@
 	"mobile-frontend-user-page-talk": "Discussão",
 	"mobile-frontend-user-page-uploads": "Envios",
 	"skinname-minerva": "Minerva",
-	"minerva-skin-desc": "Um primeiro tema mobile responsivo."
+	"minerva-skin-desc": "Um primeiro tema mobile responsivo",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Categorias",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Mostra as categorias das páginas",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "Ir para o topo",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "Ir para o topo da página atual usando um botão flutuante"
 }

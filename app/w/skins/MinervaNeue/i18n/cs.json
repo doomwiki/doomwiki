@@ -6,15 +6,16 @@
 			"Matěj Suchánek",
 			"Michaelbrabec",
 			"Mormegil",
-			"Vks"
+			"Vks",
+			"Ilimanaq29"
 		]
 	},
 	"minerva-last-modified-date": "Naposledy editováno $1 v $2",
 	"minerva-talk-add-topic": "Přidat diskusi",
-	"mobile-frontend-console-recruit": "\\o/ Ahój! Tohle je open source software a potřebujeme dobrovolníky, aby nám pomohli s jeho tvorbou, vylepšováním a opravováním všech chyb, které v téhle JavaScriptové konzoli můžete zahlédnout!\n\nNaše resty najdete na https://phabricator.wikimedia.org/project/profile/67/",
 	"mobile-frontend-cookies-required": "Pro přepnutí verzí jsou vyžadovány cookies. Povolte je a zkuste to znovu.",
 	"mobile-frontend-editor-blocked-info-loggedin": "Vašemu uživatelskému účtu byla zablokována možnost editace. Zablokování {{GENDER:$2|provedl|provedla}} $2 s následujícím zdůvodněním: $1",
 	"mobile-frontend-editor-cta": "Pomozte vylepšit tuto stránku!",
+	"minerva-pointer-dismiss": "Zavřít",
 	"mobile-frontend-editor-disabled": "Tato stránka je zamčena, aby se předešlo vandalismu.",
 	"mobile-frontend-editor-edit": "Editovat",
 	"mobile-frontend-editor-redlink-create": "Vytvořit stránku",
@@ -41,7 +42,7 @@
 	"mobile-frontend-main-menu-watchlist": "Sledované",
 	"mobile-frontend-meta-data-issues": "Nedostatky stránky",
 	"mobile-frontend-meta-data-issues-categories": "O této kategorii",
-	"mobile-frontend-meta-data-issues-header": "Nedostatky",
+	"mobile-frontend-meta-data-issues-header": "Nedostatky stránky",
 	"mobile-frontend-meta-data-issues-header-talk": "O této stránce",
 	"mobile-frontend-meta-data-issues-talk": "O této diskusi",
 	"mobile-frontend-notifications-filter": "Filtr",
@@ -59,5 +60,9 @@
 	"mobile-frontend-user-page-member-since": "{{GENDER:$2|Připojil|Připojila|Připojil(a)}} se dne $1",
 	"mobile-frontend-user-page-talk": "Diskuse",
 	"mobile-frontend-user-page-uploads": "Načtené soubory",
-	"minerva-skin-desc": "Responzivní vzhled navržený pro mobily"
+	"minerva-skin-desc": "Responzivní vzhled navržený pro mobily",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Kategorie",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Zobrazit kategorie stránek",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "Přeskočit na začátek",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "Přeskočit na začátek této stránky pomocí pohyblivého tlačítka"
 }

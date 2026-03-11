@@ -1,48 +1,30 @@
 /**
  * JavaScript for the CategoryTree extension.
  *
+ * © 2006 Daniel Kinzler
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
  * @file
  * @ingroup Extensions
  * @author Daniel Kinzler, brightbyte.de
- * @copyright © 2006 Daniel Kinzler
- * @licence GNU General Public Licence 2.0 or later
  */
 
-/* eslint no-use-before-define: ["error", { "functions": false }] */
-
 ( function ( $, mw ) {
-
-	/**
-	 * Attach click handler to buttons
-	 *
-	 * @param {jQuery} $content
-	 */
-	function attachHandler( $content ) {
-		$content.find( '.CategoryTreeToggle' )
-			.click( handleNode )
-			.attr( 'title', function () {
-				return mw.msg(
-					$( this ).data( 'ct-state' ) === 'collapsed' ?
-					'categorytree-expand' :
-					'categorytree-collapse'
-				);
-			} )
-			.addClass( 'CategoryTreeToggleHandlerAttached' );
-	}
-
-	/**
-	 * Handles clicks on the expand buttons, and calls the appropriate function
-	 *
-	 * @context {Element} CategoryTreeToggle
-	 */
-	function handleNode() {
-		var $link = $( this );
-		if ( $link.data( 'ct-state' ) === 'collapsed' ) {
-			expandNode( $link );
-		} else {
-			collapseNode( $link );
-		}
-	}
+	var loadChildren;
 
 	/**
 	 * Expands a given node (loading it's children if not loaded)
@@ -52,7 +34,7 @@
 	function expandNode( $link ) {
 		// Show the children node
 		var $children = $link.parents( '.CategoryTreeItem' )
-				.siblings( '.CategoryTreeChildren' );
+			.siblings( '.CategoryTreeChildren' );
 		$children.show();
 
 		$link
@@ -82,12 +64,44 @@
 	}
 
 	/**
+	 * Handles clicks on the expand buttons, and calls the appropriate function
+	 *
+	 * @context {Element} CategoryTreeToggle
+	 */
+	function handleNode() {
+		var $link = $( this );
+		if ( $link.data( 'ct-state' ) === 'collapsed' ) {
+			expandNode( $link );
+		} else {
+			collapseNode( $link );
+		}
+	}
+
+	/**
+	 * Attach click handler to buttons
+	 *
+	 * @param {jQuery} $content
+	 */
+	function attachHandler( $content ) {
+		$content.find( '.CategoryTreeToggle' )
+			.click( handleNode )
+			.attr( 'title', function () {
+				return mw.msg(
+					$( this ).data( 'ct-state' ) === 'collapsed' ?
+						'categorytree-expand' :
+						'categorytree-collapse'
+				);
+			} )
+			.addClass( 'CategoryTreeToggleHandlerAttached' );
+	}
+
+	/**
 	 * Loads children for a node via an HTTP call
 	 *
 	 * @param {jQuery} $link
 	 * @param {jQuery} $children
 	 */
-	function loadChildren( $link, $children ) {
+	loadChildren = function ( $link, $children ) {
 		var $linkParentCTTag, ctTitle, ctMode, ctOptions;
 
 		/**
@@ -98,10 +112,17 @@
 
 			$retryLink = $( '<a>' )
 				.text( mw.msg( 'categorytree-retry' ) )
-				.attr( 'href', '#' )
-				.click( function ( e ) {
-					e.preventDefault();
-					loadChildren( $link, $children );
+				.attr( {
+					role: 'button',
+					tabindex: 0
+				} )
+				.on( 'click keypress', function ( e ) {
+					if (
+						e.type === 'click' ||
+						e.type === 'keypress' && e.which === 13
+					) {
+						loadChildren( $link, $children );
+					}
 				} );
 
 			$children
@@ -123,7 +144,7 @@
 		ctTitle = $link.data( 'ct-title' );
 		ctMode = $linkParentCTTag.data( 'ct-mode' );
 		ctMode = typeof ctMode === 'number' ? ctMode : undefined;
-		ctOptions = JSON.stringify( $linkParentCTTag.data( 'ct-options' ) );
+		ctOptions = $linkParentCTTag.attr( 'data-ct-options' );
 		if ( !ctOptions ) {
 			ctOptions = mw.config.get( 'wgCategoryTreePageCategoryOptions' );
 		}
@@ -170,10 +191,15 @@
 			attachHandler( $children );
 
 		} )
-		.fail( error );
-	}
+			.fail( error );
+	};
 
 	// Register click events
 	mw.hook( 'wikipage.content' ).add( attachHandler );
+
+	$( function () {
+		// Attach click handler for sidebar
+		attachHandler( $( '#p-categorytree-portlet' ) );
+	} );
 
 }( jQuery, mediaWiki ) );

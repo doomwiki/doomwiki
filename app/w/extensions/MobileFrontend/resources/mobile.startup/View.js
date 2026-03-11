@@ -1,5 +1,7 @@
-( function ( M, $ ) {
+/* global $ */
+( function ( M ) {
 	var
+		util = M.require( 'mobile.startup/util' ),
 		// Cached regex to split keys for `delegate`.
 		delegateEventSplitter = /^(\S+)\s*(.*)$/,
 		idCounter = 0;
@@ -160,7 +162,7 @@
 			var self = this;
 
 			OO.EventEmitter.call( this );
-			options = $.extend( {}, this.defaults, options );
+			options = util.extend( {}, this.defaults, options );
 			this.options = options;
 			// Assign a unique id for dom events binding/unbinding
 			this.cid = uniqueId( 'view' );
@@ -173,16 +175,18 @@
 			}
 
 			if ( options.el ) {
+				// Note the element may not be in the document so must use global jQuery here
 				this.$el = $( options.el );
 			} else {
-				this.$el = $( '<' + this.tagName + '>' );
+				this.$el = this.parseHTML( '<' + this.tagName + '>' );
 			}
 
 			// Make sure the element is ready to be manipulated
 			if ( this.$el.length ) {
 				this._postInitialize();
 			} else {
-				$( function () {
+				util.docReady( function () {
+					// Note the element may not be in the document so must use global jQuery here
 					self.$el = $( options.el );
 					self._postInitialize();
 				} );
@@ -208,7 +212,7 @@
 		 *
 		 * @method
 		 */
-		preRender: $.noop,
+		preRender: util.noop,
 
 		/**
 		 * Function called after the view is rendered. Can be redefined in
@@ -216,7 +220,7 @@
 		 *
 		 * @method
 		 */
-		postRender: $.noop,
+		postRender: util.noop,
 
 		// eslint-disable-next-line valid-jsdoc
 		/**
@@ -229,7 +233,7 @@
 		 */
 		render: function ( data ) {
 			var html;
-			$.extend( this.options, data );
+			util.extend( this.options, data );
 			this.preRender();
 			this.undelegateEvents();
 			if ( this.template && !this.options.enhance ) {
@@ -284,13 +288,13 @@
 				for ( key in events ) {
 					method = events[ key ];
 					// If the method is a string name of this.method, get it
-					if ( !$.isFunction( method ) ) {
+					if ( !util.isFunction( method ) ) {
 						method = this[ events[ key ] ];
 					}
 					if ( method ) {
 						// Extract event and selector from the key
 						match = key.match( delegateEventSplitter );
-						this.delegate( match[ 1 ], match[ 2 ], $.proxy( method, this ) );
+						this.delegate( match[ 1 ], match[ 2 ], method.bind( this ) );
 					}
 				}
 			}
@@ -332,7 +336,14 @@
 		undelegate: function ( eventName, selector, listener ) {
 			this.$el.off( eventName + '.delegateEvents' + this.cid, selector,
 				listener );
-		}
+		},
+
+		/**
+		 * See parseHTML method of util singleton
+		 *
+		 * @method
+		 */
+		parseHTML: util.parseHTML
 	} );
 
 	[
@@ -356,4 +367,4 @@
 	M.define( 'mobile.startup/View', View )
 		.deprecate( 'mobile.view/View' );
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

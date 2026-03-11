@@ -37,11 +37,6 @@ class SpecialPasswordReset extends FormSpecialPage {
 	private $passwordReset = null;
 
 	/**
-	 * @var string[] Temporary storage for the passwords which have been sent out, keyed by username.
-	 */
-	private $passwords = [];
-
-	/**
 	 * @var Status
 	 */
 	private $result;
@@ -77,6 +72,15 @@ class SpecialPasswordReset extends FormSpecialPage {
 		}
 
 		parent::checkExecutePermissions( $user );
+	}
+
+	/**
+	 * @param string $par
+	 */
+	public function execute( $par ) {
+		$out = $this->getOutput();
+		$out->disallowUserJs();
+		parent::execute( $par );
 	}
 
 	protected function getFormFields() {

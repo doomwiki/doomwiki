@@ -1,6 +1,6 @@
 /**
  * Monaco Widget Framework 2.0
- * Replaces old WidgetFramework plugin with frontend-driven dynamic content. 
+ * Replaces old WidgetFramework plugin with frontend-driven dynamic content.
  * Widgets can be defined through the wiki frontend via use of Extension:Gadgets.
  * Added to ResourceLoader as ext.monacoWidget
  *
@@ -29,12 +29,12 @@
   //
   mw.libs.monacoWidget = function (id, title, priority, location, dynamic, automatic, iconTitle, iconClass, contentCB, iconAction) {
     // Some defaults
-    if(!location)
+    if (!location)
       location = '#widget_sidebar';
-      
-    if($('#' + id).length !== 0)
+
+    if ($('#' + id).length !== 0)
       throw "This widget already exists."; // do not construct duplicate widgets
-      
+
     this.id         = id;
     this.bar        = $(location); // reference to attachment location
     this.title      = title;
@@ -42,8 +42,8 @@
     this.iconTitle  = iconTitle;
     this.iconClass  = iconClass;
     this.iconAction = iconAction;
-    
-    // 
+
+    //
     // Methods
     //
 
@@ -55,13 +55,13 @@
     // Private, creates an AJAX icon button in the widget's title bar
     var makeAjaxToggleDiv = function (widget) {
       var ajaxID = makeCompositeID(widget.id, 'ajax');
-      widget.ajaxPic = $('<div id="' + ajaxID + '" ' + 
+      widget.ajaxPic = $('<div id="' + ajaxID + '" ' +
                          'class="monacoWidgetAjaxToggle sprite" />');
-      if(widget.iconTitle)
+      if (widget.iconTitle)
         widget.ajaxPic.attr('title', widget.iconTitle);
-      if(widget.iconClass)
+      if (widget.iconClass)
         widget.ajaxPic.addClass(widget.iconClass);
-      if(widget.iconAction) {
+      if (widget.iconAction) {
         var fn = widget.iconAction;
         widget.ajaxPic.on('click', function () { fn(widget); });
       }
@@ -72,15 +72,15 @@
     var makeTitleBar = function (widget) {
       var titleID = makeCompositeID(widget.id, 'title');
       widget.titleBar = $('<h3 id="' + titleID + '" class="color1 sidebox_title">' + widget.title + '</h3>');
-      if(widget.dynamic)
+      if (widget.dynamic)
         widget.titleBar.append(makeAjaxToggleDiv(widget));
       return widget.titleBar;
     };
-  
+
     // Private, creates the widget's content area
     var makeContentArea = function (widget) {
       var contentID = makeCompositeID(widget.id, 'content');
-      widget.content = $('<div id="' + contentID + '" ' + 
+      widget.content = $('<div id="' + contentID + '" ' +
                        'class="sidebox_contents monacoWidgetContentArea" />');
       return widget.content;
     };
@@ -91,84 +91,84 @@
       widget.body.append(makeTitleBar(widget), makeContentArea(widget));
       return widget.body;
     };
-    
+
     // Icon methods
-    
+
     // Start AJAX loading animation
     this.doAjaxAnimation = function () {
-      if(this.ajaxPic)
+      if (this.ajaxPic)
         this.ajaxPic.removeClass(this.iconClass).addClass('progress').attr('title', 'Loading...').css('cursor', 'wait');
     };
-    
+
     // Stop AJAX loading animation
     this.stopAjaxAnimation = function () {
-      if(this.ajaxPic)
+      if (this.ajaxPic)
         this.ajaxPic.removeClass('progress').addClass(this.iconClass).attr('title', this.iconTitle).css('cursor', 'pointer');
     };
-    
+
     // Turn the icon into a Refresh button
     this.makeRefreshPic = function () {
-      if(this.ajaxPic)
+      if (this.ajaxPic)
         this.ajaxPic.removeClass('progress').addClass('refresh').attr('title', 'Refresh').css('cursor', 'pointer');
     };
-    
+
     // Content methods
-    
+
     // Add a content element
     this.addContentElement = function (elem, limitSize) {
       var newElem = $(elem);
-      if(limitSize)
-        newElem.addClass('widget_contents'); // hidden overflow x, auto overflow y, 250px max height      
+      if (limitSize)
+        newElem.addClass('widget_contents'); // hidden overflow x, auto overflow y, 250px max height
       this.content.append(newElem);
       return newElem;
     };
-    
+
     // Add a standard list content element
     this.addStdListContentElement = function (limitSize) {
       return this.addContentElement(
-        $('<ul id="' + makeCompositeID(this.id, 'stdlist') + '" class="monacoWidgetStdList" />'), 
+        $('<ul id="' + makeCompositeID(this.id, 'stdlist') + '" class="monacoWidgetStdList" />'),
         limitSize);
     };
-    
+
     // Empty the standard list content element
     this.emptyStdListContentElement = function () {
       $('#' + makeCompositeID(this.id, 'stdlist')).empty();
     };
-   
+
     // Construct the bar on the page
-    if(priority) {
-      if(location === '#widget_sidebar') // for left sidebar, add after navigation widget
+    if (priority) {
+      if (location === '#widget_sidebar') // for left sidebar, add after navigation widget
         makeWidgetBody(this).insertAfter('#navigation_widget');
       else
         this.bar.prepend(makeWidgetBody(this)); // add at beginning
     }
     else
       this.bar.append(makeWidgetBody(this)); // add at end
-      
+
     // Add custom content via callback if requested
-    if(contentCB)
+    if (contentCB)
       contentCB(this);
-      
+
     // If this widget is dynamic and automatic is true, auto-click it after the interval.
-    if(this.ajaxPic && automatic) {
+    if (this.ajaxPic && automatic) {
       var cWidget = this;
       window.setTimeout(function () { cWidget.ajaxPic.click(); }, automatic);
     }
   };
-  
+
   //
   // Statics
   //
-  
+
   // Manage widgets
   mw.libs.monacoWidget.Exists = function (id) {
     return ($('#' + id).length !== 0);
   };
-  
+
   mw.libs.monacoWidget.IsMonaco = function () {
     return (mw.config.get('skin') === 'monaco');
   };
-  
+
   // Standard query 1: Top 7 Recent changes
   mw.libs.monacoWidget.GetRecentChangesQuery = function () {
     return ({
@@ -180,24 +180,24 @@
       rclimit: '7'
     });
   };
-  
+
   // Perform an API query and execute the given callback with the data
   // resulting from the API query. Asynchronous (AJAX).
   mw.libs.monacoWidget.DoAPIQuery = function (widget, query, callback) {
     (new mw.Api()).get(query).done(function (data) { callback(widget, data); });
   };
-  
+
   // Create a link to an article
   mw.libs.monacoWidget.ArticleLink = function (title, revs) {
     var href = mw.util.getUrl(title);
-    if(revs)
+    if (revs)
       href += '?curid=' + revs.pageid + '&diff=' + revs.revid + '&oldid=' + revs.old_revid;
     return '<a href="' + href + '" rel="nofollow">' + title + '</a>';
   };
-  
+
   // Create a link to a user page
   mw.libs.monacoWidget.UserLink = function (user) {
-    if(/(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.test(user) || /(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}/.test(user)) {
+    if (/(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.test(user) || /(?:[A-F0-9]{1,4}:){7}[A-F0-9]{1,4}/.test(user)) {
       // anonymous users rarely have user pages so link to Special:Contributions
       return '<a href="' + mw.util.getUrl('Special:Contributions') + '/' + user + '" rel="nofollow">Anonymous user</a>';
     } else {
@@ -206,7 +206,7 @@
       return '<a href="' + mw.util.getUrl('User:' + user) + '" rel="nofollow">' + user + '</a>';
     }
   };
-  
+
   /*
    * JavaScript Pretty Date
    * Copyright (c) 2011 John Resig (ejohn.org)
@@ -218,14 +218,14 @@
     var date = new Date((time || "")),
       diff = (((new Date()).getTime() - date.getTime()) / 1000),
       day_diff = Math.floor(diff / 86400);
-      
-    if(isNaN(day_diff) || day_diff >= 31)
+
+    if (isNaN(day_diff) || day_diff >= 31)
       return;
-    
-    if(day_diff < 0) // possible when there's time drift between server and client
+
+    if (day_diff < 0) // possible when there's time drift between server and client
       return "just now";
-    
-    return day_diff == 0 && 
+
+    return day_diff == 0 &&
       (diff < 60 && "just now" ||
        diff < 120 && "1 minute ago" ||
        diff < 3600 && Math.floor( diff / 60 ) + " minutes ago" ||

@@ -1,9 +1,9 @@
 <?php
 
 namespace RemexHtml\Serializer;
+
 use RemexHtml\PropGuard;
 use RemexHtml\TreeBuilder\TreeBuilder;
-use RemexHtml\TreeBuilder\TreeHandler;
 use RemexHtml\TreeBuilder\Element;
 use RemexHtml\Tokenizer\Attributes;
 use RemexHtml\Tokenizer\PlainAttributes;
@@ -14,6 +14,8 @@ use RemexHtml\Tokenizer\PlainAttributes;
  * a DOM and then serializing it, even if you use DOMDocument::saveHTML().
  */
 class Serializer implements AbstractSerializer {
+	use PropGuard;
+
 	/**
 	 * A node corresponding to the Document
 	 * @var SerializerNode
@@ -38,13 +40,9 @@ class Serializer implements AbstractSerializer {
 	 * to avoid circular references, allowing nodes to be freed.
 	 *
 	 * @var SerializerNode[integer]
+	 * @internal
 	 */
-	private $nodes = [];
-
-	/**
-	 * The next key into $nodes which will be created
-	 */
-	private $nextNodeId = 0;
+	protected $nodes = [];
 
 	/**
 	 * True if we are parsing a fragment. The children of the <html> element
@@ -69,12 +67,9 @@ class Serializer implements AbstractSerializer {
 		$this->errorCallback = $errorCallback;
 	}
 
-	public function __set( $name, $value ) {
-		PropGuard::set( $this, $name, $value );
-	}
-
 	/**
 	 * Get the final string. This can only be called after endDocument() is received.
+	 * @return string
 	 */
 	public function getResult() {
 		return $this->result;
@@ -115,7 +110,6 @@ class Serializer implements AbstractSerializer {
 	public function startDocument( $fragmentNamespace, $fragmentName ) {
 		$this->root = new SerializerNode( 0, 0, '', '', new PlainAttributes, false );
 		$this->nodes = [ $this->root ];
-		$this->nextNodeId = 1;
 		$this->isFragment = $fragmentNamespace !== null;
 		$this->result = $this->formatter->startDocument( $fragmentNamespace, $fragmentName );
 	}
@@ -130,12 +124,11 @@ class Serializer implements AbstractSerializer {
 			if ( is_string( $child ) ) {
 				$this->result .= $child;
 			} else {
-				$this->result .= $this->stringify( $root, $child );
+				$this->result .= $this->serializeNode( $root, $child, false );
 			}
 		}
 		$this->root = null;
 		$this->nodes = [];
-		$this->nextNodeId = 0;
 	}
 
 	protected function interpretPlacement( $preposition, $refElement ) {
@@ -187,12 +180,12 @@ class Serializer implements AbstractSerializer {
 	/**
 	 * Insert an element
 	 *
-	 * @param integer $preposition
+	 * @param int $preposition
 	 * @param Element|SerializerNode|null $refElement
 	 * @param Element $element
 	 * @param bool $void
-	 * @param integer $sourceStart
-	 * @param integer $sourceLength
+	 * @param int $sourceStart
+	 * @param int $sourceLength
 	 */
 	public function insertElement( $preposition, $refElement, Element $element, $void,
 		$sourceStart, $sourceLength
@@ -217,7 +210,7 @@ class Serializer implements AbstractSerializer {
 			$self->parentId = $parent->id;
 		} else {
 			// Inserting an element which has not been seen before
-			$id = $this->nextNodeId++;
+			$id = $element->uid;
 			$self = new SerializerNode( $id, $parent->id, $element->namespace,
 				$element->name, $element->attrs, $void );
 			$this->nodes[$id] = $element->userData = $self;
@@ -247,8 +240,7 @@ class Serializer implements AbstractSerializer {
 		$children =& $parent->children;
 		for ( $index = count( $children ) - 1; $index >= 0; $index-- ) {
 			if ( $children[$index] === $self ) {
-				unset( $this->nodes[$self->id] );
-				$children[$index] = $this->stringify( $parent, $self );
+				$children[$index] = $this->serializeNode( $parent, $self, true );
 				return;
 			}
 		}
@@ -260,9 +252,10 @@ class Serializer implements AbstractSerializer {
 	 *
 	 * @param SerializerNode $parent The parent of $node
 	 * @param SerializerNode $node The node to serialize
+	 * @param bool $destroy If true, the node and its descendants will be removed from $this->nodes
 	 * @return string
 	 */
-	private function stringify( SerializerNode $parent, SerializerNode $node ) {
+	private function serializeNode( SerializerNode $parent, SerializerNode $node, $destroy ) {
 		if ( $node->void ) {
 			$contents = null;
 		} else {
@@ -271,9 +264,12 @@ class Serializer implements AbstractSerializer {
 				if ( is_string( $child ) ) {
 					$contents .= $child;
 				} else {
-					$contents .= $this->stringify( $node, $child );
+					$contents .= $this->serializeNode( $node, $child, $destroy );
 				}
 			}
+		}
+		if ( $destroy ) {
+			unset( $this->nodes[$node->id] );
 		}
 		return $this->formatter->element( $parent, $node, $contents );
 	}
@@ -354,7 +350,7 @@ class Serializer implements AbstractSerializer {
 	 * @return string
 	 */
 	public function dump() {
-		$s = $this->stringify( $this->root, $this->root );
+		$s = $this->serializeNode( $this->root, $this->root, false );
 		return substr( $s, 2, -3 ) . "\n";
 	}
 }

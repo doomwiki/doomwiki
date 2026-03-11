@@ -25,8 +25,8 @@
  */
 
 require_once __DIR__ . '/Maintenance.php';
-require_once __DIR__ . '/../includes/export/DumpFilter.php';
 
+use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\LoadBalancer;
 use Wikimedia\Rdbms\IDatabase;
 
@@ -83,15 +83,15 @@ class BackupDumper extends Maintenance {
 		$this->stderr = fopen( "php://stderr", "wt" );
 
 		// Built-in output and filter plugins
-		$this->registerOutput( 'file', 'DumpFileOutput' );
-		$this->registerOutput( 'gzip', 'DumpGZipOutput' );
-		$this->registerOutput( 'bzip2', 'DumpBZip2Output' );
-		$this->registerOutput( 'dbzip2', 'DumpDBZip2Output' );
-		$this->registerOutput( '7zip', 'Dump7ZipOutput' );
+		$this->registerOutput( 'file', DumpFileOutput::class );
+		$this->registerOutput( 'gzip', DumpGZipOutput::class );
+		$this->registerOutput( 'bzip2', DumpBZip2Output::class );
+		$this->registerOutput( 'dbzip2', DumpDBZip2Output::class );
+		$this->registerOutput( '7zip', Dump7ZipOutput::class );
 
-		$this->registerFilter( 'latest', 'DumpLatestFilter' );
-		$this->registerFilter( 'notalk', 'DumpNotalkFilter' );
-		$this->registerFilter( 'namespace', 'DumpNamespaceFilter' );
+		$this->registerFilter( 'latest', DumpLatestFilter::class );
+		$this->registerFilter( 'notalk', DumpNotalkFilter::class );
+		$this->registerFilter( 'namespace', DumpNamespaceFilter::class );
 
 		// These three can be specified multiple times
 		$this->addOption( 'plugin', 'Load a dump plugin class. Specify as <class>[:<file>].',
@@ -99,7 +99,7 @@ class BackupDumper extends Maintenance {
 		$this->addOption( 'output', 'Begin a filtered output stream; Specify as <type>:<file>. ' .
 			'<type>s: file, gzip, bzip2, 7zip, dbzip2', false, true, false, true );
 		$this->addOption( 'filter', 'Add a filter on an output branch. Specify as ' .
-			'<type>[:<options>]. <types>s: latest, notalk, namespace', false, true, false, true );
+			'<type>[:<options>]. <types>s: latest, notalk, namespace', false, true, 'o', true );
 		$this->addOption( 'report', 'Report position and speed after every n pages processed. ' .
 			'Default: 100.', false, true );
 		$this->addOption( 'server', 'Force reading from MySQL server', false, true );
@@ -324,7 +324,8 @@ class BackupDumper extends Maintenance {
 			return $this->forcedDb;
 		}
 
-		$this->lb = wfGetLBFactory()->newMainLB();
+		$lbFactory = MediaWikiServices::getInstance()->getDBLoadBalancerFactory();
+		$this->lb = $lbFactory->newMainLB();
 		$db = $this->lb->getConnection( DB_REPLICA, 'dump' );
 
 		// Discourage the server from disconnecting us if it takes a long time
@@ -418,26 +419,5 @@ class BackupDumper extends Maintenance {
 		if ( $this->reporting ) {
 			fwrite( $this->stderr, $string . "\n" );
 		}
-	}
-
-	function fatalError( $msg ) {
-		$this->error( "$msg\n", 1 );
-	}
-}
-
-class ExportProgressFilter extends DumpFilter {
-	function __construct( &$sink, &$progress ) {
-		parent::__construct( $sink );
-		$this->progress = $progress;
-	}
-
-	function writeClosePage( $string ) {
-		parent::writeClosePage( $string );
-		$this->progress->reportPage();
-	}
-
-	function writeRevision( $rev, $string ) {
-		parent::writeRevision( $rev, $string );
-		$this->progress->revCount();
 	}
 }

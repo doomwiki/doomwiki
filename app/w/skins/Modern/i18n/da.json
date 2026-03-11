@@ -1,4 +1,9 @@
 {
-	"@metadata": [],
-	"skinname-modern": "Moderne"
+	"@metadata": {
+		"authors": [
+			"Joedalton"
+		]
+	},
+	"skinname-modern": "Moderne",
+	"modern-desc": "Et blåt/gråt tema med sidelinje og toplinje. Afledt fra MonoBook"
 }

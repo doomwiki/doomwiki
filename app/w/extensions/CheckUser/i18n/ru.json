@@ -21,7 +21,9 @@
 			"Ядерный Трамвай",
 			"Cat1987",
 			"Mailman",
-			"Facenapalm"
+			"Facenapalm",
+			"MaksimPinigin",
+			"Mouse21"
 		]
 	},
 	"checkuser-summary": "Данный инструмент может быть использован, чтобы получить IP-адреса, использовавшиеся участником, либо чтобы показать правки/участников, работавших с IP-адреса.\nПравки и пользователи, которые правили с определённого IP-адреса, указанного в X-Forwarded-For, можно получить, добавив постфикс <code>/xff</code> к IP-адресу. Поддерживаемые версии IP: 4 (CIDR $1—32) и 6 (CIDR $2—128).\nИз соображений производительности будут показаны только первые 5000 правок.\nИспользуйте эту страницу '''только в соответствии с правилами'''.",
@@ -57,6 +59,8 @@
 	"checkuser-nomatch": "Совпадений не найдено.",
 	"checkuser-nomatch-edits": "Совпадений не найдено.\nПоследняя правка сделана $1 в $2.",
 	"checkuser-check": "Проверить",
+	"checkuser-check-this-user": "Проверить этого участника",
+	"checkuser-recent-checks": "Недавние проверки этого пользователя",
 	"checkuser-log-fail": "Невозможно добавить запись в журнал",
 	"checkuser-nolog": "Файл журнала не найден.",
 	"checkuser-blocked": "Заблокирован",
@@ -99,9 +103,9 @@
 	"checkuser-create-action": "создан",
 	"checkuser-email-action": "отправил письмо участнику «$1»",
 	"checkuser-reset-action": "сбросил пароль для участника $1",
-	"checkuser-userlinks-ip": "([[User_talk:$1|обсуждение]] | [[Special:Contributions/$1|вклад]] | [[Special:Block/$1|заблокировать]] | <span class=\"plainlinks\">[https://www.robtex.com/whois/$1.html WHOIS/RDNS]</span>)",
-	"checkuser-userlinks": "([[User_talk:$1|обсуждение]] | [[Special:Contributions/$1|вклад]] | [[Special:Block/$1|заблокировать]])",
 	"checkuser-token-fail": "Сеанс прерван. Пожалуйста, попробуйте еще раз.",
+	"checkuser-login-failure": "Не удалось войти в {{SITENAME}} в качестве $1",
+	"checkuser-login-success": "Успешно вошел в систему {{SITENAME}} как $1",
 	"apihelp-query+checkuser-description": "Проверить, какие IP-адреса используются данным именем участника или какие имена участников используются заданным IP-адресом.",
 	"apihelp-query+checkuser-summary": "Проверить, какие IP-адреса используются данным именем участника или какие имена участников используются заданным IP-адресом.",
 	"apihelp-query+checkuser-param-request": "Тип запроса чекюзера:\n;userips:Получить IP-адрес целевого пользователя.\n; edits:Получить изменения, сделанные с целевого IP-адреса или диапазона адресов.\n;ipusers:Получить пользователей по целевому IP-адресу или диапазону.",

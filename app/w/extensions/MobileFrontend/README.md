@@ -188,6 +188,14 @@ Must implement IContentProvider.
 * Default: `DefaultContentProvider`
 
 
+#### $wgMFMobileMainPageCss
+
+Allow editors to edit MediaWiki:MobileMainPage.css to serve render blocking css to the main
+page.
+
+* Type: `boolean`
+* Default: false
+
 #### $wgMFMwApiContentProviderBaseUri
 
 URL to be used by the MwApiMobileFormatter class. Points to a MediaWiki
@@ -196,9 +204,9 @@ API that can be queried to obtain content.
 * Type: `string`
 * Default: `https://en.wikipedia.org/w/api.php`
 
-#### $wgMFAlwaysUseMobileFormatter
+#### $wgMFAlwaysUseContentProvider
 
-When enabled the MobileFormatter will run on desktop views as well as mobile views.
+When enabled the ContentProvider will run on desktop views as well as mobile views.
 
 * Type: `boolean`
 * Default: `false`
@@ -212,6 +220,17 @@ removed in the near future (hopefully).
 
 * Type: `Array`
 * Default: `['h1', 'h2', 'h3', 'h4', 'h5', 'h6']`
+
+#### $wgMFSiteStylesRenderBlocking
+
+If set to true, styles inside MediaWiki:Mobile.css will become render blocking.
+
+This is intended for situations where the [TemplateStyles extension](https://m.mediawiki.org/wiki/Mobile_Gateway/TemplateStyles)
+cannot be used. When enabled, this may increase the time it takes for the mobile
+site to render, depending on how large MediaWiki:Mobile.css is for your wiki.
+
+* Type: `Boolean`
+* Default: `false`
 
 #### $wgMFSpecialCaseMainPage
 
@@ -264,6 +283,22 @@ viewport.
     'beta' => false,
     // These will enable lazy loading images in all modes
     'base' => false,
+  ]
+```
+
+#### $wgMFMobileFormatterNamespaceBlacklist
+
+Array of namespaces that blacklists certain namespaces from applying mobile
+transformations to page content. This will disable lazy loading images and
+references; special casing and section formatting on the given page.
+MFRemovableClasses will not apply for any blacklisted pages.
+
+* Type: `Array`
+* Default:
+```php
+  [
+    NS_TEMPLATE,
+    NS_SPECIAL
   ]
 ```
 
@@ -390,14 +425,6 @@ Controls whether tablets should be shown the mobile site. Works only if
 * Type: `Boolean`
 * Default: `true`
 
-#### $wgMFDeviceWidthMobileSmall
-
-Devices with available screen of this value and less will have some styles
-adapted for improved reading on small screens.
-
-* Type: `Integer`
-* Default: `280`
-
 #### $wgMobileUrlTemplate
 
 Template for mobile URLs.
@@ -476,6 +503,13 @@ Path to the logo used in the login/signup form.  The standard height is `72px`
 Whether beta mode is enabled.
 
 * Type: `Boolean`
+* Default: `false`
+
+#### MFBetaFeedbackLink
+
+Link to feedback page for beta features. If false no feedback link will be shown.
+
+* Type: `String|false`
 * Default: `false`
 
 #### $wgMFDefaultSkinClass
@@ -558,6 +592,20 @@ See `$wgMFDisplayWikibaseDescriptions`
 * Type: `Boolean`
 * Default: `false`
 
+#### $wgMFEnableWikidataDescriptions
+
+If set to true, wikidata descriptions as defined in $wgMFDisplayWikibaseDescriptions will show up
+in the UI in the environment they have been told to target.
+
+* Type: `Array`
+* Default:
+```php
+  [
+    'beta' => true,
+    'base' => false,
+  ]
+```
+
 #### $wgMFDisplayWikibaseDescriptions
 
 Set which features will use Wikibase descriptions, e.g.
@@ -581,6 +629,23 @@ $wgMFDisplayWikibaseDescriptions = [
     'tagline' => false,
   ]
 ```
+#### $wgMFSpecialPageTaglines
+Set taglines for special pages
+
+```php
+$wgMFSpecialPageTaglines = [
+  "SpecialPageName" => "valid-message-key",
+];
+```
+
+* Type: `Array`
+* Default:
+```php
+  [
+    "MobileOptions" => "mobile-frontend-settings-tagline"
+  ]
+```
+
 
 #### $wgMFStripResponsiveImages
 

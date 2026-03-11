@@ -126,7 +126,6 @@
 	"abusefilter-edit-status-label": "ستاتىستىكا:",
 	"abusefilter-edit-status": "ئاخىرقى {{PLURAL:$1|مەشغۇلات}}تا $2 ($3%) قېتىملىق تەھرىرلەش بۇ سۈزگۈچنى قوزغاتتى. ئۇنىڭ ئوتتۇرىچە ئىجرا قىلىنىش ۋاقتى $4 ms (مىللىسېكۇنت)، {{PLURAL:$5|چەكلىمە}}نى سەرپ قىلدى.",
 	"abusefilter-edit-status-profile": "ئاخىرقى {{PLURAL:$1|مەشغۇلات}}تا $2 ($3%) قېتىملىق تەھرىرلەش بۇ سۈزگۈچنى قوزغاتتى. ئۇنىڭ ئوتتۇرىچە ئىجرا قىلىنىش ۋاقتى $4 ms (مىللىسېكۇنت)، {{PLURAL:$5|چەكلىمە}}نى سەرپ قىلدى.",
-	"abusefilter-edit-throttled": "'''ئاگاھلاندۇرۇش''': بۇ سۈزگۈچ بىخەتەرلىك سەۋەبىدىن ئۆزلۈكىدىن توختىتىلدى.\n$1 ماس كەلگەن مەشغۇلات چېكىگە يەتتى.",
 	"abusefilter-edit-new": "يېڭى سۈزگۈچ",
 	"abusefilter-edit-save": "سۈزگۈچ ساقلا",
 	"abusefilter-edit-id": "سۈزگۈچ IDسى:",
@@ -381,5 +380,6 @@
 	"abusefilter-diff-next": "يىقىنقى ئۆزگەرتىشلەر",
 	"abusefilter-import-intro": "سىز بۇ ئارايۈز ئارقىلىق باشقا ۋىكىدىكى سۈزگۈچنى ئەكىرەلەيسىز. مەنبەدىن سۈزگۈچ تەھرىر ئارايۈزىنى چېكىپ \"{{int:abusefilter-edit-tools}}\" نىڭ ئاستىدىكى \"{{int:abusefilter-edit-export}}\"نى چېكىڭ. ئارقىدىن كۆرۈنگەن تېكىست قۇتىسىنىڭ مەزمۇنىنى كۆچۈرۈپ، ئاستىدىكى تېكىست قۇتىسىغا چاپلاڭ ھەمدە \"{{int:abusefilter-import-submit}}\"نى چېكىڭ.",
 	"abusefilter-import-submit": "سانلىق مەلۇمات كىرگۈزۈش",
-	"abusefilter-group-default": "كۆڭۈلدىكى"
+	"abusefilter-group-default": "كۆڭۈلدىكى",
+	"apihelp-query+abuselog-param-wiki": "ۋىكىدىن كەلگەن كۆرسىتىش ئۇچۇرى."
 }

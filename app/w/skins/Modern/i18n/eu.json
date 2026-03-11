@@ -1,8 +1,10 @@
 {
 	"@metadata": {
 		"authors": [
-			"An13sa"
+			"An13sa",
+			"Mikel Ibaiba"
 		]
 	},
-	"skinname-modern": "Modernoa"
+	"skinname-modern": "Modernoa",
+	"modern-desc": "Gai urdin/grisa, bigarren mailako barra zein goiko barrarekin. MonoBook-tik deribatua"
 }

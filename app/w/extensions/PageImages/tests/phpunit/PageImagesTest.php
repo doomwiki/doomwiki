@@ -16,7 +16,7 @@ use Title;
  * @group Database
  *
  * @license WTFPL 2.0
- * @author Thiemo Mättig
+ * @author Thiemo Kreuz
  */
 class PageImagesTest extends MediaWikiTestCase {
 
@@ -30,7 +30,7 @@ class PageImagesTest extends MediaWikiTestCase {
 		$this->assertInstanceOf( 'PageImages', $pageImages );
 	}
 
-	public function testGivenNonExistingPage_getPageImageReturnsFalse() {
+	public function testGivenNonExistingPageGetPageImageReturnsFalse() {
 		$title = $this->newTitle();
 		$this->assertFalse( PageImages::getPageImage( $title ) );
 	}
@@ -40,16 +40,18 @@ class PageImagesTest extends MediaWikiTestCase {
 		$this->assertSame( 'page_image_free', PageImages::getPropName( true ) );
 	}
 
-	public function testGivenNonExistingPage_onBeforePageDisplayDoesNotAddMeta() {
+	public function testGivenNonExistingPageOnBeforePageDisplayDoesNotAddMeta() {
 		$context = $this->getMock( IContextSource::class );
 		$context->method( 'getTitle' )
 			->will( $this->returnValue( $this->newTitle() ) );
 
-		$outputPage = $this->getMock( OutputPage::class, null, [ $context ] );
+		$outputPage = $this->getMock(
+			OutputPage::class, [ 'addMeta' ], [ $context ] );
 		$outputPage->expects( $this->never() )
 			->method( 'addMeta' );
 
-		PageImages::onBeforePageDisplay( $outputPage, new SkinTemplate() );
+		$skinTemplate = new SkinTemplate();
+		PageImages::onBeforePageDisplay( $outputPage, $skinTemplate );
 	}
 
 	/**

@@ -205,7 +205,7 @@ pre {
 /* @group Main Page */
 
 body.mainpage div.monaco_shrinkwrap {
-        width: 972px;
+	width: 972px;
 }
 body.mainpage .firstHeading {
 	display: none;

@@ -1,18 +1,20 @@
 <?php
-/**
- * SpecialMobileWatchlist.php
- */
 
 use MediaWiki\MediaWikiServices;
+use Wikimedia\Rdbms\ResultWrapper;
 
 /**
  * Implements the Watchlist special page
  */
 class SpecialMobileWatchlist extends MobileSpecialPageFeed {
-	const LIMIT = 50; // Performance-safe value with PageImages
+	// Performance-safe value with PageImages
+	const LIMIT = 50;
+
 	const THUMB_SIZE = MobilePage::SMALL_IMAGE_WIDTH;
 	const VIEW_OPTION_NAME = 'mfWatchlistView';
 	const FILTER_OPTION_NAME = 'mfWatchlistFilter';
+	const VIEW_LIST = 'a-z';
+	const VIEW_FEED = 'feed';
 
 	/** @var string $view Saves, how the watchlist is sorted: a-z or as a feed */
 	private $view;
@@ -27,37 +29,17 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 	private $filter;
 	/** @var boolean $usePageImages Saves whether display images or not */
 	private $usePageImages;
-	/**
-	 * @var boolean $optionsChanged Set true, when the user changed the
-	 *	view or feed of watchlist to save the new settings
-	 */
-	private $optionsChanged = false;
 
 	/** @var Title $fromPageTitle Saves the Title object of the page list starts from */
 	private $fromPageTitle;
 
 	/**
-	 * Saves a user preference that reflects the current state of the watchlist
-	 * e.g. whether it is the feed or A-Z view and which filters are currently applied.
-	 */
-	protected function updateStickyTabs() {
-		if ( $this->view === 'feed' ) {
-			// make filter stick on feed view
-			$this->updatePreference( self::FILTER_OPTION_NAME, $this->filter );
-		}
-		// make view sticky
-		$this->updatePreference( self::VIEW_OPTION_NAME, $this->view );
-	}
-
-	/**
 	 * Render the special page
 	 * @param string $par parameter submitted as subpage
 	 */
-	function executeWhenAvailable( $par ) {
+	public function executeWhenAvailable( $par ) {
 		// Anons don't get a watchlist
 		$this->requireLogin( 'mobile-frontend-watchlist-purpose' );
-
-		$ctx = MobileContext::singleton();
 		$this->usePageImages = defined( 'PAGE_IMAGES_INSTALLED' );
 
 		$user = $this->getUser();
@@ -72,25 +54,18 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 
 		# Show watchlist feed if that person is an editor
 		$watchlistEditCountThreshold = $this->getConfig()->get( 'MFWatchlistEditCountThreshold' );
-		$defaultView = $this->getUser()->getEditCount() > $watchlistEditCountThreshold ? 'feed' : 'a-z';
+		$defaultView = $this->getUser()->getEditCount() > $watchlistEditCountThreshold ?
+			self::VIEW_FEED : self::VIEW_LIST;
 		$this->view = $req->getVal( 'watchlistview', $defaultView );
 
-		$this->filter = $req->getVal( 'filter', 'all' );
+		$this->filter = $req->getVal( 'filter', $user->getOption( self::FILTER_OPTION_NAME, 'all' ) );
 		$this->fromPageTitle = Title::newFromText( $req->getVal( 'from', false ) );
 
 		$output->setPageTitle( $this->msg( 'watchlist' ) );
 
-		// This needs to be done before calling getWatchlistHeader
-		$this->updateStickyTabs();
-		if ( $this->optionsChanged ) {
-			DeferredUpdates::addCallableUpdate( function () use ( $user ) {
-				$user->saveSettings();
-			} );
-		}
-
-		if ( $this->view === 'feed' ) {
-			$output->addHtml( $this->getWatchlistHeader( $user ) );
-			$output->addHtml(
+		if ( $this->view === self::VIEW_FEED ) {
+			$output->addHTML( self::getWatchlistHeader( $user, $this->view, $this->filter ) );
+			$output->addHTML(
 				Html::openElement( 'div', [ 'class' => 'content-unstyled' ] )
 			);
 			$this->showRecentChangesHeader();
@@ -101,7 +76,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 			} else {
 				$this->showEmptyList( true );
 			}
-			$output->addHtml(
+			$output->addHTML(
 				Html::closeElement( 'div' )
 			);
 		} else {
@@ -123,7 +98,8 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 				break;
 			case 'articles':
 				// @fixme content namespaces
-				$conds[] = "$column = 0"; // Has to be unquoted or MySQL will filesort for wl_namespace
+				// Has to be unquoted or MySQL will filesort for wl_namespace
+				$conds[] = "$column = 0";
 				break;
 			case 'talk':
 				// check project talk, user talk and talk pages
@@ -139,21 +115,21 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 
 	/**
 	 * Get the header for the watchlist page
-	 * @param User $user
-	 * @param string|null $view the name of the view to show (optional)
-	 *  If absent user preferences will be consulted.
+	 * @param User $user the current user for obtaining default view and filter preferences
+	 * @param string $view the name of the view to show (optional)
+	 *  If absent a-z will be used.
+	 * @param string|null $filter the name of the filter to show (optional)
+	 *  If absent user preferences will be consulted, defaulting to `all` if no preference
 	 * @return string Parsed HTML
 	 */
-	public static function getWatchlistHeader( User $user, $view = null ) {
+	public static function getWatchlistHeader( User $user, $view = self::VIEW_LIST, $filter = null ) {
 		$sp = SpecialPage::getTitleFor( 'Watchlist' );
 		$attrsList = $attrsFeed = [];
-		// https://phabricator.wikimedia.org/T150650
-		if ( $view === null ) {
-			$view = $user->getOption( self::VIEW_OPTION_NAME, 'a-z' );
+		if ( $filter === null ) {
+			$filter = $user->getOption( self::FILTER_OPTION_NAME, 'all' );
 		}
-		$filter = $user->getOption( self::FILTER_OPTION_NAME, 'all' );
 
-		if ( $view === 'feed' ) {
+		if ( $view === self::VIEW_FEED ) {
 			$attrsList[ 'class' ] = MobileUI::buttonClass();
 			// FIXME [MediaWiki UI] This probably be described as a different type of mediawiki ui element
 			$attrsFeed[ 'class' ] = MobileUI::buttonClass( 'progressive', 'is-on' );
@@ -169,15 +145,21 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 			Html::openElement( 'li', $attrsList ) .
 			$linkRenderer->makeLink( $sp,
 				wfMessage( 'mobile-frontend-watchlist-a-z' )->text(),
-				[ 'class' => 'button' ],
-				[ 'watchlistview' => 'a-z' ]
+				[
+					'class' => 'button',
+					'data-view' => self::VIEW_LIST,
+				],
+				[ 'watchlistview' => self::VIEW_LIST ]
 			) .
 			Html::closeElement( 'li' ) .
 			Html::openElement( 'li', $attrsFeed ) .
 			$linkRenderer->makeLink( $sp,
 				wfMessage( 'mobile-frontend-watchlist-feed' )->text(),
-				[ 'class' => 'button' ],
-				[ 'watchlistview' => 'feed', 'filter' => $filter ]
+				[
+					'class' => 'button',
+					'data-view' => self::VIEW_FEED,
+				],
+				[ 'watchlistview' => self::VIEW_FEED, 'filter' => $filter ]
 			) .
 			Html::closeElement( 'li' ) .
 			Html::closeElement( 'ul' );
@@ -188,7 +170,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 	/**
 	 * Render "second" header for filter in feed view of watchlist
 	 */
-	function showRecentChangesHeader() {
+	private function showRecentChangesHeader() {
 		$filters = [
 			'all' => 'mobile-frontend-watchlist-filter-all',
 			'articles' => 'mobile-frontend-watchlist-filter-articles',
@@ -197,7 +179,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 		];
 		$output = $this->getOutput();
 
-		$output->addHtml(
+		$output->addHTML(
 			Html::openElement( 'ul', [ 'class' => 'mw-mf-watchlist-selector page-header-bar' ] )
 		);
 
@@ -207,21 +189,22 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 				$itemAttrs['class'] = 'selected';
 			}
 			$linkAttrs = [
+				'data-filter' => $filter,
 				'href' => $this->getPageTitle()->getLocalUrl(
 					[
 						'filter' => $filter,
-						'watchlistview' => 'feed',
+						'watchlistview' => self::VIEW_FEED,
 					]
 				)
 			];
-			$output->addHtml(
+			$output->addHTML(
 				Html::openElement( 'li', $itemAttrs ) .
 				Html::element( 'a', $linkAttrs, $this->msg( $msg )->plain() ) .
 				Html::closeElement( 'li' )
 			);
 		}
 
-		$output->addHtml(
+		$output->addHTML(
 			Html::closeElement( 'ul' )
 		);
 	}
@@ -235,15 +218,18 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 	 */
 	protected function doFeedQuery() {
 		$user = $this->getUser();
-		$dbr = wfGetDB( DB_SLAVE, 'watchlist' );
+		$dbr = wfGetDB( DB_REPLICA, 'watchlist' );
 
 		// Possible where conditions
 		$conds = $this->getNSConditions( 'rc_namespace' );
 
 		// snip....
 
-		$tables = [ 'recentchanges', 'watchlist' ];
-		$fields = [ $dbr->tableName( 'recentchanges' ) . '.*' ];
+		// @todo This should be changed to use WatchedItemQuerySerivce
+
+		$rcQuery = RecentChange::getQueryInfo();
+		$tables = array_merge( $rcQuery['tables'], [ 'watchlist' ] );
+		$fields = $rcQuery['fields'];
 		$innerConds = [
 			'wl_user' => $user->getId(),
 			'wl_namespace=rc_namespace',
@@ -260,7 +246,7 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 				'INNER JOIN',
 				$innerConds,
 			],
-		];
+		] + $rcQuery['joins'];
 		$options = [ 'ORDER BY' => 'rc_timestamp DESC' ];
 		$options['LIMIT'] = self::LIMIT;
 
@@ -271,15 +257,6 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 			if ( $rollbacker ) {
 				$fields[] = 'page_latest';
 			}
-		}
-
-		// FIXME: This check can removed when MobileFrontend drops compatibility
-		// The CommentStore introduced was Ic3a434c
-		if ( class_exists( \CommentStore::class ) ) {
-			$commentQuery = \CommentStore::newKey( 'rc_comment' )->getJoin();
-			$tables += $commentQuery['tables'];
-			$fields += $commentQuery['fields'];
-			$join_conds += $commentQuery['joins'];
 		}
 
 		ChangeTags::modifyDisplayQuery( $tables, $fields, $conds, $join_conds, $options, '' );
@@ -324,15 +301,15 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 			}
 		}
 
-		$output->addHtml( '</ul>' );
+		$output->addHTML( '</ul>' );
 	}
 
 	/**
 	 * If the user doesn't watch any page, show information how to watch some.
 	 * @param bool $feed Render as feed (true) or list (false) view?
 	 */
-	function showEmptyList( $feed ) {
-		$this->getOutput()->addHtml( self::getEmptyListHtml( $feed, $this->getLanguage() ) );
+	private function showEmptyList( $feed ) {
+		$this->getOutput()->addHTML( self::getEmptyListHtml( $feed, $this->getLanguage() ) );
 	}
 
 	/**
@@ -385,13 +362,9 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 		$this->renderListHeaderWhereNeeded( $date );
 
 		$title = Title::makeTitle( $row->rc_namespace, $row->rc_title );
-		if ( class_exists( \CommentStore::class ) ) {
-			$comment = $this->formatComment(
-				CommentStore::newKey( 'rc_comment' )->getComment( $row )->text, $title
-			);
-		} else {
-			$comment = $this->formatComment( $row->rc_comment, $title );
-		}
+		$comment = $this->formatComment(
+			CommentStore::getStore()->getComment( 'rc_comment', $row )->text, $title
+		);
 		$ts = new MWTimestamp( $row->rc_timestamp );
 		$username = $row->rc_user != 0
 			? htmlspecialchars( $row->rc_user_text )
@@ -414,30 +387,16 @@ class SpecialMobileWatchlist extends MobileSpecialPageFeed {
 	}
 
 	/**
-	 * Save the settings for the watchlist, so if the user comes back
-	 * later he see the same filter and list view
-	 * @param string $name The name of the option to set
-	 * @param string|boolean $value The value for the option to set
-	 */
-	private function updatePreference( $name, $value ) {
-		$user = $this->getUser();
-		if ( $user->getOption( $name ) != $value ) {
-			$user->setOption( $name, $value );
-			$this->optionsChanged = true;
-		}
-	}
-
-	/**
 	 * Formats a comment of revision via Linker:formatComment and Sanitizer::stripAllTags
-	 * @param string $comment the comment
-	 * @param string $title the title object of comments page
+	 * @param string $comment
+	 * @param Title $title the title object of comments page
 	 * @return string formatted comment
 	 */
 	protected function formatComment( $comment, $title ) {
 		if ( $comment !== '' ) {
 			$comment = Linker::formatComment( $comment, $title );
 			// flatten back to text
-			$comment = Sanitizer::stripAllTags( $comment );
+			$comment = htmlspecialchars( Sanitizer::stripAllTags( $comment ) );
 		}
 		return $comment;
 	}

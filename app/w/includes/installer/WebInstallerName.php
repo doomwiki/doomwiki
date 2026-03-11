@@ -76,7 +76,7 @@ class WebInstallerName extends WebInstallerPage {
 			$this->parent->getTextBox( [
 				'var' => 'wgMetaNamespace',
 				'label' => '', // @todo Needs a label?
-				'attribs' => [ 'readonly' => 'readonly', 'class' => 'enabledByOther' ]
+				'attribs' => [ 'class' => 'enabledByOther' ]
 			] ) .
 			$this->getFieldsetStart( 'config-admin-box' ) .
 			$this->parent->getTextBox( [
@@ -100,11 +100,12 @@ class WebInstallerName extends WebInstallerPage {
 				'label' => 'config-admin-email',
 				'help' => $this->parent->getHelpBox( 'config-admin-email-help' )
 			] ) .
-			$this->parent->getCheckBox( [
-				'var' => '_Subscribe',
-				'label' => 'config-subscribe',
-				'help' => $this->parent->getHelpBox( 'config-subscribe-help' )
-			] ) .
+			// (T281549) Don't show the subscribe checkbox temporarily whilst we fix auto-subscription.
+			// $this->parent->getCheckBox( [
+			// 	'var' => '_Subscribe',
+			// 	'label' => 'config-subscribe',
+			// 	'help' => $this->parent->getHelpBox( 'config-subscribe-help' )
+			// ] ) .
 			$this->parent->getCheckBox( [
 				'var' => 'wgPingback',
 				'label' => 'config-pingback',

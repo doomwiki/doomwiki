@@ -11,15 +11,15 @@
 			"Umherirrender"
 		]
 	},
-	"skinname-minervaneue": "The skin name for MinervaNeue.",
 	"minerva-last-modified-date": "Text that displays the date the page was last modified. Parameters:\n* $1 - date\n* $2 - time\n{{Related|Mobile-frontend-last-modified}}",
 	"minerva-talk-add-topic": "Label for button which shows at bottom of talk pages in mobile view prompting addition of topic",
-	"mobile-frontend-console-recruit": "Message that is displayed in the JavaScript console aimed at developers in an attempt to recruit volunteers. The \\o/ emoticon is a man with his arms in the air with the purpose of drawing attention to the message. If this doesn't translate into the destination language feel free to omit it or use something more applicable.",
 	"mobile-frontend-cookies-required": "Error message shown when user attempts to switch site modes and cookies are not enabled.",
 	"mobile-frontend-editor-blocked-info-loggedin": "Toast message for logged in users that appears (before the user see the editor) when a user tries to edit a page, but is blocked from editing with reason and blocked by information.\n\nParameters:\n* $1 - blocked by information (Username of the user who crated this block)\n* $2 - Reason for this block, if any",
 	"mobile-frontend-editor-cta": "Caption for call to action when an anonymous user clicks on edit icon. (Note the mobile site currently doesn't allow anonymous editing.)\n{{Identical|Help improve this page}}",
+	"minerva-pointer-dismiss": "Label of button that dismisses overlay pointing at a particular new feature.",
 	"mobile-frontend-editor-disabled": "Toast message that appears when a user is unable to edit a page and clicks edit icon.",
 	"mobile-frontend-editor-edit": "Caption for the link showing edit form. (In the imperative mood)\n{{Identical|Edit}}",
+	"minerva-download": "Caption for the download button (in the imperative mood).\n{{Identical|Download}}",
 	"mobile-frontend-editor-redlink-create": "Label for a create page button.\n{{Identical|Create page}}",
 	"mobile-frontend-editor-redlink-explain": "Question for the user, if he want to edit a page, which link he clicked and that does not exist yet, or not.",
 	"mobile-frontend-editor-redlink-leave": "Used as a label for a button which the user can click to avoid editing a page which does not exist yet (red link): the question/alternative button is {{msg-mw|mobile-frontend-editor-redlink-create}}\n----\n{{Identical|No thanks}}",
@@ -63,6 +63,10 @@
 	"mobile-frontend-user-page-member-since": "Message below the heading. $1 is the user registration date. $2 is the gender associated with the user account.",
 	"mobile-frontend-user-page-talk": "Text of the link to the user's talk page\n{{Identical|Talk}}",
 	"mobile-frontend-user-page-uploads": "Text of the link to the user's uploads page\n{{Identical|Upload}}",
-	"skinname-minerva": "{{optional}}",
-	"minerva-skin-desc": "{{desc|name=Minerva Neue|url=https://www.mediawiki.org/wiki/Skin:Minerva_Neue|what=skin}}"
+	"skinname-minerva": "{{name}}",
+	"minerva-skin-desc": "{{desc|name=Minerva Neue|url=https://www.mediawiki.org/wiki/Skin:Minerva_Neue|what=skin}}",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Label for categories mobile web beta feature.\n{{Identical|Category}}",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Description label for categories mobile web beta feature.",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "Label for jump to top mobile web beta feature",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "Description label for jump to top mobile web beta feature"
 }

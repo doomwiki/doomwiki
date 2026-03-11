@@ -1,7 +1,11 @@
 ( function ( M, $ ) {
 
 	( function () {
-		var overlayManager = M.require( 'skins.minerva.scripts/overlayManager' ),
+		var action = mw.config.get( 'wgAction' ),
+			page = M.getCurrentPage(),
+			getIconFromAmbox = M.require( 'skins.minerva.scripts/utils' )
+				.getIconFromAmbox,
+			overlayManager = M.require( 'skins.minerva.scripts/overlayManager' ),
 			CleanupOverlay = M.require( 'mobile.issues/CleanupOverlay' );
 
 		/**
@@ -9,7 +13,10 @@
 		 * friendly for mobile display.
 		 * @param {Object} $box element to extract the message from
 		 * @ignore
-		 * @return {string} html of message.
+		 * @typedef {object} IssueSummary
+		 * @prop {string} icon HTML string.
+		 * @prop {string} text HTML string.
+		 * @return {IssueSummary}
 		 */
 		function extractMessage( $box ) {
 			var selector = '.mbox-text, .ambox-text',
@@ -26,7 +33,10 @@
 					$( '<p>' ).html( contents ).appendTo( $container );
 				}
 			} );
-			return $container.html();
+			return {
+				icon: getIconFromAmbox( $box ).toHtmlString(),
+				text: $container.html()
+			};
 		}
 
 		/**
@@ -50,7 +60,7 @@
 		 * @ignore
 		 */
 		function createBanner( $container, labelText, headingText ) {
-			var selector = 'table.ambox, table.tmbox, table.cmbox',
+			var selector = 'table.ambox, table.tmbox, table.cmbox, table.fmbox',
 				$metadata = $container.find( selector ),
 				issues = [],
 				$link;
@@ -59,16 +69,12 @@
 			$metadata.find( '.NavFrame' ).remove();
 
 			$metadata.each( function () {
-				var content,
+				var issue,
 					$this = $( this );
 
 				if ( $this.find( selector ).length === 0 ) {
-					content = extractMessage( $this );
-					if ( content ) {
-						issues.push( {
-							text: content
-						} );
-					}
+					issue = extractMessage( $this );
+					issues.push( issue );
 				}
 			} );
 
@@ -98,13 +104,18 @@
 			var ns = mw.config.get( 'wgNamespaceNumber' ),
 				// Categories have no lead section
 				$container = ns === 14 ? $( '#bodyContent' ) :
-					M.getCurrentPage().getLeadSectionElement();
+					page.getLeadSectionElement();
 
-			if ( $container === null ) {
+			if ( action === 'edit' ) {
+				$container = $( '#mw-content-text' );
+			} else if ( $container === null ) {
 				return;
 			}
 
-			if ( ns === 0 ) {
+			if ( action === 'edit' ) {
+				createBanner( $container, mw.msg( 'edithelp' ),
+					mw.msg( 'edithelp' ) );
+			} else if ( ns === 0 ) {
 				createBanner( $container, mw.msg( 'mobile-frontend-meta-data-issues' ),
 					mw.msg( 'mobile-frontend-meta-data-issues-header' ) );
 			// Create a banner for talk pages (namespace 1) in beta mode to make them more readable.
@@ -118,7 +129,10 @@
 		}
 
 		// Setup the issues banner on the page
-		initPageIssues();
+		// Pages which dont exist (id 0) cannot have issues
+		if ( !page.isMissing ) {
+			initPageIssues();
+		}
 	}() );
 
 }( mw.mobileFrontend, jQuery ) );

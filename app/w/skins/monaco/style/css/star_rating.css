@@ -8,37 +8,37 @@
 .star-rating
 {
 	float: left;
-    height:18px;
-    list-style-image:none;
-    list-style-position:outside;
-    list-style-type:none;
-    margin:0px;
-    padding:0px;
-    position:relative;
-    width:100px;
-    overflow: hidden;
+	height:18px;
+	list-style-image:none;
+	list-style-position:outside;
+	list-style-type:none;
+	margin:0px;
+	padding:0px;
+	position:relative;
+	width:100px;
+	overflow: hidden;
 }
 
 .star-rating li
 {
-    float:left;
-    margin:0px;
-    padding:0px;
+	float:left;
+	margin:0px;
+	padding:0px;
 }
 
 .star-rating a
 {
-    display:block;
-    height:18px;
-    overflow:hidden;
-    padding:0px;
-    position:absolute;
-    text-decoration:none;
-    text-indent:-9000px;
-    width:20px;
-    z-index:20;
-    top: 0px; /* opera fix */
-    cursor: pointer;
+	display:block;
+	height:18px;
+	overflow:hidden;
+	padding:0px;
+	position:absolute;
+	text-decoration:none;
+	text-indent:-9000px;
+	width:20px;
+	z-index:20;
+	top: 0px; /* opera fix */
+	cursor: pointer;
 }
 .star-rating a:hover
 {

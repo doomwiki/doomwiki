@@ -3,7 +3,7 @@
 namespace Tests\MediaWiki\Minerva;
 
 use MediaWikiTestCase;
-use MobileUI;
+use MinervaUI;
 use MWTimestamp;
 use OutputPage;
 use QuickTemplate;
@@ -14,18 +14,20 @@ use Title;
 use User;
 use Wikimedia\TestingAccessWrapper;
 
-class Template extends QuickTemplate {
-	public function execute() {
-	}
-}
-
+// phpcs:ignore MediaWiki.Files.ClassMatchesFilename.NotMatch
 class EchoNotifUser {
-	public function __construct( $echoLastUnreadNotificationTime, $echoNotificationCount ) {
-		$this->echoLastUnreadNotificationTime = $echoLastUnreadNotificationTime;
+	public function __construct(
+		$lastUnreadAlertTime, $lastUnreadMessageTime, $echoNotificationCount
+	) {
+		$this->lastUnreadAlertTime = $lastUnreadAlertTime;
+		$this->lastUnreadMessageTime = $lastUnreadMessageTime;
 		$this->echoNotificationCount = $echoNotificationCount;
 	}
-	public function getLastUnreadNotificationTime() {
-		return $this->echoLastUnreadNotificationTime;
+	public function getLastUnreadAlertTime() {
+		return $this->lastUnreadAlertTime;
+	}
+	public function getLastUnreadMessageTime() {
+		return $this->lastUnreadMessageTime;
 	}
 	public function getNotificationCount() {
 		return $this->echoNotificationCount;
@@ -103,7 +105,7 @@ class SkinMinervaTest extends MediaWikiTestCase {
 	 * @param bool $expected
 	 * @covers ::setContext
 	 * @covers ::setSkinOptions
-	 * @covers::hasCategoryLinks
+	 * @covers ::hasCategoryLinks
 	 */
 	public function testHasCategoryLinks( array $categoryLinks, $expected ) {
 		$outputPage = $this->getMockBuilder( OutputPage::class )
@@ -162,12 +164,11 @@ class SkinMinervaTest extends MediaWikiTestCase {
 	 *
 	 * @covers       ::getContextSpecificModules
 	 * @dataProvider provideGetContextSpecificModules
-	 * @param string $fontchangerValue whether font changer feature is enabled
 	 * @param mixed  $backToTopValue whether back to top feature is enabled
 	 * @param string $moduleName Module name that is being tested
 	 * @param bool $expected Whether the module is expected to be returned by the function being tested
 	 */
-	public function testGetContextSpecificModules( $fontchangerValue, $backToTopValue,
+	public function testGetContextSpecificModules( $backToTopValue,
 		$moduleName, $expected
 	) {
 		$skin = new SkinMinerva();
@@ -177,7 +178,6 @@ class SkinMinervaTest extends MediaWikiTestCase {
 
 		$skin->setContext( $testContext );
 		$skin->setSkinOptions( [
-			'fontChanger' => $fontchangerValue,
 			'backToTop' => $backToTopValue,
 		] );
 
@@ -190,10 +190,8 @@ class SkinMinervaTest extends MediaWikiTestCase {
 
 	public function provideGetContextSpecificModules() {
 		return [
-			[ true, false, 'skins.minerva.fontchanger', true ],
-			[ false, true, 'skins.minerva.fontchanger', false ],
-			[ false, true, 'skins.minerva.backtotop', true ],
-			[ false, false, 'skins.minerva.backtotop', false ],
+			[ true, 'skins.minerva.backtotop', true ],
+			[ false, 'skins.minerva.backtotop', false ],
 		];
 	}
 
@@ -208,15 +206,17 @@ class SkinMinervaTest extends MediaWikiTestCase {
 	 * @param bool $useEcho Whether to use Extension:Echo
 	 * @param bool $isUserLoggedIn
 	 * @param string $newtalks New talk page messages for the current user
-	 * @param MWTimestamp|bool $echoLastUnreadNotificationTime Timestamp or false
+	 * @param MWTimestamp|bool $lastUnreadAlertTime Timestamp or false
+	 * @param MWTimestamp|bool $lastUnreadMessageTime Timestamp or false
 	 * @param int|bool $echoNotificationCount
-	 * @param string|bool $echoSeenTime String in format TS_ISO_8601 or false
+	 * @param string|bool $alertSeenTime String in format TS_ISO_8601 or false
+	 * @param string|bool $msgSeenTime String in format TS_ISO_8601 or false
 	 * @param string|bool $formattedEchoNotificationCount
 	 */
 	public function testPrepareUserButton(
 		$expectedSecondaryButtonData, $message, $title, $useEcho, $isUserLoggedIn,
-		$newtalks, $echoLastUnreadNotificationTime = false,
-		$echoNotificationCount = false, $echoSeenTime = false,
+		$newtalks, $lastUnreadAlertTime = false, $lastUnreadMessageTime = false,
+		$echoNotificationCount = false, $alertSeenTime = false, $msgSeenTime = false,
 		$formattedEchoNotificationCount = false
 	) {
 		$user = $this->getMockBuilder( User::class )
@@ -251,17 +251,22 @@ class SkinMinervaTest extends MediaWikiTestCase {
 			->method( 'getEchoNotifUser' )
 			->will( $this->returnValue(
 				new EchoNotifUser(
-					$echoLastUnreadNotificationTime, $echoNotificationCount
+					$lastUnreadAlertTime, $lastUnreadMessageTime, $echoNotificationCount
 				)
 			) );
 		$skin->expects( $this->any() )
 			->method( 'getEchoSeenTime' )
-			->will( $this->returnValue( $echoSeenTime ) );
+			->will( $this->returnValueMap( [
+				[ $user, 'alert', $alertSeenTime ],
+				[ $user, 'message', $msgSeenTime ]
+			] ) );
 		$skin->expects( $this->any() )
 			->method( 'getFormattedEchoNotificationCount' )
 			->will( $this->returnValue( $formattedEchoNotificationCount ) );
 
-		$tpl = new Template();
+		$tpl = $this->getMockBuilder( QuickTemplate::class )
+			->setMethods( [ 'execute' ] )
+			->getMock();
 		$skin->prepareUserButton( $tpl );
 		$this->assertEquals(
 			$expectedSecondaryButtonData,
@@ -284,17 +289,19 @@ class SkinMinervaTest extends MediaWikiTestCase {
 		$title,
 		$notificationsMsg,
 		$notificationsTitle,
+		$count,
 		$countLabel,
 		$isZero,
 		$hasUnseen
 	) {
 		return [
-			'notificationIconClass' => MobileUI::iconClass( 'notifications' ),
+			'notificationIconClass' => MinervaUI::iconClass( 'notifications' ),
 			'title' => $notificationsMsg,
 			'url' => SpecialPage::getTitleFor( $notificationsTitle )
 				->getLocalURL(
 					[ 'returnto' => $title->getPrefixedText() ] ),
-			'notificationCount' => $countLabel,
+			'notificationCountRaw' => $count,
+			'notificationCountString' => $countLabel,
 			'isNotificationCountZero' => $isZero,
 			'hasNotifications' => $hasUnseen,
 			'hasUnseenNotifications' => $hasUnseen
@@ -315,52 +322,85 @@ class SkinMinervaTest extends MediaWikiTestCase {
 			[ '', 'Echo, logged in, talk page alert',
 				Title::newFromText( 'Special:Notifications' ), true, true,
 				'newtalks alert' ],
+
 			[ $this->getSecondaryButtonExpectedResult(
 				$title,
 				'Show my notifications',
 				'Notifications',
+				110,
 				'99+',
 				false,
 				true
-			), 'Echo, logged in, no talk page alerts, 110 notifications, ' +
-				'last un-read nofication time after last echo seen time',
+			), 'Echo, logged in, no talk page alerts, 110 notifications, ' .
+				'last un-read alert time after last alert seen time, ' .
+				'last un-read message time after last message seen time',
 			$title, true, true, '',
 			MWTimestamp::getInstance( strtotime( '2017-05-11T21:23:20Z' ) ),
-			110, '2017-05-11T20:23:20Z', '99+' ],
+			MWTimestamp::getInstance( strtotime( '2017-05-12T07:18:42Z' ) ),
+			110, '2017-05-11T20:28:11Z', '2017-05-11T20:28:11Z', '99+' ],
+
 			[ $this->getSecondaryButtonExpectedResult(
 				$title,
 				'Show my notifications',
 				'Notifications',
+				3,
+				'3',
+				false,
+				true
+			), 'Echo, logged in, no talk page alerts, 3 notifications, ' .
+				'last un-read alert time after last alert seen time, ' .
+				'last un-read message time before last message seen time',
+			$title, true, true, '',
+			MWTimestamp::getInstance( strtotime( '2017-03-26T14:11:48Z' ) ),
+			MWTimestamp::getInstance( strtotime( '2017-03-27T17:07:57Z' ) ),
+			3, '2017-03-25T00:17:44Z', '2017-03-28T19:00:42Z', '3' ],
+
+			[ $this->getSecondaryButtonExpectedResult(
+				$title,
+				'Show my notifications',
+				'Notifications',
+				3,
 				'3',
 				false,
 				false
-			), 'Echo, logged in, no talk page alerts, 3 notifications, ' +
-			'last un-read nofication time before last echo seen time',
+			), 'Echo, logged in, no talk page alerts, 3 notifications, ' .
+				'last un-read alert time before last alert seen time, ' .
+				'last un-read message time before last message seen time',
 			$title, true, true, '',
-			MWTimestamp::getInstance( strtotime( '2017-05-11T21:23:20Z' ) ),
-			3, '2017-05-11T22:23:20Z', '3' ],
+			MWTimestamp::getInstance( strtotime( '2017-04-11T13:21:15Z' ) ),
+			MWTimestamp::getInstance( strtotime( '2017-04-10T15:12:31Z' ) ),
+			3, '2017-04-12T10:37:13Z', '2017-04-11T12:55:47Z', '3' ],
+
 			[ $this->getSecondaryButtonExpectedResult(
 				$title,
 				'Show my notifications',
 				'Notifications',
+				5,
 				'5',
 				false,
 				false
-			), 'Echo, logged in, no talk page alerts, 5 notifications, ' +
-				'no last un-read nofication time',
-			$title, true, true, '', false, 5, '2017-05-11T22:23:20Z', '5' ],
+			), 'Echo, logged in, no talk page alerts, 5 notifications, ' .
+				'no last un-read alert time, ' .
+				'last un-read message time before last message seen time',
+			$title, true, true, '',
+			false,
+			MWTimestamp::getInstance( strtotime( '2017-12-15T08:14:33Z' ) ),
+			5, '2017-12-21T18:07:24Z', '2017-12-19T16:55:52Z', '5' ],
+
 			[ $this->getSecondaryButtonExpectedResult(
 				$title,
 				'Show my notifications',
 				'Notifications',
+				0,
 				'0',
 				true,
 				false
-			), 'Echo, logged in, no talk page alerts, 0 notifications, ' +
-				'no last echo seen time',
+			), 'Echo, logged in, no talk page alerts, 0 notifications, ' .
+				'no last alert and message seen time',
 			$title, true, true, '',
-			MWTimestamp::getInstance( strtotime( '2017-05-11T21:23:20Z' ) ),
-			0, false, '0' ]
+			MWTimestamp::getInstance( strtotime( '2017-08-09T10:54:07Z' ) ),
+			MWTimestamp::getInstance( strtotime( '2017-08-11T14:18:36Z' ) ),
+			0, false, false, '0' ]
 		];
 	}
 
@@ -379,6 +419,7 @@ class SkinMinervaTest extends MediaWikiTestCase {
 				$title,
 				'You have new messages on your talk page',
 				'Mytalk',
+				0,
 				'',
 				true,
 				false

@@ -269,7 +269,8 @@ $wgDiff3 = "/usr/bin/diff3";
 # When you make changes to this configuration file, this will make
 # sure that cached pages are cleared.
 $wgCacheEpoch = max( $wgCacheEpoch, gmdate( 'YmdHis', @filemtime( __FILE__ ) ) );
-//$test = true;
+
+
 
 //
 // Permissions
@@ -326,7 +327,7 @@ $wgActions['mcrrestore'] = false;
 // Skins
 //
 
-wfLoadSkin('CologneBlue');
+//wfLoadSkin('CologneBlue');
 wfLoadSkin('Modern');
 wfLoadSkin('MonoBook');
 wfLoadSkin('Vector');
@@ -346,6 +347,9 @@ $wgPFEnableStringFunctions = true;
 
 // 20190428: ReplaceSet extension
 require_once("$IP/extensions/ReplaceSet/ReplaceSet.php");
+
+// 20260309: ReplaceText extension
+wfLoadExtension("ReplaceText");
 
 wfLoadExtension("Nuke");
 wfLoadExtension("AntiSpoof");
@@ -474,7 +478,10 @@ $wgGroupPermissions['bureaucrat']['usermerge'] = true;
 // optional - default is array( 'sysop' )
 //$wgUserMergeProtectedGroups = array( 'groupname' );
 
+// set PageImages default licensing
 require_once("{$IP}/extensions/RandomImage/RandomImage.php");
+wfLoadExtension("RandomImage");
+
 require_once("$IP/extensions/RandomInCategory/RandomInCategory.php");
 wfLoadExtension("RandomSelection");
 

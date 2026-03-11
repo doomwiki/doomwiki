@@ -20,50 +20,16 @@
  */
 
 // Ensure that the script cannot be executed outside of MediaWiki.
-if ( !defined( 'MEDIAWIKI' ) ) {
-	die( 'This is an extension to the MediaWiki package and cannot be run standalone.' );
+if ( function_exists( 'wfLoadExtension' ) ) {
+	wfLoadExtension( 'ReplaceSet' );
+	// Keep i18n globals so mergeMessageFileList.php doesn't break
+	$wgMessagesDirs['ReplaceSet'] = __DIR__ . '/i18n';
+	wfWarn(
+		'Deprecated PHP entry point used for the ReplaceSet extension. ' .
+		'Please use wfLoadExtension instead, ' .
+		'see https://www.mediawiki.org/wiki/Extension_registration for more details.'
+	);
+	return;
+} else {
+	die( 'This version of the ReplaceSet extension requires MediaWiki 1.29+' );
 }
-
-// Display extension properties on MediaWiki.
-$wgExtensionCredits['parserhook'][] = array(
-	'path' => __FILE__,
-	'name' => 'ReplaceSet',
-	'url' => 'https://www.mediawiki.org/wiki/Extension:ReplaceSet',
-	'version' => '1.5.0',
-	'author' => array(
-		'[https://www.mediawiki.org/wiki/User:Dantman Daniel Friesen]',
-		'...'
-	),
-	'descriptionmsg' => 'replaceset-desc',
-	'license-name' => 'GPL-2.0+'
-);
-
-// Register extension hooks.
-$wgHooks['ParserFirstCallInit'][] = 'efReplaceSetRegisterParser';
-
-// Load extension's classes.
-$wgAutoloadClasses['ReplaceSet'] = __DIR__ . '/ReplaceSet.class.php';
-
-// Register extension messages and other localisation.
-$wgMessagesDirs['ReplaceSet'] = __DIR__ . '/i18n';
-$wgExtensionMessagesFiles['ReplaceSetMagic'] = __DIR__ . '/ReplaceSet.i18n.magic.php';
-
-// Provide extension's tests.
-$wgParserTestFiles[] = __DIR__ . '/parserTests.txt';
-
-// Do some action.
-function efReplaceSetRegisterParser( &$parser ) {
-	$parser->setFunctionHook( 'replaceset', array( 'ReplaceSet', 'parserFunctionObj' ), Parser::SFH_OBJECT_ARGS );
-	return true;
-}
-
-// Provide configuration settings.
-/**
- * Max number of {{#replaceset:}} calls in a page.
- */
-$egReplaceSetCallLimit = 25;
-
-/**
- * Max number of replacements preg will make in a single string.
- */
-$egReplaceSetPregLimit = 50;

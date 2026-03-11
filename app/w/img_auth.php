@@ -92,8 +92,10 @@ function wfImageAuthMain() {
 			}
 			if ( $be->fileExists( [ 'src' => $filename ] ) ) {
 				wfDebugLog( 'img_auth', "Streaming `" . $filename . "`." );
-				$be->streamFile( [ 'src' => $filename ],
-					[ 'Cache-Control: private', 'Vary: Cookie' ] );
+				$be->streamFile( [
+					'src' => $filename,
+					'headers' => [ 'Cache-Control: private', 'Vary: Cookie' ]
+				] );
 			} else {
 				wfForbidden( 'img-auth-accessdenied', 'img-auth-nofile', $path );
 			}
@@ -135,12 +137,13 @@ function wfImageAuthMain() {
 
 	$headers = []; // extra HTTP headers to send
 
+	$title = Title::makeTitleSafe( NS_FILE, $name );
+
 	if ( !$publicWiki ) {
 		// For private wikis, run extra auth checks and set cache control headers
-		$headers[] = 'Cache-Control: private';
-		$headers[] = 'Vary: Cookie';
+		$headers['Cache-Control'] = 'private';
+		$headers['Vary'] = 'Cookie';
 
-		$title = Title::makeTitleSafe( NS_FILE, $name );
 		if ( !$title instanceof Title ) { // files have valid titles
 			wfForbidden( 'img-auth-accessdenied', 'img-auth-badtitle', $name );
 			return;
@@ -162,19 +165,22 @@ function wfImageAuthMain() {
 		}
 	}
 
-	$options = []; // HTTP header options
 	if ( isset( $_SERVER['HTTP_RANGE'] ) ) {
-		$options['range'] = $_SERVER['HTTP_RANGE'];
+		$headers['Range'] = $_SERVER['HTTP_RANGE'];
 	}
 	if ( isset( $_SERVER['HTTP_IF_MODIFIED_SINCE'] ) ) {
-		$options['if-modified-since'] = $_SERVER['HTTP_IF_MODIFIED_SINCE'];
+		$headers['If-Modified-Since'] = $_SERVER['HTTP_IF_MODIFIED_SINCE'];
 	}
 
 	if ( $request->getCheck( 'download' ) ) {
-		$headers[] = 'Content-Disposition: attachment';
+		$headers['Content-Disposition'] = 'attachment';
 	}
 
+	// Allow modification of headers before streaming a file
+	Hooks::run( 'ImgAuthModifyHeaders', [ $title->getTitleValue(), &$headers ] );
+
 	// Stream the requested file
+	list( $headers, $options ) = HTTPFileStreamer::preprocessHeaders( $headers );
 	wfDebugLog( 'img_auth', "Streaming `" . $filename . "`." );
 	$repo->streamFile( $filename, $headers, $options );
 }

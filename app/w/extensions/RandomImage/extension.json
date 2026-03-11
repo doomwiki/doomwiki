@@ -1,12 +1,12 @@
 {
 	"name": "RandomImage",
-	"version": "1.5",
+	"version": "1.5.1",
 	"author": [
 		"Rob Church"
 	],
 	"url": "https://www.mediawiki.org/wiki/Extension:RandomImage",
 	"descriptionmsg": "randomimage-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"callback": "RandomImage::onRegistration",
 	"config": {

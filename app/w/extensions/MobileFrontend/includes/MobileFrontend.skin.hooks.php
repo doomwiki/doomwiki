@@ -67,12 +67,11 @@ JAVASCRIPT;
 	 * Returns HTML of terms of use link or null if it shouldn't be displayed
 	 * Note: This is called by a hook in the WikimediaMessages extension.
 	 *
-	 * @param Skin $sk
-	 * @param string $urlMsgKey Key of i18n message containing terms of use URL (optional)
+	 * @param MessageLocalizer $localizer
 	 * @return null|string
 	 */
-	public static function getTermsLink( $sk, $urlMsgKey = 'mobile-frontend-terms-url' ) {
-		$urlMsg = $sk->msg( $urlMsgKey )->inContentLanguage();
+	public static function getTermsLink( MessageLocalizer $localizer ) {
+		$urlMsg = $localizer->msg( 'mobile-frontend-terms-url' )->inContentLanguage();
 		if ( $urlMsg->isDisabled() ) {
 			return null;
 		}
@@ -81,7 +80,7 @@ JAVASCRIPT;
 		return Html::element(
 			'a',
 			[ 'href' => Skin::makeInternalOrExternalUrl( $url ) ],
-			$sk->msg( 'mobile-frontend-terms-text' )->text()
+			$localizer->msg( 'mobile-frontend-terms-text' )->text()
 		);
 	}
 
@@ -90,7 +89,7 @@ JAVASCRIPT;
 	 *
 	 * FIXME: This hack shouldn't be needed anymore after fixing T111833
 	 *
-	 * @param string $license
+	 * @param string $license License or licenses message
 	 * @param Message $msgObj delimiter (optional)
 	 * @return int Returns 2, if there are multiple licenses, 1 otherwise.
 	 */
@@ -136,7 +135,9 @@ JAVASCRIPT;
 				'Creative Commons Attribution-Share Alike 3.0' => 'CC BY-SA 3.0',
 				'Creative Commons Attribution Share Alike' => 'CC BY-SA',
 				'Creative Commons Attribution 3.0' => 'CC BY 3.0',
-				'Creative Commons Attribution 2.5' => 'CC BY 2.5', // Wikinews
+				// Wikinews
+				'Creative Commons Attribution 2.5' => 'CC BY 2.5',
+
 				'Creative Commons Attribution' => 'CC BY',
 				'Creative Commons Attribution Non-Commercial Share Alike' => 'CC BY-NC-SA',
 				'Creative Commons Zero (Public Domain)' => 'CC0 (Public Domain)',
@@ -178,7 +179,7 @@ JAVASCRIPT;
 	 * @param Skin $skin
 	 * @param QuickTemplate $tpl
 	 */
-	public static function prepareFooter( $skin, $tpl ) {
+	public static function prepareFooter( Skin $skin, QuickTemplate $tpl ) {
 		$title = $skin->getTitle();
 		$req = $skin->getRequest();
 		$ctx = MobileContext::singleton();
@@ -195,13 +196,13 @@ JAVASCRIPT;
 
 	/**
 	 * Appends a mobile view link to the desktop footer
-	 * @param Skin $sk
+	 * @param Skin $skin
 	 * @param QuickTemplate $tpl
 	 * @param MobileContext $ctx
-	 * @param Title $title
+	 * @param Title $title Page title
 	 * @param WebRequest $req
 	 */
-	public static function desktopFooter( Skin $sk, QuickTemplate $tpl, MobileContext $ctx,
+	public static function desktopFooter( Skin $skin, QuickTemplate $tpl, MobileContext $ctx,
 		Title $title, WebRequest $req
 	) {
 		$footerlinks = $tpl->data['footerlinks'];
@@ -224,17 +225,17 @@ JAVASCRIPT;
 
 	/**
 	 * Prepares links used in the mobile footer
-	 * @param Skin $sk
+	 * @param Skin $skin
 	 * @param QuickTemplate $tpl
 	 * @param MobileContext $ctx
-	 * @param Title $title
+	 * @param Title $title Page title
 	 * @param WebRequest $req
 	 * @return QuickTemplate
 	 */
-	protected static function mobileFooter( Skin $sk, QuickTemplate $tpl, MobileContext $ctx,
+	protected static function mobileFooter( Skin $skin, QuickTemplate $tpl, MobileContext $ctx,
 		Title $title, WebRequest $req
 	) {
-		$url = $sk->getOutput()->getProperty( 'desktopUrl' );
+		$url = $skin->getOutput()->getProperty( 'desktopUrl' );
 		if ( $url ) {
 			$url = wfAppendQuery( $url, 'mobileaction=toggle_view_desktop' );
 		} else {
@@ -252,18 +253,18 @@ JAVASCRIPT;
 		// See Skin::getCopyright for desktop equivalent.
 		$license = self::getLicense( 'footer' );
 		if ( isset( $license['link'] ) && $license['link'] ) {
-			$licenseText = $sk->msg( $license['msg'] )->rawParams( $license['link'] )->text();
+			$licenseText = $skin->msg( $license['msg'] )->rawParams( $license['link'] )->text();
 		} else {
 			$licenseText = '';
 		}
 
 		// Enable extensions to add links to footer in Mobile view, too - bug 66350
-		Hooks::run( 'MobileSiteOutputPageBeforeExec', [ &$sk, &$tpl ] );
+		Hooks::run( 'MobileSiteOutputPageBeforeExec', [ &$skin, &$tpl ] );
 
 		$tpl->set( 'desktop-toggle', $desktopToggler );
 		$tpl->set( 'mobile-license', $licenseText );
-		$tpl->set( 'privacy', $sk->footerLink( 'mobile-frontend-privacy-link-text', 'privacypage' ) );
-		$tpl->set( 'terms-use', self::getTermsLink( $sk ) );
+		$tpl->set( 'privacy', $skin->footerLink( 'mobile-frontend-privacy-link-text', 'privacypage' ) );
+		$tpl->set( 'terms-use', self::getTermsLink( $skin ) );
 
 		$places = [
 			'terms-use',

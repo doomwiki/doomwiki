@@ -1,6 +1,6 @@
 <?php
 
-class FlaggablePageTest extends PHPUnit_Framework_TestCase {
+class FlaggablePageTest extends PHPUnit\Framework\TestCase {
 	/**
 	 * Prepares the environment before running a test.
 	 */
@@ -16,12 +16,6 @@ class FlaggablePageTest extends PHPUnit_Framework_TestCase {
 		parent::tearDown();
 	}
 
-	/**
-	 * Constructs the test case.
-	 */
-	public function __construct() {
-	}
-
 	public function testPageDataFromTitle() {
 		$title = Title::makeTitle( NS_MAIN, "somePage" );
 		$article = new FlaggableWikiPage( $title );
@@ -35,7 +29,7 @@ class FlaggablePageTest extends PHPUnit_Framework_TestCase {
 			$user
 		);
 
-		$data = (array)$article->pageDataFromTitle( wfGetDB( DB_SLAVE ), $title );
+		$data = (array)$article->pageDataFromTitle( wfGetDB( DB_REPLICA ), $title );
 
 		$this->assertEquals( true, array_key_exists( 'fpc_override', $data ),
 			"data->fpc_override field exists" );

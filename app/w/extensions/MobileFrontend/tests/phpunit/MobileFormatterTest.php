@@ -64,7 +64,10 @@ class MobileFormatterTest extends MediaWikiTestCase {
 		$showFirstParagraphBeforeInfobox = false
 	) {
 		$t = Title::newFromText( 'Mobile' );
-		$input = str_replace( "\r", '', $input ); // "yay" to Windows!
+
+		// "yay" to Windows!
+		$input = str_replace( "\r", '', $input );
+
 		$mf = new MobileFormatter( MobileFormatter::wrapHTML( $input ), $t );
 		if ( $callback ) {
 			$callback( $mf );
@@ -338,41 +341,6 @@ class MobileFormatterTest extends MediaWikiTestCase {
 					)
 				. $this->makeSectionHtml( 1, $longLine ),
 				$enableSections
-			],
-
-			// # Main page transformations
-			[
-				'fooo
-				<div id="mp-itn">bar</div>
-				<div id="mf-custom" title="custom">blah</div>',
-				'<div id="mainpage">' .
-				'<h2>In the news</h2><div id="mp-itn">bar</div>'
-					. '<h2>custom</h2><div id="mf-custom">blah</div><br clear="all"></div>',
-				$mainPage,
-			],
-			[
-				'<div id="foo">test</div>',
-				'<div id="foo">test</div>',
-				$mainPage,
-			],
-			[
-				'<div id="mf-foo" title="A &amp; B">test</div>',
-				'<div id="mainpage">' .
-				'<h2>A &amp; B</h2><div id="mf-foo">test</div><br clear="all"></div>',
-				$mainPage,
-			],
-			[
-				'<div id="foo">test</div><div id="central-auth-images">images</div>',
-				'<div id="foo">test' .
-				'</div><div id="central-auth-images">images</div>',
-				$mainPage,
-			],
-			[
-				'<div id="mf-foo" title="A &amp; B">test</div><div id="central-auth-images">images</div>',
-				'<div id="mainpage">' .
-				'<h2>A &amp; B</h2><div id="mf-foo">test</div><br clear="all">'
-					. '<div id="central-auth-images">images</div></div>',
-				$mainPage,
 			],
 
 			// Infobox and the first paragraph in lead section transformations
@@ -672,6 +640,7 @@ class MobileFormatterTest extends MediaWikiTestCase {
 				// MobileFormatter#moveFirstParagraphBeforeInfobox will trigger a "Not
 				// Found Error" warning.
 				// Do not touch infoboxes that are not immediate children of the lead section
+				// unless... (see next test T170006)
 				'<div><table class="' . self::INFOBOX_CLASSNAME . '"><tr><td>infobox</td></tr></table></div>' .
 				'<p>paragraph 1</p>',
 
@@ -905,6 +874,8 @@ class MobileFormatterTest extends MediaWikiTestCase {
 		$input = '<p>Hello, world!</p><h2>Section heading</h2><ol class="references"></ol>';
 		$formatter = new MobileFormatter( $input, Title::newFromText( 'Special:Foo' ) );
 		$formatter->filterContent( false, true, false );
+		// Success is not crashing when the input is not a DOMElement.
+		$this->assertTrue( true );
 	}
 
 	/**
@@ -951,12 +922,13 @@ class MobileFormatterTest extends MediaWikiTestCase {
 	/**
 	 * @see https://phabricator.wikimedia.org/T149884
 	 * @covers MobileFormatter::filterContent
+	 * @covers MobileFrontend\Transforms\MoveLeadParagraphTransform::logInfoboxesWrappedInContainers
+	 * @dataProvider provideLoggingOfInfoboxesBeingWrappedInContainersWhenNotWrapped
 	 */
-	public function testLoggingOfInfoboxesBeingWrappedInContainersWhenNotWrapped() {
+	public function testLoggingOfInfoboxesBeingWrappedInContainersWhenNotWrapped( $input ) {
 		$this->setMwGlobals( [
 			'wgMFLogWrappedInfoboxes' => true
 		] );
-		$input = $this->buildInfoboxHTML( 'infobox ' );
 		$title = 'T149884';
 
 		$formatter = new MobileFormatter( MobileFormatter::wrapHTML( $input ),
@@ -971,28 +943,14 @@ class MobileFormatterTest extends MediaWikiTestCase {
 		$formatter->filterContent( false, false, false, true );
 	}
 
-	/**
-	 * @see https://phabricator.wikimedia.org/T163805
-	 * @covers MobileFormatter::filterContent
-	 */
-	public function testLoggingOfInfoboxesLogsOnlyMainNamespace() {
-		$this->setMwGlobals( [
-			'wgMFLogWrappedInfoboxes' => true
-		] );
-
-		$input = '<div>'. $this->buildInfoboxHTML( 'test' ).'</div>';
-		$title = 'Special:T163805';
-
-		$formatter = new MobileFormatter( MobileFormatter::wrapHTML( $input ),
-			Title::newFromText( $title,  NS_SPECIAL ) );
-		$formatter->enableExpandableSections();
-
-		$loggerMock = $this->getMock( \Psr\Log\LoggerInterface::class );
-		$loggerMock->expects( $this->never() )
-			->method( 'info' );
-
-		$this->setLogger( 'mobile', $loggerMock );
-		$formatter->filterContent( false, false, false, true );
+	public function provideLoggingOfInfoboxesBeingWrappedInContainersWhenNotWrapped() {
+		$box = $this->buildInfoboxHTML( 'infobox' );
+		return [
+			// no wrapping
+			[ $box ],
+			// if wrapped inside mw-stack no logging occurs
+			[ "<div class=\"mw-stack\">$box</div>" ],
+		];
 	}
 
 	/**

@@ -1,5 +1,6 @@
-( function ( M, $ ) {
+( function ( M ) {
 	var TalkOverlayBase = M.require( 'mobile.talk.overlays/TalkOverlayBase' ),
+		util = M.require( 'mobile.startup/util' ),
 		Page = M.require( 'mobile.startup/Page' ),
 		Anchor = M.require( 'mobile.startup/Anchor' ),
 		user = M.require( 'mobile.startup/user' );
@@ -16,7 +17,7 @@
 	}
 
 	OO.mfExtend( TalkOverlay, TalkOverlayBase, {
-		templatePartials: $.extend( {}, TalkOverlayBase.prototype.templatePartials, {
+		templatePartials: util.extend( {}, TalkOverlayBase.prototype.templatePartials, {
 			content: mw.template.get( 'mobile.talk.overlays', 'content.hogan' )
 		} ),
 		/**
@@ -33,7 +34,7 @@
 		 * generating header buttons. Default list includes an 'add' button, which opens
 		 * a new talk overlay.
 		 */
-		defaults: $.extend( {}, TalkOverlayBase.prototype.defaults, {
+		defaults: util.extend( {}, TalkOverlayBase.prototype.defaults, {
 			headings: undefined,
 			heading: '<strong>' + mw.msg( 'mobile-frontend-talk-overlay-header' ) + '</strong>',
 			leadHeading: mw.msg( 'mobile-frontend-talk-overlay-lead-header' ),
@@ -89,6 +90,7 @@
 		 */
 		_loadContent: function ( options ) {
 			var self = this;
+			options = options || this.options;
 
 			// show a spinner
 			this.showSpinner();
@@ -106,9 +108,15 @@
 						sections: []
 					}, options );
 				} else {
-					// If the API request fails for any other reason, load the talk
-					// page manually rather than leaving the spinner spinning.
-					window.location = mw.util.getUrl( options.title );
+					if ( self.options.onFail ) {
+						// Run failure callback with current title
+						self.options.onFail( options.title );
+					} else {
+						// If the API request fails for any other reason, load the talk
+						// page manually rather than leaving the spinner spinning.
+						// eslint-disable-next-line no-restricted-properties
+						window.location = mw.util.getUrl( options.title );
+					}
 				}
 			} ).done( function ( pageData ) {
 				self._addContent( pageData, options );
@@ -144,7 +152,7 @@
 		 */
 		_setupAddDiscussionButton: function () {
 			var $add = this.$( '.header-action .add' );
-			M.on( 'talk-discussion-added', $.proxy( this, '_loadContent', this.options ) );
+			M.on( 'talk-discussion-added', this._loadContent.bind( this ) );
 			if ( !user.isAnon() ) {
 				$add.removeClass( 'hidden' );
 			} else {
@@ -155,4 +163,4 @@
 
 	M.define( 'mobile.talk.overlays/TalkOverlay', TalkOverlay ); // resource-modules-disable-line
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

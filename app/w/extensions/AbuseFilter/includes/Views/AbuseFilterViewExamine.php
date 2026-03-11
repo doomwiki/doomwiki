@@ -4,8 +4,8 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 	public static $examineType = null;
 	public static $examineId = null;
 
-	public $mCounter, $mSearchUser, $mSearchPeriodStart, $mSearchPeriodEnd,
-		$mTestFilter;
+	public $mCounter, $mSearchUser, $mSearchPeriodStart, $mSearchPeriodEnd;
+	public $mTestFilter;
 
 	function show() {
 		$out = $this->getOutput();
@@ -28,6 +28,9 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 	}
 
 	function showSearch() {
+		$RCMaxAge = $this->getConfig()->get( 'RCMaxAge' );
+		$min = wfTimestamp( TS_ISO_8601, time() - $RCMaxAge );
+		$max = wfTimestampNow();
 		$formDescriptor = [
 			'SearchUser' => [
 				'label-message' => 'abusefilter-test-user',
@@ -36,16 +39,20 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 			],
 			'SearchPeriodStart' => [
 				'label-message' => 'abusefilter-test-period-start',
-				'type' => 'text',
+				'type' => 'datetime',
 				'default' => $this->mSearchPeriodStart,
+				'min' => $min,
+				'max' => $max,
 			],
 			'SearchPeriodEnd' => [
 				'label-message' => 'abusefilter-test-period-end',
-				'type' => 'text',
+				'type' => 'datetime',
 				'default' => $this->mSearchPeriodEnd,
+				'min' => $min,
+				'max' => $max,
 			],
 		];
-		$htmlForm = HTMLForm::factory( 'table', $formDescriptor, $this->getContext() );
+		$htmlForm = HTMLForm::factory( 'ooui', $formDescriptor, $this->getContext() );
 		$htmlForm->setWrapperLegendMsg( 'abusefilter-examine-legend' )
 			->addHiddenField( 'submit', 1 )
 			->setSubmitTextMsg( 'abusefilter-examine-submit' )
@@ -59,7 +66,7 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 	}
 
 	function showResults() {
-		$changesList = new AbuseFilterChangesList( $this->getSkin() );
+		$changesList = new AbuseFilterChangesList( $this->getSkin(), $this->mTestFilter );
 		$output = $changesList->beginRecentChangesList();
 		$this->mCounter = 1;
 
@@ -77,11 +84,14 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 	function showExaminerForRC( $rcid ) {
 		// Get data
 		$dbr = wfGetDB( DB_REPLICA );
+		$rcQuery = RecentChange::getQueryInfo();
 		$row = $dbr->selectRow(
-			'recentchanges',
-			RecentChange::selectFields(),
+			$rcQuery['tables'],
+			$rcQuery['fields'],
 			[ 'rc_id' => $rcid ],
-			__METHOD__
+			__METHOD__,
+			[],
+			$rcQuery['joins']
 		);
 		$out = $this->getOutput();
 		if ( !$row ) {
@@ -105,7 +115,12 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 	function showExaminerForLogEntry( $logid ) {
 		// Get data
 		$dbr = wfGetDB( DB_REPLICA );
-		$row = $dbr->selectRow( 'abuse_filter_log', '*', [ 'afl_id' => $logid ], __METHOD__ );
+		$row = $dbr->selectRow(
+			'abuse_filter_log',
+			[ 'afl_filter', 'afl_deleted', 'afl_var_dump' ],
+			[ 'afl_id' => $logid ],
+			__METHOD__
+		);
 		$out = $this->getOutput();
 
 		if ( !$row ) {
@@ -140,6 +155,7 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 
 	function showExaminer( $vars ) {
 		$output = $this->getOutput();
+		$output->enableOOUI();
 
 		if ( !$vars ) {
 			$output->addWikiMsg( 'abusefilter-examine-incompatible' );
@@ -158,31 +174,13 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 		if ( $this->getUser()->isAllowed( 'abusefilter-modify' ) ) {
 			$tester = Xml::tags( 'h2', null, $this->msg( 'abusefilter-examine-test' )->parse() );
 			$tester .= AbuseFilter::buildEditBox( $this->mTestFilter, 'wpTestFilter', false );
-			$tester .=
-				"\n" .
-				Xml::inputLabel(
-					$this->msg( 'abusefilter-test-load-filter' )->text(),
-					'wpInsertFilter',
-					'mw-abusefilter-load-filter',
-					10,
-					''
-				) .
-				'&#160;' .
-				Xml::element(
-					'input',
-					[
-						'type' => 'button',
-						'value' => $this->msg( 'abusefilter-test-load' )->text(),
-						'id' => 'mw-abusefilter-load'
-					]
-				);
+			$tester .= AbuseFilter::buildFilterLoader();
 			$html .= Xml::tags( 'div', [ 'id' => 'mw-abusefilter-examine-editor' ], $tester );
 			$html .= Xml::tags( 'p',
 				null,
-				Xml::element( 'input',
+				new OOUI\ButtonInputWidget(
 					[
-						'type' => 'button',
-						'value' => $this->msg( 'abusefilter-examine-test-button' )->text(),
+						'label' => $this->msg( 'abusefilter-examine-test-button' )->text(),
 						'id' => 'mw-abusefilter-examine-test'
 					]
 				) .
@@ -208,81 +206,14 @@ class AbuseFilterViewExamine extends AbuseFilterView {
 
 	function loadParameters() {
 		$request = $this->getRequest();
-		$searchUsername = $request->getText( 'wpSearchUser' );
 		$this->mSearchPeriodStart = $request->getText( 'wpSearchPeriodStart' );
 		$this->mSearchPeriodEnd = $request->getText( 'wpSearchPeriodEnd' );
 		$this->mSubmit = $request->getCheck( 'submit' );
 		$this->mTestFilter = $request->getText( 'testfilter' );
 
 		// Normalise username
-		$userTitle = Title::newFromText( $searchUsername );
-
-		if ( $userTitle && $userTitle->getNamespace() == NS_USER ) {
-			$this->mSearchUser = $userTitle->getText(); // Allow User:Blah syntax.
-		} elseif ( $userTitle ) {
-			// Not sure of the value of prefixedText over text, but no need to munge unnecessarily.
-			$this->mSearchUser = $userTitle->getPrefixedText();
-		} else {
-			$this->mSearchUser = '';
-		}
-	}
-}
-
-class AbuseFilterExaminePager extends ReverseChronologicalPager {
-	/**
-	 * @param AbuseFilterViewExamine $page
-	 * @param AbuseFilterChangesList $changesList
-	 */
-	function __construct( $page, $changesList ) {
-		parent::__construct();
-		$this->mChangesList = $changesList;
-		$this->mPage = $page;
-	}
-
-	/**
-	 * @fixme this is similar to AbuseFilterViewTestBatch::doTest
-	 */
-	function getQueryInfo() {
-		$dbr = wfGetDB( DB_REPLICA );
-		$conds = [];
-		$conds['rc_user_text'] = $this->mPage->mSearchUser;
-
-		$startTS = strtotime( $this->mPage->mSearchPeriodStart );
-		if ( $startTS ) {
-			$conds[] = 'rc_timestamp>=' . $dbr->addQuotes( $dbr->timestamp( $startTS ) );
-		}
-		$endTS = strtotime( $this->mPage->mSearchPeriodEnd );
-		if ( $endTS ) {
-			$conds[] = 'rc_timestamp<=' . $dbr->addQuotes( $dbr->timestamp( $endTS ) );
-		}
-
-		$conds[] = $this->mPage->buildTestConditions( $dbr );
-
-		$info = [
-			'tables' => 'recentchanges',
-			'fields' => RecentChange::selectFields(),
-			'conds' => array_filter( $conds ),
-			'options' => [ 'ORDER BY' => 'rc_timestamp DESC' ],
-		];
-
-		return $info;
-	}
-
-	function formatRow( $row ) {
-		$rc = RecentChange::newFromRow( $row );
-		$rc->counter = $this->mPage->mCounter++;
-		return $this->mChangesList->recentChangesLine( $rc, false );
-	}
-
-	function getIndexField() {
-		return 'rc_id';
-	}
-
-	function getTitle() {
-		return $this->mPage->getTitle( 'examine' );
-	}
-
-	function getEmptyBody() {
-		return $this->msg( 'abusefilter-examine-noresults' )->parseAsBlock();
+		$searchUsername = $request->getText( 'wpSearchUser' );
+		$userTitle = Title::newFromText( $searchUsername, NS_USER );
+		$this->mSearchUser = $userTitle ? $userTitle->getText() : '';
 	}
 }

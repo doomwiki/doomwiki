@@ -1,0 +1,33 @@
+{
+	"name": "ReplaceSet",
+	"version": "1.6.0",
+	"author": [
+		"[https://www.mediawiki.org/wiki/User:Dantman Daniel Friesen]",
+		"..."
+	],
+	"url": "https://www.mediawiki.org/wiki/Extension:ReplaceSet",
+	"descriptionmsg": "replaceset-desc",
+	"license-name": "GPL-2.0-or-later",
+	"type": "parserhook",
+	"MessagesDirs": {
+		"ReplaceSet": [
+			"i18n"
+		]
+	},
+	"ExtensionMessagesFiles": {
+		"ReplaceSetMagic": "ReplaceSet.i18n.magic.php"
+	},
+	"AutoloadClasses": {
+		"ReplaceSet": "ReplaceSet.class.php",
+		"ReplaceSetHooks": "ReplaceSet.hooks.php"
+	},
+	"Hooks": {
+		"ParserFirstCallInit": "ReplaceSetHooks::efReplaceSetRegisterParser"
+	},
+	"config": {
+		"_prefix": "eg",
+		"ReplaceSetCallLimit": 25,
+		"ReplaceSetPregLimit": 50
+	},
+	"manifest_version": 1
+}

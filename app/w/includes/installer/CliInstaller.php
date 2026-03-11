@@ -38,7 +38,6 @@ class CliInstaller extends Installer {
 		'dbpass' => 'wgDBpassword',
 		'dbprefix' => 'wgDBprefix',
 		'dbtableoptions' => 'wgDBTableOptions',
-		'dbmysql5' => 'wgDBmysql5',
 		'dbport' => 'wgDBport',
 		'dbschema' => 'wgDBmwschema',
 		'dbpath' => 'wgSQLiteDataDir',
@@ -73,6 +72,7 @@ class CliInstaller extends Installer {
 			$wgContLang = Language::factory( $option['lang'] );
 			$wgLang = Language::factory( $option['lang'] );
 			$wgLanguageCode = $option['lang'];
+			$this->setVar( 'wgLanguageCode', $wgLanguageCode );
 			RequestContext::getMain()->setLanguage( $wgLang );
 		}
 
@@ -126,6 +126,15 @@ class CliInstaller extends Installer {
 	 * Main entry point.
 	 */
 	public function execute() {
+		// If APC is available, use that as the MainCacheType, instead of nothing.
+		// This is hacky and should be consolidated with WebInstallerOptions.
+		// This is here instead of in __construct(), because it should run run after
+		// doEnvironmentChecks(), which populates '_Caches'.
+		if ( count( $this->getVar( '_Caches' ) ) ) {
+			// We detected a CACHE_ACCEL implementation, use it.
+			$this->setVar( '_MainCacheType', 'accel' );
+		}
+
 		$vars = Installer::getExistingLocalSettings();
 		if ( $vars ) {
 			$this->showStatusMessage(

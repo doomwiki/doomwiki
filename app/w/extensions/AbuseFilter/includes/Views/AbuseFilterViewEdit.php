@@ -11,33 +11,6 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 		$this->mHistoryID = $page->mHistoryID;
 	}
 
-	/// @todo When older versions of MediaWiki are no longer
-	/// supported, remove this method and call ChangeTags::isTagNameValid directly
-	/// Because it's planned for removal, this is private.
-	/**
-	 * Check whether the characters in the tag name are valid.
-	 *
-	 * @param string $tag Tag name
-	 * @return Status
-	 */
-	private static function isTagNameValid( $tag ) {
-		if ( is_callable( 'ChangeTags::isTagNameValid' ) ) {
-			$status = ChangeTags::isTagNameValid( $tag );
-		} else {
-			// BC
-			if ( strpos( $tag, ',' ) !== false || strpos( $tag, '|' ) !== false ||
-				strpos( $tag, '/' ) !== false ||
-				!Title::makeTitleSafe( NS_MEDIAWIKI, "tag-{$tag}-description" )
-			) {
-				$status = Status::newFatal( 'abusefilter-edit-bad-tags' );
-			} else {
-				$status = Status::newGood();
-			}
-		}
-
-		return $status;
-	}
-
 	/**
 	 * Check whether a filter is allowed to use a tag
 	 *
@@ -45,7 +18,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 	 * @return Status
 	 */
 	protected function isAllowedTag( $tag ) {
-		$tagNameStatus = self::isTagNameValid( $tag );
+		$tagNameStatus = ChangeTags::isTagNameValid( $tag );
 
 		if ( !$tagNameStatus->isGood() ) {
 			return $tagNameStatus;
@@ -125,6 +98,28 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 						$this->msg(
 							'abusefilter-edit-badsyntax',
 							[ $syntaxerr[0] ]
+						)->parseAsBlock(),
+						$filter, $history_id
+					)
+				);
+				return;
+			}
+			// Check for missing required fields (title and pattern)
+			$missing = [];
+			if ( !$request->getVal( 'wpFilterRules' ) ||
+				trim( $request->getVal( 'wpFilterRules' ) ) === '' ) {
+				$missing[] = $this->msg( 'abusefilter-edit-field-conditions' )->escaped();
+			}
+			if ( !$request->getVal( 'wpFilterDescription' ) ) {
+				$missing[] = $this->msg( 'abusefilter-edit-field-description' )->escaped();
+			}
+			if ( count( $missing ) !== 0 ) {
+				$missing = $this->getLanguage()->commaList( $missing );
+				$out->addHTML(
+					$this->buildFilterEditor(
+						$this->msg(
+							'abusefilter-edit-missingfields',
+							$missing
 						)->parseAsBlock(),
 						$filter, $history_id
 					)
@@ -327,7 +322,8 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 			}
 
 			// Logging
-			$logEntry = new ManualLogEntry( 'abusefilter', 'modify' );
+			$subtype = $filter === 'new' ? 'create' : 'modify';
+			$logEntry = new ManualLogEntry( 'abusefilter', $subtype );
 			$logEntry->setPerformer( $user );
 			$logEntry->setTarget( $this->getTitle( $new_id ) );
 			$logEntry->setParameters( [
@@ -377,9 +373,9 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 	 * Builds the full form for edit filters.
 	 * Loads data either from the database or from the HTTP request.
 	 * The request takes precedence over the database
-	 * @param $error string An error message to show above the filter box.
-	 * @param $filter int The filter ID
-	 * @param $history_id int The history ID of the filter, if applicable. Otherwise null
+	 * @param string $error An error message to show above the filter box.
+	 * @param int $filter The filter ID
+	 * @param int $history_id The history ID of the filter, if applicable. Otherwise null
 	 * @return bool|string False if there is a failure building the editor,
 	 *   otherwise the HTML text for the editor.
 	 */
@@ -396,7 +392,11 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 		// Load from request OR database.
 		list( $row, $actions ) = $this->loadRequest( $filter, $history_id );
 
-		if ( !$row ) {
+		if (
+			!$row ||
+			// @fixme Temporary stopgap for T237887
+			( $history_id && $row->af_id !== $filter )
+		) {
 			$out->addWikiMsg( 'abusefilter-edit-badfilter' );
 			$out->addHTML( $this->linkRenderer->makeLink( $this->getTitle(),
 				$this->msg( 'abusefilter-return' )->text() ) );
@@ -412,7 +412,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 		if ( ( ( isset( $row->af_hidden ) && $row->af_hidden ) ||
 				AbuseFilter::filterHidden( $filter ) )
 			&& !$this->canViewPrivate() ) {
-			return $this->msg( 'abusefilter-edit-denied' )->text();
+			return $this->msg( 'abusefilter-edit-denied' )->escaped();
 		}
 
 		$output = '';
@@ -435,7 +435,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 
 		$fields['abusefilter-edit-id'] =
 			$this->mFilter == 'new' ?
-				$this->msg( 'abusefilter-edit-new' )->text() :
+				$this->msg( 'abusefilter-edit-new' )->escaped() :
 				$lang->formatNum( $filter );
 		$fields['abusefilter-edit-description'] =
 			Xml::input(
@@ -517,7 +517,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 			$readOnlyAttrib
 		);
 
-		// Build checkboxen
+		// Build checkboxes
 		$checkboxes = [ 'hidden', 'enabled', 'deleted' ];
 		$flags = '';
 
@@ -544,9 +544,11 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 				);
 
 				$flags .= $out->parse(
-					$this->msg( 'abusefilter-edit-throttled-warning' )
-						->plaintextParams( $lang->commaList( $throttledActions ) )
-						->text()
+					Html::warningBox(
+						$this->msg( 'abusefilter-edit-throttled-warning' )
+							->plaintextParams( $lang->commaList( $throttledActions ) )
+							->escaped()
+					)
 				);
 			}
 		}
@@ -663,8 +665,8 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 
 	/**
 	 * Builds the "actions" editor for a given filter.
-	 * @param $row stdClass A row from the abuse_filter table.
-	 * @param $actions Array of rows from the abuse_filter_action table
+	 * @param stdClass $row A row from the abuse_filter table.
+	 * @param array $actions Array of rows from the abuse_filter_action table
 	 *  corresponding to the abuse filter held in $row.
 	 * @return HTML text for an action editor.
 	 */
@@ -692,10 +694,10 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 	}
 
 	/**
-	 * @param $action string The action to build an editor for
-	 * @param $set bool Whether or not the action is activated
-	 * @param $parameters array Action parameters
-	 * @param $row stdClass abuse_filter row object
+	 * @param string $action The action to build an editor for
+	 * @param bool $set Whether or not the action is activated
+	 * @param array $parameters Action parameters
+	 * @param stdClass $row abuse_filter row object
 	 * @return string
 	 */
 	function buildConsequenceSelector( $action, $set, $parameters, $row ) {
@@ -847,13 +849,94 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 						Xml::buildForm( $tagFields )
 					);
 				return $output;
+			case 'block':
+				global $wgBlockAllowsUTEdit, $wgAbuseFilterBlockDuration,
+					$wgAbuseFilterAnonBlockDuration;
+
+				if ( $set && count( $parameters ) === 3 ) {
+					// Both blocktalk and custom block durations available
+					$blockTalk = $parameters[0];
+					$defaultAnonDuration = $parameters[1];
+					$defaultUserDuration = $parameters[2];
+				} else {
+					if ( $set && count( $parameters ) === 1 ) {
+						// Only blocktalk available
+						$blockTalk = $parameters[0];
+					}
+					if ( $wgAbuseFilterAnonBlockDuration ) {
+						$defaultAnonDuration = $wgAbuseFilterAnonBlockDuration;
+					} else {
+						$defaultAnonDuration = $wgAbuseFilterBlockDuration;
+					}
+					$defaultUserDuration = $wgAbuseFilterBlockDuration;
+				}
+				$suggestedBlocks = SpecialBlock::getSuggestedDurations();
+				$suggestedBlocks = self::normalizeBlocks( $suggestedBlocks );
+
+				$output = '';
+				$checkbox = Xml::checkLabel(
+					$this->msg( 'abusefilter-edit-action-block' )->text(),
+					'wpFilterActionBlock',
+					"mw-abusefilter-action-checkbox-block",
+					$set,
+					[ 'class' => 'mw-abusefilter-action-checkbox' ] + $cbReadOnlyAttrib );
+				$output .= Xml::tags( 'p', null, $checkbox );
+				if ( $wgBlockAllowsUTEdit === true ) {
+					$talkCheckbox =
+						Xml::checkLabel(
+							$this->msg( 'abusefilter-edit-action-blocktalk' )->text(),
+							'wpFilterBlockTalk',
+							'mw-abusefilter-action-checkbox-blocktalk',
+							isset( $blockTalk ) && $blockTalk == 'blocktalk',
+							[ 'class' => 'mw-abusefilter-action-checkbox' ] + $cbReadOnlyAttrib
+						);
+				}
+
+				$anonDuration = new XmlSelect(
+					'wpBlockAnonDuration',
+					false,
+					'default'
+				);
+				$anonDuration->addOptions( $suggestedBlocks );
+
+				$userDuration = new XmlSelect(
+					'wpBlockUserDuration',
+					false,
+					'default'
+				);
+				$userDuration->addOptions( $suggestedBlocks );
+
+				// Set defaults
+				$anonDuration->setDefault( $defaultAnonDuration );
+				$userDuration->setDefault( $defaultUserDuration );
+
+				if ( !$this->canEditFilter( $row ) ) {
+					$anonDuration->setAttribute( 'disabled', 'disabled' );
+					$userDuration->setAttribute( 'disabled', 'disabled' );
+				}
+
+				if ( $wgBlockAllowsUTEdit === true ) {
+					$durations['abusefilter-edit-block-options'] = $talkCheckbox;
+				}
+				$durations['abusefilter-edit-block-anon-durations'] = $anonDuration->getHTML();
+				$durations['abusefilter-edit-block-user-durations'] = $userDuration->getHTML();
+
+				$rawOutput = Xml::buildForm( $durations );
+
+				$output .= Xml::tags(
+						'div',
+						[ 'id' => 'mw-abusefilter-block-parameters' ],
+						$rawOutput
+					);
+
+				return $output;
+
 			default:
 				// Give grep a chance to find the usages:
 				// abusefilter-edit-action-warn, abusefilter-edit-action-disallow
 				// abusefilter-edit-action-blockautopromote
-				// abusefilter-edit-action-degroup, abusefilter-edit-action-block
-				// abusefilter-edit-action-throttle, abusefilter-edit-action-rangeblock
-				// abusefilter-edit-action-tag
+				// abusefilter-edit-action-degroup, abusefilter-edit-action-throttle
+				// abusefilter-edit-action-rangeblock, abusefilter-edit-action-tag
 				$message = 'abusefilter-edit-action-' . $action;
 				$form_field = 'wpFilterAction' . ucfirst( $action );
 				$status = $set;
@@ -871,8 +954,8 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 	}
 
 	/**
-	 * @param $warnMsg string
-	 * @param $readOnly bool
+	 * @param string $warnMsg
+	 * @param bool $readOnly
 	 * @return string
 	 */
 	function getExistingSelector( $warnMsg, $readOnly = false ) {
@@ -917,8 +1000,39 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 	}
 
 	/**
+	 * @ToDo: Maybe we should also check if global values belong to $durations
+	 * and determine the right point to add them if missing.
+	 *
+	 * @param array $durations
+	 * @return array
+	 */
+	protected static function normalizeBlocks( $durations ) {
+		global $wgAbuseFilterBlockDuration, $wgAbuseFilterAnonBlockDuration;
+		// We need to have same values since it may happen that ipblocklist
+		// and one (or both) of the global variables use different wording
+		// for the same duration. In such case, when setting the default of
+		// the dropdowns it would fail.
+		foreach ( $durations as &$duration ) {
+			$currentDuration = SpecialBlock::parseExpiryInput( $duration );
+			$anonDuration = SpecialBlock::parseExpiryInput( $wgAbuseFilterAnonBlockDuration );
+			$userDuration = SpecialBlock::parseExpiryInput( $wgAbuseFilterBlockDuration );
+
+			if ( $duration !== $wgAbuseFilterBlockDuration &&
+				$currentDuration === $userDuration ) {
+				$duration = $wgAbuseFilterBlockDuration;
+
+			} elseif ( $duration !== $wgAbuseFilterAnonBlockDuration &&
+				$currentDuration === $anonDuration ) {
+				$duration = $wgAbuseFilterAnonBlockDuration;
+			}
+		}
+
+		return $durations;
+	}
+
+	/**
 	 * Loads filter data from the database by ID.
-	 * @param $id int The filter's ID number
+	 * @param int $id The filter's ID number
 	 * @return array|null Either an associative array representing the filter,
 	 *  or NULL if the filter does not exist.
 	 */
@@ -978,7 +1092,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 		foreach ( $res as $actionRow ) {
 			$thisAction = [];
 			$thisAction['action'] = $actionRow->afa_consequence;
-			$thisAction['parameters'] = explode( "\n", $actionRow->afa_parameters );
+			$thisAction['parameters'] = array_filter( explode( "\n", $actionRow->afa_parameters ) );
 
 			$actions[$actionRow->afa_consequence] = $thisAction;
 		}
@@ -991,8 +1105,8 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 	 * Either from the HTTP request or from the filter/history_id given.
 	 * The HTTP request always takes precedence.
 	 * Includes caching.
-	 * @param $filter int The filter ID being requested.
-	 * @param $history_id int If any, the history ID being requested.
+	 * @param int $filter The filter ID being requested.
+	 * @param int $history_id If any, the history ID being requested.
 	 * @return Array with filter data if available, otherwise null.
 	 * The first element contains the abuse_filter database row,
 	 *  the second element is an array of related abuse_filter_action rows.
@@ -1085,8 +1199,13 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 						}
 
 						$parameters[0] = $specMsg;
+					} elseif ( $action == 'block' ) {
+						$parameters[0] = $request->getCheck( 'wpFilterBlockTalk' ) ?
+							'blocktalk' : 'noTalkBlockSet';
+						$parameters[1] = $request->getVal( 'wpBlockAnonDuration' );
+						$parameters[2] = $request->getVal( 'wpBlockUserDuration' );
 					} elseif ( $action == 'tag' ) {
-						$parameters = explode( "\n", $request->getText( 'wpFilterTags' ) );
+						$parameters = explode( "\n", trim( $request->getText( 'wpFilterTags' ) ) );
 					}
 
 					$thisAction = [ 'action' => $action, 'parameters' => $parameters ];
@@ -1102,7 +1221,7 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 
 	/**
 	 * Loads historical data in a form that the editor can understand.
-	 * @param $id int History ID
+	 * @param int $id History ID
 	 * @return array|bool False if the history ID is not valid, otherwise array in the usual format:
 	 * First element contains the abuse_filter row (as it was).
 	 * Second element contains an array of abuse_filter_action rows.
@@ -1124,6 +1243,9 @@ class AbuseFilterViewEdit extends AbuseFilterView {
 		return AbuseFilter::translateFromHistory( $row );
 	}
 
+	/**
+	 * @return null
+	 */
 	protected function exposeWarningMessages() {
 		global $wgOut, $wgAbuseFilterDefaultWarningMessage;
 		$wgOut->addJsConfigVars(

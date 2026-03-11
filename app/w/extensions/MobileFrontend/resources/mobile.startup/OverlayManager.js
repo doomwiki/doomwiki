@@ -1,4 +1,6 @@
-( function ( M, $ ) {
+( function ( M ) {
+	var util = M.require( 'mobile.startup/util' );
+
 	/**
 	 * Manages opening and closing overlays when the URL hash changes to one
 	 * of the registered values (see OverlayManager.add()).
@@ -10,7 +12,7 @@
 	 * @param {Router} router
 	 */
 	function OverlayManager( router ) {
-		router.on( 'route', $.proxy( this, '_checkRoute' ) );
+		router.on( 'route', this._checkRoute.bind( this ) );
 		this.router = router;
 		// use an object instead of an array for entries so that we don't
 		// duplicate entries that already exist
@@ -42,7 +44,7 @@
 		 */
 		_showOverlay: function ( overlay ) {
 			// if hidden using overlay (not hardware) button, update the state
-			overlay.once( '_om_hide', $.proxy( this, '_onHideOverlay' ) );
+			overlay.once( '_om_hide', this._onHideOverlay.bind( this ) );
 
 			overlay.show();
 		},
@@ -65,7 +67,7 @@
 
 			// if closing prevented, reattach the callback
 			if ( !result ) {
-				overlay.once( '_om_hide', $.proxy( this, '_onHideOverlay' ) );
+				overlay.once( '_om_hide', this._onHideOverlay.bind( this ) );
 			}
 
 			return result;
@@ -101,7 +103,7 @@
 					// a promise or an overlay)
 					factoryResult = match.factoryResult;
 					// http://stackoverflow.com/a/13075985/365238
-					if ( $.isFunction( factoryResult.promise ) ) {
+					if ( util.isFunction( factoryResult.promise ) ) {
 						factoryResult.done( function ( overlay ) {
 							match.overlay = overlay;
 							attachHideEvent( overlay );
@@ -216,7 +218,7 @@
 			this.entries[route] = entry;
 			// Check if overlay should be shown for the current path.
 			// The DOM must fully load before we can show the overlay because Overlay relies on it.
-			$( function () {
+			util.docReady( function () {
 				self._processMatch( self._matchRoute( self.router.getPath(), entry ) );
 			} );
 		},
@@ -241,4 +243,4 @@
 
 	M.define( 'mobile.startup/OverlayManager', OverlayManager ); // resource-modules-disable-line
 
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

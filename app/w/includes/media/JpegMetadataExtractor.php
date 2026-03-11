@@ -82,7 +82,7 @@ class JpegMetadataExtractor {
 				// this is just a sanity check
 				throw new MWException( 'Too many jpeg segments. Aborting' );
 			}
-			while ( $buffer !== "\xFF" ) {
+			while ( $buffer !== "\xFF" && !feof( $fh ) ) {
 				// In theory JPEG files are not allowed to contain anything between the sections,
 				// but in practice they sometimes do. It's customary to ignore the garbage data.
 				$buffer = fread( $fh, 1 );
@@ -102,9 +102,9 @@ class JpegMetadataExtractor {
 				// turns $com to valid utf-8.
 				// thus if no change, its utf-8, otherwise its something else.
 				if ( $com !== $oldCom ) {
-					MediaWiki\suppressWarnings();
+					Wikimedia\suppressWarnings();
 					$com = $oldCom = iconv( 'windows-1252', 'UTF-8//IGNORE', $oldCom );
-					MediaWiki\restoreWarnings();
+					Wikimedia\restoreWarnings();
 				}
 				// Try it again, if its still not a valid string, then probably
 				// binary junk or some really weird encoding, so don't extract.
@@ -120,14 +120,17 @@ class JpegMetadataExtractor {
 				$temp = self::jpegExtractMarker( $fh );
 				// check what type of app segment this is.
 				if ( substr( $temp, 0, 29 ) === "http://ns.adobe.com/xap/1.0/\x00" && $showXMP ) {
-					$segments["XMP"] = substr( $temp, 29 );
+					// use trim to remove trailing \0 chars
+					$segments["XMP"] = trim( substr( $temp, 29 ) );
 				} elseif ( substr( $temp, 0, 35 ) === "http://ns.adobe.com/xmp/extension/\x00" && $showXMP ) {
-					$segments["XMP_ext"][] = substr( $temp, 35 );
+					// use trim to remove trailing \0 chars
+					$segments["XMP_ext"][] = trim( substr( $temp, 35 ) );
 				} elseif ( substr( $temp, 0, 29 ) === "XMP\x00://ns.adobe.com/xap/1.0/\x00" && $showXMP ) {
 					// Some images (especially flickr images) seem to have this.
 					// I really have no idea what the deal is with them, but
 					// whatever...
-					$segments["XMP"] = substr( $temp, 29 );
+					// use trim to remove trailing \0 chars
+					$segments["XMP"] = trim( substr( $temp, 29 ) );
 					wfDebug( __METHOD__ . ' Found XMP section with wrong app identifier '
 						. "Using anyways.\n" );
 				} elseif ( substr( $temp, 0, 6 ) === "Exif\0\0" ) {
@@ -158,6 +161,8 @@ class JpegMetadataExtractor {
 				if ( $size['int'] < 2 ) {
 					throw new MWException( "invalid marker size in jpeg" );
 				}
+				// Note it's possible to seek beyond end of file if truncated.
+				// fseek doesn't report a failure in this case.
 				fseek( $fh, $size['int'] - 2, SEEK_CUR );
 			}
 		}

@@ -76,6 +76,13 @@ class Article implements Page {
 	public $mParserOutput;
 
 	/**
+	 * @var bool Whether render() was called. With the way subclasses work
+	 * here, there doesn't seem to be any other way to stop calling
+	 * OutputPage::enableSectionEditLinks() and still have it work as it did before.
+	 */
+	private $disableSectionEditForRender = false;
+
+	/**
 	 * Constructor and clear the article
 	 * @param Title $title Reference to a Title object.
 	 * @param int $oldId Revision ID, null to fetch from request, zero for current
@@ -469,12 +476,15 @@ class Article implements Page {
 		$parserCache = MediaWikiServices::getInstance()->getParserCache();
 
 		$parserOptions = $this->getParserOptions();
+		$poOptions = [];
 		# Render printable version, use printable version cache
 		if ( $outputPage->isPrintable() ) {
 			$parserOptions->setIsPrintable( true );
-			$parserOptions->setEditSection( false );
-		} elseif ( !$this->isCurrent() || !$this->getTitle()->quickUserCan( 'edit', $user ) ) {
-			$parserOptions->setEditSection( false );
+			$poOptions['enableSectionEditLinks'] = false;
+		} elseif ( $this->disableSectionEditForRender
+			|| !$this->isCurrent() || !$this->getTitle()->quickUserCan( 'edit', $user )
+		) {
+			$poOptions['enableSectionEditLinks'] = false;
 		}
 
 		# Try client and file cache
@@ -533,7 +543,7 @@ class Article implements Page {
 							} else {
 								wfDebug( __METHOD__ . ": showing parser cache contents\n" );
 							}
-							$outputPage->addParserOutput( $this->mParserOutput );
+							$outputPage->addParserOutput( $this->mParserOutput, $poOptions );
 							# Ensure that UI elements requiring revision ID have
 							# the correct version information.
 							$outputPage->setRevisionId( $this->mPage->getLatest() );
@@ -568,7 +578,7 @@ class Article implements Page {
 					$outputPage->setRevisionTimestamp( $this->mPage->getTimestamp() );
 
 					# Pages containing custom CSS or JavaScript get special treatment
-					if ( $this->getTitle()->isCssOrJsPage() || $this->getTitle()->isCssJsSubpage() ) {
+					if ( $this->getTitle()->isSiteConfigPage() || $this->getTitle()->isUserConfigPage() ) {
 						$dir = $this->getContext()->getLanguage()->getDir();
 						$lang = $this->getContext()->getLanguage()->getHtmlCode();
 
@@ -599,14 +609,14 @@ class Article implements Page {
 							$outputPage->setRobotPolicy( 'noindex,nofollow' );
 
 							$errortext = $error->getWikiText( false, 'view-pool-error' );
-							$outputPage->addWikiText( '<div class="errorbox">' . $errortext . '</div>' );
+							$outputPage->addWikiText( Html::errorBox( $errortext ) );
 						}
 						# Connection or timeout error
 						return;
 					}
 
 					$this->mParserOutput = $poolArticleView->getParserOutput();
-					$outputPage->addParserOutput( $this->mParserOutput );
+					$outputPage->addParserOutput( $this->mParserOutput, $poOptions );
 					if ( $content->getRedirectTarget() ) {
 						$outputPage->addSubtitle( "<span id=\"redirectsub\">" .
 							$this->getContext()->msg( 'redirectpagesub' )->parse() . "</span>" );
@@ -1154,6 +1164,14 @@ class Article implements Page {
 			$ip = User::isIP( $rootPart );
 			$block = Block::newFromTarget( $user, $user );
 
+			if ( $user && $user->isLoggedIn() && $user->isHidden() &&
+				!$this->getContext()->getUser()->isAllowed( 'hideuser' )
+			) {
+				// T120883 if the user is hidden and the viewer cannot see hidden
+				// users, pretend like it does not exist at all.
+				$user = false;
+			}
+
 			if ( !( $user && $user->isLoggedIn() ) && !$ip ) { # User does not exist
 				$outputPage->wrapWikiMsg( "<div class=\"mw-userpage-userdoesnotexist error\">\n\$1\n</div>",
 					[ 'userpage-userdoesnotexist-view', wfEscapeWikiText( $rootPart ) ] );
@@ -1187,7 +1205,8 @@ class Article implements Page {
 		$cache = MediaWikiServices::getInstance()->getMainObjectStash();
 		$key = $cache->makeKey( 'page-recent-delete', md5( $title->getPrefixedText() ) );
 		$loggedIn = $this->getContext()->getUser()->isLoggedIn();
-		if ( $loggedIn || $cache->get( $key ) ) {
+		$sessionExists = $this->getContext()->getRequest()->getSession()->isPersistent();
+		if ( $loggedIn || $cache->get( $key ) || $sessionExists ) {
 			$logTypes = [ 'delete', 'move', 'protect' ];
 
 			$dbr = wfGetDB( DB_REPLICA );
@@ -1204,7 +1223,7 @@ class Article implements Page {
 					'lim' => 10,
 					'conds' => $conds,
 					'showIfEmpty' => false,
-					'msgKey' => [ $loggedIn
+					'msgKey' => [ $loggedIn || $sessionExists
 						? 'moveddeleted-notice'
 						: 'moveddeleted-notice-recent'
 					]
@@ -1246,7 +1265,7 @@ class Article implements Page {
 			}
 
 			$dir = $this->getContext()->getLanguage()->getDir();
-			$lang = $this->getContext()->getLanguage()->getCode();
+			$lang = $this->getContext()->getLanguage()->getHtmlCode();
 			$outputPage->addWikiText( Xml::openElement( 'div', [
 				'class' => "noarticletext mw-content-$dir",
 				'dir' => $dir,
@@ -1521,7 +1540,7 @@ class Article implements Page {
 	public function render() {
 		$this->getContext()->getRequest()->response()->header( 'X-Robots-Tag: noindex' );
 		$this->getContext()->getOutput()->setArticleBodyOnly( true );
-		$this->getContext()->getOutput()->enableSectionEditLinks( false );
+		$this->disableSectionEditForRender = true;
 		$this->view();
 	}
 
@@ -1680,6 +1699,7 @@ class Article implements Page {
 		$outputPage->setPageTitle( wfMessage( 'delete-confirm', $title->getPrefixedText() ) );
 		$outputPage->addBacklinkSubtitle( $title );
 		$outputPage->setRobotPolicy( 'noindex,nofollow' );
+		$outputPage->addModules( 'mediawiki.action.delete' );
 
 		$backlinkCache = $title->getBacklinkCache();
 		if ( $backlinkCache->hasLinks( 'pagelinks' ) || $backlinkCache->hasLinks( 'templatelinks' ) ) {
@@ -1724,12 +1744,17 @@ class Article implements Page {
 			]
 		);
 
+		// HTML maxlength uses "UTF-16 code units", which means that characters outside BMP
+		// (e.g. emojis) count for two each. This limit is overridden in JS to instead count
+		// Unicode codepoints (or 255 UTF-8 bytes for old schema).
+		$conf = $this->getContext()->getConfig();
+		$oldCommentSchema = $conf->get( 'CommentTableSchemaMigrationStage' ) === MIGRATION_OLD;
 		$fields[] = new OOUI\FieldLayout(
 			new OOUI\TextInputWidget( [
 				'name' => 'wpReason',
 				'inputId' => 'wpReason',
 				'tabIndex' => 2,
-				'maxLength' => 255,
+				'maxLength' => $oldCommentSchema ? 255 : CommentStore::COMMENT_CHARACTER_LIMIT,
 				'infusable' => true,
 				'value' => $reason,
 				'autofocus' => true,
@@ -2122,16 +2147,6 @@ class Article implements Page {
 	 */
 	public function doPurge() {
 		return $this->mPage->doPurge();
-	}
-
-	/**
-	 * Call to WikiPage function for backwards compatibility.
-	 * @see WikiPage::getLastPurgeTimestamp
-	 * @deprecated since 1.29
-	 */
-	public function getLastPurgeTimestamp() {
-		wfDeprecated( __METHOD__, '1.29' );
-		return $this->mPage->getLastPurgeTimestamp();
 	}
 
 	/**
@@ -2557,7 +2572,7 @@ class Article implements Page {
 	 * @see WikiPage::updateRedirectOn
 	 */
 	public function updateRedirectOn( $dbw, $redirectTitle, $lastRevIsRedirect = null ) {
-		return $this->mPage->updateRedirectOn( $dbw, $redirectTitle, $lastRevIsRedirect = null );
+		return $this->mPage->updateRedirectOn( $dbw, $redirectTitle, $lastRevIsRedirect );
 	}
 
 	/**
@@ -2654,46 +2669,6 @@ class Article implements Page {
 		$title = $this->mPage->getTitle();
 		$handler = ContentHandler::getForTitle( $title );
 		return $handler->getAutoDeleteReason( $title, $hasHistory );
-	}
-
-	/**
-	 * @return array
-	 *
-	 * @deprecated since 1.24, use WikiPage::selectFields() instead
-	 */
-	public static function selectFields() {
-		wfDeprecated( __METHOD__, '1.24' );
-		return WikiPage::selectFields();
-	}
-
-	/**
-	 * @param Title $title
-	 *
-	 * @deprecated since 1.24, use WikiPage::onArticleCreate() instead
-	 */
-	public static function onArticleCreate( $title ) {
-		wfDeprecated( __METHOD__, '1.24' );
-		WikiPage::onArticleCreate( $title );
-	}
-
-	/**
-	 * @param Title $title
-	 *
-	 * @deprecated since 1.24, use WikiPage::onArticleDelete() instead
-	 */
-	public static function onArticleDelete( $title ) {
-		wfDeprecated( __METHOD__, '1.24' );
-		WikiPage::onArticleDelete( $title );
-	}
-
-	/**
-	 * @param Title $title
-	 *
-	 * @deprecated since 1.24, use WikiPage::onArticleEdit() instead
-	 */
-	public static function onArticleEdit( $title ) {
-		wfDeprecated( __METHOD__, '1.24' );
-		WikiPage::onArticleEdit( $title );
 	}
 
 	// ******

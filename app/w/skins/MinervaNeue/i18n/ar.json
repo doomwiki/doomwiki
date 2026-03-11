@@ -10,17 +10,19 @@
 			"Shbib Al-Subaie",
 			"ديفيد",
 			"زكريا",
-			"محمد أحمد عبد الفتاح"
+			"محمد أحمد عبد الفتاح",
+			"علاء"
 		]
 	},
 	"minerva-last-modified-date": "آخر تعديل بتاريخ $1، في $2",
 	"minerva-talk-add-topic": "أضف نقاشًا",
-	"mobile-frontend-console-recruit": "\\o/ مرحبا! هذا برنامج مفتوح المصدر ونحتاج لمتطوعين لمساعدتنا في بناء هذا الشيء، وجعله أفضل وإصلاح أي علل ربما تكون تراها في كونصول JavaScript هذا!\n\nيمكنك أن تجد سجلنا المتأخر @ https://phabricator.wikimedia.org/project/profile/67/",
 	"mobile-frontend-cookies-required": "إن ملفات تعريف الإرتباط (كوكيز) ضرورية لتغيير واجهة العرض; الرجاء تفعيل خاصية الاحتفاظ بهذه الملفات والمحاولة مرة أخرى.",
 	"mobile-frontend-editor-blocked-info-loggedin": "حسابك ممنوع من التعديل. {{GENDER:$2|منعك|منعتك}} $2 للسبب التالي: $1",
 	"mobile-frontend-editor-cta": "ساعد في تحسين هذه الصفحة!",
+	"minerva-pointer-dismiss": "تجاهل",
 	"mobile-frontend-editor-disabled": "هذه الصفحة محمية لمنع التخريب.",
 	"mobile-frontend-editor-edit": "عدل",
+	"minerva-download": "تنزيل",
 	"mobile-frontend-editor-redlink-create": "أنشئ الصفحة",
 	"mobile-frontend-editor-redlink-explain": "هذه الصفحة لم يتم إنشاؤها بعد.",
 	"mobile-frontend-editor-redlink-leave": "لا، شكرا.",
@@ -42,10 +44,10 @@
 	"mobile-frontend-main-menu-logout": "اخرج",
 	"mobile-frontend-main-menu-nearby": "بالقرب من هنا",
 	"mobile-frontend-main-menu-settings": "الإعدادات",
-	"mobile-frontend-main-menu-watchlist": "قائمة مراقبتي",
+	"mobile-frontend-main-menu-watchlist": "قائمة المراقبة",
 	"mobile-frontend-meta-data-issues": "مشاكل الصفحة",
 	"mobile-frontend-meta-data-issues-categories": "عن هذا التصنيف",
-	"mobile-frontend-meta-data-issues-header": "مشاكل",
+	"mobile-frontend-meta-data-issues-header": "مشكلات الصفحة",
 	"mobile-frontend-meta-data-issues-header-talk": "حول هذه الصفحة",
 	"mobile-frontend-meta-data-issues-talk": "عن صفحة النقاش هذه",
 	"mobile-frontend-notifications-filter": "مرشح",
@@ -63,5 +65,10 @@
 	"mobile-frontend-user-page-member-since": "{{GENDER:$2|اشترك|اشتركت}} منذ $1",
 	"mobile-frontend-user-page-talk": "نقاش",
 	"mobile-frontend-user-page-uploads": "المرفوعات",
-	"minerva-skin-desc": "برنامج مساعد أول مستجيب متحرك"
+	"skinname-minerva": "منيرفانيو",
+	"minerva-skin-desc": "برنامج مساعد أول مستجيب متحرك",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "التصنيفات",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "عرض تصنيفات الصفحات",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "اقفز للأعلى",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop-description": "اقفز لأعلى الصفحة الحالية باستخدام زر عائم"
 }

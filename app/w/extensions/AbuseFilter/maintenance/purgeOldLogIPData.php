@@ -13,7 +13,7 @@ class PurgeOldLogIPData extends Maintenance {
 		$this->mDescription = 'Purge old IP Address data from AbuseFilter logs';
 		$this->setBatchSize( 200 );
 
-		$this->requireExtension( 'AbuseFilter' );
+		$this->requireExtension( 'Abuse Filter' );
 	}
 
 	public function execute() {
@@ -33,7 +33,7 @@ class PurgeOldLogIPData extends Maintenance {
 					"afl_timestamp < " . $dbw->addQuotes( $dbw->timestamp( $cutoffUnix ) )
 				],
 				__METHOD__,
-				[ 'LIMIT' => $this->mBatchSize ]
+				[ 'LIMIT' => $this->getBatchSize() ]
 			);
 
 			if ( $ids ) {
@@ -48,7 +48,7 @@ class PurgeOldLogIPData extends Maintenance {
 
 				wfWaitForSlaves();
 			}
-		} while ( count( $ids ) >= $this->mBatchSize );
+		} while ( count( $ids ) >= $this->getBatchSize() );
 
 		$this->output( "$count rows.\n" );
 

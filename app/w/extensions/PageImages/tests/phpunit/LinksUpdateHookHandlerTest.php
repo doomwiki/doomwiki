@@ -12,12 +12,12 @@ use Title;
 use Wikimedia\TestingAccessWrapper;
 
 /**
- * @covers PageImages\Hooks\LinksUpdateHookHandler
+ * @covers \PageImages\Hooks\LinksUpdateHookHandler
  *
  * @group PageImages
  *
  * @license WTFPL 2.0
- * @author Thiemo Mättig
+ * @author Thiemo Kreuz
  */
 class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 
@@ -36,15 +36,16 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @param array $images
-	 * @param [false|array] $images in lead section. (optional)
+	 * @param array[] $images
+	 * @param array[]|bool $leadImages
+	 *
 	 * @return LinksUpdate
 	 */
 	private function getLinksUpdate( array $images, $leadImages = false ) {
 		$parserOutput = new ParserOutput();
 		$parserOutput->setExtensionData( 'pageImages', $images );
 		$parserOutputLead = new ParserOutput();
-		$parserOutputLead->setExtensionData( 'pageImages', $leadImages || $images );
+		$parserOutputLead->setExtensionData( 'pageImages', $leadImages ?: $images );
 
 		$rev = $this->getMockBuilder( 'Revision' )
 			->disableOriginalConstructor()
@@ -114,7 +115,7 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideDoLinksUpdate
-	 * @covers LinksUpdateHookHandler::doLinksUpdate
+	 * @covers \PageImages\Hooks\LinksUpdateHookHandler::doLinksUpdate
 	 */
 	public function testDoLinksUpdate(
 		array $images,
@@ -202,7 +203,7 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 	}
 
 	/**
-	 * @covers LinksUpdateHookHandler::getPageImageCandidates
+	 * @covers \PageImages\Hooks\LinksUpdateHookHandler::getPageImageCandidates
 	 */
 	public function testGetPageImageCandidates() {
 		$candidates = [
@@ -215,11 +216,11 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 		$handler = new LinksUpdateHookHandler();
 		$this->setMwGlobals( 'wgPageImagesLeadSectionOnly', false );
 		$images = $handler->getPageImageCandidates( $linksUpdate );
-		$this->assertTrue( count( $images ) === 2, 'All images are returned.' );
+		$this->assertCount( 2, $images, 'All images are returned.' );
 
 		$this->setMwGlobals( 'wgPageImagesLeadSectionOnly', true );
 		$images = $handler->getPageImageCandidates( $linksUpdate );
-		$this->assertTrue( count( $images ) === 1, 'Only lead images are returned.' );
+		$this->assertCount( 1, $images, 'Only lead images are returned.' );
 	}
 
 	/**
@@ -287,7 +288,7 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideScoreFromTable
-	 * @covers LinksUpdateHookHandler::scoreFromTable
+	 * @covers \PageImages\Hooks\LinksUpdateHookHandler::scoreFromTable
 	 */
 	public function testScoreFromTable( $type, $value, $expected ) {
 		global $wgPageImagesScores;
@@ -326,7 +327,7 @@ class LinksUpdateHookHandlerTest extends MediaWikiTestCase {
 
 	/**
 	 * @dataProvider provideIsFreeImage
-	 * @covers LinksUpdateHookHandler::isImageFree
+	 * @covers \PageImages\Hooks\LinksUpdateHookHandler::isImageFree
 	 */
 	public function testIsFreeImage( $fileName, $metadata, $expected ) {
 		RepoGroup::setSingleton( $this->getRepoGroup() );

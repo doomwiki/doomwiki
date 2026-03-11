@@ -23,7 +23,6 @@ $wgExtensionCredits['specialpage'][] = array(
 
 $dir = dirname(__FILE__) . '/';
 $wgMessagesDirs['RandomInCategory'] = __DIR__ . '/i18n';
-$wgExtensionMessagesFiles['RandomInCategory'] = $dir . 'RandomInCategory.i18n.php';
 $wgExtensionMessagesFiles['RandomInCategoryAlias'] = $dir . 'RandomInCategory.alias.php';
 
 $wgSpecialPages['RandomPageInCategory'] = 'RandomPageInCategory';

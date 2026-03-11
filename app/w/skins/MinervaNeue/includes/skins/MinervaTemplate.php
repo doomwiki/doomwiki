@@ -1,6 +1,21 @@
 <?php
 /**
- * MinervaTemplate.php
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
 
 /**
@@ -107,18 +122,19 @@ class MinervaTemplate extends BaseTemplate {
 	protected function getHistoryLinkHtml( $data ) {
 		$action = Action::getActionName( RequestContext::getMain() );
 		if ( isset( $data['historyLink'] ) && $action === 'view' ) {
-			$historyLink = $data['historyLink'];
 			$args = [
-				'clockIconClass' => MobileUI::iconClass( 'clock-gray', 'before' ),
-				'arrowIconClass' => MobileUI::iconClass(
-					'arrow-gray', 'element', 'mw-ui-icon-small mf-mw-ui-icon-rotate-anti-clockwise indicator' ),
-				'isMainPage' => $this->getSkin()->getTitle()->isMainPage(),
-				'link' => $historyLink['href'],
-				'text' => $historyLink['text'],
-				'username' => $historyLink['data-user-name'],
-				'userGender' => $historyLink['data-user-gender'],
-				'timestamp' => $historyLink['data-timestamp']
-			];
+				'clockIconClass' => MinervaUI::iconClass( 'clock-gray', 'before' ),
+				'arrowIconClass' => MinervaUI::iconClass(
+					'arrow-gray', 'element', 'mw-ui-icon-small mf-mw-ui-icon-rotate-anti-clockwise indicator',
+					// Uses icon in MobileFrontend so must be prefixed mf.
+					// Without MobileFrontend it will not render.
+					// Rather than maintain 2 versions (and variants) of the arrow icon which can conflict
+					// with each othe and bloat CSS, we'll
+					// use the MobileFrontend one. Long term when T177432 and T160690 are resolved
+					// we should be able to use one icon definition and break this dependency.
+					'mf'
+				 ),
+			] + $data['historyLink'];
 			$templateParser = new TemplateParser( __DIR__ );
 			return $templateParser->processTemplate( 'history', $args );
 		} else {
@@ -126,12 +142,17 @@ class MinervaTemplate extends BaseTemplate {
 		}
 	}
 
+	/**
+	 * @return bool
+	 */
 	protected function isFallbackEditor() {
 		$action = $this->getSkin()->getRequest()->getVal( 'action' );
 		return $action === 'edit';
 	}
+
 	/**
 	 * Get page secondary actions
+	 * @return string[]
 	 */
 	protected function getSecondaryActions() {
 		if ( $this->isFallbackEditor() ) {
@@ -146,7 +167,7 @@ class MinervaTemplate extends BaseTemplate {
 	 * @return string
 	 */
 	protected function getSecondaryActionsHtml() {
-		$baseClass = MobileUI::buttonClass( '', 'button' );
+		$baseClass = MinervaUI::buttonClass( '', 'button' );
 		$html = Html::openElement( 'div', [
 			'class' => 'post-content',
 			'id' => 'page-secondary-actions'
@@ -242,7 +263,7 @@ class MinervaTemplate extends BaseTemplate {
 	/**
 	 * Gets the main menu only on Special:MobileMenu.
 	 * On other pages the menu is rendered via JS.
-	 * @param array [ $data] Data used to build the page
+	 * @param array $data Data used to build the page
 	 * @return string
 	 */
 	protected function getMainMenuHtml( $data ) {
@@ -281,7 +302,7 @@ class MinervaTemplate extends BaseTemplate {
 			// which is problematic in Opera Mini (see T140490)
 			'searchButton' => Html::rawElement( 'button', [
 				'id' => 'searchIcon',
-				'class' => MobileUI::iconClass( 'magnifying-glass', 'element' ),
+				'class' => MinervaUI::iconClass( 'magnifying-glass', 'element', 'skin-minerva-search-trigger' ),
 			], wfMessage( 'searchbutton' ) ),
 			'secondaryButtonData' => $data['secondaryButtonData'],
 			'mainmenuhtml' => $this->getMainMenuHtml( $data ),

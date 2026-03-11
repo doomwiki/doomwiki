@@ -20,10 +20,6 @@
 		figure[typeof*='mw:Video'],
 		figure[typeof*='mw:Audio'] {
 			max-width: 100%;
-			background-color: transparent;
-			border: 0;
-			padding: 0;
-			font-size: inherit;
 			// Defaults to right alignment when not explicitly set. Should be flippable.
 			margin: 0.6em 0 0.6em 1.4em;
 
@@ -50,17 +46,6 @@
 				clear: none;
 				float: none;
 			}
-
-			img {
-				border: 0;
-			}
-
-			figcaption {
-				font-size: 0.8em;
-				line-height: 1.5;
-				padding: 0;
-				color: @grayMedium;
-			}
 		}
 	}
 
@@ -81,23 +66,22 @@
 	}
 
 	// Toolbar
-	@baseIconSize: 24px;
-	@targetIconSize: 32px;
+	@targetIconSize: 20px;
 	.overlay-header-container {
 		box-shadow: 0 1px 1px rgba( 0, 0, 0, 0.1 );
 
 		.ve-init-mw-mobileArticleTarget-toolbar {
+			/* Account for difference in height between MF toolbar (3.35em) and VE toolbar (3em) */
+			font-size: ( 3.35em / 3 );
+
 			@media all and ( min-width: @wgMFDeviceWidthDesktop ) {
 				border-color: @colorGray12;
 				border-style: solid;
 				border-width: 0 1px;
 			}
-			// Everything is measured in ems so the easiest way to scale
-			// is to change the base font size.
-			font-size: unit( 0.8 * @targetIconSize / @baseIconSize, em );
 
 			.oo-ui-iconElement-icon {
-				/* We should be able to use 'contain' here, but some OOUI icon containers are oversized (T85139) */
+				/* Overwrite `contain` value here, as we're 16px base sized */
 				.background-size( @targetIconSize, @targetIconSize );
 			}
 

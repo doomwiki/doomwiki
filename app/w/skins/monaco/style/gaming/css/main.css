@@ -171,8 +171,8 @@ table.gallery td {
 .toc,
 .toccolours,
 .mw-warning {
-    background-color: #1E293D;
-    color: #fff
+	background-color: #1E293D;
+	color: #fff
 }
 #pagehistory li {
 	border-color: #0E192D;
@@ -182,11 +182,11 @@ table.diff,
 td.diff-otitle,
 td.diff-ntitle,
 td.diff-article {
-    background-color: #0e192d;
+	background-color: #0e192d;
 }
 
 td.diff-context {
-    background-color: #3e495d;
+	background-color: #3e495d;
 	color: #000;
 }
 td.diff-deletedline {
@@ -195,7 +195,7 @@ td.diff-deletedline {
 }
 
 td.diff-addedline {
-    background-color: #2e594d;
+	background-color: #2e594d;
 	color: #000;
 }
 

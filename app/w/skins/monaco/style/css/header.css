@@ -141,7 +141,7 @@ a.greyButton big {
 	display: block;
 }
 
-#userData #fbconnect { 
+#userData #fbconnect {
 	margin-right: 12px;
 }
 
@@ -263,27 +263,27 @@ body.ajax * {
 	cursor: wait !important;
 }
 ul.jq-ui-autocomplete {
-    position: absolute;
-    overflow: hidden;
-    background-color: #fff;
-    border: 1px solid #aaa;
-    margin: 0px;
-    padding: 0;
-    list-style: none;
-    font: normal .75em/.75em Verdana, Arial, sans-serif;
-    color: #333;
-    z-index: 30;
+	position: absolute;
+	overflow: hidden;
+	background-color: #fff;
+	border: 1px solid #aaa;
+	margin: 0px;
+	padding: 0;
+	list-style: none;
+	font: normal .75em/.75em Verdana, Arial, sans-serif;
+	color: #333;
+	z-index: 30;
 }
 ul.jq-ui-autocomplete li {
-  display: block;
-  padding: .3em .5em .3em .3em;
-  overflow: hidden;
-  width: 100%;
+	display: block;
+	padding: .3em .5em .3em .3em;
+	overflow: hidden;
+	width: 100%;
 }
 
 ul.jq-ui-autocomplete li.active {
-  background-color: #3875d7;
-  color: #fff;
+	background-color: #3875d7;
+	color: #fff;
 }
 
 .fb_usermenu_button {

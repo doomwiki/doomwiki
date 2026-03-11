@@ -1,4 +1,22 @@
 <?php
+/**
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
+ */
 
 namespace MediaWiki\Minerva;
 
@@ -39,7 +57,7 @@ class MenuBuilder {
 	 * Insert an entry into the menu.
 	 *
 	 * @param string $name A unique name identifying the menu entry
-	 * @param bool [ $isJSOnly] Whether the menu entry works without JS
+	 * @param bool $isJSOnly Whether the menu entry works without JS
 	 * @throws DomainException When the entry already exists
 	 * @return MenuEntry
 	 */
@@ -77,7 +95,7 @@ class MenuBuilder {
 	 * @param string $targetName The name of the existing entry to insert
 	 *  the new entry after
 	 * @param string $name The name of the new entry
-	 * @param bool [ $isJSOnly] Whether the entry works without JS
+	 * @param bool $isJSOnly Whether the entry works without JS
 	 * @throws DomainException When the existing entry doesn't exist
 	 * @return MenuEntry
 	 */
@@ -148,9 +166,9 @@ class MenuEntry {
 	 *
 	 * @param string $label
 	 * @param string $url
-	 * @param string [ $className] Any additional CSS classes that should added to the output,
+	 * @param string $className Any additional CSS classes that should added to the output,
 	 *  separated by spaces
-	 * @param array [ $attrs] Additional data that can be associated with the component
+	 * @param array $attrs Additional data that can be associated with the component
 	 *
 	 * @return MenuEntry
 	 */

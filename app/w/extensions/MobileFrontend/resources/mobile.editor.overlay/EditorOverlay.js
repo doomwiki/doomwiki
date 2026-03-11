@@ -1,9 +1,9 @@
-/* global $ */
-( function ( M, $ ) {
+( function ( M ) {
 	var EditorOverlayBase = M.require( 'mobile.editor.common/EditorOverlayBase' ),
+		util = M.require( 'mobile.startup/util' ),
 		Section = M.require( 'mobile.startup/Section' ),
 		EditorGateway = M.require( 'mobile.editor.api/EditorGateway' ),
-		AbuseFilterPanel = M.require( 'mobile.abusefilter/AbuseFilterPanel' ),
+		AbuseFilterPanel = M.require( 'mobile.editor.common/AbuseFilterPanel' ),
 		Button = M.require( 'mobile.startup/Button' ),
 		toast = M.require( 'mobile.startup/toast' ),
 		MessageBox = M.require( 'mobile.messageBox/MessageBox' );
@@ -52,7 +52,7 @@
 		/** @inheritdoc **/
 		isBorderBox: false,
 		/** @inheritdoc **/
-		templatePartials: $.extend( {}, EditorOverlayBase.prototype.templatePartials, {
+		templatePartials: util.extend( {}, EditorOverlayBase.prototype.templatePartials, {
 			content: mw.template.get( 'mobile.editor.overlay', 'content.hogan' ),
 			messageBox: MessageBox.prototype.template,
 			anonWarning: mw.template.get( 'mobile.editor.common', 'EditorOverlayAnonWarning.hogan' )
@@ -66,7 +66,7 @@
 		 * @cfg {Object} defaults.warningOptions options for a MessageBox to display anonymous message warning
 		 * @cfg {mw.Api} defaults.api an api module to retrieve pages
 		 */
-		defaults: $.extend( {}, EditorOverlayBase.prototype.defaults, {
+		defaults: util.extend( {}, EditorOverlayBase.prototype.defaults, {
 			ctaMessage: mw.msg( 'mobile-frontend-editor-anon-cta-message' ),
 			loginButton: new Button( {
 				block: true,
@@ -84,7 +84,7 @@
 			} ).options,
 			warningOptions: {
 				className: 'warningbox anon-msg',
-				msg: mw.msg( 'mobile-frontend-editor-anonwarning' )
+				msg: mw.message( 'mobile-frontend-editor-anonwarning' ).parse()
 			}
 		} ),
 		editor: 'wikitext',
@@ -106,7 +106,7 @@
 				mw.config.get( 'wgTranslatePageTranslation' ) !== 'translation' &&
 				mw.config.get( 'wgPageContentModel' ) === 'wikitext';
 		},
-		events: $.extend( {}, EditorOverlayBase.prototype.events, {
+		events: util.extend( {}, EditorOverlayBase.prototype.events, {
 			'input .wikitext-editor': 'onInputWikitextEditor'
 		} ),
 		/**
@@ -184,6 +184,7 @@
 
 			this.$preview = this.$( '.preview' );
 			this.$content = this.$( '.wikitext-editor' );
+			this.$content.addClass( 'mw-editfont-' + mw.user.options.get( 'editfont' ) );
 			if ( self.options.isAnon ) {
 				this.$anonWarning = this.$( '.anonwarning' );
 				this.$content.hide();
@@ -218,22 +219,22 @@
 		 * @return {Object} Object with all options
 		 */
 		_prepareAnonWarning: function ( options ) {
-			var params = $.extend( {
+			var params = util.extend( {
 				// use wgPageName as this includes the namespace if outside Main
 					returnto: options.returnTo || mw.config.get( 'wgPageName' ),
 					returntoquery: 'action=edit&section=' + options.sectionId,
 					warning: 'mobile-frontend-edit-login-action'
 				}, options.queryParams ),
-				signupParams = $.extend( {
+				signupParams = util.extend( {
 					type: 'signup',
 					warning: 'mobile-frontend-edit-signup-action'
 				}, options.signupQueryParams );
 
-			options.loginButton = $.extend( {
+			options.loginButton = util.extend( {
 				href: mw.util.getUrl( 'Special:UserLogin', params )
 			}, this.defaults.loginButton );
-			options.signupButton = $.extend( {
-				href: mw.util.getUrl( 'Special:UserLogin', $.extend( params, signupParams ) )
+			options.signupButton = util.extend( {
+				href: mw.util.getUrl( 'Special:UserLogin', util.extend( params, signupParams ) )
 			}, this.defaults.signupButton );
 
 			return options;
@@ -263,16 +264,19 @@
 					text: this.getContent()
 				};
 
-			this.scrollTop = $( 'body' ).scrollTop();
+			this.scrollTop = util.getDocument().find( 'body' ).scrollTop();
 			this.$content.hide();
 			this.showSpinner();
 
 			if ( mw.config.get( 'wgIsMainPage' ) ) {
 				params.mainpage = 1; // Setting it to 0 will have the same effect
 			}
-			this.gateway.getPreview( params ).done( function ( parsedText, parsedSectionLine ) {
+			this.gateway.getPreview( params ).done( function ( result ) {
+				var parsedText = result.text,
+					parsedSectionLine = result.line;
+
 				// On desktop edit summaries strip tags. Mimic this behavior on mobile devices
-				self.sectionLine = $( '<div>' ).html( parsedSectionLine ).text();
+				self.sectionLine = self.parseHTML( '<div>' ).html( parsedSectionLine ).text();
 				new Section( {
 					el: self.$preview,
 					text: parsedText
@@ -306,22 +310,26 @@
 		 * Resize the editor textarea, maintaining scroll position in iOS
 		 */
 		_resizeEditor: function () {
-			var scrollTop;
+			var scrollTop, container, $scrollContainer;
 
 			if ( !this.$scrollContainer ) {
-				// FIXME: We are using global jQuery here which suggests this should be passed as an option to the
-				// View or should make use of an event.
-				this.$scrollContainer = $( OO.ui.Element.static.getClosestScrollableContainer( this.$content[ 0 ] ) );
+				container = OO.ui.Element.static.getClosestScrollableContainer( this.$content[ 0 ] );
+				// The scroll container will be either within the view or the document element itself.
+				$scrollContainer = this.$( container ).length ? this.$( container ) : util.getDocument();
+				this.$scrollContainer = $scrollContainer;
 				this.$content.css( 'padding-bottom', this.$scrollContainer.height() * 0.6 );
+			} else {
+				$scrollContainer = this.$scrollContainer;
 			}
 
-			if ( this.$content.prop( 'scrollHeight' ) ) {
-				scrollTop = this.$scrollContainer.scrollTop();
+			// Only do this if scroll container exists
+			if ( this.$content.prop( 'scrollHeight' ) && $scrollContainer.length ) {
+				scrollTop = $scrollContainer.scrollTop();
 				this.$content
 					.css( 'height', 'auto' )
 					// can't reuse prop( 'scrollHeight' ) because we need the current value
 					.css( 'height', ( this.$content.prop( 'scrollHeight' ) + 2 ) + 'px' );
-				this.$scrollContainer.scrollTop( scrollTop );
+				$scrollContainer.scrollTop( scrollTop );
 			}
 		},
 
@@ -356,12 +364,17 @@
 			this.showSpinner();
 
 			this.gateway.getContent()
-				.done( function ( content, userinfo ) {
-					var parser, ast, parsedBlockReason;
+				.done( function ( result ) {
+					var parser, ast, parsedBlockReason,
+						content = result.text,
+						userinfo = result.user,
+						block = result.block,
+						userTalkPage = mw.config.get( 'wgNamespaceNumber' ) === 3;
 
 					self.setContent( content );
 					// check if user is blocked
-					if ( userinfo && userinfo.hasOwnProperty( 'blockid' ) ) {
+					if ( userinfo && userinfo.hasOwnProperty( 'blockid' ) &&
+						!( userTalkPage && block.allowusertalk ) ) {
 						// Workaround to parse a message parameter for mw.message, see T96885
 						// eslint-disable-next-line new-cap
 						parser = new mw.jqueryMsg.parser();
@@ -463,6 +476,8 @@
 					var title = self.options.title;
 					// Special case behaviour of main page
 					if ( mw.config.get( 'wgIsMainPage' ) ) {
+						// FIXME: Blocked on T189173
+						// eslint-disable-next-line no-restricted-properties
 						window.location = mw.util.getUrl( title );
 						return;
 					}
@@ -527,4 +542,4 @@
 	} );
 
 	M.define( 'mobile.editor.overlay/EditorOverlay', EditorOverlay );
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

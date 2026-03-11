@@ -1,5 +1,6 @@
 <?php
 use MediaWiki\MediaWikiServices;
+use Wikimedia\Rdbms\IDatabase;
 
 /**
  * Contains the actual database backend logic for merging users
@@ -99,7 +100,7 @@ class MergeUser {
 		$dbw->endAtomic( __METHOD__ );
 	}
 
-	private function mergeBlocks( DatabaseBase $dbw ) {
+	private function mergeBlocks( IDatabase $dbw ) {
 		$dbw->startAtomic( __METHOD__ );
 
 		// Pull blocks directly from master
@@ -203,26 +204,47 @@ class MergeUser {
 	 * @param string $fnameTrxOwner
 	 */
 	private function mergeDatabaseTables( $fnameTrxOwner ) {
+		global $wgActorTableSchemaMigrationStage;
+
+		if ( defined( 'MIGRATION_NEW' ) ) {
+			$stage = isset( $wgActorTableSchemaMigrationStage )
+				? $wgActorTableSchemaMigrationStage
+				: ( is_callable( 'User', 'getActorId' ) ? MIGRATION_NEW : MIGRATION_OLD );
+			$needActors = $stage > MIGRATION_OLD;
+			// We still update user fields for MIGRATION_WRITE_NEW because
+			// reads might still be falling back.
+			$needUsers = $stage < MIGRATION_NEW;
+		} else {
+			$needActors = false;
+			$needUsers = true;
+		}
+
 		// Fields to update with the format:
 		// [
 		// tableName, idField, textField,
-		// 'batchKey' => unique field, 'options' => array(), 'db' => DatabaseBase
+		// 'batchKey' => unique field, 'options' => array(), 'db' => IDatabase
+		// 'actorId' => actor ID field,
 		// ];
 		// textField, batchKey, db, and options are optional
 		$updateFields = [
-			[ 'archive', 'ar_user', 'ar_user_text', 'batchKey' => 'ar_id' ],
-			[ 'revision', 'rev_user', 'rev_user_text', 'batchKey' => 'rev_id' ],
-			[ 'filearchive', 'fa_user', 'fa_user_text', 'batchKey' => 'fa_id' ],
-			[ 'image', 'img_user', 'img_user_text', 'batchKey' => 'img_name' ],
-			[ 'oldimage', 'oi_user', 'oi_user_text', 'batchKey' => 'oi_archive_name' ],
-			[ 'recentchanges', 'rc_user', 'rc_user_text', 'batchKey' => 'rc_id' ],
-			[ 'logging', 'log_user', 'batchKey' => 'log_id' ],
-			[ 'ipblocks', 'ipb_by', 'ipb_by_text', 'batchKey' => 'ipb_id' ],
+			[ 'archive', 'ar_user', 'ar_user_text', 'batchKey' => 'ar_id', 'actorId' => 'ar_actor' ],
+			[ 'revision', 'rev_user', 'rev_user_text', 'batchKey' => 'rev_id', 'actorId' => '' ],
+			[ 'filearchive', 'fa_user', 'fa_user_text', 'batchKey' => 'fa_id', 'actorId' => 'fa_actor' ],
+			[ 'image', 'img_user', 'img_user_text', 'batchKey' => 'img_name', 'actorId' => 'img_actor' ],
+			[ 'oldimage', 'oi_user', 'oi_user_text', 'batchKey' => 'oi_archive_name',
+				'actorId' => 'oi_actor' ],
+			[ 'recentchanges', 'rc_user', 'rc_user_text', 'batchKey' => 'rc_id', 'actorId' => 'rc_actor' ],
+			[ 'logging', 'log_user', 'log_user_text', 'batchKey' => 'log_id', 'actorId' => 'log_actor' ],
+			[ 'ipblocks', 'ipb_by', 'ipb_by_text', 'batchKey' => 'ipb_id', 'actorId' => 'ipb_by_actor' ],
 			[ 'watchlist', 'wl_user', 'batchKey' => 'wl_title' ],
 			[ 'user_groups', 'ug_user', 'options' => [ 'IGNORE' ] ],
 			[ 'user_properties', 'up_user', 'options' => [ 'IGNORE' ] ],
 			[ 'user_former_groups', 'ufg_user', 'options' => [ 'IGNORE' ] ],
 		];
+		if ( $needActors ) {
+			$updateFields[] =
+				[ 'revision_actor_temp', 'batchKey' => 'revactor_rev', 'actorId' => 'revactor_actor' ];
+		}
 
 		Hooks::run( 'UserMergeAccountFields', [ &$updateFields ] );
 
@@ -239,6 +261,11 @@ class MergeUser {
 		}
 
 		foreach ( $updateFields as $fieldInfo ) {
+			if ( !isset( $fieldInfo[1] ) ) {
+				// Actors only
+				continue;
+			}
+
 			$options = isset( $fieldInfo['options'] ) ? $fieldInfo['options'] : [];
 			unset( $fieldInfo['options'] );
 			$db = isset( $fieldInfo['db'] ) ? $fieldInfo['db'] : $dbw;
@@ -247,6 +274,11 @@ class MergeUser {
 			$idField = array_shift( $fieldInfo );
 			$keyField = isset( $fieldInfo['batchKey'] ) ? $fieldInfo['batchKey'] : null;
 			unset( $fieldInfo['batchKey'] );
+
+			if ( isset( $fieldInfo['actorId'] ) && !$needUsers ) {
+				continue;
+			}
+			unset( $fieldInfo['actorId'] );
 
 			if ( $db->trxLevel() || $keyField === null ) {
 				// Can't batch/wait when in a transaction or when no batch key is given
@@ -293,6 +325,65 @@ class MergeUser {
 			}
 		}
 
+		if ( $needActors && $this->oldUser->getActorId() ) {
+			$oldActorId = $this->oldUser->getActorId();
+			$newActorId = $this->newUser->getActorId( $db );
+
+			foreach ( $updateFields as $fieldInfo ) {
+				if ( empty( $fieldInfo['actorId'] ) ) {
+					continue;
+				}
+
+				$options = isset( $fieldInfo['options'] ) ? $fieldInfo['options'] : [];
+				$db = isset( $fieldInfo['db'] ) ? $fieldInfo['db'] : $dbw;
+				$tableName = array_shift( $fieldInfo );
+				$idField = $fieldInfo['actorId'];
+				$keyField = isset( $fieldInfo['batchKey'] ) ? $fieldInfo['batchKey'] : null;
+
+				if ( $db->trxLevel() || $keyField === null ) {
+					// Can't batch/wait when in a transaction or when no batch key is given
+					$db->update(
+						$tableName,
+						[ $idField => $newActorId ],
+						[ $idField => $oldActorId ],
+						__METHOD__,
+						$options
+					);
+				} else {
+					$limit = 200;
+					do {
+						$checkSince = microtime( true );
+						// Note that UPDATE with ORDER BY + LIMIT is not well supported.
+						// Grab a batch of values on a mostly unique column for this user ID.
+						$res = $db->select(
+							$tableName,
+							[ $keyField ],
+							[ $idField => $oldActorId ],
+							__METHOD__,
+							[ 'LIMIT' => $limit ]
+						);
+						$keyValues = [];
+						foreach ( $res as $row ) {
+							$keyValues[] = $row->$keyField;
+						}
+						// Update only those rows with the given column values
+						if ( count( $keyValues ) ) {
+							$db->update(
+								$tableName,
+								[ $idField => $newActorId ],
+								[ $idField => $oldActorId, $keyField => $keyValues ],
+								__METHOD__,
+								$options
+							);
+						}
+						// Wait for replication to catch up
+						$opts = [ 'ifWritesSince' => $checkSince ];
+						$lbFactory->commitAndWaitForReplication( __METHOD__, $ticket, $opts );
+					} while ( count( $keyValues ) >= $limit );
+				}
+			}
+		}
+
 		$dbw->delete( 'user_newtalk', [ 'user_id' => $this->oldUser->getId() ] );
 
 		Hooks::run( 'MergeAccountFromTo', [ &$this->oldUser, &$this->newUser ] );
@@ -302,7 +393,7 @@ class MergeUser {
 	 * Deduplicate watchlist entries
 	 * which old (merge-from) and new (merge-to) users are watching
 	 *
-	 * @param DatabaseBase $dbw
+	 * @param IDatabase $dbw
 	 */
 	private function deduplicateWatchlistEntries( $dbw ) {
 		$dbw->startAtomic( __METHOD__ );
@@ -338,7 +429,7 @@ class MergeUser {
 		$titlesToDelete = array_filter( $titlesToDelete );
 
 		$conds = [];
-		foreach ( $titlesToDelete as $tuple ) {
+		foreach ( array_keys( $titlesToDelete ) as $tuple ) {
 			list( $ns, $dbKey ) = explode( "|", $tuple, 2 );
 			$conds[] = $dbw->makeList(
 				[
@@ -384,7 +475,7 @@ class MergeUser {
 		$newusername = Title::makeTitleSafe( NS_USER, $wgContLang->ucfirst( $this->newUser->getName() ) );
 
 		# select all user pages and sub-pages
-		$dbr = wfGetDB( DB_SLAVE );
+		$dbr = wfGetDB( DB_REPLICA );
 		$pages = $dbr->select(
 			'page',
 			[ 'page_namespace', 'page_title' ],
@@ -482,7 +573,7 @@ class MergeUser {
 		 * Format is: table => user_id column
 		 *
 		 * If you want it to use a different db object:
-		 * table => array( user_id colum, 'db' => DatabaseBase );
+		 * table => array( user_id colum, 'db' => IDatabase );
 		 */
 		$tablesToDelete = [
 			'user_groups' => 'ug_user',
@@ -492,7 +583,11 @@ class MergeUser {
 
 		Hooks::run( 'UserMergeAccountDeleteTables', [ &$tablesToDelete ] );
 
-		$tablesToDelete['user'] = 'user_id'; // Make sure this always set and last
+		// Make sure these are always set and last
+		if ( $dbw->tableExists( 'actor', __METHOD__ ) ) {
+			$tablesToDelete['actor'] = 'actor_user';
+		}
+		$tablesToDelete['user'] = 'user_id';
 
 		foreach ( $tablesToDelete as $table => $field ) {
 			// Check if a different database object was passed (Echo or Flow)

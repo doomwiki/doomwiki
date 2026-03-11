@@ -1,7 +1,4 @@
 <?php
-/**
- * InlineDifferenceEngine.php
- */
 
 /**
  * Extends the basic DifferenceEngine from core to enable inline difference view
@@ -15,7 +12,8 @@ class InlineDifferenceEngine extends DifferenceEngine {
 	 * @return bool
 	 */
 	public function isDeletedDiff() {
-		return $this->mNewRev && $this->mNewRev->isDeleted( Revision::DELETED_TEXT );
+		return $this->mNewRev && $this->mNewRev->isDeleted( Revision::DELETED_TEXT ) ||
+			$this->mOldRev && $this->mOldRev->isDeleted( Revision::DELETED_TEXT );
 	}
 
 	/**
@@ -78,7 +76,14 @@ class InlineDifferenceEngine extends DifferenceEngine {
 
 		$warnings = $this->getWarningMessageText();
 		if ( $warnings ) {
-			$warnings = MobileUI::warningBox( $warnings );
+			$warnings = Html::warningBox( $warnings );
+		}
+		if ( $this->isHiddenFromUser() ) {
+			// When an administrative user deletes a page, the diff is available to
+			// them and other admins but no indication would be given that it's hidden
+			// from unprivileged users. It's considered best to present the anon view
+			// in this case, which is an empty diff.
+			$diff = '';
 		}
 		$output->addHTML(
 			$warnings .
@@ -152,8 +157,8 @@ class InlineDifferenceEngine extends DifferenceEngine {
 
 	/**
 	 * Creates an inline diff
-	 * @param Content $otext Old content
-	 * @param Content $ntext New content
+	 * @param string $otext Old content
+	 * @param string $ntext New content
 	 * @throws \MediaWiki\Diff\ComplexityException
 	 *
 	 * @return string
@@ -178,20 +183,13 @@ class InlineDifferenceEngine extends DifferenceEngine {
 	}
 
 	/**
-	 * Reimplements getDiffBodyCacheKey from DifferenceEngine
-	 * Returns the cache key for diff body text or content.
-	 *
-	 * @throws Exception when no mOldid and mNewid is set
-	 * @see DifferenceEngine::getDiffBodyCacheKey
-	 * @return string
+	 * @inheritDoc
 	 */
-	protected function getDiffBodyCacheKey() {
-		if ( !$this->mOldid || !$this->mNewid ) {
-			throw new Exception( 'mOldid and mNewid must be set to get diff cache key.' );
-		}
+	protected function getDiffBodyCacheKeyParams() {
+		$params = parent::getDiffBodyCacheKeyParams();
+		$params[0] = 'inline-diff';
 
-		return wfMemcKey( 'diff', 'inline', self::DIFF_VERSION,
-			'oldid', $this->mOldid, 'newid', $this->mNewid );
+		return $params;
 	}
 
 	/**
@@ -202,8 +200,6 @@ class InlineDifferenceEngine extends DifferenceEngine {
 	public function getPatrolledLink() {
 		$linkInfo = $this->getMarkPatrolledLinkInfo();
 		if ( $linkInfo ) {
-			$this->getOutput()->addModules( 'mobile.patrol.ajax' );
-
 			$linkInfo = Html::linkButton(
 				$this->msg( 'markaspatrolleddiff' )->escaped(),
 				[

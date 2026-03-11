@@ -374,8 +374,7 @@
 					.then( function ( langClass ) {
 						var parser;
 						mw.config.set( 'wgUserLanguage', test.lang );
-						// eslint-disable-next-line new-cap
-						parser = new mw.jqueryMsg.parser( { language: langClass } );
+						parser = new mw.jqueryMsg.Parser( { language: langClass } );
 						assert.equal(
 							parser.parse( test.key, test.args ).html(),
 							test.result,
@@ -504,11 +503,11 @@
 			]
 		];
 
-		$.each( testCases, function () {
+		testCases.forEach( function ( testCase ) {
 			var
-				key = this[ 0 ],
-				input = this[ 1 ],
-				output = this[ 2 ];
+				key = testCase[ 0 ],
+				input = testCase[ 1 ],
+				output = testCase[ 2 ];
 			mw.messages.set( key, input );
 			assert.htmlEqual(
 				formatParse( key ),
@@ -592,11 +591,11 @@
 			]
 		];
 
-		$.each( testCases, function () {
+		testCases.forEach( function ( testCase ) {
 			var
-				key = this[ 0 ],
-				input = this[ 1 ],
-				output = this[ 2 ],
+				key = testCase[ 0 ],
+				input = testCase[ 1 ],
+				output = testCase[ 2 ],
 				paramHref = key.slice( 0, 8 ) === 'wikilink' ? 'Example' : 'http://example.com',
 				paramText = 'Text';
 			mw.messages.set( key, input );
@@ -657,6 +656,16 @@
 			formatParse( 'external-link-replace', 'http://example.com' ),
 			'Foo <a href="http://example.com">bar</a>',
 			'External link message processed when format is \'parse\''
+		);
+		assert.htmlEqual(
+			formatParse( 'external-link-replace', '/wiki/Special:Version' ),
+			'Foo <a href="/wiki/Special:Version">bar</a>',
+			'External link message allows relative URL when processed'
+		);
+		assert.htmlEqual(
+			formatParse( 'external-link-replace', '//example.com' ),
+			'Foo <a href="//example.com">bar</a>',
+			'External link message allows protocol-relative URL when processed'
 		);
 		assert.htmlEqual(
 			formatParse( 'external-link-replace', $( '<i>' ) ),
@@ -795,6 +804,24 @@
 		mw.jqueryMsg.getMessageFunction = oldGMF;
 	} );
 
+	// Tests that HTML in message parameters is escaped,
+	// whether the message looks like wikitext or not.
+	QUnit.test( 'mw.Message.prototype.parser monkey-patch HTML-escape', function ( assert ) {
+		mw.messages.set( '1x-wikitext', '<span>$1</span>' );
+		assert.htmlEqual(
+			mw.message( '1x-wikitext', '<script>alert( "1x-wikitext test" )</script>' ).parse(),
+			'<span>&lt;script&gt;alert( &quot;1x-wikitext test&quot; )&lt;/script&gt;</span>',
+			'Message parameters are escaped if message contains wikitext'
+		);
+
+		mw.messages.set( '1x-plain', '$1' );
+		assert.htmlEqual(
+			mw.message( '1x-plain', '<script>alert( "1x-plain test" )</script>' ).parse(),
+			'&lt;script&gt;alert( &quot;1x-plain test&quot; )&lt;/script&gt;',
+			'Message parameters are still escaped if message contains no wikitext'
+		);
+	} );
+
 	formatnumTests = [
 		{
 			lang: 'en',
@@ -898,15 +925,14 @@
 		var queue;
 		mw.messages.set( 'formatnum-msg', '{{formatnum:$1}}' );
 		mw.messages.set( 'formatnum-msg-int', '{{formatnum:$1|R}}' );
-		queue = $.map( formatnumTests, function ( test ) {
+		queue = formatnumTests.map( function ( test ) {
 			var done = assert.async();
 			return function ( next, abort ) {
 				getMwLanguage( test.lang )
 					.then( function ( langClass ) {
 						var parser;
 						mw.config.set( 'wgUserLanguage', test.lang );
-						// eslint-disable-next-line new-cap
-						parser = new mw.jqueryMsg.parser( { language: langClass } );
+						parser = new mw.jqueryMsg.Parser( { language: langClass } );
 						assert.equal(
 							parser.parse( test.integer ? 'formatnum-msg-int' : 'formatnum-msg',
 								[ test.number ] ).html(),
@@ -1153,6 +1179,38 @@
 		);
 
 		assert.equal( logSpy.callCount, 2, 'mw.log.warn calls' );
+	} );
+
+	QUnit.test( 'Do not allow javascript: urls', function ( assert ) {
+		mw.messages.set( 'illegal-url', '[javascript:alert(1) foo]' );
+		mw.messages.set( 'illegal-url-param', '[$1 foo]' );
+
+		this.suppressWarnings();
+
+		assert.strictEqual(
+			formatParse( 'illegal-url' ),
+			'[javascript:alert(1) foo]',
+			'illegal-url: \'parse\' format'
+		);
+
+		assert.strictEqual(
+			// eslint-disable-next-line no-script-url
+			formatParse( 'illegal-url-param', 'javascript:alert(1)' ),
+			'[javascript:alert(1) foo]',
+			'illegal-url-param: \'parse\' format'
+		);
+	} );
+
+	QUnit.test( 'Do not allow arbitrary style', function ( assert ) {
+		mw.messages.set( 'illegal-style', '<span style="background-image:url( http://example.com )">bar</span>' );
+
+		this.suppressWarnings();
+
+		assert.strictEqual(
+			formatParse( 'illegal-style' ),
+			'&lt;span style="background-image:url( http://example.com )"&gt;bar&lt;/span&gt;',
+			'illegal-style: \'parse\' format'
+		);
 	} );
 
 	QUnit.test( 'Integration', function ( assert ) {

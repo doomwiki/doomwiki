@@ -68,8 +68,9 @@ class SpecialUserMerge extends FormSpecialPage {
 	}
 
 	/**
-	 * @param $val user's input for username
-	 * @return bool|string true if valid, a string of the error's message key if validation failed
+	 * @param string $val user's input for username
+	 * @return bool|string|string[] true if valid, a string or string[] of the error's message key
+	 *   if validation failed
 	 */
 	public function validateOldUser( $val ) {
 		global $wgUserMergeProtectedGroups;
@@ -88,7 +89,7 @@ class SpecialUserMerge extends FormSpecialPage {
 	}
 
 	/**
-	 * @param $val user's input for username
+	 * @param string $val user's input for username
 	 * @return bool|string true if valid, a string of the error's message key if validation failed
 	 */
 	public function validateNewUser( $val ) {
@@ -109,7 +110,6 @@ class SpecialUserMerge extends FormSpecialPage {
 	 */
 	protected function alterForm( HTMLForm $form ) {
 		$form->setSubmitTextMsg( 'usermerge-submit' );
-		$form->setWrapperLegendMsg( 'usermerge-fieldset' );
 	}
 
 	/**
@@ -169,6 +169,10 @@ class SpecialUserMerge extends FormSpecialPage {
 		}
 
 		return Status::newGood();
+	}
+
+	protected function getDisplayFormat() {
+		return 'ooui';
 	}
 
 	protected function getGroupName() {

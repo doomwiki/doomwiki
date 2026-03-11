@@ -62,14 +62,12 @@ class MemcachedPhpBagOStuff extends MemcachedBagOStuff {
 	public function incr( $key, $value = 1 ) {
 		$this->validateKeyEncoding( $key );
 
-		$ret = $this->client->incr( $key, $value );
-		return $ret !== null ? $ret : false;
+		return $this->client->incr( $key, $value ) ?? false;
 	}
 
 	public function decr( $key, $value = 1 ) {
 		$this->validateKeyEncoding( $key );
 
-		$ret = $this->client->decr( $key, $value );
-		return $ret !== null ? $ret : false;
+		return $this->client->decr( $key, $value ) ?? false;
 	}
 }

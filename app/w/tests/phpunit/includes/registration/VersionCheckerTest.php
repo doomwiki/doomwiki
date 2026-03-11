@@ -3,7 +3,11 @@
 /**
  * @covers VersionChecker
  */
-class VersionCheckerTest extends PHPUnit_Framework_TestCase {
+class VersionCheckerTest extends PHPUnit\Framework\TestCase {
+
+	use MediaWikiCoversValidator;
+	use PHPUnit4And6Compat;
+
 	/**
 	 * @dataProvider provideCheck
 	 */
@@ -13,8 +17,7 @@ class VersionCheckerTest extends PHPUnit_Framework_TestCase {
 			'FakeExtension' => [
 				'MediaWiki' => $constraint,
 			],
-		] )
-		);
+		] ) );
 	}
 
 	public static function provideCheck() {
@@ -46,16 +49,15 @@ class VersionCheckerTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testType( $given, $expected ) {
 		$checker = new VersionChecker( '1.0.0' );
-		$checker
-			->setLoadedExtensionsAndSkins( [
+		$checker->setLoadedExtensionsAndSkins( [
 				'FakeDependency' => [
 					'version' => '1.0.0',
 				],
+				'NoVersionGiven' => [],
 			] );
 		$this->assertEquals( $expected, $checker->checkArray( [
 			'FakeExtension' => $given,
-		] )
-		);
+		] ) );
 	}
 
 	public static function provideType() {
@@ -64,16 +66,81 @@ class VersionCheckerTest extends PHPUnit_Framework_TestCase {
 			[
 				[
 					'extensions' => [
-						'FakeDependency' => '1.0.0'
-					]
+						'FakeDependency' => '1.0.0',
+					],
 				],
-				[]
+				[],
 			],
 			[
 				[
-					'MediaWiki' => '1.0.0'
+					'MediaWiki' => '1.0.0',
 				],
-				[]
+				[],
+			],
+			[
+				[
+					'extensions' => [
+						'NoVersionGiven' => '*',
+					],
+				],
+				[],
+			],
+			[
+				[
+					'extensions' => [
+						'NoVersionGiven' => '1.0',
+					],
+				],
+				[
+					[
+						'incompatible' => 'FakeExtension',
+						'type' => 'incompatible-extensions',
+						'msg' => 'NoVersionGiven does not expose its version, but FakeExtension requires: 1.0.',
+					],
+				],
+			],
+			[
+				[
+					'extensions' => [
+						'Missing' => '*',
+					],
+				],
+				[
+					[
+						'missing' => 'Missing',
+						'type' => 'missing-extensions',
+						'msg' => 'FakeExtension requires Missing to be installed.',
+					],
+				],
+			],
+			[
+				[
+					'extensions' => [
+						'FakeDependency' => '2.0.0',
+					],
+				],
+				[
+					[
+						'incompatible' => 'FakeExtension',
+						'type' => 'incompatible-extensions',
+						// phpcs:ignore Generic.Files.LineLength.TooLong
+						'msg' => 'FakeExtension is not compatible with the current installed version of FakeDependency (1.0.0), it requires: 2.0.0.',
+					],
+				],
+			],
+			[
+				[
+					'skins' => [
+						'FakeSkin' => '*',
+					],
+				],
+				[
+					[
+						'missing' => 'FakeSkin',
+						'type' => 'missing-skins',
+						'msg' => 'FakeExtension requires FakeSkin to be installed.',
+					],
+				],
 			],
 		];
 	}
@@ -84,35 +151,57 @@ class VersionCheckerTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testInvalidConstraint() {
 		$checker = new VersionChecker( '1.0.0' );
-		$checker
-			->setLoadedExtensionsAndSkins( [
+		$checker->setLoadedExtensionsAndSkins( [
 				'FakeDependency' => [
 					'version' => 'not really valid',
 				],
 			] );
-		$this->assertEquals( [ "FakeDependency does not have a valid version string." ],
-			$checker->checkArray( [
-				'FakeExtension' => [
-					'extensions' => [
-						'FakeDependency' => '1.24.3',
-					],
+		$this->assertEquals( [
+			[
+				'type' => 'invalid-version',
+				'msg' => "FakeDependency does not have a valid version string.",
+			],
+		], $checker->checkArray( [
+			'FakeExtension' => [
+				'extensions' => [
+					'FakeDependency' => '1.24.3',
 				],
-			] )
-		);
+			],
+		] ) );
 
 		$checker = new VersionChecker( '1.0.0' );
-		$checker
-			->setLoadedExtensionsAndSkins( [
+		$checker->setLoadedExtensionsAndSkins( [
 				'FakeDependency' => [
 					'version' => '1.24.3',
 				],
 			] );
 
-		$this->setExpectedException( 'UnexpectedValueException' );
+		$this->setExpectedException( UnexpectedValueException::class );
 		$checker->checkArray( [
 			'FakeExtension' => [
 				'FakeDependency' => 'not really valid',
-			]
+			],
 		] );
+	}
+
+	/**
+	 * T197478
+	 */
+	public function testInvalidDependency() {
+		$checker = new VersionChecker( '1.0.0' );
+		$this->setExpectedException( UnexpectedValueException::class,
+			'Dependency type skin unknown in FakeExtension' );
+		$this->assertEquals( [
+			[
+				'type' => 'invalid-version',
+				'msg' => 'FakeDependency does not have a valid version string.',
+			],
+		], $checker->checkArray( [
+			'FakeExtension' => [
+				'skin' => [
+					'FakeSkin' => '*',
+				],
+			],
+		] ) );
 	}
 }

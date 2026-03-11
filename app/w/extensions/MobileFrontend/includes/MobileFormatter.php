@@ -1,10 +1,11 @@
 <?php
-/**
- * MobileFormatter.php
- */
 
 use HtmlFormatter\HtmlFormatter;
 use MobileFrontend\ContentProviders\IContentProvider;
+use MobileFrontend\Transforms\MoveLeadParagraphTransform;
+use MobileFrontend\Transforms\AddMobileTocTransform;
+use MobileFrontend\Transforms\NoTransform;
+use MobileFrontend\Transforms\LegacyMainPageTransform;
 
 /**
  * Converts HTML into a mobile-friendly version
@@ -59,7 +60,7 @@ class MobileFormatter extends HtmlFormatter {
 	 */
 	protected $expandableSections = false;
 	/**
-	 * Whether actual page is the main page
+	 * Whether actual page is the main page and should be special cased
 	 * @var boolean $mainPage
 	 */
 	protected $mainPage = false;
@@ -71,8 +72,6 @@ class MobileFormatter extends HtmlFormatter {
 	const SHOW_FIRST_PARAGRAPH_BEFORE_INFOBOX = 'showFirstParagraphBeforeInfobox';
 
 	/**
-	 * Constructor
-	 *
 	 * @param string $html Text to process
 	 * @param Title $title Title to which $html belongs
 	 */
@@ -94,7 +93,8 @@ class MobileFormatter extends HtmlFormatter {
 	/**
 	 * Creates and returns a MobileFormatter
 	 *
-	 * @param MobileContext $context
+	 * @param MobileContext $context in which the page is being rendered. Needed to access page title
+	 *  and MobileFrontend configuration.
 	 * @param IContentProvider $provider
 	 * @param bool $enableSections (optional)
 	 *  whether to wrap the content of sections
@@ -110,9 +110,8 @@ class MobileFormatter extends HtmlFormatter {
 		$mfSpecialCaseMainPage = $context->getMFConfig()->get( 'MFSpecialCaseMainPage' );
 
 		$title = $context->getTitle();
-		$isMainPage = $title->isMainPage() && $mfSpecialCaseMainPage;
+		$isMainPage = $title->isMainPage();
 		$isFilePage = $title->inNamespace( NS_FILE );
-		$isSpecialPage = $title->isSpecialPage();
 
 		$html = self::wrapHTML( $provider->getHTML() );
 		$formatter = new MobileFormatter( $html, $title );
@@ -122,9 +121,7 @@ class MobileFormatter extends HtmlFormatter {
 			$formatter->enableExpandableSections( $enableSections );
 		}
 
-		$formatter->setIsMainPage( $isMainPage );
-
-		$formatter->enableExpandableSections( $enableSections );
+		$formatter->setIsMainPage( $isMainPage && $mfSpecialCaseMainPage );
 		$formatter->enableTOCPlaceholder( $includeTOC );
 
 		return $formatter;
@@ -133,7 +130,7 @@ class MobileFormatter extends HtmlFormatter {
 	/**
 	 * Mark whether a placeholder table of contents should be included at the end of the lead
 	 * section
-	 * @param bool $flag
+	 * @param bool $flag should TOC be included?
 	 */
 	public function enableTOCPlaceholder( $flag = true ) {
 		$this->isTOCEnabled = $flag;
@@ -142,7 +139,7 @@ class MobileFormatter extends HtmlFormatter {
 	/**
 	 * Set support of page for expandable sections to $flag (standard: true)
 	 * @todo kill with fire when there will be minimum of pre-1.1 app users remaining
-	 * @param bool $flag
+	 * @param bool $flag should expandable sections be supported?
 	 */
 	public function enableExpandableSections( $flag = true ) {
 		$this->expandableSections = $flag;
@@ -150,6 +147,8 @@ class MobileFormatter extends HtmlFormatter {
 
 	/**
 	 * Change mainPage (is this the main page) to $value (standard: true)
+	 * This enables special casing for the main page.
+	 * @deprecated
 	 * @param bool $value
 	 */
 	public function setIsMainPage( $value = true ) {
@@ -189,6 +188,8 @@ class MobileFormatter extends HtmlFormatter {
 			$this->doRemoveImages();
 		}
 
+		// Apply all removals before continuing with transforms (see T185040 for example)
+		$removed = parent::filterContent();
 		$transformOptions = [
 			'images' => $removeImages,
 			'references' => $removeReferences,
@@ -206,15 +207,14 @@ class MobileFormatter extends HtmlFormatter {
 		if ( $transformOptions['references'] ) {
 			$this->doRewriteReferencesLinksForLazyLoading( $doc );
 		}
-
-		return parent::filterContent();
+		return $removed;
 	}
 
 	/**
 	 * Apply filtering per element (section) in a document.
 	 * @param DOMElement|DOMDocument $el
 	 * @param DOMDocument $doc
-	 * @param number $sectionNumber Which section is it on the document
+	 * @param int $sectionNumber Which section is it on the document
 	 * @param array $options options about the transformations per section
 	 */
 	private function filterContentInSection(
@@ -228,94 +228,6 @@ class MobileFormatter extends HtmlFormatter {
 		}
 	}
 
-	/**
-	 * Move the first paragraph in the lead section above the infobox
-	 *
-	 * In order for a paragraph to be moved the following conditions must be met:
-	 *   - the lead section contains at least one infobox;
-	 *   - the paragraph doesn't already appear before the first infobox
-	 *     if any in the DOM;
-	 *   - the paragraph contains text content, e.g. no <p></p>;
-	 *   - the paragraph doesn't contain coordinates, i.e. span#coordinates.
-	 *   - article belongs to the MAIN namespace
-	 *
-	 * Additionally if paragraph immediate sibling is a list (ol or ul element), the list
-	 * is also moved along with paragraph above infobox.
-	 *
-	 * Note that the first paragraph is not moved before hatnotes, or mbox or other
-	 * elements that are not infoboxes.
-	 *
-	 * @param DOMElement $leadSectionBody
-	 * @param DOMDocument $doc Document to which the section belongs
-	 */
-	private function moveFirstParagraphBeforeInfobox( $leadSectionBody, $doc ) {
-		// Move lead parapgraph only on pages in MAIN namespace (see @T163805)
-		if ( $this->title->getNamespace() !== NS_MAIN ) {
-			return;
-		}
-		$xPath = new DOMXPath( $doc );
-		// Find infoboxes and paragraphs that have text content, i.e. paragraphs
-		// that are not empty nor are wrapper paragraphs that contain span#coordinates.
-		$infoboxAndParagraphs = $xPath->query(
-			'./table[contains(@class,"infobox")] | ./p[string-length(text()) > 0]',
-			$leadSectionBody
-		);
-		// We need both an infobox and a paragraph and the first element of our query result
-		// ought to be an infobox.
-		if ( $infoboxAndParagraphs->length >= 2 &&
-			$infoboxAndParagraphs->item( 0 )->nodeName == 'table'
-		) {
-			$firstP = null;
-			for ( $i = 1; $i < $infoboxAndParagraphs->length; $i++ ) {
-				if ( $infoboxAndParagraphs->item( $i )->nodeName == 'p' ) {
-					$firstP = $infoboxAndParagraphs->item( $i );
-					break;
-				}
-			}
-			if ( $firstP ) {
-				$listElementAfterParagraph = null;
-				$where = $infoboxAndParagraphs->item( 0 );
-
-				$elementAfterParagraphQuery = $xPath->query( 'following-sibling::*[1]', $firstP );
-				if ( $elementAfterParagraphQuery->length > 0 ) {
-					$elem = $elementAfterParagraphQuery->item( 0 );
-					if ( $elem->tagName === 'ol' || $elem->tagName === 'ul' ) {
-						$listElementAfterParagraph = $elem;
-					}
-				}
-
-				$leadSectionBody->insertBefore( $firstP, $where );
-				if ( $listElementAfterParagraph !== null ) {
-					$leadSectionBody->insertBefore( $listElementAfterParagraph, $where );
-				}
-			}
-		}
-		/**
-		 * @see https://phabricator.wikimedia.org/T149884
-		 * @todo remove after research is done
-		 */
-		if ( MobileContext::singleton()->getMFConfig()->get( 'MFLogWrappedInfoboxes' ) ) {
-			$this->logInfoboxesWrappedInContainers( $leadSectionBody, $xPath );
-		}
-	}
-
-	/**
-	 * Finds all infoboxes which are one or more levels deep in $xPath content. When at least one
-	 * element is found - log the page title and revision
-	 *
-	 * @see https://phabricator.wikimedia.org/T149884
-	 * @param $leadSectionBody
-	 * @param DOMXPath $xPath
-	 */
-	private function logInfoboxesWrappedInContainers( $leadSectionBody, DOMXPath $xPath ) {
-		$infoboxes = $xPath->query( './*//table[contains(@class,"infobox")]' .
-			'[not(ancestor::table[contains(@class,"infobox")])]', $leadSectionBody );
-		if ( $infoboxes->length > 0 ) {
-			\MediaWiki\Logger\LoggerFactory::getInstance( 'mobile' )->info(
-				"Found infobox wrapped with container on {$this->title} (rev:{$this->revId})"
-			);
-		}
-	}
 	/**
 	 * Replaces any references links with a link to Special:MobileCite
 	 *
@@ -410,7 +322,7 @@ class MobileFormatter extends HtmlFormatter {
 	 * attributes. If the image has no `style`, `width` or `height` attributes, then the image is
 	 * dimensionless.
 	 *
-	 * @param DOMElement $img
+	 * @param DOMElement $img <img> element
 	 * @return array with width and height parameters if dimensions are found
 	 */
 	public function getImageDimensions( DOMElement $img ) {
@@ -552,94 +464,12 @@ class MobileFormatter extends HtmlFormatter {
 	 */
 	public function getText( $element = null ) {
 		if ( $this->mainPage ) {
-			$element = $this->parseMainPage( $this->getDoc() );
+			$transform = new LegacyMainPageTransform();
+			$doc = $this->getDoc();
+			$transform->apply( $doc->getElementsByTagName( 'body' )->item( 0 ) );
 		}
 
 		return parent::getText( $element );
-	}
-
-	/**
-	 * Returns interface message text
-	 * @param string $key Message key
-	 * @return string Wiki text
-	 */
-	protected function msg( $key ) {
-		return wfMessage( $key )->text();
-	}
-
-	/**
-	 * Performs transformations specific to main page
-	 * @param DOMDocument $mainPage Tree to process
-	 * @return DOMElement|null
-	 */
-	protected function parseMainPage( DOMDocument $mainPage ) {
-		$featuredArticle = $mainPage->getElementById( 'mp-tfa' );
-		$newsItems = $mainPage->getElementById( 'mp-itn' );
-		$centralAuthImages = $mainPage->getElementById( 'central-auth-images' );
-
-		// Collect all the Main Page DOM elements that have an id starting with 'mf-'
-		$xpath = new DOMXpath( $mainPage );
-		$elements = $xpath->query( '//*[starts-with(@id, "mf-")]' );
-
-		// These elements will be handled specially
-		$commonAttributes = [ 'mp-tfa', 'mp-itn' ];
-
-		// Start building the new Main Page content in the $content var
-		$content = $mainPage->createElement( 'div' );
-		$content->setAttribute( 'id', 'mainpage' );
-
-		// If there is a featured article section, add it to the new Main Page content
-		if ( $featuredArticle ) {
-			$h2FeaturedArticle = $mainPage->createElement(
-				'h2',
-				$this->msg( 'mobile-frontend-featured-article' )
-			);
-			$content->appendChild( $h2FeaturedArticle );
-			$content->appendChild( $featuredArticle );
-		}
-
-		// If there is a news section, add it to the new Main Page content
-		if ( $newsItems ) {
-			$h2NewsItems = $mainPage->createElement( 'h2', $this->msg( 'mobile-frontend-news-items' ) );
-			$content->appendChild( $h2NewsItems );
-			$content->appendChild( $newsItems );
-		}
-
-		// Go through all the collected Main Page DOM elements and format them for mobile
-		/** @var $element DOMElement */
-		foreach ( $elements as $element ) {
-			if ( $element->hasAttribute( 'id' ) ) {
-				$id = $element->getAttribute( 'id' );
-				// Filter out elements processed specially
-				if ( !in_array( $id, $commonAttributes ) ) {
-					// Convert title attributes into h2 headers
-					$sectionTitle = $element->hasAttribute( 'title' ) ? $element->getAttribute( 'title' ) : '';
-					if ( $sectionTitle !== '' ) {
-						$element->removeAttribute( 'title' );
-						$h2UnknownMobileSection =
-							$mainPage->createElement( 'h2', htmlspecialchars( $sectionTitle ) );
-						$content->appendChild( $h2UnknownMobileSection );
-					}
-					$br = $mainPage->createElement( 'br' );
-					$br->setAttribute( 'clear', 'all' );
-					$content->appendChild( $element );
-					$content->appendChild( $br );
-				}
-			}
-		}
-
-		// If no mobile-appropriate content has been assembled at this point, return null.
-		// This will cause HtmlFormatter to fall back to using the entire page.
-		if ( $content->childNodes->length == 0 ) {
-			return null;
-		}
-
-		// If there are CentralAuth 1x1 images, preserve them unmodified
-		if ( $centralAuthImages ) {
-			$content->appendChild( $centralAuthImages );
-		}
-
-		return $content;
 	}
 
 	/**
@@ -650,12 +480,18 @@ class MobileFormatter extends HtmlFormatter {
 	 * that the section bodies are clearly defined (to be "expandable" for
 	 * example).
 	 *
-	 * @param DOMDocument $doc
-	 * @param [DOMElement] $headings The headings returned by
+	 * @param DOMDocument $doc representing the HTML of the current article. In the HTML the sections
+	 *  should not be wrapped.
+	 * @param DOMElement[] $headings The headings returned by
 	 *  {@see MobileFormatter::getHeadings}
 	 * @param array $transformOptions Options to pass when transforming content per section
 	 */
-	protected function makeSections( DOMDocument $doc, array $headings, $transformOptions ) {
+	protected function makeSections( DOMDocument $doc, array $headings, array $transformOptions ) {
+		$noTransform = new NoTransform();
+		$tocTransform = $this->isTOCEnabled ? new AddMobileTocTransform() : $noTransform;
+		$leadTransform = $transformOptions[ self::SHOW_FIRST_PARAGRAPH_BEFORE_INFOBOX ] ?
+				new MoveLeadParagraphTransform( $this->title, $this->revId ) : $noTransform;
+
 		// Find the parser output wrapper div
 		$xpath = new DOMXPath( $doc );
 		$containers = $xpath->query( 'body/div[@class="mw-parser-output"][1]' );
@@ -696,18 +532,8 @@ class MobileFormatter extends HtmlFormatter {
 				$container->insertBefore( $sectionBody, $node );
 
 				if ( $sectionNumber === 0 ) {
-					if ( $this->isTOCEnabled ) {
-						// Insert table of content placeholder which will be progressively enhanced via JS
-						$toc = $doc->createElement( 'div' );
-						$toc->setAttribute( 'id', 'toc' );
-						$toc->setAttribute( 'class', 'toc-mobile' );
-						$tocHeading = $doc->createElement( 'h2', wfMessage( 'toc' )->text() );
-						$toc->appendChild( $tocHeading );
-						$sectionBody->appendChild( $toc );
-					}
-					if ( $transformOptions[ self::SHOW_FIRST_PARAGRAPH_BEFORE_INFOBOX ] ) {
-						$this->moveFirstParagraphBeforeInfobox( $sectionBody, $doc );
-					}
+					$tocTransform->apply( $sectionBody );
+					$leadTransform->apply( $sectionBody );
 				}
 				$sectionNumber += 1;
 				$sectionBody = $this->createSectionBodyElement( $doc, $sectionNumber, $this->scriptsEnabled );
@@ -720,8 +546,8 @@ class MobileFormatter extends HtmlFormatter {
 		}
 
 		// If the document had the lead section only:
-		if ( $sectionNumber == 0 && $transformOptions[ self::SHOW_FIRST_PARAGRAPH_BEFORE_INFOBOX ] ) {
-			$this->moveFirstParagraphBeforeInfobox( $sectionBody, $doc );
+		if ( $sectionNumber == 0 ) {
+			$leadTransform->apply( $sectionBody );
 		}
 
 		if ( $sectionBody->hasChildNodes() ) {
@@ -785,7 +611,7 @@ class MobileFormatter extends HtmlFormatter {
 	 * FIXME: <code>in-block</code> isn't semantic in that it isn't
 	 * obviously connected to being editable.
 	 *
-	 * @param [DOMElement] $headings
+	 * @param DOMElement[] $headings Heading elements
 	 */
 	protected function makeHeadingsEditable( array $headings ) {
 		foreach ( $headings as $heading ) {

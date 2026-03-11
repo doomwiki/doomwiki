@@ -6,12 +6,11 @@
  * @ingroup Extensions
  */
 
-$magicWords = array();
+$magicWords = [];
 
 /** English
  * @author Daniel Friesen
  */
-$magicWords['en'] = array(
-	'description2' => array( 0, 'description2' ),
-);
-
+$magicWords['en'] = [
+	'description2' => [ 0, 'description2' ],
+];

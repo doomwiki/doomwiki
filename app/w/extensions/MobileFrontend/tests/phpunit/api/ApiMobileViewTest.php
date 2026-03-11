@@ -15,15 +15,23 @@ class MockApiMobileView extends ApiMobileView {
 		return Title::newFromRow( $row );
 	}
 
-	protected function getParserOutput( WikiPage $wp, ParserOptions $parserOptions, $oldid = null ) {
+	protected function getParserOutput(
+		WikiPage $wikiPage,
+		ParserOptions $parserOptions,
+		$oldid = null
+	) {
 		$params = $this->extractRequestParams();
 		if ( !isset( $params['text'] ) ) {
 			throw new Exception( 'Must specify page text' );
 		}
 		$parser = new Parser();
-		$po = $parser->parse( $params['text'], $wp->getTitle(), $parserOptions );
-		$po->setTOCEnabled( false );
-		$po->setText( str_replace( [ "\r", "\n" ], '', $po->getText() ) );
+		$po = $parser->parse( $params['text'], $wikiPage->getTitle(), $parserOptions );
+		if ( !defined( 'ParserOutput::SUPPORTS_STATELESS_TRANSFORMS' ) ) {
+			$po->setTOCEnabled( false );
+		}
+		$po->setText( str_replace( [ "\r", "\n" ], '', $po->getText( [
+			'allowTOC' => false, 'unwrap' => true,
+		] ) ) );
 
 		return $po;
 	}
@@ -32,12 +40,8 @@ class MockApiMobileView extends ApiMobileView {
 		return new MockWikiPage( $title );
 	}
 
-	protected function makeParserOptions( WikiPage $wp ) {
+	protected function makeParserOptions( WikiPage $wikiPage ) {
 		$popt = new ParserOptions( $this->getUser() );
-		if ( is_callable( [ $popt, 'setWrapOutputClass' ] ) ) {
-			// Let the client handle it.
-			$popt->setWrapOutputClass( false );
-		}
 		return $popt;
 	}
 
@@ -121,7 +125,8 @@ class ApiMobileViewTest extends MediaWikiTestCase {
 			[ [ 1, 2 ], [ 11 ], '1|1|2|1|11|2|1' ],
 			[ [ 1, 3, 4, 5 ], [], '1|3-5|4' ],
 			[ [ 10 ], [], '10-' ],
-			[ [], [ '20-' ], '20-' ], # https://bugzilla.wikimedia.org/show_bug.cgi?id=61868
+			# https://bugzilla.wikimedia.org/show_bug.cgi?id=61868
+			[ [], [ '20-' ], '20-' ],
 		];
 	}
 
@@ -335,13 +340,15 @@ Text 2
 					'sections' => 1,
 					'onlyrequestedsections' => true,
 
-					'prop' => 'namespace', // When the namespace is requested...
+					// When the namespace is requested...
+					'prop' => 'namespace',
 				] + $baseIn,
 				[
 					'mainpage' => '',
 					'sections' => [],
 
-					'ns' => 0, // ... then it is returned.
+					// ... then it is returned.
+					'ns' => 0,
 				],
 			]
 		];
@@ -420,7 +427,9 @@ Text 2
 					'text' => '',
 					'prop' => 'thumb',
 					'thumbwidth' => 200,
-					'type' => 'image/svg' // contrived but needed for testing
+
+					// contrived but needed for testing
+					'type' => 'image/svg'
 				],
 				[
 					'sections' => [],
@@ -437,7 +446,9 @@ Text 2
 					'text' => '',
 					'prop' => 'thumb',
 					'thumbheight' => 200,
-					'type' => 'image/svg' // contrived but needed for testing
+
+					// contrived but needed for testing
+					'type' => 'image/svg'
 				],
 				[
 					'sections' => [],
@@ -454,7 +465,9 @@ Text 2
 					'text' => '',
 					'prop' => 'thumb',
 					'thumbwidth' => 800,
-					'type' => 'image/svg' // contrived but needed for testing
+
+					// contrived but needed for testing
+					'type' => 'image/svg'
 				],
 				[
 					'sections' => [],
@@ -471,7 +484,9 @@ Text 2
 					'text' => '',
 					'prop' => 'thumb',
 					'thumbheight' => 800,
-					'type' => 'image/svg' // contrived but needed for testing
+
+					// contrived but needed for testing
+					'type' => 'image/svg'
 				],
 				[
 					'sections' => [],
@@ -560,7 +575,9 @@ Text 2
 			'onlyrequestedsections' => '',
 			'sections' => 1,
 			'prop' => 'protection|pageprops',
-			'pageprops' => 'foo', // intentionally nonexistent
+
+			// intentionally nonexistent
+			'pageprops' => 'foo',
 		] );
 
 		$context = new RequestContext();
@@ -575,9 +592,11 @@ Text 2
 		$pageprops = $result['mobileview']['pageprops'];
 
 		$this->assertTrue( $protection[ApiResult::META_TYPE] === 'assoc' );
-		$this->assertTrue( count( $protection ) === 1 ); // the only element is the array type flag
+		// the only element is the array type flag
+		$this->assertTrue( count( $protection ) === 1 );
 		$this->assertTrue( $pageprops[ApiResult::META_TYPE] === 'assoc' );
-		$this->assertTrue( count( $pageprops ) === 1 ); // the only element is the array type flag
+		// the only element is the array type flag
+		$this->assertTrue( count( $pageprops ) === 1 );
 	}
 
 	/**

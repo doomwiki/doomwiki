@@ -1,25 +1,64 @@
 @import 'minerva.variables';
 
+// FIXME [mediawiki ui] These rules should not be needed in the mobile context
+.mw-ui-button-group {
+	text-align: center;
+
+	* {
+		float: none !important;
+	}
+
+	// For talk and CTA drawer
+	.mw-ui-block {
+		width: auto;
+	}
+}
+
 .ns-special {
 	#content {
-		@verticalPadding: 0.5em;
 		#section_0 {
-			padding: @verticalPadding 0;
-			text-align: center;
-			font-size: 1.25em;
+			padding: 34px 0 0;
+			font-size: 1.5em;
 			font-weight: bold;
-			border: 0;
 		}
 
 		.pre-content {
 			padding: 0;
-			border-bottom: 0;
 		}
+	}
+
+	// Specific to override mobile display
+	.heading-holder .tagline {
+		margin-bottom: 15px;
 	}
 
 	h1,
 	h2 {
 		// Important given we have no idea which rules special pages are enforcing
 		font-family: @fontFamily !important;
+	}
+
+	.content-header {
+		h1,
+		h2 {
+			text-align: center;
+		}
+	}
+}
+
+// Used by MobileSpecialPageFeed.php in MobileFrontend
+.truncated-text {
+
+	// FIXME: this works only in WebKit
+	&.multi-line {
+		white-space: normal;
+		display: -webkit-box;
+		-webkit-box-orient: vertical;
+	}
+
+	&.two-line {
+		-webkit-line-clamp: 2;
+		// fallback for non-WebKit
+		max-height: 2.6em;
 	}
 }

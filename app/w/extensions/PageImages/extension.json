@@ -5,6 +5,9 @@
 	"descriptionmsg": "pageimages-desc",
 	"license-name": "WTFPL",
 	"type": "api",
+	"requires": {
+		"MediaWiki": ">= 1.29.0"
+	},
 	"callback": "PageImages::onRegistration",
 	"APIPropModules": {
 		"pageimages": "ApiQueryPageImages"
@@ -24,12 +27,11 @@
 	"Hooks": {
 		"AfterParserFetchFileAndTitle": "PageImages\\Hooks\\ParserFileProcessingHookHandlers::onAfterParserFetchFileAndTitle",
 		"ApiOpenSearchSuggest": "PageImages::onApiOpenSearchSuggest",
-		"BeforePageDisplay": "PageImages::onBeforePageDisplay",
 		"InfoAction": "PageImages::onInfoAction",
 		"LinksUpdate": "PageImages\\Hooks\\LinksUpdateHookHandler::onLinksUpdate",
 		"OpenSearchXml": "PageImages::onApiOpenSearchSuggest",
 		"ParserMakeImageParams": "PageImages\\Hooks\\ParserFileProcessingHookHandlers::onParserMakeImageParams",
-		"SpecialMobileEditWatchlist::images": "PageImages::onSpecialMobileEditWatchlist_images"
+		"SpecialMobileEditWatchlist::images": "PageImages::onSpecialMobileEditWatchlistImages"
 	},
 	"JobClasses": {
 		"InitImageDataJob": "PageImages\\Job\\InitImageDataJob"

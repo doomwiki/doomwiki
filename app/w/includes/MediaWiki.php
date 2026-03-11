@@ -26,6 +26,7 @@ use MediaWiki\MediaWikiServices;
 use Wikimedia\Rdbms\ChronologyProtector;
 use Wikimedia\Rdbms\LBFactory;
 use Wikimedia\Rdbms\DBConnectionError;
+use Liuggio\StatsdClient\Sender\SocketSender;
 
 /**
  * The MediaWiki class is the helper class for the index.php entry point.
@@ -367,7 +368,7 @@ class MediaWiki {
 			}
 			throw new HttpError( 500, $message );
 		}
-		$output->setSquidMaxage( 1200 );
+		$output->setCdnMaxage( 1200 );
 		$output->redirect( $targetUrl, '301' );
 		return true;
 	}
@@ -548,6 +549,9 @@ class MediaWiki {
 			}
 
 			MWExceptionHandler::handleException( $e );
+		} catch ( Error $e ) {
+			// Type errors and such: at least handle it now and clean up the LBFactory state
+			MWExceptionHandler::handleException( $e );
 		}
 
 		$this->doPostOutputShutdown( 'normal' );
@@ -602,50 +606,54 @@ class MediaWiki {
 		DeferredUpdates::doUpdates( 'enqueue', DeferredUpdates::PRESEND );
 		wfDebug( __METHOD__ . ': pre-send deferred updates completed' );
 
-		// Decide when clients block on ChronologyProtector DB position writes
-		$urlDomainDistance = (
-			$request->wasPosted() &&
-			$output->getRedirect() &&
-			$lbFactory->hasOrMadeRecentMasterChanges( INF )
-		) ? self::getUrlDomainDistance( $output->getRedirect() ) : false;
+		// Should the client return, their request should observe the new ChronologyProtector
+		// DB positions. This request might be on a foreign wiki domain, so synchronously update
+		// the DB positions in all datacenters to be safe. If this output is not a redirect,
+		// then OutputPage::output() will be relatively slow, meaning that running it in
+		// $postCommitWork should help mask the latency of those updates.
+		$flags = $lbFactory::SHUTDOWN_CHRONPROT_SYNC;
+		$strategy = 'cookie+sync';
 
 		$allowHeaders = !( $output->isDisabled() || headers_sent() );
-		if ( $urlDomainDistance === 'local' || $urlDomainDistance === 'remote' ) {
-			// OutputPage::output() will be fast; $postCommitWork will not be useful for
-			// masking the latency of syncing DB positions accross all datacenters synchronously.
-			// Instead, make use of the RTT time of the client follow redirects.
-			$flags = $lbFactory::SHUTDOWN_CHRONPROT_ASYNC;
-			$cpPosTime = microtime( true );
-			// Client's next request should see 1+ positions with this DBMasterPos::asOf() time
-			if ( $urlDomainDistance === 'local' && $allowHeaders ) {
-				// Client will stay on this domain, so set an unobtrusive cookie
-				$expires = time() + ChronologyProtector::POSITION_TTL;
-				$options = [ 'prefix' => '' ];
-				$request->response()->setCookie( 'cpPosTime', $cpPosTime, $expires, $options );
-			} else {
-				// Cookies may not work across wiki domains, so use a URL parameter
-				$safeUrl = $lbFactory->appendPreShutdownTimeAsQuery(
-					$output->getRedirect(),
-					$cpPosTime
-				);
-				$output->redirect( $safeUrl );
-			}
-		} else {
-			// OutputPage::output() is fairly slow; run it in $postCommitWork to mask
-			// the latency of syncing DB positions accross all datacenters synchronously
-			$flags = $lbFactory::SHUTDOWN_CHRONPROT_SYNC;
-			if ( $lbFactory->hasOrMadeRecentMasterChanges( INF ) && $allowHeaders ) {
-				$cpPosTime = microtime( true );
-				// Set a cookie in case the DB position store cannot sync accross datacenters.
-				// This will at least cover the common case of the user staying on the domain.
-				$expires = time() + ChronologyProtector::POSITION_TTL;
-				$options = [ 'prefix' => '' ];
-				$request->response()->setCookie( 'cpPosTime', $cpPosTime, $expires, $options );
+		if ( $output->getRedirect() && $lbFactory->hasOrMadeRecentMasterChanges( INF ) ) {
+			// OutputPage::output() will be fast, so $postCommitWork is useless for masking
+			// the latency of synchronously updating the DB positions in all datacenters.
+			// Try to make use of the time the client spends following redirects instead.
+			$domainDistance = self::getUrlDomainDistance( $output->getRedirect() );
+			if ( $domainDistance === 'local' && $allowHeaders ) {
+				$flags = $lbFactory::SHUTDOWN_CHRONPROT_ASYNC;
+				$strategy = 'cookie'; // use same-domain cookie and keep the URL uncluttered
+			} elseif ( $domainDistance === 'remote' ) {
+				$flags = $lbFactory::SHUTDOWN_CHRONPROT_ASYNC;
+				$strategy = 'cookie+url'; // cross-domain cookie might not work
 			}
 		}
+
 		// Record ChronologyProtector positions for DBs affected in this request at this point
-		$lbFactory->shutdown( $flags, $postCommitWork );
+		$cpIndex = null;
+		$lbFactory->shutdown( $flags, $postCommitWork, $cpIndex );
 		wfDebug( __METHOD__ . ': LBFactory shutdown completed' );
+
+		if ( $cpIndex > 0 ) {
+			if ( $allowHeaders ) {
+				$expires = time() + ChronologyProtector::POSITION_TTL;
+				$options = [ 'prefix' => '' ];
+				$request->response()->setCookie( 'cpPosIndex', $cpIndex, $expires, $options );
+			}
+
+			if ( $strategy === 'cookie+url' ) {
+				if ( $output->getRedirect() ) { // sanity
+					$safeUrl = $lbFactory->appendShutdownCPIndexAsQuery(
+						$output->getRedirect(),
+						$cpIndex
+					);
+					$output->redirect( $safeUrl );
+				} else {
+					$e = new LogicException( "No redirect; cannot append cpPosIndex parameter." );
+					MWExceptionHandler::logException( $e );
+				}
+			}
+		}
 
 		// Set a cookie to tell all CDN edge nodes to "stick" the user to the DC that handles this
 		// POST request (e.g. the "master" data center). Also have the user briefly bypass CDN so
@@ -712,6 +720,9 @@ class MediaWiki {
 			MWExceptionHandler::rollbackMasterChangesAndLog( $e );
 		}
 
+		// Disable WebResponse setters for post-send processing (T191537).
+		WebResponse::disableForPostSend();
+
 		$blocksHttpClient = true;
 		// Defer everything else if possible...
 		$callback = function () use ( $mode, &$blocksHttpClient ) {
@@ -726,10 +737,12 @@ class MediaWiki {
 		if ( function_exists( 'register_postsend_function' ) ) {
 			// https://github.com/facebook/hhvm/issues/1230
 			register_postsend_function( $callback );
+			/** @noinspection PhpUnusedLocalVariableInspection */
 			$blocksHttpClient = false;
 		} else {
 			if ( function_exists( 'fastcgi_finish_request' ) ) {
 				fastcgi_finish_request();
+				/** @noinspection PhpUnusedLocalVariableInspection */
 				$blocksHttpClient = false;
 			} else {
 				// Either all DB and deferred updates should happen or none.
@@ -778,54 +791,8 @@ class MediaWiki {
 			$trxProfiler->setExpectations( $trxLimits['POST'], __METHOD__ );
 		}
 
-		// If the user has forceHTTPS set to true, or if the user
-		// is in a group requiring HTTPS, or if they have the HTTPS
-		// preference set, redirect them to HTTPS.
-		// Note: Do this after $wgTitle is setup, otherwise the hooks run from
-		// isLoggedIn() will do all sorts of weird stuff.
-		if (
-			$request->getProtocol() == 'http' &&
-			// switch to HTTPS only when supported by the server
-			preg_match( '#^https://#', wfExpandUrl( $request->getRequestURL(), PROTO_HTTPS ) ) &&
-			(
-				$request->getSession()->shouldForceHTTPS() ||
-				// Check the cookie manually, for paranoia
-				$request->getCookie( 'forceHTTPS', '' ) ||
-				// check for prefixed version that was used for a time in older MW versions
-				$request->getCookie( 'forceHTTPS' ) ||
-				// Avoid checking the user and groups unless it's enabled.
-				(
-					$this->context->getUser()->isLoggedIn()
-					&& $this->context->getUser()->requiresHTTPS()
-				)
-			)
-		) {
-			$oldUrl = $request->getFullRequestURL();
-			$redirUrl = preg_replace( '#^http://#', 'https://', $oldUrl );
-
-			// ATTENTION: This hook is likely to be removed soon due to overall design of the system.
-			if ( Hooks::run( 'BeforeHttpsRedirect', [ $this->context, &$redirUrl ] ) ) {
-				if ( $request->wasPosted() ) {
-					// This is weird and we'd hope it almost never happens. This
-					// means that a POST came in via HTTP and policy requires us
-					// redirecting to HTTPS. It's likely such a request is going
-					// to fail due to post data being lost, but let's try anyway
-					// and just log the instance.
-
-					// @todo FIXME: See if we could issue a 307 or 308 here, need
-					// to see how clients (automated & browser) behave when we do
-					wfDebugLog( 'RedirectedPosts', "Redirected from HTTP to HTTPS: $oldUrl" );
-				}
-				// Setup dummy Title, otherwise OutputPage::redirect will fail
-				$title = Title::newFromText( 'REDIR', NS_MAIN );
-				$this->context->setTitle( $title );
-				// Since we only do this redir to change proto, always send a vary header
-				$output->addVaryHeader( 'X-Forwarded-Proto' );
-				$output->redirect( $redirUrl );
-				$output->output();
-
-				return;
-			}
+		if ( $this->maybeDoHttpsRedirect() ) {
+			return;
 		}
 
 		if ( $title->canExist() && HTMLFileCache::useFileCache( $this->context ) ) {
@@ -851,7 +818,7 @@ class MediaWiki {
 		$this->performRequest();
 
 		// GUI-ify and stash the page output in MediaWiki::doPreOutputCommit() while
-		// ChronologyProtector synchronizes DB positions or slaves accross all datacenters.
+		// ChronologyProtector synchronizes DB positions or replicas accross all datacenters.
 		$buffer = null;
 		$outputWork = function () use ( $output, &$buffer ) {
 			if ( $buffer === null ) {
@@ -871,6 +838,93 @@ class MediaWiki {
 	}
 
 	/**
+	 * Check if an HTTP->HTTPS redirect should be done. It may still be aborted
+	 * by a hook, so this is not the final word.
+	 *
+	 * @return bool
+	 */
+	private function shouldDoHttpRedirect() {
+		$request = $this->context->getRequest();
+
+		// Don't redirect if we're already on HTTPS
+		if ( $request->getProtocol() !== 'http' ) {
+			return false;
+		}
+
+		$force = $this->config->get( 'ForceHTTPS' );
+
+		// Don't redirect if $wgServer is explicitly HTTP. We test for this here
+		// by checking whether wfExpandUrl() is able to force HTTPS.
+		if ( !preg_match( '#^https://#', wfExpandUrl( $request->getRequestURL(), PROTO_HTTPS ) ) ) {
+			if ( $force ) {
+				throw new RuntimeException( '$wgForceHTTPS is true but the server is not HTTPS' );
+			}
+			return false;
+		}
+
+		// Configured $wgForceHTTPS overrides the remaining conditions
+		if ( $force ) {
+			return true;
+		}
+
+		// Check if HTTPS is required by the session or user preferences
+		return $request->getSession()->shouldForceHTTPS() ||
+			// Check the cookie manually, for paranoia
+			$request->getCookie( 'forceHTTPS', '' ) ||
+			// Avoid checking the user and groups unless it's enabled.
+			(
+				$this->context->getUser()->isLoggedIn()
+				&& $this->context->getUser()->requiresHTTPS()
+			);
+	}
+
+	/**
+	 * If the stars are suitably aligned, do an HTTP->HTTPS redirect
+	 *
+	 * Note: Do this after $wgTitle is setup, otherwise the hooks run from
+	 * isLoggedIn() will do all sorts of weird stuff.
+	 *
+	 * @return bool True if the redirect was done. Handling of the request
+	 *   should be aborted. False if no redirect was done.
+	 */
+	private function maybeDoHttpsRedirect() {
+		if ( !$this->shouldDoHttpRedirect() ) {
+			return false;
+		}
+
+		$request = $this->context->getRequest();
+		$oldUrl = $request->getFullRequestURL();
+		$redirUrl = preg_replace( '#^http://#', 'https://', $oldUrl );
+
+		// ATTENTION: This hook is likely to be removed soon due to overall design of the system.
+		if ( !Hooks::run( 'BeforeHttpsRedirect', [ $this->context, &$redirUrl ] ) ) {
+			return false;
+		}
+
+		if ( $request->wasPosted() ) {
+			// This is weird and we'd hope it almost never happens. This
+			// means that a POST came in via HTTP and policy requires us
+			// redirecting to HTTPS. It's likely such a request is going
+			// to fail due to post data being lost, but let's try anyway
+			// and just log the instance.
+
+			// @todo FIXME: See if we could issue a 307 or 308 here, need
+			// to see how clients (automated & browser) behave when we do
+			wfDebugLog( 'RedirectedPosts', "Redirected from HTTP to HTTPS: $oldUrl" );
+		}
+		// Setup dummy Title, otherwise OutputPage::redirect will fail
+		$title = Title::newFromText( 'REDIR', NS_MAIN );
+		$this->context->setTitle( $title );
+		// Since we only do this redir to change proto, always send a vary header
+		$output = $this->context->getOutput();
+		$output->addVaryHeader( 'X-Forwarded-Proto' );
+		$output->redirect( $redirUrl );
+		$output->output();
+
+		return true;
+	}
+
+	/**
 	 * Ends this task peacefully
 	 * @param string $mode Use 'fast' to always skip job running
 	 * @param bool $blocksHttpClient Whether this blocks an HTTP response to a client
@@ -884,7 +938,9 @@ class MediaWiki {
 		$trxProfiler = Profiler::instance()->getTransactionProfiler();
 		$trxProfiler->resetExpectations();
 		$trxProfiler->setExpectations(
-			$this->config->get( 'TrxProfilerLimits' )['PostSend'],
+			$this->context->getRequest()->hasSafeMethod()
+				? $this->config->get( 'TrxProfilerLimits' )['PostSend-GET']
+				: $this->config->get( 'TrxProfilerLimits' )['PostSend-POST'],
 			__METHOD__
 		);
 
@@ -908,6 +964,34 @@ class MediaWiki {
 		$lbFactory->shutdown( LBFactory::SHUTDOWN_NO_CHRONPROT );
 
 		wfDebug( "Request ended normally\n" );
+	}
+
+	/**
+	 * Send out any buffered statsd data according to sampling rules
+	 *
+	 * @param IBufferingStatsdDataFactory $stats
+	 * @param Config $config
+	 * @throws ConfigException
+	 * @since 1.31
+	 */
+	public static function emitBufferedStatsdData(
+		IBufferingStatsdDataFactory $stats, Config $config
+	) {
+		if ( $config->get( 'StatsdServer' ) && $stats->hasData() ) {
+			try {
+				$statsdServer = explode( ':', $config->get( 'StatsdServer' ) );
+				$statsdHost = $statsdServer[0];
+				$statsdPort = isset( $statsdServer[1] ) ? $statsdServer[1] : 8125;
+				$statsdSender = new SocketSender( $statsdHost, $statsdPort );
+				$statsdClient = new SamplingStatsdClient( $statsdSender, true, false );
+				$statsdClient->setSamplingRates( $config->get( 'StatsdSamplingRates' ) );
+				$statsdClient->send( $stats->getData() );
+
+				$stats->clearData(); // empty buffer for the next round
+			} catch ( Exception $ex ) {
+				MWExceptionHandler::logException( $ex );
+			}
+		}
 	}
 
 	/**
@@ -991,7 +1075,7 @@ class MediaWiki {
 			$port = $info['port'];
 		}
 
-		MediaWiki\suppressWarnings();
+		Wikimedia\suppressWarnings();
 		$sock = $host ? fsockopen(
 			$host,
 			$port,
@@ -1000,7 +1084,7 @@ class MediaWiki {
 			// If it takes more than 100ms to connect to ourselves there is a problem...
 			0.100
 		) : false;
-		MediaWiki\restoreWarnings();
+		Wikimedia\restoreWarnings();
 
 		$invokedWithSuccess = true;
 		if ( $sock ) {

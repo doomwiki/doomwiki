@@ -1,3 +1,5 @@
+/* global $ */
+
 /*!
  * VisualEditor MediaWiki Initialization MobileFrontendArticleTarget class.
  *
@@ -159,7 +161,7 @@ ve.init.mw.MobileFrontendArticleTarget.prototype.surfaceReady = function () {
 	// we have to do it here because contenteditable elements still do not
 	// exist when postRender is executed
 	// FIXME: Don't call a private method that is outside the class.
-	this.overlay._fixIosHeader( '[contenteditable]' );
+	this.overlay._fixIosHeader( $( '[contenteditable]' ) );
 
 	this.maybeShowWelcomeDialog();
 };
@@ -240,11 +242,12 @@ ve.init.mw.MobileFrontendArticleTarget.prototype.saveComplete = function () {
 /*
  * FIXME: @inheritdoc once this file is in the right repo
  */
-ve.init.mw.MobileFrontendArticleTarget.prototype.close = function () {
+ve.init.mw.MobileFrontendArticleTarget.prototype.tryTeardown = function () {
 	// Parent method
-	ve.init.mw.MobileFrontendArticleTarget.super.prototype.close.apply( this, arguments );
-
-	window.history.back();
+	ve.init.mw.MobileFrontendArticleTarget.super.prototype.tryTeardown.apply( this, arguments ).then( function () {
+		// eslint-disable-next-line no-restricted-properties
+		window.history.back();
+	} );
 };
 
 /* Registration */

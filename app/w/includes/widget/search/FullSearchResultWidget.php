@@ -54,9 +54,11 @@ class FullSearchResultWidget implements SearchResultWidget {
 		$redirect = $this->generateRedirectHtml( $result );
 		$section = $this->generateSectionHtml( $result );
 		$category = $this->generateCategoryHtml( $result );
-		$date = $this->specialPage->getLanguage()->userTimeAndDate(
-			$result->getTimestamp(),
-			$this->specialPage->getUser()
+		$date = htmlspecialchars(
+			$this->specialPage->getLanguage()->userTimeAndDate(
+				$result->getTimestamp(),
+				$this->specialPage->getUser()
+			)
 		);
 		list( $file, $desc, $thumb ) = $this->generateFileHtml( $result );
 		$snippet = $result->getTextSnippet( $terms );
@@ -79,7 +81,7 @@ class FullSearchResultWidget implements SearchResultWidget {
 			if ( !Hooks::run( 'ShowSearchHit', [
 				$this->specialPage, $result, $terms,
 				&$link, &$redirect, &$section, &$extract,
-				&$score, &$size, &$date, &$related, &$html
+				&$score, &$desc, &$date, &$related, &$html
 			] ) ) {
 				return $html;
 			}
@@ -133,13 +135,14 @@ class FullSearchResultWidget implements SearchResultWidget {
 		$title = clone $result->getTitle();
 		$query = [];
 
+		$attributes = [ 'data-serp-pos' => $position ];
 		Hooks::run( 'ShowSearchHitTitle',
-			[ &$title, &$snippet, $result, $terms, $this->specialPage, &$query ] );
+			[ &$title, &$snippet, $result, $terms, $this->specialPage, &$query, &$attributes ] );
 
 		$link = $this->linkRenderer->makeLink(
 			$title,
 			$snippet,
-			[ 'data-serp-pos' => $position ],
+			$attributes,
 			$query
 		);
 
@@ -162,7 +165,7 @@ class FullSearchResultWidget implements SearchResultWidget {
 			: $this->linkRenderer->makeLink( $title, $text ? new HtmlArmor( $text ) : null );
 
 		return "<span class='searchalttitle'>" .
-				$this->specialPage->msg( $msgKey )->rawParams( $inner )->text()
+				$this->specialPage->msg( $msgKey )->rawParams( $inner )->parse()
 			. "</span>";
 	}
 

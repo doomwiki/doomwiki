@@ -1,13 +1,16 @@
 <?php
 
+use Wikimedia\Rdbms\Database;
+use MediaWiki\MediaWikiServices;
+
 class AFComputedVariable {
 	public $mMethod, $mParameters;
 	public static $userCache = [];
 	public static $articleCache = [];
 
 	/**
-	 * @param $method
-	 * @param $parameters
+	 * @param string $method
+	 * @param array $parameters
 	 */
 	function __construct( $method, $parameters ) {
 		$this->mMethod = $method;
@@ -47,7 +50,7 @@ class AFComputedVariable {
 	 * in case a user name is given as argument. Nowadays user objects are passed
 	 * directly but many old log entries rely on this.
 	 *
-	 * @param $user string|User
+	 * @param string|User $user
 	 * @return User
 	 */
 	static function getUserObject( $user ) {
@@ -86,8 +89,8 @@ class AFComputedVariable {
 	}
 
 	/**
-	 * @param $namespace
-	 * @param $title Title
+	 * @param int $namespace
+	 * @param Title $title
 	 * @return Article
 	 */
 	static function articleFromTitle( $namespace, $title ) {
@@ -134,7 +137,7 @@ class AFComputedVariable {
 	}
 
 	/**
-	 * @param $vars AbuseFilterVariableHolder
+	 * @param AbuseFilterVariableHolder $vars
 	 * @return AFPData|array|int|mixed|null|string
 	 * @throws MWException
 	 * @throws AFPException
@@ -308,6 +311,7 @@ class AFComputedVariable {
 
 				$revision = $title->getFirstRevision();
 				if ( $revision ) {
+					// TODO T233241
 					$result = $revision->getUserText();
 				} else {
 					$result = '';
@@ -362,8 +366,14 @@ class AFComputedVariable {
 				$result = strlen( $s );
 				break;
 			case 'subtract':
+				// Currently unused, kept for backwards compatibility for old filters.
 				$v1 = $vars->getVar( $parameters['val1-var'] )->toFloat();
 				$v2 = $vars->getVar( $parameters['val2-var'] )->toFloat();
+				$result = $v1 - $v2;
+				break;
+			case 'subtract-int':
+				$v1 = $vars->getVar( $parameters['val1-var'] )->toInt();
+				$v2 = $vars->getVar( $parameters['val2-var'] )->toInt();
 				$result = $v1 - $v2;
 				break;
 			case 'revision-text-by-id':
@@ -397,7 +407,7 @@ class AFComputedVariable {
 			return [];
 		}
 
-		$cache = ObjectCache::getMainWANInstance();
+		$cache = MediaWikiServices::getInstance()->getMainWANObjectCache();
 
 		return $cache->getWithSetCallback(
 			$cache->makeKey( 'last-10-authors', 'revision', $title->getLatestRevID() ),
@@ -406,17 +416,24 @@ class AFComputedVariable {
 				$dbr = wfGetDB( DB_REPLICA );
 				$setOpts += Database::getCacheSetOptions( $dbr );
 				// Get the last 100 edit authors with a trivial query (avoid T116557)
+				$revQuery = Revision::getQueryInfo();
 				$revAuthors = $dbr->selectFieldValues(
-					'revision',
-					'rev_user_text',
-					[ 'rev_page' => $title->getArticleID() ],
+					$revQuery['tables'],
+					$revQuery['fields']['rev_user_text'],
+					[
+						'rev_page' => $title->getArticleID(),
+						// TODO Should deleted names be counted in the 10 authors? If yes, this check should
+						// be moved inside the foreach
+						'rev_deleted' => 0
+					],
 					__METHOD__,
 					// Some pages have < 10 authors but many revisions (e.g. bot pages)
 					[ 'ORDER BY' => 'rev_timestamp DESC',
 						'LIMIT' => 100,
 						// Force index per T116557
-						'USE INDEX' => 'page_timestamp',
-					]
+						'USE INDEX' => [ 'revision' => 'page_timestamp' ],
+					],
+					$revQuery['joins']
 				);
 				// Get the last 10 distinct authors within this set of edits
 				$users = [];

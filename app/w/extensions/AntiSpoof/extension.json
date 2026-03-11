@@ -3,10 +3,10 @@
 	"author": "Brion Vibber",
 	"url": "https://www.mediawiki.org/wiki/Extension:AntiSpoof",
 	"descriptionmsg": "antispoof-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "antispam",
 	"requires": {
-		"MediaWiki": ">= 1.25.0"
+		"MediaWiki": ">= 1.27.0"
 	},
 	"GroupPermissions": {
 		"sysop": {
@@ -26,16 +26,23 @@
 		"AntiSpoof": "i18n"
 	},
 	"AutoloadClasses": {
-		"AntiSpoof": "AntiSpoof_body.php",
-		"AntiSpoofHooks": "AntiSpoofHooks.php",
-		"SpoofUser": "SpoofUser.php",
-		"AntiSpoofAuthenticationRequest": "AntiSpoofAuthenticationRequest.php",
-		"AntiSpoofPreAuthenticationProvider": "AntiSpoofPreAuthenticationProvider.php",
-		"ApiAntiSpoof": "api/ApiAntiSpoof.php"
+		"AntiSpoof": "includes/AntiSpoof.php",
+		"AntiSpoofHooks": "includes/AntiSpoofHooks.php",
+		"SpoofUser": "includes/SpoofUser.php",
+		"AntiSpoofAuthenticationRequest": "includes/AntiSpoofAuthenticationRequest.php",
+		"AntiSpoofPreAuthenticationProvider": "includes/AntiSpoofPreAuthenticationProvider.php",
+		"ApiAntiSpoof": "includes/ApiAntiSpoof.php"
 	},
-	"callback": "AntiSpoofHooks::onRegistration",
+	"AuthManagerAutoConfig": {
+		"preauth": {
+			"AntiSpoofPreAuthenticationProvider": {
+				"class": "AntiSpoofPreAuthenticationProvider"
+			}
+		}
+	},
 	"Hooks": {
 		"LoadExtensionSchemaUpdates": "AntiSpoofHooks::asUpdateSchema",
+		"LocalUserCreated": "AntiSpoofHooks::asLocalUserCreated",
 		"RenameUserComplete": "AntiSpoofHooks::asAddRenameUserHook",
 		"DeleteAccount": "AntiSpoofHooks::asDeleteAccount"
 	},
@@ -55,5 +62,6 @@
 			"\uFF0F"
 		]
 	},
+	"load_composer_autoloader": true,
 	"manifest_version": 1
 }

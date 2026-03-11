@@ -1,7 +1,23 @@
 <?php
 /**
- * SkinMinerva.php
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+ * http://www.gnu.org/copyleft/gpl.html
+ *
+ * @file
  */
+
 use MediaWiki\Minerva\MenuBuilder;
 use MediaWiki\MediaWikiServices;
 use MediaWiki\Minerva\SkinUserPageHelper;
@@ -15,7 +31,6 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	/** Set of keys for available skin options. See $skinOptions. */
 	const OPTION_MOBILE_OPTIONS = 'mobileOptionsLink';
 	const OPTION_CATEGORIES = 'categories';
-	const OPTION_FONT_CHANGER = 'fontChanger';
 	const OPTION_BACK_TO_TOP = 'backToTop';
 	const OPTION_TOGGLING = 'toggling';
 	const OPTIONS_MOBILE_BETA = 'beta';
@@ -27,8 +42,6 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	public $skinname = 'minerva';
 	/** @var string $template Name of this used template */
 	public $template = 'MinervaTemplate';
-	/** @var bool $useHeadElement Specify whether show head elements */
-	public $useHeadElement = true;
 	/** @var ContentHandler Content handler of page; only access through getContentHandler */
 	protected $contentHandler = null;
 	/** @var bool Whether the page is also available in other languages or variants */
@@ -52,6 +65,14 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				'src' => $customLogos['copyright'],
 				'alt' => $footerSitename,
 			];
+			if ( pathinfo( $customLogos['copyright'], PATHINFO_EXTENSION ) === 'svg' ) {
+				$attributes['srcset'] = $customLogos['copyright'] . ' 1x';
+				if ( isset( $customLogos['copyright-fallback'] ) ) {
+					$attributes['src'] = $customLogos['copyright-fallback'];
+				} else {
+					$attributes['src'] = preg_replace( '/\.svg$/i', '.png', $customLogos['copyright'] );
+				}
+			}
 			if ( isset( $customLogos['copyright-height'] ) ) {
 				$attributes['height'] = $customLogos['copyright-height'];
 			}
@@ -76,8 +97,6 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		self::OPTION_MOBILE_OPTIONS => false,
 		/** Whether a categories button should appear at the bottom of the skin. */
 		self::OPTION_CATEGORIES => false,
-		/** Whether an option to change font size appears in Special:MobileOptions */
-		self::OPTION_FONT_CHANGER => false,
 		/** Whether a back to top button appears at the bottom of the view page */
 		self::OPTION_BACK_TO_TOP => false,
 		/** Whether sections can be collapsed (requires MobileFrontend and MobileFormatter) */
@@ -197,6 +216,10 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	protected function isAllowedPageAction( $action ) {
 		$title = $this->getTitle();
 		$config = $this->getConfig();
+		// Title may be undefined in certain contexts (T179833)
+		if ( !$title ) {
+			return false;
+		}
 
 		if (
 			! in_array( $action, $config->get( 'MinervaPageActions' ) )
@@ -236,7 +259,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				'data-section' => $section,
 				// Note visibility of the edit section link button is controlled by .edit-page in ui.less so
 				// we default to enabled even though this may not be true.
-				'class' => MobileUI::iconClass( 'edit-enabled', 'element', 'edit-page' ),
+				'class' => MinervaUI::iconClass( 'edit-enabled', 'element', 'edit-page' ),
 			], $message );
 			$html .= Html::closeElement( 'span' );
 			return $html;
@@ -281,7 +304,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 * @return bool
 	 */
 	protected function isAuthenticatedUser() {
-		return !$this->getUser()->isAnon();
+		return $this->getUser()->isLoggedIn();
 	}
 
 	/**
@@ -305,7 +328,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 */
 	public function getUserPageHelper() {
 		if ( $this->userPageHelper === null ) {
-			$this->userPageHelper = new SkinUserPageHelper( $this->getContext() );
+			$this->userPageHelper = new SkinUserPageHelper( $this->getContext()->getTitle() );
 		}
 		return $this->userPageHelper;
 	}
@@ -316,9 +339,6 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 */
 	public function initPage( OutputPage $out ) {
 		parent::initPage( $out );
-		$styles = [];
-
-		$out->addModuleStyles( $styles );
 		$out->addJsConfigVars( $this->getSkinConfigVariables() );
 	}
 
@@ -340,12 +360,13 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	}
 
 	/**
-	 * Get the last time user has seen Echo notifications
+	 * Get the last time user has seen particular type of notifications.
 	 * @param User $user
+	 * @param string $type Type of seen time to get
 	 * @return string|bool Timestamp in TS_ISO_8601 format, or false if no stored time
 	 */
-	protected function getEchoSeenTime( User $user ) {
-		return EchoSeenTime::newFromUser( $user )->getTime( 'all', /*flags*/ 0, TS_ISO_8601 );
+	protected function getEchoSeenTime( User $user, $type = 'all' ) {
+		return EchoSeenTime::newFromUser( $user )->getTime( $type, TS_ISO_8601 );
 	}
 
 	/**
@@ -365,6 +386,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		// Set user button to empty string by default
 		$tpl->set( 'secondaryButtonData', '' );
 		$notificationsTitle = '';
+		$count = 0;
 		$countLabel = '';
 		$isZero = true;
 		$hasUnseen = false;
@@ -381,20 +403,27 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				// Don't show the secondary button at all
 				$notificationsTitle = null;
 			} else {
-				$notifUser = $this->getEchoNotifUser( $user );
-				$echoSeenTime = $this->getEchoSeenTime( $user );
-
 				$notificationsMsg = $this->msg( 'mobile-frontend-user-button-tooltip' )->text();
-				$notifLastUnreadTime = $notifUser->getLastUnreadNotificationTime();
+
+				$notifUser = $this->getEchoNotifUser( $user );
 				$count = $notifUser->getNotificationCount();
 
+				$seenAlertTime = $this->getEchoSeenTime( $user, 'alert' );
+				$seenMsgTime = $this->getEchoSeenTime( $user, 'message' );
+
+				$alertNotificationTimestamp = $notifUser->getLastUnreadAlertTime();
+				$msgNotificationTimestamp = $notifUser->getLastUnreadMessageTime();
+
 				$isZero = $count === 0;
-				$hasUnseen = (
-					$count > 0 &&
-					$echoSeenTime !== false &&
-					$notifLastUnreadTime !== false &&
-					$echoSeenTime < $notifLastUnreadTime->getTimestamp( TS_ISO_8601 )
-				);
+				$hasUnseen = $count > 0 &&
+					(
+						$seenMsgTime !== false && $msgNotificationTimestamp !== false &&
+						$seenMsgTime < $msgNotificationTimestamp->getTimestamp( TS_ISO_8601 )
+					) ||
+					(
+						$seenAlertTime !== false && $alertNotificationTimestamp !== false &&
+						$seenAlertTime < $alertNotificationTimestamp->getTimestamp( TS_ISO_8601 )
+					);
 
 				$countLabel = $this->getFormattedEchoNotificationCount( $count );
 			}
@@ -408,10 +437,11 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				[ 'returnto' => $currentTitle->getPrefixedText() ] );
 
 			$tpl->set( 'secondaryButtonData', [
-				'notificationIconClass' => MobileUI::iconClass( 'notifications' ),
+				'notificationIconClass' => MinervaUI::iconClass( 'notifications' ),
 				'title' => $notificationsMsg,
 				'url' => $url,
-				'notificationCount' => $countLabel,
+				'notificationCountRaw' => $count,
+				'notificationCountString' => $countLabel,
 				'isNotificationCountZero' => $isZero,
 				'hasNotifications' => $hasUnseen,
 				'hasUnseenNotifications' => $hasUnseen
@@ -452,7 +482,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			->addComponent(
 				$this->msg( 'mobile-frontend-main-menu-contributions' )->escaped(),
 				SpecialPage::getTitleFor( 'Contributions', $user->getName() )->getLocalUrl(),
-				MobileUI::iconClass( 'mf-contributions', 'before' ),
+				MinervaUI::iconClass( 'contributions', 'before' ),
 				[ 'data-event-name' => 'contributions' ]
 			);
 	}
@@ -490,7 +520,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 					'mobile-frontend-watchlist-purpose',
 					$watchlistQuery
 				),
-				MobileUI::iconClass( 'mf-watchlist', 'before' ),
+				MinervaUI::iconClass( 'watchlist', 'before' ),
 				[ 'data-event-name' => 'watchlist' ]
 			);
 	}
@@ -512,7 +542,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 					$this->msg( 'mobile-frontend-main-menu-settings' )->escaped(),
 					SpecialPage::getTitleFor( 'MobileOptions' )->
 						getLocalUrl( [ 'returnto' => $returnToTitle ] ),
-					MobileUI::iconClass( 'mf-settings', 'before' ),
+					MinervaUI::iconClass( 'settings', 'before' ),
 					[ 'data-event-name' => 'settings' ]
 				);
 
@@ -527,7 +557,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 						SpecialPage::getTitleFor( 'Preferences' ),
 						'prefsnologintext2'
 					),
-					MobileUI::iconClass( 'mf-settings', 'before' ),
+					MinervaUI::iconClass( 'settings', 'before' ),
 					[ 'data-event-name' => 'preferences' ]
 				);
 		}
@@ -577,12 +607,9 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		$lang = $this->getTitle()->getPageViewLanguage();
 		$tpl->set( 'pageLang', $lang->getHtmlCode() );
 		$tpl->set( 'pageDir', $lang->getDir() );
-		$language_urls = $this->getLanguages();
-		if ( count( $language_urls ) ) {
-			$tpl->setRef( 'language_urls', $language_urls );
-		} else {
-			$tpl->set( 'language_urls', false );
-		}
+		// If the array is empty, then instead give the skin boolean false
+		$language_urls = $this->getLanguages() ?: false;
+		$tpl->set( 'language_urls', $language_urls );
 	}
 
 	/**
@@ -613,7 +640,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			->addComponent(
 				$this->msg( 'mobile-frontend-home-button' )->escaped(),
 				Title::newMainPage()->getLocalUrl(),
-				MobileUI::iconClass( 'mf-home', 'before' ),
+				MinervaUI::iconClass( 'home', 'before' ),
 				[ 'data-event-name' => 'home' ]
 			);
 
@@ -622,7 +649,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			->addComponent(
 				$this->msg( 'mobile-frontend-random-button' )->escaped(),
 				SpecialPage::getTitleFor( 'Randompage' )->getLocalUrl() . '#/random',
-				MobileUI::iconClass( 'mf-random', 'before' ),
+				MinervaUI::iconClass( 'random', 'before' ),
 				[
 					'id' => 'randomButton',
 					'data-event-name' => 'random',
@@ -639,7 +666,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				->addComponent(
 					$this->msg( 'mobile-frontend-main-menu-nearby' )->escaped(),
 					SpecialPage::getTitleFor( 'Nearby' )->getLocalURL(),
-					MobileUI::iconClass( 'mf-nearby', 'before', 'nearby' ),
+					MinervaUI::iconClass( 'nearby', 'before', 'nearby' ),
 					[ 'data-event-name' => 'nearby' ]
 				);
 		}
@@ -689,14 +716,14 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				->addComponent(
 					$username,
 					Title::newFromText( $username, NS_USER )->getLocalUrl(),
-					MobileUI::iconClass( 'mf-profile', 'before', 'truncated-text primary-action' ),
+					MinervaUI::iconClass( 'profile', 'before', 'truncated-text primary-action' ),
 					[ 'data-event-name' => 'profile' ]
 				)
 				->addComponent(
 					$this->msg( 'mobile-frontend-main-menu-logout' )->escaped(),
 					$url,
-					MobileUI::iconClass(
-						'mf-logout', 'element', 'secondary-action truncated-text' ),
+					MinervaUI::iconClass(
+						'logout', 'element', 'secondary-action truncated-text' ),
 					[ 'data-event-name' => 'logout' ]
 				);
 		} else {
@@ -711,10 +738,56 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 				->addComponent(
 					$this->msg( 'mobile-frontend-main-menu-login' )->escaped(),
 					$url,
-					MobileUI::iconClass( 'mf-anonymous', 'before' ),
+					MinervaUI::iconClass( 'login', 'before' ),
 					[ 'data-event-name' => 'login' ]
 				);
 		}
+	}
+
+	/**
+	 * Get a history link which describes author and relative time of last edit
+	 * @param Title $title The Title object of the page being viewed
+	 * @param int $timestamp
+	 * @return array
+	 */
+	protected function getRelativeHistoryLink( Title $title, $timestamp ) {
+		$user = $this->getUser();
+		$text = $this->msg(
+			'minerva-last-modified-date',
+			$this->getLanguage()->userDate( $timestamp, $user ),
+			$this->getLanguage()->userTime( $timestamp, $user )
+		)->parse();
+		return [
+			// Use $edit['timestamp'] (Unix format) instead of $timestamp (MW format)
+			'data-timestamp' => wfTimestamp( TS_UNIX, $timestamp ),
+			'href' => $this->getHistoryUrl( $title ),
+			'text' => $text,
+		] + $this->getRevisionEditorData( $title );
+	}
+
+	/**
+	 * Get a history link which makes no reference to user or last edited time
+	 * @param Title $title The Title object of the page being viewed
+	 * @return array
+	 */
+	protected function getGenericHistoryLink( Title $title ) {
+		$text = $this->msg( 'mobile-frontend-history' )->plain();
+		return [
+			'href' => $this->getHistoryUrl( $title ),
+			'text' => $text,
+		];
+	}
+
+	/**
+	 * Get the URL for the history page for the given title using Special:History
+	 * when available.
+	 * @param Title $title The Title object of the page being viewed
+	 * @return string
+	 */
+	protected function getHistoryUrl( Title $title ) {
+		return SpecialPageFactory::exists( 'History' ) ?
+			SpecialPage::getTitleFor( 'History', $title )->getLocalURL() :
+			$title->getLocalURL( [ 'action' => 'history' ] );
 	}
 
 	/**
@@ -725,60 +798,42 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 * @return array
 	 */
 	protected function getHistoryLink( Title $title ) {
-		$user = $this->getUser();
-		$isMainPage = $title->isMainPage();
+		$isLatestRevision = $this->getRevisionId() === $title->getLatestRevID();
 		// Get rev_timestamp of current revision (preloaded by MediaWiki core)
 		$timestamp = $this->getOutput()->getRevisionTimestamp();
-		// Main pages tend to include transclusions (see bug 51924)
-		if ( $isMainPage ) {
-			$lastModified = $this->msg( 'mobile-frontend-history' )->plain();
-		} else {
-			$lastModified = $this->msg(
-				'minerva-last-modified-date',
-				$this->getLanguage()->userDate( $timestamp, $user ),
-				$this->getLanguage()->userTime( $timestamp, $user )
-			)->parse();
+		# No cached timestamp, load it from the database
+		if ( $timestamp === null ) {
+			$timestamp = Revision::getTimestampFromId( $this->getTitle(), $this->getRevisionId() );
 		}
 
-		if ( SpecialPageFactory::exists( 'History' ) ) {
-			$historyUrl = SpecialPage::getTitleFor( 'History', $title )->getLocalURL();
-		} else {
-			$historyUrl = $title->getLocalURL( [ 'action' => 'history' ] );
-		}
-
-		$editor = $this->getRevisionEditor( Revision::newFromTitle( $title ) );
-		return [
-			// Use $edit['timestamp'] (Unix format) instead of $timestamp (MW format)
-			'data-timestamp' => $isMainPage ? '' : wfTimestamp( TS_UNIX, $timestamp ),
-			'href' => $historyUrl,
-			'text' => $lastModified,
-			'data-user-name' => $editor ? $editor['name'] : '',
-			'data-user-gender' => $editor ? $editor['gender'] : ''
-		];
+		return !$isLatestRevision || $title->isMainPage() ?
+			$this->getGenericHistoryLink( $title ) :
+			$this->getRelativeHistoryLink( $title, $timestamp );
 	}
 
 	/**
-	 * Returns the editor of a current revision.
-	 * There appears to be no shorthand method for this in core.
-	 * @return array|false representing user with name and gender fields. False if the editor no longer
-	 *   exists in the database or is hidden from public view
+	 * Returns data attributes representing the editor for the current revision.
+	 * @param Title $title The Title object of the page being viewed
+	 * @return array representing user with name and gender fields. Empty if the editor no longer
+	 *   exists in the database or is hidden from public view.
 	 */
-	private function getRevisionEditor( Revision $rev ) {
-		$editorName = '';
-		$editorGender = '';
-		$revUserId = $rev->getUser();
-		// Note the user will only be returned if that information is public
-		if ( $revUserId ) {
-			$revUser = User::newFromId( $revUserId );
-			$editorName = $revUser->getName();
-			$editorGender = $revUser->getOption( 'gender' );
-		} else {
-			return false;
+	private function getRevisionEditorData( Title $title ) {
+		$rev = Revision::newFromTitle( $title );
+		$result = [];
+		if ( $rev ) {
+			$revUserId = $rev->getUser();
+			// Note the user will only be returned if that information is public
+			if ( $revUserId ) {
+				$revUser = User::newFromId( $revUserId );
+				$editorName = $revUser->getName();
+				$editorGender = $revUser->getOption( 'gender' );
+				$result += [
+					'data-user-name' => $editorName,
+					'data-user-gender' => $editorGender,
+				];
+			}
 		}
-		return [
-			'name' => $editorName,
-			'gender' => $editorGender,
-		];
+		return $result;
 	}
 
 	/**
@@ -786,7 +841,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 * @return string HTML for tagline
 	 */
 	protected function getTaglineHtml() {
-		$tagline = false;
+		$tagline = '';
 
 		if ( $this->getUserPageHelper()->isUserPage() ) {
 			$pageUser = $this->getUserPageHelper()->getPageUser();
@@ -807,16 +862,13 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		} else {
 			$title = $this->getTitle();
 			if ( $title ) {
-				if ( !$title->isMainPage() && $title->inNamespace( NS_MAIN ) ) {
-					$vars = $this->getSkinConfigVariables();
-					$tagline = $vars['wgMFDescription'];
-				}
+				$vars = $this->getSkinConfigVariables();
+				$tagline = $vars['wgMFDescription'];
 			}
 		}
 
 		$attrs[ 'class' ] = 'tagline';
-		return $tagline ?
-			Html::element( 'div', $attrs, $tagline ) : '';
+		return Html::element( 'div', $attrs, $tagline );
 	}
 	/**
 	 * Returns the HTML representing the heading.
@@ -849,6 +901,8 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			$pageUser = $this->getUserPageHelper()->getPageUser();
 			$talkPage = $pageUser->getTalkPage();
 			$data = [
+				// Talk page icon is provided by mobile.userpage.icons for time being
+				'userPageIconClass' => MinervaUI::iconClass( 'talk', 'before', 'talk', 'mf' ),
 				'talkPageTitle' => $talkPage->getPrefixedURL(),
 				'talkPageLink' => $talkPage->getLocalUrl(),
 				'talkPageLinkTitle' => $this->msg(
@@ -877,12 +931,12 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		$tpl->set( 'postheadinghtml', $postHeadingHtml );
 
 		if ( $this->canUseWikiPage() ) {
-			$isLatestRevision = $this->getRevisionId() === $title->getLatestRevID();
 			// If it's a page that exists, add last edited timestamp
-			// The last modified bar is only rendered on the latest revision.
+			// The relative time is only rendered on the latest revision.
 			// For older revisions the last modified
-			// information appears at the top of the page.
-			if ( $this->getWikiPage()->exists() && $isLatestRevision ) {
+			// information will not render with a relative time
+			// nor will it show the name of the editor.
+			if ( $this->getWikiPage()->exists() ) {
 				$tpl->set( 'historyLink', $this->getHistoryLink( $title ) );
 			}
 		}
@@ -908,7 +962,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			Html::element( 'a', [
 				'title' => $this->msg( 'mobile-frontend-main-menu-button-tooltip' ),
 				'href' => $url,
-				'class' => MobileUI::iconClass( 'mainmenu', 'element', 'main-menu-button' ),
+				'class' => MinervaUI::iconClass( 'mainmenu', 'element', 'main-menu-button' ),
 				'id' => 'mw-mf-main-menu-button',
 			], $this->msg( 'mobile-frontend-main-menu-button-tooltip' ) )
 		);
@@ -986,14 +1040,24 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 * Returns an array with details for a talk button.
 	 * @param Title $talkTitle Title object of the talk page
 	 * @param array $talkButton Array with data of desktop talk button
+	 * @param bool $addSection (optional) when added the talk button will render
+	 *  as an add topic button. Defaults to false.
 	 * @return array
 	 */
-	protected function getTalkButton( $talkTitle, $talkButton ) {
+	protected function getTalkButton( $talkTitle, $talkButton, $addSection = false ) {
+		if ( $addSection ) {
+			$params = [ 'action' => 'edit', 'section' => 'new' ];
+			$className = 'talk continue add';
+		} else {
+			$params = [];
+			$className = 'talk';
+		}
+
 		return [
 			'attributes' => [
-				'href' => $talkTitle->getLinkURL(),
+				'href' => $talkTitle->getLinkURL( $params ),
 				'data-title' => $talkTitle->getFullText(),
-				'class' => 'talk',
+				'class' => $className,
 			],
 			'label' => $talkButton['text'],
 		];
@@ -1032,10 +1096,16 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			// FIXME [core]: This seems unnecessary..
 			$subjectId = $title->getNamespaceKey( '' );
 			$talkId = $subjectId === 'main' ? 'talk' : "{$subjectId}_talk";
-			if ( isset( $namespaces[$talkId] ) && !$title->isTalkPage() ) {
+
+			if ( isset( $namespaces[$talkId] ) ) {
 				$talkButton = $namespaces[$talkId];
 				$talkTitle = $title->getTalkPage();
-				$buttons['talk'] = $this->getTalkButton( $talkTitle, $talkButton );
+				if ( $title->isTalkPage() ) {
+					$talkButton['text'] = wfMessage( 'minerva-talk-add-topic' );
+					$buttons['talk'] = $this->getTalkButton( $title, $talkButton, true );
+				} else {
+					$buttons['talk'] = $this->getTalkButton( $talkTitle, $talkButton );
+				}
 			}
 		}
 
@@ -1096,11 +1166,12 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			// Full wikitext editing is not possible via the api and hard on mobile devices.
 			$editArgs['section'] = self::LEAD_SECTION_NUMBER;
 		}
+		$userCanEdit = $title->quickUserCan( 'edit', $this->getUser() );
 		return [
 			'id' => 'ca-edit',
 			'text' => '',
 			'itemtitle' => $this->msg( 'mobile-frontend-pageaction-edit-tooltip' ),
-			'class' => MobileUI::iconClass( 'edit-enabled', 'element' ),
+			'class' => MinervaUI::iconClass( $userCanEdit ? 'edit-enabled' : 'edit', 'element' ),
 			'links' => [
 				'edit' => [
 					'href' => $title->getLocalURL( $editArgs )
@@ -1122,7 +1193,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		$baseResult = [
 			'id' => 'ca-watch',
 			// Use blank icon to reserve space for watchstar icon once JS loads
-			'class' => MobileUI::iconClass( '', 'element', 'watch-this-article' ),
+			'class' => MinervaUI::iconClass( '', 'element', 'watch-this-article' ),
 			'is_js_only' => true
 		];
 		$title = $this->getTitle();
@@ -1165,7 +1236,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		return [
 			'text' => '',
 			'itemtitle' => $this->msg( 'mobile-frontend-language-article-heading' ),
-			'class' => MobileUI::iconClass( 'language-switcher', 'element', $languageSwitcherClasses ),
+			'class' => MinervaUI::iconClass( 'language-switcher', 'element', $languageSwitcherClasses ),
 			'links' => $languageSwitcherLinks,
 			'is_js_only' => false
 		];
@@ -1228,9 +1299,8 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		$out = $this->getOutput();
 
 		$vars = [
+			'wgMinervaDownloadNamespaces' => $this->getConfig()->get( 'MinervaDownloadNamespaces' ),
 			'wgMinervaMenuData' => $this->getMenuData(),
-			// Expose for skins.minerva.tablet.scripts
-			'wgMinervaTocEnabled' => $out->getProperty( 'MFTOC' ),
 			'wgMFDescription' => $out->getProperty( 'wgMFDescription' ),
 		];
 
@@ -1259,12 +1329,11 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	protected function isTalkAllowed() {
 		$title = $this->getTitle();
 		return $this->isAllowedPageAction( 'talk' ) &&
-			!$title->isTalkPage() &&
-			$title->canHaveTalkPage() &&
+			( $title->isTalkPage() || $title->canHaveTalkPage() ) &&
 			$this->getUser()->isLoggedIn();
 	}
 
-	/*
+	/**
 	 * Returns true, if the talk page of this page is wikitext-based.
 	 * @return bool
 	 */
@@ -1323,10 +1392,6 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			$modules[] = 'skins.minerva.categories';
 		}
 
-		if ( $this->getSkinOption( self::OPTION_FONT_CHANGER ) ) {
-			$modules[] = 'skins.minerva.fontchanger';
-		}
-
 		if ( $this->getSkinOption( self::OPTION_BACK_TO_TOP ) ) {
 			$modules[] = 'skins.minerva.backtotop';
 		}
@@ -1373,7 +1438,7 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 	 * property.
 	 *
 	 * @param OutputPage $out
-	 * @param array $bodyAttrs
+	 * @param array &$bodyAttrs
 	 */
 	public function addToBodyAttributes( $out, &$bodyAttrs ) {
 		$classes = $out->getProperty( 'bodyClassName' );
@@ -1403,6 +1468,10 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 			$styles[] = 'skins.minerva.userpage.styles';
 			$styles[] = 'skins.minerva.userpage.icons';
 		}
+		if ( $this->isAuthenticatedUser() ) {
+			$styles[] = 'skins.minerva.loggedin.styles';
+			$styles[] = 'skins.minerva.icons.loggedin';
+		}
 
 		return $styles;
 	}
@@ -1416,3 +1485,6 @@ class SkinMinerva extends SkinTemplate implements ICustomizableSkin {
 		$out->addModuleStyles( $this->getSkinStyles() );
 	}
 }
+
+// Setup alias for compatibility with SkinMinervaNeue.
+class_alias( 'SkinMinerva', 'SkinMinervaNeue' );

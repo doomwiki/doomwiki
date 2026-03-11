@@ -11,14 +11,14 @@
 		$( '<a>', {
 			id: 'cacu-multilock-link',
 			text: mw.msg( 'checkuser-centralauth-multilock' ),
-			href: centralURL,
+			href: centralURL
 		} )
 	);
 
 	// Change the URL of the link when a checkbox's state is changed
-	$userCheckboxes.on( 'change', function() {
+	$userCheckboxes.on( 'change', function () {
 		var names = [];
-		$.each( $userCheckboxes.serializeArray(), function( i, obj ) {
+		$.each( $userCheckboxes.serializeArray(), function ( i, obj ) {
 			if ( obj.name && obj.name === 'users[]' ) {
 				// Only registered accounts (not IPs) can be locked
 				if ( !mw.util.isIPAddress( obj.value ) ) {

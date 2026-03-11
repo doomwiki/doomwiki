@@ -12,7 +12,7 @@ FIXME: Review all of these hacks to see if they still apply.
 @import 'minerva.mixins';
 
 /* Tablet specific styling */
-@media all and ( min-width: @deviceWidthTablet ) {
+@media all and ( min-width: @width-breakpoint-tablet ) {
 	// Float infoboxes to the right of the page
 	table.infobox {
 		margin: 0.5em 0 1em 35px !important;
@@ -22,15 +22,5 @@ FIXME: Review all of these hacks to see if they still apply.
 		width: auto !important;
 		float: right !important;
 		clear: right !important;
-
-		td {
-			width: auto;
-		}
-
-	}
-	// banners inserted by other extensions, i.e. Zero
-	#mw-mf-page-center .mw-mf-banner {
-		// !important because Zero has an inline style
-		background-clip: content-box !important;
 	}
 }

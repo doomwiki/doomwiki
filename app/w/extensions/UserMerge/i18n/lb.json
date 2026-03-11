@@ -19,17 +19,17 @@
 	"usermerge-deleteolduser": "Ale Benotzer läschen",
 	"usermerge-submit": "Benotzerkonten zesummeféieren",
 	"usermerge-badtoken": "Ännerungs-Jeton net valabel",
-	"usermerge-userdeleted": "{{GENDER:$1|$1}} ($2) gouf geläscht.",
-	"usermerge-userdeleted-log": "Geläschte Benotzer: $2($3)",
+	"usermerge-userdeleted": "$1 ($2) gouf geläscht.",
+	"usermerge-userdeleted-log": "huet de Benotzerkont \"$2\" ($3) geläscht",
 	"usermerge-success": "D'Zesummeféierung vum {{GENDER:$1|$1}} ($2) op {{GENDER:$3|$3}} ($4) ass net komplett.",
-	"usermerge-success-log": "Benotzer {{GENDER:$2|$2}} ($3) gouf zesummegeféiert mat {{GENDER:$4|$4}} ($5)",
+	"usermerge-success-log": "huet de Benotzer \"$2\" ($3) zesummegeféiert mam \"[[User:$4|$4]]\" ($5)",
 	"usermerge-logpage": "Lëscht vun de Benotzerkonten déi zesummegeféiert goufen",
 	"usermerge-logpagetext": "Dëst ass eng Lëscht vun de Benotzerkonten, déi zesummegeféiert goufen.",
 	"usermerge-noselfdelete": "Dir kënnt {{GENDER:$1|Iech net selwer}} läschen oder mat {{GENDER:$1|Iech selwer}} zesummeféieren!",
-	"usermerge-protectedgroup": "D'Zesammenféierung vum {{GENDER:$1|Benotzer}} ass net méiglech: De Benotzer ass an engem geschützte Grupp.",
+	"usermerge-protectedgroup": "D'Zesummenféierung vum {{GENDER:$1|Benotzer}} ass net méiglech: De Benotzer ass an engem geschützte Grupp.",
 	"right-usermerge": "Benotzer zesummeféieren",
 	"action-usermerge": "Benotzer zesummeféieren",
 	"usermerge-autopagedelete": "Automatesch geläscht wéi d'Benotzer zesummegeluecht goufen",
 	"usermerge-page-unmoved": "D'Säit $1 konnt net op $2 geréckelt ginn.",
-	"usermerge-move-log": "D'Säit gouf automatesch geréckelt wéi de Benotzer \"[[User:$1|$1]]\" mam \"[[User:$2|$2{{GENDER:$2|$2}}]]\" zesummegeluecht gouf"
+	"usermerge-move-log": "D'Säit gouf automatesch geréckelt wéi de Benotzer \"$1\" mam \"[[User:$2|$2]]\" zesummegeluecht gouf"
 }

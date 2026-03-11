@@ -9,16 +9,19 @@
 			"Ebraminio",
 			"Mahdy Saffar",
 			"Mjbmr",
-			"Reza1615"
+			"Reza1615",
+			"Ladsgroup"
 		]
 	},
+	"minerva-last-modified-date": "آخرین بار در $1، $2 ویرایش شده‌است",
 	"minerva-talk-add-topic": "اضافه کردن بحث",
-	"mobile-frontend-console-recruit": "\\o/ سلام! این یک نرم‌افزار متن‌باز است و ما به افراد داوطلب برای بهبود، ساخت و رفع باگ‌هایش نیاز داریم.\n\nبرای دیدن سیاههٔ باگ به @ https://phabricator.wikimedia.org/project/profile/67/ مراجعه کنید.",
 	"mobile-frontend-cookies-required": "کوکی‌ها برای تعویض روش‌های نمایش مورد نیاز هستند. لطفاً آنها را فعال کنید و دوباره امتحان کنید.",
 	"mobile-frontend-editor-blocked-info-loggedin": "حساب کاربری شما مسدود شده است. این عمل توسط {{GENDER:$2|$2}} و به دلیل $1 انجام گرفته‌است.",
 	"mobile-frontend-editor-cta": "کمک به بهبود این صفحه!",
+	"minerva-pointer-dismiss": "نپذیرفتن",
 	"mobile-frontend-editor-disabled": "این صفحه برای جلوگیری از خرابکاری محافظت شده‌است.",
 	"mobile-frontend-editor-edit": "ویرایش",
+	"minerva-download": "بارگذاری",
 	"mobile-frontend-editor-redlink-create": "ایجاد صفحه",
 	"mobile-frontend-editor-redlink-explain": "این صفحه هنوز ساخته نشده‌است.",
 	"mobile-frontend-editor-redlink-leave": "نه، متشکرم.",
@@ -60,5 +63,7 @@
 	"mobile-frontend-user-page-contributions": "مشارکت‌ها",
 	"mobile-frontend-user-page-member-since": "$1 {{GENDER:$2|عضو شد}}",
 	"mobile-frontend-user-page-talk": "بحث",
-	"mobile-frontend-user-page-uploads": "بارگذاری"
+	"mobile-frontend-user-page-uploads": "بارگذاری",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "رده‌ها",
+	"skin-minerva-mobile-option-MinervaEnableBackToTop": "رفتن به بالا"
 }

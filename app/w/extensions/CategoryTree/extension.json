@@ -3,7 +3,7 @@
 	"author": "Daniel Kinzler",
 	"url": "https://www.mediawiki.org/wiki/Extension:CategoryTree",
 	"descriptionmsg": "categorytree-desc",
-	"license-name": "GPL-2.0+",
+	"license-name": "GPL-2.0-or-later",
 	"type": "parserhook",
 	"ConfigRegistry": {
 		"categorytree": "GlobalVarConfig::newInstance"
@@ -27,18 +27,22 @@
 		"CategoryTreeMagic": "CategoryTree.i18n.magic.php"
 	},
 	"AutoloadClasses": {
-		"CategoryTreePage": "CategoryTreePage.php",
-		"CategoryTree": "CategoryTreeFunctions.php",
-		"CategoryTreeCategoryPage": "CategoryPageSubclass.php",
-		"CategoryTreeCategoryViewer": "CategoryPageSubclass.php",
-		"CategoryTreeHooks": "CategoryTree.hooks.php",
-		"CategoryTreeMode": "CategoryTreeMode.php",
-		"CategoryTreeHidePrefix": "CategoryTreeHidePrefix.php",
-		"ApiCategoryTree": "ApiCategoryTree.php"
+		"CategoryTreePage": "includes/CategoryTreePage.php",
+		"CategoryTree": "includes/CategoryTree.php",
+		"CategoryTreeCategoryPage": "includes/CategoryTreeCategoryPage.php",
+		"CategoryTreeCategoryViewer": "includes/CategoryTreeCategoryViewer.php",
+		"CategoryTreeHooks": "includes/CategoryTreeHooks.php",
+		"CategoryTreeMode": "includes/CategoryTreeMode.php",
+		"CategoryTreeHidePrefix": "includes/CategoryTreeHidePrefix.php",
+		"ApiCategoryTree": "includes/ApiCategoryTree.php"
 	},
 	"ResourceModules": {
 		"ext.categoryTree": {
 			"scripts": "ext.categoryTree.js",
+			"targets": [
+				"desktop",
+				"mobile"
+			],
 			"messages": [
 				"categorytree-collapse",
 				"categorytree-expand",
@@ -58,7 +62,10 @@
 			]
 		},
 		"ext.categoryTree.css": {
-			"position": "top",
+			"targets": [
+				"desktop",
+				"mobile"
+			],
 			"styles": "ext.categoryTree.css"
 		}
 	},
@@ -75,7 +82,15 @@
 		],
 		"SpecialTrackingCategories::generateCatLink": [
 			"CategoryTreeHooks::onSpecialTrackingCategoriesGenerateCatLink"
-		]
+		],
+		"SkinTemplateOutputPageBeforeExec": "CategoryTreeHooks::skinTemplateOutputPageBeforeExec",
+		"MakeGlobalVariablesScript": "CategoryTreeHooks::getConfigVars",
+		"ParserFirstCallInit": "CategoryTreeHooks::setHooks",
+		"OutputPageMakeCategoryLinks": "CategoryTreeHooks::outputPageMakeCategoryLinks",
+		"SkinJoinCategoryLinks": "CategoryTreeHooks::skinJoinCategoryLinks",
+		"BeforePageDisplay": "CategoryTreeHooks::addHeaders",
+		"BeforePageDisplayMobile": "CategoryTreeHooks::addHeaders",
+		"OutputPageParserOutput": "CategoryTreeHooks::parserOutput"
 	},
 	"config": {
 		"CategoryTreeMaxChildren": 200,

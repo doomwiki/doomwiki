@@ -9,7 +9,7 @@
  * @author James Haley
  */
 
-if(!defined('MEDIAWIKI'))
+if (!defined('MEDIAWIKI'))
   die( "This is an extension to the MediaWiki package and cannot be run standalone." );
 
 $wgExtensionCredits['parserhook'][] = array (
@@ -49,14 +49,14 @@ class MonacoContentRightSidebar
    */
   public static function BeforePageDisplay(&$out, &$skin)
   {
-    if($skin->getSkinName() == 'monaco')
+    if ($skin->getSkinName() == 'monaco')
       $out->addModules(array('skins.monaco.ContentRightSidebar'));
   }
 
   /**
    * Register parser extensions
    */
-  public static function ContentRightSidebarRegisterParser(&$parser) 
+  public static function ContentRightSidebarRegisterParser(&$parser)
   {
     $parser->setHook('right-sidebar', 'MonacoContentRightSidebar::ContentRightSidebarTag');
     return true;
@@ -65,11 +65,11 @@ class MonacoContentRightSidebar
   /**
    * Parser extension callback
    */
-  public static function ContentRightSidebarTag($input, $arg, $parser, $frame) 
+  public static function ContentRightSidebarTag($input, $arg, $parser, $frame)
   {
     $isContentTagged = false;
     $m = array();
-    if(preg_match( '#^(.*)<content>(.*?)</content>(.*)$#is', $input, $m)) 
+    if (preg_match( '#^(.*)<content>(.*?)</content>(.*)$#is', $input, $m))
     {
       $isContentTagged = true;
 
@@ -88,22 +88,22 @@ class MonacoContentRightSidebar
     $with_box = (isset($arg["with-box"]) ? $arg["with-box"] : (isset($arg["withbox"]) ? $arg["withbox"] : null));
 
     $out  = RIGHT_SIDEBAR_START_TOKEN;
-    if($with_box && !in_array(strtolower($with_box), array("false", "off", "no", "none")))
+    if ($with_box && !in_array(strtolower($with_box), array("false", "off", "no", "none")))
     {
       $out .= RIGHT_SIDEBAR_WITHBOX_TOKEN;
     }
-    if(isset($arg["title"]))
+    if (isset($arg["title"]))
     {
       $out .= RIGHT_SIDEBAR_TITLE_START_TOKEN . urlencode($arg["title"]) . RIGHT_SIDEBAR_TITLE_END_TOKEN;
     }
-    if(isset($arg["class"]))
+    if (isset($arg["class"]))
     {
       $out .= RIGHT_SIDEBAR_CLASS_START_TOKEN . urlencode($arg["class"]) . RIGHT_SIDEBAR_CLASS_END_TOKEN;
     }
-    if($isContentTagged)
+    if ($isContentTagged)
     {
       $out .= $input;
-    } 
+    }
     else
     {
       $out .= '<div style="float: right; clear: right; position: relative;">';
@@ -122,48 +122,48 @@ class MonacoContentRightSidebar
   {
     $boxes = array();
 
-    while(true) 
+    while (true)
     {
       $withBox = false;
       $title = '';
       $class = null;
 
       $start = strpos($html, RIGHT_SIDEBAR_START_TOKEN);
-      if($start === false)
+      if ($start === false)
         break;
       $end = strpos($html, RIGHT_SIDEBAR_END_TOKEN, $start);
-      if($end === false)
+      if ($end === false)
         break;
       $content = substr($html, $start, $end-$start);
-      if(strpos($content, RIGHT_SIDEBAR_WITHBOX_TOKEN) !== false)
+      if (strpos($content, RIGHT_SIDEBAR_WITHBOX_TOKEN) !== false)
       {
         $withBox = true;
       }
       $startTitle = strpos($content, RIGHT_SIDEBAR_TITLE_START_TOKEN);
-      if($startTitle !== false)
+      if ($startTitle !== false)
       {
         $endTitle = strpos($content, RIGHT_SIDEBAR_TITLE_END_TOKEN, $startTitle);
-        if($endTitle !== false)
+        if ($endTitle !== false)
         {
           $title = urldecode(substr($content, $startTitle+strlen(RIGHT_SIDEBAR_TITLE_START_TOKEN), $endTitle-$startTitle-strlen(RIGHT_SIDEBAR_TITLE_START_TOKEN)));
         }
       }
       $startClass = strpos($content, RIGHT_SIDEBAR_CLASS_START_TOKEN);
-      if($startClass !== false)
+      if ($startClass !== false)
       {
         $endClass = strpos($content, RIGHT_SIDEBAR_CLASS_END_TOKEN, $startClass);
-        if($endClass !== false)
+        if ($endClass !== false)
         {
           $class = urldecode(substr($content, $startClass+strlen(RIGHT_SIDEBAR_CLASS_START_TOKEN), $endClass-$startClass-strlen(RIGHT_SIDEBAR_CLASS_START_TOKEN)));
         }
       }
       $contentStart = strpos($content, RIGHT_SIDEBAR_CONTENT_START_TOKEN);
-      if($contentStart !== false)
+      if ($contentStart !== false)
       {
         $content = substr($content, $contentStart+strlen(RIGHT_SIDEBAR_CONTENT_START_TOKEN));
       }
       $contentEnd = strpos($content, RIGHT_SIDEBAR_CONTENT_END_TOKEN);
-      if($contentStart !== false)
+      if ($contentStart !== false)
       {
         $content = substr($content, 0, $contentEnd);
       }
@@ -175,26 +175,26 @@ class MonacoContentRightSidebar
   }
 
   /**
-   * MonacoRightSidebar custom hook handler. This is invoked by the Monaco skin 
-   * to add the right sidebar. If this hook is not invoked, then right sidebar 
+   * MonacoRightSidebar custom hook handler. This is invoked by the Monaco skin
+   * to add the right sidebar. If this hook is not invoked, then right sidebar
    * content renders as a right-floating box inside the article.
    */
   public static function ContentRightSidebarMonacoRightSidebar( $sk )
   {
     $boxes = self::ExtractRightSidebarBoxes($sk->data['bodytext']);
 
-    foreach($boxes as $box)
+    foreach ($boxes as $box)
     {
-      if($box["with-box"])
+      if ($box["with-box"])
       {
         $attrs = array();
-        if(isset($box["class"]))
+        if (isset($box["class"]))
         {
           $attrs["class"] = $box["class"];
         }
         $sk->sidebarBox($box["title"], $box["content"], $attrs);
       }
-      else 
+      else
       {
         echo $box["content"];
       }
@@ -206,6 +206,6 @@ class MonacoContentRightSidebar
 
 // Register hooks
 $wgHooks['BeforePageDisplay'  ][] = 'MonacoContentRightSidebar::BeforePageDisplay';
-$wgHooks['ParserFirstCallInit'][] = 'MonacoContentRightSidebar::ContentRightSidebarRegisterParser'; 
+$wgHooks['ParserFirstCallInit'][] = 'MonacoContentRightSidebar::ContentRightSidebarRegisterParser';
 $wgHooks['MonacoRightSidebar' ][] = 'MonacoContentRightSidebar::ContentRightSidebarMonacoRightSidebar';
 

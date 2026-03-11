@@ -106,6 +106,7 @@ class HTMLCheckMatrix extends HTMLFormField implements HTMLNestedFilterable {
 				$tooltipAttribs = [
 					'class' => "mw-htmlform-tooltip $tooltipClass",
 					'title' => $this->mParams['tooltips'][$rowLabel],
+					'aria-label' => $this->mParams['tooltips'][$rowLabel]
 				];
 				$rowLabel .= ' ' . Html::element( 'span', $tooltipAttribs, '' );
 			}
@@ -121,9 +122,11 @@ class HTMLCheckMatrix extends HTMLFormField implements HTMLNestedFilterable {
 				if ( $this->isTagForcedOff( $thisTag ) ) {
 					$checked = false;
 					$thisAttribs['disabled'] = 1;
+					$thisAttribs['class'] = 'checkmatrix-forced checkmatrix-forced-off';
 				} elseif ( $this->isTagForcedOn( $thisTag ) ) {
 					$checked = true;
 					$thisAttribs['disabled'] = 1;
+					$thisAttribs['class'] = 'checkmatrix-forced checkmatrix-forced-on';
 				}
 
 				$checkbox = $this->getOneCheckbox( $checked, $attribs + $thisAttribs );
@@ -189,7 +192,7 @@ class HTMLCheckMatrix extends HTMLFormField implements HTMLNestedFilterable {
 	public function getTableRow( $value ) {
 		list( $errors, $errorClass ) = $this->getErrorsAndErrorClass( $value );
 		$inputHtml = $this->getInputHTML( $value );
-		$fieldType = static::class;
+		$fieldType = $this->getClassName();
 		$helptext = $this->getHelpTextHtmlTable( $this->getHelpText() );
 		$cellAttributes = [ 'colspan' => 2 ];
 

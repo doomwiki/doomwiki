@@ -38,6 +38,10 @@ class SpecialResetTokens extends FormSpecialPage {
 		return true;
 	}
 
+	public function requiresUnblock() {
+		return false;
+	}
+
 	/**
 	 * Returns the token information list for this page after running
 	 * the hook and filtering out disabled preferences.
@@ -74,7 +78,7 @@ class SpecialResetTokens extends FormSpecialPage {
 
 	public function onSuccess() {
 		$this->getOutput()->wrapWikiMsg(
-			"<div class='successbox'>\n$1\n</div>",
+			Html::successBox( '$1' ),
 			'resettokens-done'
 		);
 	}

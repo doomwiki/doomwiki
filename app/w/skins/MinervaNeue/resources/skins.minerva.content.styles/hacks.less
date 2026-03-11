@@ -24,7 +24,7 @@ FIXME: Review all of these hacks to see if they still apply.
 
 	// Hide cleanup templates by default to non-javascript users as these stop them from reading the article itself
 	// Edit page notices
-	.fmbox,
+	.action-edit .fmbox,
 	// Talk page informational boxes
 	.tmbox,
 	// Note not in issues.less as that is only loaded via JavaScript
@@ -50,6 +50,10 @@ FIXME: Review all of these hacks to see if they still apply.
 			text-align: left;
 			background-color: @colorGray15;
 
+			display: flex;
+			flex: 1 1 100%;
+			flex-flow: column nowrap;
+
 			th, td {
 				vertical-align: top;
 				border: 0;
@@ -57,7 +61,13 @@ FIXME: Review all of these hacks to see if they still apply.
 				padding: 7px 10px;
 			}
 
-			td {
+			tbody > tr > td,
+			tbody > tr > th {
+				flex: 1 0;
+			}
+
+			td:only-child,
+			th:only-child {
 				width: 100%;
 			}
 
@@ -65,6 +75,17 @@ FIXME: Review all of these hacks to see if they still apply.
 			tr:last-child td {
 				border: 0;
 			}
+		}
+
+		&.infobox > tbody {
+			display: flex;
+			flex-flow: column nowrap;
+		}
+
+		&.infobox > tbody > tr {
+			min-width: 100%;
+			display: flex;
+			flex-flow: row nowrap;
 		}
 	}
 }
@@ -122,7 +143,7 @@ FIXME: Review all of these hacks to see if they still apply.
 	width: auto !important;
 }
 
-@media all and ( min-width: @deviceWidthTablet ) {
+@media all and ( min-width: @width-breakpoint-tablet ) {
 	// When in the HTML these should be revealed at tablet resolution (T172078)
 	.content {
 		.vertical-navbox,
@@ -133,7 +154,7 @@ FIXME: Review all of these hacks to see if they still apply.
 }
 
 // Hacks to render galleries and multicol tables better on mobile
-@media all and ( max-width: @deviceWidthTablet ) {
+@media all and ( max-width: @width-breakpoint-tablet ) {
 
 	// Center images that might be less than the screen width.
 	// Image will appear centered and caption will take up full screen.

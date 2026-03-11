@@ -23,7 +23,7 @@
  * @link https://www.mediawiki.org/wiki/Extension:TorBlock Documentation
  *
  * @author Andrew Garrett <andrew@epstone.net>
- * @license http://www.gnu.org/copyleft/gpl.html  GNU General Public License 2.0 or later
+ * @license GPL-2.0-or-later
  */
 
 /**
@@ -67,7 +67,8 @@ class TorExitNodes {
 		if ( is_array( $nodes ) ) {
 			// wfDebugLog( 'torblock', "Loading Tor exit node list from memcached.\n" );
 			// Lucky.
-			return self::$mExitNodes = $nodes;
+			self::$mExitNodes = $nodes;
+			return self::$mExitNodes;
 		} else {
 			$liststatus = $cache->get( 'mw-tor-list-status' );
 			if ( $liststatus == 'loading' ) {
@@ -77,7 +78,8 @@ class TorExitNodes {
 			} elseif ( $liststatus == 'loaded' ) {
 				$nodes = $cache->get( 'mw-tor-exit-nodes' );
 				if ( is_array( $nodes ) ) {
-					return self::$mExitNodes = $nodes;
+					self::$mExitNodes = $nodes;
+					return self::$mExitNodes;
 				} else {
 					wfDebugLog( 'torblock', "Tried very hard to get the Tor list since " .
 						"mw-tor-list-status says it is loaded, to no avail.\n" );
@@ -141,7 +143,7 @@ class TorExitNodes {
 
 		$nodes = [];
 		foreach ( $wgTorIPs as $ip ) {
-			$url = 'https://check.torproject.org/cgi-bin/TorBulkExitList.py?ip=' . $ip;
+			$url = 'https://check.torproject.org/torbulkexitlist?ip=' . $ip;
 			$data = Http::get( $url, $options, __METHOD__ );
 			$lines = explode( "\n", $data );
 

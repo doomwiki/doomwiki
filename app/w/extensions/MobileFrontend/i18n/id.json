@@ -15,9 +15,12 @@
 			"BaconSenpai",
 			"Ilham",
 			"Beeyan",
-			"Uchup19"
+			"Uchup19",
+			"Gombang",
+			"Rachmat04"
 		]
 	},
+	"mobile-frontend-editor-anon-cta-message": "Masuk log atau buat akun untuk melacak suntingan Anda",
 	"abusefilter-edit-builder-vars-user-mobile": "Menentukan apakah pengguna menyunting melalui antarmuka seluler atau tidak",
 	"mobile-frontend-account-create-captcha-placeholder": "Masukkan kode konfirmasi",
 	"mobile-frontend-categories-heading": "<strong>Kategori</strong>",
@@ -37,6 +40,7 @@
 	"mobile-frontend-cite-error": "Terdapat masalah ketika mencoba memuat referensi karena adanya ID revisi yang salah",
 	"mobile-frontend-cite-none-available": "Tidak ada referensi tersedia untuk halaman ini.",
 	"mobile-frontend-clear-search": "Kosongkan",
+	"mobile-frontend-contributions-404-desc": "Tidak dapat mencari sumbangan tanpa pengguna atau dari pengguna yang tidak ada.",
 	"mobile-frontend-copyright": "Konten tersedia di bawah $1 kecuali dinyatakan lain.",
 	"mobile-frontend-desc": "Mobile Frontend",
 	"mobile-frontend-diffview-404-desc": "ID untuk revisi yang Anda minta tidak ada.",
@@ -53,7 +57,6 @@
 	"mobile-frontend-donate-image-title": "Unggah",
 	"mobile-frontend-donate-image-title-username": "Unggahan oleh $1",
 	"mobile-frontend-donate-image-title-you": "Diunggah oleh Anda",
-	"mobile-frontend-pointer-dismiss": "Tutup",
 	"mobile-frontend-edit-login-action": "<strong>Bantu kami meperbaiki {{SITENAME}}.</strong><br />Masuk log untuk menyunting.",
 	"mobile-frontend-edit-signup-action": "<strong>Bantu kami meperbaiki {{SITENAME}}.</strong><br />Mendaftarlah untuk menyunting.",
 	"mobile-frontend-editor-abusefilter-disallow": "Suntingan ini tidak bisa disimpan karena kami mendeteksi ada masalah.",
@@ -141,13 +144,8 @@
 	"mobile-frontend-nearby-error": "Fitur Sekitaran {{SITENAME}} ada beberapa masalah.",
 	"mobile-frontend-nearby-error-guidance": "Cobalah perbarui lokasi Anda.",
 	"mobile-frontend-nearby-loading": "Memuat topik di sekitar lokasi Anda",
-	"mobile-frontend-nearby-lookup-ui-error": "Fitur Sekitaran {{SITENAME}} tidak tahu lokasi Anda... coba lagi?",
-	"mobile-frontend-nearby-lookup-ui-error-guidance": "Coba ke area terbuka dengan sinyal yang lebih baik.",
 	"mobile-frontend-nearby-noresults": "Di luar sana sepi... Tidak ditemukan adanya artikel lain tentang tempat di sekitaran Anda.",
 	"mobile-frontend-nearby-noresults-guidance": "Cobalah membuat sebuah halaman baru atau menambahkan lokasi ke halaman yang sudah ada",
-	"mobile-frontend-nearby-permission": "Fitur Sekitaran {{SITENAME}} tidak dapat izin untuk mengakses lokasi Anda.",
-	"mobile-frontend-nearby-permission-guidance": "Pastikan Anda memberikan izin untuk menunjukkan lokasi Anda. Anda mungkin perlu memeriksa pengaturan lokasi peramban Anda.",
-	"mobile-frontend-nearby-refresh": "Perbarui lokasi",
 	"mobile-frontend-nearby-requirements": "Maaf! Peramban Anda tidak mendukung fitur Sekitaran {{SITENAME}} .",
 	"mobile-frontend-nearby-requirements-guidance": "Cobalah peramban yang lain atau mengaktifkan JavaScript jika Anda telah menonaktifkannya.",
 	"mobile-frontend-nearby-title": "Sekitaran",
@@ -173,8 +171,6 @@
 	"mobile-frontend-search-content-no-results": "'''{{int:mobile-frontend-search-content}}''' untuk menemukan ungkapan ini di mana saja.",
 	"mobile-frontend-search-no-results": "Tidak ada halaman dengan judul ini.",
 	"mobile-frontend-settings-beta": "Beta",
-	"mobile-frontend-settings-site-description": "{{SITENAME}} tersedia dalam $1 {{PLURAL:$1|bahasa}}. Semua versi yang tersedia disebutkan di bawah",
-	"mobile-frontend-settings-site-header": "{{SITENAME}} Bahasa",
 	"mobile-frontend-talk-fullpage": "Baca sebagai halaman wiki",
 	"mobile-frontend-talk-add-overlay-content-placeholder": "Apa yang ada di pikiran Anda?",
 	"mobile-frontend-talk-add-overlay-subject-placeholder": "Subjek",
@@ -240,5 +236,7 @@
 	"mobile-frontend-panel-ok": "Oke",
 	"mobile-frontend-panel-cancel": "Tidak, terima kasih",
 	"mobile-frontend-search-feedback-link-text": "Berikan kami umpan balik Anda.",
-	"mobile-frontend-search-feedback-prompt": "Tidak dapat menemukan apa yang Anda cari?"
+	"mobile-frontend-search-feedback-prompt": "Tidak dapat menemukan apa yang Anda cari?",
+	"mobile-frontend-notifications-filter-title": "Saring pemberitahuan",
+	"mobile-frontend-console-recruit": "\\o/ Hai! Ini adalah perangkat lunak bersumber terbuka dan kami perlu sukarelawan yang membantu mengembangkannya, membuatnya lebih baik dan memperbaiki kekutu yang mungkin Anda temukan pada konsol JavaScript ini!\n\nAnda dapat menemukan backlog kami @ https://phabricator.wikimedia.org/project/profile/67/"
 }

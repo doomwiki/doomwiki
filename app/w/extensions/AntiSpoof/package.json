@@ -1,14 +1,14 @@
 {
-  "name": "antispoof",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Build tools for the AntiSpoof extension.",
-  "scripts": {
-    "test": "grunt test"
-  },
-  "devDependencies": {
-    "grunt": "1.0.1",
-    "grunt-banana-checker": "0.4.0",
-    "grunt-jsonlint": "1.0.7"
-  }
+	"name": "antispoof",
+	"version": "0.0.0",
+	"private": true,
+	"description": "Build tools for the AntiSpoof extension.",
+	"scripts": {
+		"test": "grunt test"
+	},
+	"devDependencies": {
+		"grunt": "1.4.0",
+		"grunt-banana-checker": "0.6.0",
+		"grunt-jsonlint": "1.1.0"
+	}
 }

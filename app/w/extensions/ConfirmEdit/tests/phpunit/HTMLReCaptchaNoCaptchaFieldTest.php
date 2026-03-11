@@ -2,7 +2,10 @@
 
 require_once __DIR__ . '/../../ReCaptchaNoCaptcha/HTMLReCaptchaNoCaptchaField.php';
 
-class HTMLReCaptchaNoCaptchaFieldTest extends PHPUnit_Framework_TestCase {
+/**
+ * @covers HTMLReCaptchaNoCaptchaField
+ */
+class HTMLReCaptchaNoCaptchaFieldTest extends PHPUnit\Framework\TestCase {
 	public function testSubmit() {
 		$form = new HTMLForm( [
 			'foo' => [
@@ -14,7 +17,8 @@ class HTMLReCaptchaNoCaptchaFieldTest extends PHPUnit_Framework_TestCase {
 			'foo' => 'abc',
 			'g-recaptcha-response' => 'def',
 		], true );
-		$mockClosure = $this->getMockBuilder( 'object' )->setMethods( [ '__invoke' ] )->getMock();
+		$mockClosure = $this->getMockBuilder( stdClass::class )
+			->setMethods( [ '__invoke' ] )->getMock();
 		$mockClosure->expects( $this->once() )->method( '__invoke' )
 			->with( [ 'foo' => 'def' ] )->willReturn( true );
 

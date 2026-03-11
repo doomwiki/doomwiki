@@ -9,8 +9,9 @@
 	"mobile-frontend-editor-cta": "Palīdziet uzlabot šo lapu",
 	"mobile-frontend-editor-disabled": "Šī lapa ir aizsargāta, lai novērstu vandalismu.",
 	"mobile-frontend-editor-edit": "Labot",
+	"minerva-download": "Lejupielādēt",
 	"mobile-frontend-editor-redlink-create": "Izveidot lapu",
-	"mobile-frontend-editor-redlink-leave": "Nē, paldies",
+	"mobile-frontend-editor-redlink-leave": "Nē, paldies.",
 	"mobile-frontend-editor-tutorial-cancel": "Nē, paldies",
 	"mobile-frontend-editor-tutorial-confirm": "Sākt labošanu",
 	"mobile-frontend-history": "Apskatīt šīs lapas labojumu vēsturi",
@@ -19,6 +20,7 @@
 	"mobile-frontend-language-change": "Mainīt valodu",
 	"mobile-frontend-logged-in-homepage-notification": "Esi {{GENDER:$1|sveicināts|sveicināta}}, $1!",
 	"mobile-frontend-main-menu-button-tooltip": "Atvērt galveno izvēlni",
+	"mobile-frontend-main-menu-contributions": "Devums",
 	"mobile-frontend-main-menu-login": "Pieslēgties",
 	"mobile-frontend-main-menu-logout": "Iziet",
 	"mobile-frontend-main-menu-nearby": "Tuvumā",
@@ -26,7 +28,7 @@
 	"mobile-frontend-main-menu-watchlist": "Uzraugāmie raksti",
 	"mobile-frontend-meta-data-issues": "Lapas problēmas",
 	"mobile-frontend-meta-data-issues-categories": "Par šo kategoriju",
-	"mobile-frontend-meta-data-issues-header": "Problēmas",
+	"mobile-frontend-meta-data-issues-header": "Lapas problēmas",
 	"mobile-frontend-meta-data-issues-header-talk": "Par šo lapu",
 	"mobile-frontend-meta-data-issues-talk": "Par šo diskusiju lapu",
 	"mobile-frontend-pageaction-edit-tooltip": "Labot šīs lapas ievadsadaļu",
@@ -34,5 +36,7 @@
 	"mobile-frontend-random-button": "Nejaušs raksts",
 	"mobile-frontend-user-button-tooltip": "Rādīt manus paziņojumus",
 	"mobile-frontend-user-page-talk": "Diskusija",
-	"mobile-frontend-user-page-uploads": "Augšupielādes"
+	"mobile-frontend-user-page-uploads": "Augšupielādes",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton": "Kategorijas",
+	"skin-minerva-mobile-option-MinervaShowCategoriesButton-description": "Skatīt lapu kategorijas"
 }

@@ -1,5 +1,6 @@
-( function ( M, $ ) {
-	var IMAGE_WIDTH = mw.config.get( 'wgMFThumbnailSizes' ).small;
+( function ( M ) {
+	var IMAGE_WIDTH = mw.config.get( 'wgMFThumbnailSizes' ).small,
+		util = M.require( 'mobile.startup/util' );
 
 	/**
 	 * API for retrieving gallery photos
@@ -68,7 +69,7 @@
 		 * @return {Object}
 		 */
 		getQuery: function () {
-			var query = $.extend( {
+			var query = util.extend( {
 				action: 'query',
 				prop: 'imageinfo',
 				// FIXME: [API] have to request timestamp since api returns an object
@@ -78,7 +79,7 @@
 			}, this.continueParams );
 
 			if ( this.username ) {
-				$.extend( query, {
+				util.extend( query, {
 					generator: 'allimages',
 					gaiuser: this.username,
 					gaisort: 'timestamp',
@@ -86,7 +87,7 @@
 					gailimit: this.limit
 				} );
 			} else if ( this.category ) {
-				$.extend( query, {
+				util.extend( query, {
 					generator: 'categorymembers',
 					gcmtitle: 'Category:' + this.category,
 					gcmtype: 'file',
@@ -103,40 +104,34 @@
 		 * @return {jQuery.Deferred} where parameter is a list of JavaScript objects describing an image.
 		 */
 		getPhotos: function () {
-			var self = this,
-				result = $.Deferred();
+			var self = this;
 
-			if ( this.canContinue === true ) {
-				this.api.ajax( this.getQuery() ).done( function ( resp ) {
-					var photos;
-					if ( resp.query && resp.query.pages ) {
-						// FIXME: [API] in an ideal world imageData would be a sorted array
-						// but it is a map of {[id]: page}
-						photos = Object.keys( resp.query.pages ).map( function ( id ) {
-							return self._getImageDataFromPage( resp.query.pages[id] );
-						} ).sort( function ( a, b ) {
-							return a.timestamp < b.timestamp ? 1 : -1;
-						} );
+			return this.api.ajax( this.getQuery() ).then( function ( resp ) {
+				var photos = [];
+				if ( resp.query && resp.query.pages ) {
+					// FIXME: [API] in an ideal world imageData would be a sorted array
+					// but it is a map of {[id]: page}
+					photos = Object.keys( resp.query.pages ).map( function ( id ) {
+						return self._getImageDataFromPage( resp.query.pages[id] );
+					} ).sort( function ( a, b ) {
+						return a.timestamp < b.timestamp ? 1 : -1;
+					} );
+				}
 
-						if ( resp.hasOwnProperty( 'continue' ) ) {
-							self.continueParams = resp.continue;
-						} else {
-							self.canContinue = false;
-						}
+				if ( resp.hasOwnProperty( 'continue' ) ) {
+					self.continueParams = resp.continue;
+				} else {
+					self.canContinue = false;
+				}
 
-						// FIXME: Should reply with a list of PhotoItem or Photo classes.
-						result.resolve( photos );
-					} else {
-						result.resolve( [] );
-					}
-				} ).fail( $.proxy( result, 'reject' ) );
-			} else {
-				result.resolve( [] );
-			}
-
-			return result;
+				return {
+					canContinue: self.canContinue,
+					// FIXME: Should reply with a list of PhotoItem or Photo classes.
+					photos: photos
+				};
+			} );
 		}
 	};
 
 	M.define( 'mobile.gallery/PhotoListGateway', PhotoListGateway );
-}( mw.mobileFrontend, jQuery ) );
+}( mw.mobileFrontend ) );

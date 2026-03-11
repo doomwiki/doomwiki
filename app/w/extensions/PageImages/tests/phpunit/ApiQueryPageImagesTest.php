@@ -2,50 +2,13 @@
 
 namespace PageImages\Tests;
 
-use ApiPageSet;
+require_once 'ApiQueryPageImagesProxyMock.php';
+
 use ApiQueryPageImages;
-use FakeResultWrapper;
 use PageImages;
-use PHPUnit_Framework_TestCase;
 use Title;
+use Wikimedia\Rdbms\FakeResultWrapper;
 use Wikimedia\TestingAccessWrapper;
-
-class ApiPageSetStub extends ApiPageSet {
-
-	public function __construct( $goodTitles, $missingTitlesByNamespace ) {
-		$this->goodTitles = $goodTitles;
-		$this->missingTitlesByNamespace = $missingTitlesByNamespace;
-	}
-
-	public function getGoodTitles() {
-		return $this->goodTitles;
-	}
-
-	public function getMissingTitlesByNamespace() {
-		return $this->missingTitlesByNamespace;
-	}
-
-}
-
-class ApiQueryPageImagesProxy extends ApiQueryPageImages {
-
-	public function __construct( ApiPageSet $pageSet ) {
-		$this->pageSet = $pageSet;
-	}
-
-	public function getPageSet() {
-		return $this->pageSet;
-	}
-
-	public function getTitles() {
-		return parent::getTitles();
-	}
-
-	/** inheritdoc */
-	public static function getPropNames( $license ) {
-		return parent::getPropNames( $license );
-	}
-}
 
 /**
  * @covers ApiQueryPageImages
@@ -54,9 +17,9 @@ class ApiQueryPageImagesProxy extends ApiQueryPageImages {
  *
  * @license WTFPL 2.0
  * @author Sam Smith
- * @author Thiemo Mättig
+ * @author Thiemo Kreuz
  */
-class ApiQueryPageImagesTest extends PHPUnit_Framework_TestCase {
+class ApiQueryPageImagesTest extends \PHPUnit\Framework\TestCase {
 
 	private function newInstance() {
 		$config = new \HashConfig( [
@@ -93,13 +56,6 @@ class ApiQueryPageImagesTest extends PHPUnit_Framework_TestCase {
 		$this->assertInstanceOf( 'ApiQueryPageImages', $instance );
 	}
 
-	public function testGetDescription() {
-		$instance = $this->newInstance();
-		$description = $instance->getDescription();
-		$this->assertInternalType( 'string', $description );
-		$this->assertNotEmpty( $description );
-	}
-
 	public function testGetCacheMode() {
 		$instance = $this->newInstance();
 		$this->assertSame( 'public', $instance->getCacheMode( [] ) );
@@ -123,19 +79,20 @@ class ApiQueryPageImagesTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals( $params['license'][\ApiBase::PARAM_ISMULTI], false );
 	}
 
-	public function testGetParamDescription() {
-		$instance = $this->newInstance();
-		$descriptions = $instance->getParamDescription();
-		$this->assertInternalType( 'array', $descriptions );
-		$this->assertNotEmpty( $descriptions );
-	}
-
 	/**
 	 * @dataProvider provideGetTitles
 	 */
 	public function testGetTitles( $titles, $missingTitlesByNamespace, $expected ) {
-		$pageSet = new ApiPageSetStub( $titles, $missingTitlesByNamespace );
-		$queryPageImages = new ApiQueryPageImagesProxy( $pageSet );
+		$pageSet = $this->getMockBuilder( 'ApiPageSet' )
+			->disableOriginalConstructor()
+			->getMock();
+		$pageSet->expects( $this->any() )
+			->method( 'getGoodTitles' )
+			->will( $this->returnValue( $titles ) );
+		$pageSet->expects( $this->any() )
+			->method( 'getMissingTitlesByNamespace' )
+			->will( $this->returnValue( $missingTitlesByNamespace ) );
+		$queryPageImages = new ApiQueryPageImagesProxyMock( $pageSet );
 
 		$this->assertEquals( $expected, $queryPageImages->getTitles() );
 	}
@@ -330,7 +287,7 @@ class ApiQueryPageImagesTest extends PHPUnit_Framework_TestCase {
 	 * @param string $expected
 	 */
 	public function testGetPropName( $license, $expected ) {
-		$this->assertEquals( $expected, ApiQueryPageImagesProxy::getPropNames( $license ) );
+		$this->assertEquals( $expected, ApiQueryPageImagesProxyMock::getPropNames( $license ) );
 	}
 
 	public function provideGetPropName() {

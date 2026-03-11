@@ -30,11 +30,11 @@ body {
 
 .body_content ul,
 .body_content ol {
-    margin: 0.3em 1.5em 0 0;
+	margin: 0.3em 1.5em 0 0;
 }
 
 .editsection {
-    float: left;
+	float: left;
 }
 
 /* Fix for Opera bug with horizontal scroll */
@@ -45,8 +45,8 @@ body {
 /* fixing FF bug - https://bugzilla.mozilla.org/show_bug.cgi?id=380925 */
 .body_content p a,
 .body_content li a {
-    background-image: none !important;
-    padding: 0px !important;
+	background-image: none !important;
+	padding: 0px !important;
 }
 
 /* fixing widget carousel */
@@ -205,8 +205,8 @@ body {
 }
 /* haleyjd 20140420: needed for copyright link */
 #fe_copyright {
-  float: left;
-  clear: none;
+	float: left;
+	clear: none;
 }
 ul.star-rating {
 	float: right;
@@ -248,7 +248,7 @@ ul.star-rating {
 	float: none;
 }
 * html #userData .headerMenuButton {
-        float: left;
+	float: left;
 }
 #spotlight_footer table {
 	-ie-xp: expression(
@@ -279,9 +279,9 @@ ul.star-rating {
 
 /* ToC align fix */
 #toc ul {
-  text-align: right;
+	text-align: right;
 }
 
 #toc ul ul {
-  margin: 0 2em 0 0;
+	margin: 0 2em 0 0;
 }

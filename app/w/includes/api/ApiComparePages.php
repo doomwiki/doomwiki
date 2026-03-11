@@ -75,7 +75,8 @@ class ApiComparePages extends ApiBase {
 					$toRev = $id ? Revision::newFromId( $id ) : null;
 					if ( !$toRev ) {
 						$this->dieWithError(
-							[ 'apierror-missingrev-title', wfEscapeWikiText( $title->getPrefixedText() ) ], 'nosuchrevid'
+							[ 'apierror-missingrev-title', wfEscapeWikiText( $title->getPrefixedText() ) ],
+							'nosuchrevid'
 						);
 					}
 					$toContent = $toRev->getContent( Revision::FOR_THIS_USER, $this->getUser() );
@@ -92,6 +93,26 @@ class ApiComparePages extends ApiBase {
 		// Should never happen, but just in case...
 		if ( !$fromContent || !$toContent ) {
 			$this->dieWithError( 'apierror-baddiff' );
+		}
+
+		// Extract sections, if told to
+		if ( isset( $params['fromsection'] ) ) {
+			$fromContent = $fromContent->getSection( $params['fromsection'] );
+			if ( !$fromContent ) {
+				$this->dieWithError(
+					[ 'apierror-compare-nosuchfromsection', wfEscapeWikiText( $params['fromsection'] ) ],
+					'nosuchfromsection'
+				);
+			}
+		}
+		if ( isset( $params['tosection'] ) ) {
+			$toContent = $toContent->getSection( $params['tosection'] );
+			if ( !$toContent ) {
+				$this->dieWithError(
+					[ 'apierror-compare-nosuchtosection', wfEscapeWikiText( $params['tosection'] ) ],
+					'nosuchtosection'
+				);
+			}
 		}
 
 		// Get the diff
@@ -147,7 +168,10 @@ class ApiComparePages extends ApiBase {
 			ApiResult::setContentValue( $vals, 'body', $difftext );
 		}
 
-		$this->getResult()->addValue( null, $this->getModuleName(), $vals );
+		// Diffs can be really big and there's little point in having
+		// ApiResult truncate it to an empty response since the diff is the
+		// whole reason this module exists. So pass NO_SIZE_CHECK here.
+		$this->getResult()->addValue( null, $this->getModuleName(), $vals, ApiResult::NO_SIZE_CHECK );
 	}
 
 	/**
@@ -175,14 +199,17 @@ class ApiComparePages extends ApiBase {
 				$rev = Revision::newFromId( $revId );
 				if ( !$rev ) {
 					// Titles of deleted revisions aren't secret, per T51088
+					$arQuery = Revision::getArchiveQueryInfo();
 					$row = $this->getDB()->selectRow(
-						'archive',
+						$arQuery['tables'],
 						array_merge(
-							Revision::selectArchiveFields(),
+							$arQuery['fields'],
 							[ 'ar_namespace', 'ar_title' ]
 						),
 						[ 'ar_rev_id' => $revId ],
-						__METHOD__
+						__METHOD__,
+						[],
+						$arQuery['joins']
 					);
 					if ( $row ) {
 						$rev = Revision::newFromArchiveRow( $row );
@@ -270,7 +297,8 @@ class ApiComparePages extends ApiBase {
 				if ( !$suppliedContent ) {
 					if ( $title->exists() ) {
 						$this->dieWithError(
-							[ 'apierror-missingrev-title', wfEscapeWikiText( $title->getPrefixedText() ) ], 'nosuchrevid'
+							[ 'apierror-missingrev-title', wfEscapeWikiText( $title->getPrefixedText() ) ],
+							'nosuchrevid'
 						);
 					} else {
 						$this->dieWithError(
@@ -285,14 +313,17 @@ class ApiComparePages extends ApiBase {
 			$rev = Revision::newFromId( $revId );
 			if ( !$rev && $this->getUser()->isAllowedAny( 'deletedtext', 'undelete' ) ) {
 				// Try the 'archive' table
+				$arQuery = Revision::getArchiveQueryInfo();
 				$row = $this->getDB()->selectRow(
-					'archive',
+					$arQuery['tables'],
 					array_merge(
-						Revision::selectArchiveFields(),
+						$arQuery['fields'],
 						[ 'ar_namespace', 'ar_title' ]
 					),
 					[ 'ar_rev_id' => $revId ],
-					__METHOD__
+					__METHOD__,
+					[],
+					$arQuery['joins']
 				);
 				if ( $row ) {
 					$rev = Revision::newFromArchiveRow( $row );
@@ -368,7 +399,7 @@ class ApiComparePages extends ApiBase {
 		if ( $rev ) {
 			$title = $rev->getTitle();
 			if ( isset( $this->props['ids'] ) ) {
-				$vals["{$prefix}id"] = $title->getArticleId();
+				$vals["{$prefix}id"] = $title->getArticleID();
 				$vals["{$prefix}revid"] = $rev->getId();
 			}
 			if ( isset( $this->props['title'] ) ) {
@@ -438,6 +469,7 @@ class ApiComparePages extends ApiBase {
 			'text' => [
 				ApiBase::PARAM_TYPE => 'text'
 			],
+			'section' => null,
 			'pst' => false,
 			'contentformat' => [
 				ApiBase::PARAM_TYPE => ContentHandler::getAllContentFormats(),

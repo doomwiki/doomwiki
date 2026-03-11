@@ -2,6 +2,17 @@
 @import 'minerva.variables.less';
 @import 'minerva.mixins.less';
 
+/**
+ * Note that certain links may not have an href selector.
+ * It is particularly important on wikis for example inside navbox's that these
+ * links can be differentiated from other links. Thus we only apply the linkColor to links with href
+ * attributes.
+*/
+/* stylelint-disable no-descending-specificity */
+a:not( [href] ) {
+	color: @colorGray2;
+}
+
 a {
 	text-decoration: none;
 	color: @linkColor;
@@ -38,8 +49,7 @@ a {
 }
 
 // Generic class name needed
-.return-link,
-#mw-mf-last-modified {
+.return-link {
 	display: block;
 	font-size: 0.9em;
 	margin-top: 1.5em;
@@ -50,4 +60,16 @@ a {
 .plainlinks a {
 	background: none !important;
 	padding: 0 !important;
+}
+
+// Numbered external links, copied from content.parsoid.less
+// TODO: Separate theme-agnostic rules from that module
+// so we can load it here.
+.mw-parser-output {
+	counter-reset: mw-numbered-ext-link;
+
+	a[rel~='mw:ExtLink']:empty:after {
+		content: '[' counter( mw-numbered-ext-link ) ']';
+		counter-increment: mw-numbered-ext-link;
+	}
 }

@@ -1,8 +1,9 @@
 {
 	"@metadata": {
 		"authors": [
-			"DCLXVI"
+			"DCLXVI",
+			"StanProg"
 		]
 	},
-	"charinsert-desc": "Позволява създаването на Джаваскрипт-кутия за [[MediaWiki:Edittools|вмъкване на нестандартни символи]]"
+	"charinsert-desc": "Позволява създаването на JavaScript-кутия за [[MediaWiki:Edittools|вмъкване на нестандартни знаци]]"
 }
