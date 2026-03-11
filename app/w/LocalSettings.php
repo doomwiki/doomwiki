@@ -478,10 +478,7 @@ $wgGroupPermissions['bureaucrat']['usermerge'] = true;
 // optional - default is array( 'sysop' )
 //$wgUserMergeProtectedGroups = array( 'groupname' );
 
-// set PageImages default licensing
-require_once("{$IP}/extensions/RandomImage/RandomImage.php");
 wfLoadExtension("RandomImage");
-
 require_once("$IP/extensions/RandomInCategory/RandomInCategory.php");
 wfLoadExtension("RandomSelection");
 
