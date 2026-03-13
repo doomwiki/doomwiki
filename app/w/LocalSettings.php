@@ -344,21 +344,21 @@ wfLoadExtension("ParserFunctions");
 $wgPFEnableStringFunctions = true;
 
 // 20190428: ReplaceSet extension
-require_once("$IP/extensions/ReplaceSet/ReplaceSet.php");
+wfLoadExtension("ReplaceSet");
 
 // 20260309: ReplaceText extension
 wfLoadExtension("ReplaceText");
 
 wfLoadExtension("Nuke");
 wfLoadExtension("AntiSpoof");
-require_once("$IP/extensions/CategoryTree/CategoryTree.php");
+wfLoadExtension("CategoryTree");
 wfLoadExtension("CharInsert");
 wfLoadExtension("CheckUser");
 wfLoadExtension("Cite");
 wfLoadExtension("CiteThisPage");
 
 // haleyjd - Description meta tag extension
-require_once("$IP/extensions/Description2/Description2.php");
+wfLoadExtension("Description2");
 $wgEnableMetaDescriptionFunctions = true;
 
 // haleyjd - DoomWikiAnalytics extension (self-maintained)
@@ -428,7 +428,7 @@ $wgGroupPermissions['oversight']['suppressrevision'] = true;
 $wgGroupPermissions['oversight']['suppressionlog'] = true;
 
 // haleyjd 20150415: PageImages extension
-require_once("$IP/extensions/PageImages/PageImages.php");
+wfLoadExtension("PageImages");
 // haleyjd 20260226: set PageImages default licensing
 $wgPageImagesAPIDefaultLicense = 'any';
 
@@ -461,8 +461,8 @@ $wgGroupPermissions['bureaucrat']['titleblacklistlog'] = true;
 $wgEnableDnsBlacklist = true;
 // 20160321: use default blacklist since tornevall is apparently unavailable
 
-require_once("{$IP}/extensions/TorBlock/TorBlock.php");
-require_once("{$IP}/extensions/UploadBlacklist/UploadBlacklist.php");
+wfLoadExtension("TorBlock");
+require_once("$IP/extensions/UploadBlacklist/UploadBlacklist.php");
 
 // 20180803: configure upload blacklist
 $ubUploadBlacklist[] = getenv('WIKI_UB_UPLOAD_BLACKLIST'); // Norton antivirus spam
