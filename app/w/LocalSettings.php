@@ -55,7 +55,7 @@ if ( $wgCommandLineMode ) {
 
 /*
  * Note that this snippet could be removed if using the a dotenv extension
- * which may also offer some small performance advantages. 
+ * which may also offer some small performance advantages.
  */
 foreach (parse_ini_file('/home/doomwiki/.env') as $key => $value) {
   if (!getenv($key)) {
@@ -77,7 +77,7 @@ $wgMetaNamespaceTalk = "Doom_Wiki_talk";
 ## For more information on customizing the URLs please see:
 ## http://www.mediawiki.org/wiki/Manual:Short_URL
 $wgScriptPath       = "/w";
-$wgArticlePath 	    = "/wiki/$1";
+$wgArticlePath      = "/wiki/$1";
 $wgScriptExtension  = ".php";
 
 ## The relative URL path to the skins directory
@@ -87,9 +87,9 @@ $wgStylePath        = "$wgScriptPath/skins";
 ## or else you'll overwrite your logo when you upgrade!
 
 if ($today['mon'] == 12 && $today['mday'] == 10)
-	$wgLogo             = "$wgStylePath/Wiki_bday_25.png";
+	$wgLogo     = "$wgStylePath/Wiki_bday_25.png";
 else
-	$wgLogo             = "$wgStylePath/Wiki.png";
+	$wgLogo     = "$wgStylePath/Wiki.png";
 
 // haleyjd 20160211: Security - No account creation through API
 $wgAPIModules['createaccount'] = 'ApiDisabled';
@@ -103,15 +103,14 @@ $wgTmpDirectory = '/home/doomwiki/public_html/w/images/temp';
 ## UPO means: this is also a user preference option
 $wgEnableMWSuggest = true;
 
-
 $wgEnableEmail      = true;
 $wgEnableUserEmail  = false; # UPO
 
 $wgEmergencyContact = "admin@doomwiki.org";
-$wgPasswordSender = "admin@doomwiki.org";
+$wgPasswordSender   = "admin@doomwiki.org";
 
-$wgEnotifUserTalk = true; # UPO
-$wgEnotifWatchlist = true; # UPO
+$wgEnotifUserTalk   = true; # UPO
+$wgEnotifWatchlist  = true; # UPO
 $wgEmailAuthentication = true;
 
 ## Database settings
@@ -176,17 +175,17 @@ $wgMainCacheType    = 'memcached-pecl';
 $wgParserCacheType  = 'memcached-pecl';
 $wgMessageCacheType = CACHE_DB;
 $wgUseLocalMessageCache = false;
-$wgSessionCacheType    = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
+$wgSessionCacheType = CACHE_DB; // haleyjd 20180114: required as of 1.27 for session data persistence
 
 ## Email settings
 $wgSMTP = [
-    'host'      => getenv('SMTP_HOST'), // could also be an IP address. Where the SMTP server is located. If using SSL or TLS, add the prefix "ssl://" or "tls://".
-    'IDHost'    => getenv("APP_DOMAIN"),      // Generally this will be the domain name of your website (aka mywiki.org)
-    'localhost' => getenv("APP_DOMAIN"),      // Same as IDHost above; required by some mail servers
-    'port'      => 587,                // Port to use when connecting to the SMTP server
-    'auth'      => true,               // Should we use SMTP authentication (true or false)
-    'username'  => getenv('SMTP_USERNAME'),     // Username to use for SMTP authentication (if being used)
-    'password'  => getenv('SMTP_PASSWORD')       // Password to use for SMTP authentication (if being used)
+    'host'      => getenv('SMTP_HOST'),     // could also be an IP address. Where the SMTP server is located. If using SSL or TLS, add the prefix "ssl://" or "tls://".
+    'IDHost'    => getenv("APP_DOMAIN"),    // Generally this will be the domain name of your website (aka mywiki.org)
+    'localhost' => getenv("APP_DOMAIN"),    // Same as IDHost above; required by some mail servers
+    'port'      => 587,                     // Port to use when connecting to the SMTP server
+    'auth'      => true,                    // Should we use SMTP authentication (true or false)
+    'username'  => getenv('SMTP_USERNAME'), // Username to use for SMTP authentication (if being used)
+    'password'  => getenv('SMTP_PASSWORD')  // Password to use for SMTP authentication (if being used)
 ];
 
 ## To enable image uploads, make sure the 'images' directory
@@ -206,7 +205,7 @@ $wgDefaultUserOptions['thumbsize'] = 4;
 
 // haleyjd 20170511: enable user CSS and JS
 $wgAllowUserCss = true;
-$wgAllowUserJs = true;
+$wgAllowUserJs  = true;
 
 // fpv 20230314: increase image dimensions for My_House_map.png
 // cannot be temporary only for the upload, as then thumb generation breaks
@@ -227,7 +226,7 @@ $wgMaxShellMemory = 512000;
 
 ## If you have the appropriate support software installed
 ## you can enable inline LaTeX equations:
-$wgUseTeX           = false;
+$wgUseTeX = false;
 
 ## Set $wgCacheDirectory to a writable directory on the web server
 ## to make your wiki go slightly faster. The directory should not
@@ -243,7 +242,7 @@ $wgCachePages = true;
 $wgEnableSidebarCache = true;
 $wgSidebarCacheExpiry = 86400; // 1 day
 
-$wgLocalInterwiki   = strtolower( $wgSitename );
+$wgLocalInterwiki = strtolower( $wgSitename );
 
 $wgLanguageCode = "en";
 
@@ -271,7 +270,6 @@ $wgDiff3 = "/usr/bin/diff3";
 $wgCacheEpoch = max( $wgCacheEpoch, gmdate( 'YmdHis', @filemtime( __FILE__ ) ) );
 
 
-
 //
 // Permissions
 //
@@ -280,7 +278,7 @@ $wgCacheEpoch = max( $wgCacheEpoch, gmdate( 'YmdHis', @filemtime( __FILE__ ) ) )
 $wgGroupPermissions['doomer']['move']             = true;
 $wgGroupPermissions['doomer']['move-subpages']    = true;
 $wgGroupPermissions['doomer']['move-rootuserpages'] = true; // can move root userpages
-//$wgGroupPermissions['doomer']['movefile']         = true;	// Disabled for now due to possible bugs and security concerns
+//$wgGroupPermissions['doomer']['movefile']         = true; // Disabled for now due to possible bugs and security concerns
 $wgGroupPermissions['doomer']['read']             = true;
 $wgGroupPermissions['doomer']['edit']             = true;
 $wgGroupPermissions['doomer']['createpage']       = true;
@@ -519,13 +517,13 @@ $wgHooks['BeforePageDisplay'][] = 'wfAddGoogleAndMetas';
 function wfAddGoogleAndMetas(&$out, &$skin)
 {
   $out->addMeta('google-site-verification', getenv('WIKI_GOOGLE_SITE_VERIFICATION'));
-  
+
   // Add preconnect for performance
   $out->addLink([
     'rel' => 'preconnect',
     'href' => 'https://i.creativecommons.org'
   ]);
-  
+
   //$out->addMeta('twitter:card', 'summary');
   //$out->addMeta('twitter:site', '@doomwiki');
   return true;
