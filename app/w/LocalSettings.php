@@ -17,7 +17,7 @@
 
 require_once( "$IP/includes/DefaultSettings.php" );
 
-// 20170905: jobs need to be run through a cronjob// Debug/diagnostics: show full exception details and DB backtraces
+// Debug/diagnostics: show full exception details and DB backtraces
 // and write a consolidated debug log. Disable or adjust in production.
 // $wgShowExceptionDetails = true;
 // $wgShowSQLErrors = true;
@@ -209,7 +209,8 @@ $wgDefaultUserOptions['thumbsize'] = 4;
 $wgAllowUserCss = true;
 $wgAllowUserJs = true;
 
-// fpv 20230314: temporarily increase image dimensions for My_House_map.png
+// fpv 20230314: increase image dimensions for My_House_map.png
+// cannot be temporary only for the upload, as then thumb generation breaks
 $wgMaxImageArea = 2.5e7;
 //$wgMaxImageArea = 1.25e7;
 
@@ -385,7 +386,7 @@ $wgCaptchaQuestions[] = array (
   'answer'   => $myChallengeAnswer
 );
 
-// set PageImage default licensing
+// haleyjd 20260226: set PageImages default licensing
 $wgPageImagesAPIDefaultLicense = 'any';
 
 // haleyjd 20160212: apply IP blocks to XFF
@@ -588,4 +589,4 @@ $wgMobileFrontendLogo = "/w/images/e/e9/WikiMobileLogo.png";
 $wgMFDefaultSkinClass = 'SkinMinerva';
 
 // Uncomment to lock database in read-only mode during backups or upgrades (change message if needed):
-//$wgReadOnly = "Temporarily locked for backup.";
+//$wgReadOnly = "Temporarily locked for upgrade.";
