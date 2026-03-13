@@ -23,6 +23,12 @@ require_once( "$IP/includes/DefaultSettings.php" );
 // $wgShowSQLErrors = true;
 // $wgShowDBErrorBacktrace = true;
 
+// 20170924: uncomment and add lines as necessary when needing to do heavy debugging
+//if (empty($wgDebugLogFile)) { $wgDebugLogFile = '/tmp/mw-debug.log'; }
+//$wgDebugLogGroups = array(
+//  'torblock' => '/tmp/torblock.log'
+//);
+
 putenv("MW_INSTALL_PATH=/home/doomwiki/public_html/w");
 
 // If you customize your file layout, set $IP to the directory that contains
@@ -59,13 +65,6 @@ foreach (parse_ini_file('/home/doomwiki/.env') as $key => $value) {
 
 ## Uncomment this to disable output compression
 # $wgDisableOutputCompression = true;
-
-// Debug/diagnostics: show full exception details and DB backtraces
-// and write a consolidated debug log. Disable or adjust in production.
-$wgShowExceptionDetails = true;
-$wgShowSQLErrors = true;
-$wgShowDBErrorBacktrace = true;
-if (empty($wgDebugLogFile)) { $wgDebugLogFile = '/tmp/mw-debug.log'; }
 
 $wgServer            = "//".getenv("APP_DOMAIN");
 $wgCanonicalServer   = "https://".getenv("APP_DOMAIN");
@@ -328,9 +327,9 @@ $wgActions['mcrrestore'] = false;
 // Skins
 //
 
-wfLoadSkin('Timeless');
 wfLoadSkin('Modern');
 wfLoadSkin('MonoBook');
+wfLoadSkin('Timeless');
 wfLoadSkin('Vector');
 
 // skin-related config
@@ -386,9 +385,6 @@ $wgCaptchaQuestions[] = array (
   'answer'   => $myChallengeAnswer
 );
 
-// haleyjd 20260226: set PageImages default licensing
-$wgPageImagesAPIDefaultLicense = 'any';
-
 // haleyjd 20160212: apply IP blocks to XFF
 $wgApplyIpBlocksToXff = true;
 
@@ -435,6 +431,8 @@ $wgGroupPermissions['oversight']['suppressionlog'] = true;
 
 // haleyjd 20150415: PageImages extension
 require_once("$IP/extensions/PageImages/PageImages.php");
+// haleyjd 20260226: set PageImages default licensing
+$wgPageImagesAPIDefaultLicense = 'any';
 
 // haleyjd 20150402: OpenGraphMeta
 require_once("$IP/extensions/OpenGraphMeta/OpenGraphMeta.php");
@@ -571,12 +569,6 @@ $wgNoFollowDomainExceptions[] = 'doomworld.com';   // Doomworld
 
 // haleyjd 20130826: enable IP rangeblocking
 $wgSysopRangeBans = true;
-
-// 20170924: uncomment and add lines as necessary when needing to do heavy debugging
-//$wgDebugLogFile = '/home/doomwiki/logs/debuglog.log';
-//$wgDebugLogGroups = array(
-//  'torblock' => '/home/doomwiki/logs/torblock.log'
-//);
 
 // 20140421: Mobile FrontEnd
 wfLoadExtension("MobileFrontend");
