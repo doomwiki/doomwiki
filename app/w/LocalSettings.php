@@ -579,4 +579,4 @@ $wgMobileFrontendLogo = "/w/images/e/e9/WikiMobileLogo.png";
 $wgMFDefaultSkinClass = 'SkinMinerva';
 
 // Uncomment to lock database in read-only mode during backups or upgrades (change message if needed):
-//$wgReadOnly = "Temporarily locked for upgrade.";
+//$wgReadOnly = "Temporarily locked for backup.";
