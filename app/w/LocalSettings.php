@@ -577,6 +577,7 @@ $wgMFExtendOpenSearchXml = true;
 $wgMobileFrontendFormatCookieExpiry = 2592000; // 30 days (30*24*60*60)
 $wgMobileFrontendLogo = "/w/images/e/e9/WikiMobileLogo.png";
 $wgMFDefaultSkinClass = 'SkinMinerva';
+$wgMFRemovableClasses['base'] = [".toc", ".nomobile"];
 
 // Uncomment to lock database in read-only mode during backups or upgrades (change message if needed):
 //$wgReadOnly = "Temporarily locked for backup.";
