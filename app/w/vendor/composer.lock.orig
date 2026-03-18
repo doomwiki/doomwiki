@@ -4,6 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
+    "content-hash": "179f60edaeb1029f04d3d07bcaa39e6a",
     "packages": [
         {
             "name": "composer/semver",
@@ -942,24 +943,6 @@
             ],
             "description": "Composer plugin to merge multiple composer.json files",
             "time": "2017-04-25T02:31:25+00:00"
-        },
-        {
-            "name": "wikimedia/equivset",
-            "version": "1.4.3",
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "Wikimedia\\Equivset\\": "src/"
-                }
-            },
-            "license": [
-                "GPL-2.0-or-later"
-            ],
-            "description": "Visually Equivalent Set of UTF-8 Characters",
-            "homepage": "https://www.mediawiki.org/wiki/Equivset",
-            "support": {
-                "source": "https://github.com/wikimedia/mediawiki-libs-Equivset/tree/1.4.3"
-            }
         },
         {
             "name": "wikimedia/html-formatter",
