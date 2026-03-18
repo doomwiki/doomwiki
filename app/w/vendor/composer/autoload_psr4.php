@@ -9,6 +9,7 @@ return array(
     'WrappedString\\' => array($vendorDir . '/wikimedia/wrappedstring/src/WrappedString'),
     'Wikimedia\\Purtle\\Tests\\' => array($vendorDir . '/wikimedia/purtle/tests/phpunit'),
     'Wikimedia\\Purtle\\' => array($vendorDir . '/wikimedia/purtle/src'),
+    'Wikimedia\\Equivset\\' => array($vendorDir . '/wikimedia/equivset/src'),
     'Wikimedia\\Composer\\' => array($vendorDir . '/wikimedia/composer-merge-plugin/src'),
     'Wikimedia\\Assert\\Test\\' => array($vendorDir . '/wikimedia/assert/tests/phpunit'),
     'Wikimedia\\Assert\\' => array($vendorDir . '/wikimedia/assert/src'),

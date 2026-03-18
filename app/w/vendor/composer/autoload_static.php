@@ -54,6 +54,10 @@ class ComposerStaticInit_mediawiki_vendor
         array (
             0 => __DIR__ . '/..' . '/wikimedia/purtle/src',
         ),
+        'Wikimedia\\Equivset\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/wikimedia/equivset/src',
+        ),
         'Wikimedia\\Composer\\' => 
         array (
             0 => __DIR__ . '/..' . '/wikimedia/composer-merge-plugin/src',
@@ -411,6 +415,9 @@ class ComposerStaticInit_mediawiki_vendor
         'Wikimedia\\Composer\\Merge\\NestedArray' => __DIR__ . '/..' . '/wikimedia/composer-merge-plugin/src/Merge/NestedArray.php',
         'Wikimedia\\Composer\\Merge\\PluginState' => __DIR__ . '/..' . '/wikimedia/composer-merge-plugin/src/Merge/PluginState.php',
         'Wikimedia\\Composer\\Merge\\StabilityFlags' => __DIR__ . '/..' . '/wikimedia/composer-merge-plugin/src/Merge/StabilityFlags.php',
+        'Wikimedia\\Equivset\\Exception\\EquivsetException' => __DIR__ . '/..' . '/wikimedia/equivset/src/Exception/EquivsetException.php',
+        'Wikimedia\\Equivset\\EquivsetInterface' => __DIR__ . '/..' . '/wikimedia/equivset/src/EquivsetInterface.php',
+        'Wikimedia\\Equivset\\Equivset' => __DIR__ . '/..' . '/wikimedia/equivset/src/Equivset.php',
         'Wikimedia\\IPSet' => __DIR__ . '/..' . '/wikimedia/ip-set/src/Wikimedia/IPSet.php',
         'Wikimedia\\ObjectFactory' => __DIR__ . '/..' . '/wikimedia/object-factory/src/ObjectFactory.php',
         'Wikimedia\\PSquare' => __DIR__ . '/..' . '/wikimedia/running-stat/src/Wikimedia/PSquare.php',
