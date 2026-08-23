@@ -192,7 +192,7 @@ $wgSMTP = [
 ## is writable, then set this to true:
 $wgEnableUploads = true;
 wgUseImageMagick = false;
-## $wgImageMagickConvertCommand = "/usr/bin/convert";
+// $wgImageMagickConvertCommand = "/usr/bin/convert";
 $wgCustomConvertCommand = "/usr/bin/convert %s -coalesce -resize %wx%h -layers optimize %d";
 $wgSVGConverter = 'rsvg';
 
@@ -582,3 +582,30 @@ $wgMFRemovableClasses['base'] = [".toc", ".nomobile"];
 
 // Uncomment to lock database in read-only mode during backups or upgrades (change message if needed):
 //$wgReadOnly = "Temporarily locked for backup.";
+
+// fpv 20260823: https://www.mediawiki.org/wiki/Manual:$wgSquidServersNoPurge &
+// https://www.mediawiki.org/wiki/Manual:Cloudflare#MediaWiki:_$wgUseCdn_and_$wgCdnServersNoPurge
+$wgUseSquid = true;
+$wgSquidServersNoPurge = array();
+$wgSquidServersNoPurge[] = "103.21.244.0/22";
+$wgSquidServersNoPurge[] = "103.22.200.0/22";
+$wgSquidServersNoPurge[] = "103.31.4.0/22";
+$wgSquidServersNoPurge[] = "104.16.0.0/13";
+$wgSquidServersNoPurge[] = "104.24.0.0/14";
+$wgSquidServersNoPurge[] = "108.162.192.0/18";
+$wgSquidServersNoPurge[] = "131.0.72.0/22";
+$wgSquidServersNoPurge[] = "141.101.64.0/18";
+$wgSquidServersNoPurge[] = "162.158.0.0/15";
+$wgSquidServersNoPurge[] = "172.64.0.0/13";
+$wgSquidServersNoPurge[] = "173.245.48.0/20";
+$wgSquidServersNoPurge[] = "188.114.96.0/20";
+$wgSquidServersNoPurge[] = "190.93.240.0/20";
+$wgSquidServersNoPurge[] = "197.234.240.0/22";
+$wgSquidServersNoPurge[] = "198.41.128.0/17";
+$wgSquidServersNoPurge[] = "2a06:98c0::/29";
+$wgSquidServersNoPurge[] = "2c0f:f248::/32";
+$wgSquidServersNoPurge[] = "2400:cb00::/32";
+$wgSquidServersNoPurge[] = "2405:8100::/32";
+$wgSquidServersNoPurge[] = "2405:b500::/32";
+$wgSquidServersNoPurge[] = "2606:4700::/32";
+$wgSquidServersNoPurge[] = "2803:f800::/32";
