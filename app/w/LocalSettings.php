@@ -191,8 +191,9 @@ $wgSMTP = [
 ## To enable image uploads, make sure the 'images' directory
 ## is writable, then set this to true:
 $wgEnableUploads = true;
-$wgUseImageMagick = true;
-$wgImageMagickConvertCommand = "/usr/bin/convert";
+wgUseImageMagick = false;
+## $wgImageMagickConvertCommand = "/usr/bin/convert";
+$wgCustomConvertCommand = "/usr/bin/convert %s -coalesce -resize %wx%h -layers optimize %d";
 $wgSVGConverter = 'rsvg';
 
 // haleyjd 20120302: add some allowed extensions
