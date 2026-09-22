@@ -217,7 +217,7 @@ $wgMaxImageArea = 2.5e7;
 ## Linux server, this will need to be set to the name of an
 ## available UTF-8 locale
 $wgShellLocale = "en_US.utf8";
-$wgMaxShellMemory = 524288;
+$wgMaxShellMemory = 614400;
 
 ## If you want to use image uploads under safe mode,
 ## create the directories images/archive, images/thumb and
